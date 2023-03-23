@@ -91,10 +91,10 @@ make all --jobs="$(nproc)"
 make install
 
 declare -ra targets=(
+	'x86_64-unknown-linux-gnu'
 	'i486-unknown-linux-gnu'
 	'arm-unknown-linux-gnueabi'
 	'arm-unknown-linux-gnueabihf'
-	'x86_64-unknown-linux-gnu'
 )
 
 for target in "${targets[@]}"; do
@@ -133,7 +133,7 @@ for target in "${targets[@]}"; do
 	
 	cd "${toolchain_directory}/${triple}/lib"
 	
-	find . -xtype l | xargs ls -l | grep '/lib/' | awk '{print "unlink "$9" && ln -s $(basename "$11") $(basename "$9")"}' | bash
+	find . -type l | xargs ls -l | grep '/lib/' | awk '{print "unlink "$9" && ln -s ./$(basename "$11") ./$(basename "$9")"}' | bash
 	
 	echo -e "OUTPUT_FORMAT(${output_format})\nGROUP ( ./libc.so.6 ./libc_nonshared.a  AS_NEEDED ( ./${ld} ) )" > './libc.so'
 	echo -e "OUTPUT_FORMAT(${output_format})\nGROUP ( ./libpthread.so.0 ./libpthread_nonshared.a  )" > './libpthread.so'
