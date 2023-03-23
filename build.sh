@@ -190,6 +190,7 @@ for target in "${targets[@]}"; do
 		--without-headers \
 		--enable-ld \
 		--enable-gold \
+		--with-pic \
 		--with-sysroot="${toolchain_directory}/${triple}" \
 		--with-native-system-header-dir='/include' \
 		${extra_configure_flags}
