@@ -197,3 +197,5 @@ for target in "${targets[@]}"; do
 	LD_LIBRARY_PATH="${toolchain_directory}/lib" PATH="${PATH}:${toolchain_directory}/bin" make CFLAGS_FOR_TARGET='-fno-stack-protector' CXXFLAGS_FOR_TARGET='-fno-stack-protector' all --jobs="$(nproc)"
 	make install
 done
+
+tar --directory="$(dirname "${toolchain_directory}")" --create --file=- "$(basename "${toolchain_directory}")" |  xz --threads=0 --compress -9 > "${toolchain_tarball}"
