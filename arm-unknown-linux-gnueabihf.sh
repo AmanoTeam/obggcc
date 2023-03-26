@@ -14,3 +14,5 @@ declare host='arm-linux-gnueabihf'
 
 declare output_format='elf32-littlearm'
 declare ld='ld-linux-armhf.so.3'
+
+declare debian_release_major='7'

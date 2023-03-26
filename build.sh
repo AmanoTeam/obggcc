@@ -91,10 +91,21 @@ make all --jobs="$(nproc)"
 make install
 
 declare -ra targets=(
+	'alpha-unknown-linux-gnu'
 	'x86_64-unknown-linux-gnu'
 	'i486-unknown-linux-gnu'
 	'arm-unknown-linux-gnueabi'
 	'arm-unknown-linux-gnueabihf'
+	'hppa-unknown-linux-gnu'
+	'aarch64-unknown-linux-gnu'
+	'mips-unknown-linux-gnu'
+	'mipsel-unknown-linux-gnu'
+	'powerpc-unknown-linux-gnu'
+	's390-unknown-linux-gnu'
+	's390x-unknown-linux-gnu'
+	'sparc-unknown-linux-gnu'
+	'powerpc64le-unknown-linux-gnu'
+	'mips64el-unknown-linux-gnuabi64'
 )
 
 for target in "${targets[@]}"; do
@@ -124,19 +135,36 @@ for target in "${targets[@]}"; do
 	
 	mv './usr/include' "${toolchain_directory}/${triple}"
 	mv './usr/lib' "${toolchain_directory}/${triple}"
-	mv "./lib/${host}/"* "${toolchain_directory}/${triple}/lib"
-	mv "${toolchain_directory}/${triple}/lib/${host}/"* "${toolchain_directory}/${triple}/lib"
-	cp --recursive "${toolchain_directory}/${triple}/include/${host}/"* "${toolchain_directory}/${triple}/include"
 	
-	rm --recursive "${toolchain_directory}/${triple}/lib/${host}"
-	rm --recursive "${toolchain_directory}/${triple}/include/${host}"
+	if (( debian_release_major > 6 )); then
+		mv "./lib/${host}/"* "${toolchain_directory}/${triple}/lib"
+	else
+		mv "./lib/"* "${toolchain_directory}/${triple}/lib"
+	fi
+	
+	if (( debian_release_major > 6 )); then
+		mv "${toolchain_directory}/${triple}/lib/${host}/"* "${toolchain_directory}/${triple}/lib"
+		cp --recursive "${toolchain_directory}/${triple}/include/${host}/"* "${toolchain_directory}/${triple}/include"
+		
+		rm --recursive "${toolchain_directory}/${triple}/lib/${host}"
+		rm --recursive "${toolchain_directory}/${triple}/include/${host}"
+	fi
 	
 	cd "${toolchain_directory}/${triple}/lib"
 	
 	find . -type l | xargs ls -l | grep '/lib/' | awk '{print "unlink "$9" && ln -s ./$(basename "$11") ./$(basename "$9")"}' | bash
 	
-	echo -e "OUTPUT_FORMAT(${output_format})\nGROUP ( ./libc.so.6 ./libc_nonshared.a  AS_NEEDED ( ./${ld} ) )" > './libc.so'
+	if [ "${target}" == 'alpha-unknown-linux-gnu' ]; then
+		echo -e "OUTPUT_FORMAT(${output_format})\nGROUP ( ./libc.so.6.1 ./libc_nonshared.a  AS_NEEDED ( ./${ld} ) )" > './libc.so'
+	else
+		echo -e "OUTPUT_FORMAT(${output_format})\nGROUP ( ./libc.so.6 ./libc_nonshared.a  AS_NEEDED ( ./${ld} ) )" > './libc.so'
+	fi
+	
 	echo -e "OUTPUT_FORMAT(${output_format})\nGROUP ( ./libpthread.so.0 ./libpthread_nonshared.a  )" > './libpthread.so'
+	
+	if [[ "${target}" == mips*-unknown-linux-gnu ]] || [ "${target}" == 'powerpc-unknown-linux-gnu' ] || [ "${target}" == 's390-unknown-linux-gnu' ] || [ "${target}" == 'sparc-unknown-linux-gnu' ]; then
+		patch --directory="${toolchain_directory}/${triple}" --strip='1' --input="${current_source_directory}/patches/linux_pim.patch"
+	fi
 	
 	[ -d "${binutils_directory}/build" ] || mkdir "${binutils_directory}/build"
 	
@@ -192,6 +220,7 @@ for target in "${targets[@]}"; do
 		--enable-gold \
 		--with-pic \
 		--with-sysroot="${toolchain_directory}/${triple}" \
+		--with-gcc-major-version-only \
 		--with-native-system-header-dir='/include' \
 		${extra_configure_flags}
 	
