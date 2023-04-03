@@ -3,10 +3,12 @@
 set -e
 set -u
 
+declare -r obggcc_revision="$(git rev-parse --short HEAD)"
+
 declare -r current_source_directory="${PWD}"
 
 declare -r toolchain_directory='/tmp/unknown-unknown-linux'
-declare -r toolchain_tarball="$(pwd)/linux-cross.tar.xz"
+declare -r toolchain_tarball="${current_source_directory}/linux-cross.tar.xz"
 
 declare -r gmp_tarball='/tmp/gmp.tar.xz'
 declare -r gmp_directory='/tmp/gmp-6.2.1'
@@ -219,8 +221,9 @@ for target in "${targets[@]}"; do
 		--enable-ld \
 		--enable-gold \
 		--with-pic \
-		--with-sysroot="${toolchain_directory}/${triple}" \
 		--with-gcc-major-version-only \
+		--with-pkgversion="OBGGCC v0.1-${obggcc_revision}" \
+		--with-sysroot="${toolchain_directory}/${triple}" \
 		--with-native-system-header-dir='/include' \
 		${extra_configure_flags}
 	
