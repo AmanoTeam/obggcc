@@ -95,7 +95,7 @@ make install
 declare -ra targets=(
 	'alpha-unknown-linux-gnu'
 	'x86_64-unknown-linux-gnu'
-	'i486-unknown-linux-gnu'
+	'i386-unknown-linux-gnu'
 	'arm-unknown-linux-gnueabi'
 	'arm-unknown-linux-gnueabihf'
 	'hppa-unknown-linux-gnu'
@@ -177,7 +177,9 @@ for target in "${targets[@]}"; do
 		--target="${triple}" \
 		--prefix="${toolchain_directory}" \
 		--enable-gold \
-		--enable-ld
+		--enable-ld \
+		--disable-gprofng \
+		--with-static-standard-libraries
 	
 	make all --jobs="$(nproc)"
 	make install
@@ -194,6 +196,7 @@ for target in "${targets[@]}"; do
 		--with-gmp="${toolchain_directory}" \
 		--with-mpc="${toolchain_directory}" \
 		--with-mpfr="${toolchain_directory}" \
+		--with-static-standard-libraries \
 		--with-system-zlib \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--enable-__cxa_atexit \
