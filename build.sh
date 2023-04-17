@@ -7,7 +7,7 @@ declare -r obggcc_revision="$(git rev-parse --short HEAD)"
 
 declare -r current_source_directory="${PWD}"
 
-declare -r toolchain_directory='/tmp/unknown-unknown-linux'
+declare -r toolchain_directory='/tmp/obggcc'
 declare -r toolchain_tarball="${current_source_directory}/linux-cross.tar.xz"
 
 declare -r gmp_tarball='/tmp/gmp.tar.xz'
@@ -24,6 +24,9 @@ declare -r binutils_directory='/tmp/binutils-2.40'
 
 declare -r gcc_tarball='/tmp/gcc.tar.xz'
 declare -r gcc_directory='/tmp/gcc-12.2.0'
+
+declare -r optflags='-Os'
+declare -r linkflags='-Wl,-s'
 
 if ! [ -f "${gmp_tarball}" ]; then
 	wget --no-verbose 'https://mirrors.kernel.org/gnu/gmp/gmp-6.2.1.tar.xz' --output-document="${gmp_tarball}"
@@ -50,10 +53,6 @@ if ! [ -f "${gcc_tarball}" ]; then
 	tar --directory="$(dirname "${gcc_directory}")" --extract --file="${gcc_tarball}"
 fi
 
-while read file; do
-	sed -i 's/-O2/-Os -s -DNDEBUG/g' "${file}"
-done <<< "$(find '/tmp' -type 'f' -wholename '*configure')"
-
 [ -d "${gmp_directory}/build" ] || mkdir "${gmp_directory}/build"
 
 cd "${gmp_directory}/build"
@@ -61,7 +60,10 @@ cd "${gmp_directory}/build"
 ../configure \
 	--prefix="${toolchain_directory}" \
 	--enable-shared \
-	--enable-static
+	--enable-static \
+	CFLAGS="${optflags}" \
+	CXXFLAGS="${optflags}" \
+	LDFLAGS="${linkflags}"
 
 make all --jobs="$(nproc)"
 make install
@@ -74,7 +76,10 @@ cd "${mpfr_directory}/build"
 	--prefix="${toolchain_directory}" \
 	--with-gmp="${toolchain_directory}" \
 	--enable-shared \
-	--enable-static
+	--enable-static \
+	CFLAGS="${optflags}" \
+	CXXFLAGS="${optflags}" \
+	LDFLAGS="${linkflags}"
 
 make all --jobs="$(nproc)"
 make install
@@ -87,7 +92,10 @@ cd "${mpc_directory}/build"
 	--prefix="${toolchain_directory}" \
 	--with-gmp="${toolchain_directory}" \
 	--enable-shared \
-	--enable-static
+	--enable-static \
+	CFLAGS="${optflags}" \
+	CXXFLAGS="${optflags}" \
+	LDFLAGS="${linkflags}"
 
 make all --jobs="$(nproc)"
 make install
@@ -178,8 +186,12 @@ for target in "${targets[@]}"; do
 		--prefix="${toolchain_directory}" \
 		--enable-gold \
 		--enable-ld \
+		--enable-lto \
 		--disable-gprofng \
-		--with-static-standard-libraries
+		--with-static-standard-libraries \
+		CFLAGS="${optflags}" \
+		CXXFLAGS="${optflags}" \
+		LDFLAGS="${linkflags}"
 	
 	make all --jobs="$(nproc)"
 	make install
@@ -197,7 +209,6 @@ for target in "${targets[@]}"; do
 		--with-mpc="${toolchain_directory}" \
 		--with-mpfr="${toolchain_directory}" \
 		--with-static-standard-libraries \
-		--with-system-zlib \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--enable-__cxa_atexit \
 		--enable-cet='auto' \
@@ -228,10 +239,20 @@ for target in "${targets[@]}"; do
 		--with-pkgversion="OBGGCC v0.1-${obggcc_revision}" \
 		--with-sysroot="${toolchain_directory}/${triple}" \
 		--with-native-system-header-dir='/include' \
-		${extra_configure_flags}
+		${extra_configure_flags} \
+		CFLAGS="${optflags}" \
+		CXXFLAGS="${optflags}" \
+		LDFLAGS="${linkflags}"
 	
-	LD_LIBRARY_PATH="${toolchain_directory}/lib" PATH="${PATH}:${toolchain_directory}/bin" make CFLAGS_FOR_TARGET='-fno-stack-protector' CXXFLAGS_FOR_TARGET='-fno-stack-protector' all --jobs="$(nproc)"
+	LD_LIBRARY_PATH="${toolchain_directory}/lib" PATH="${PATH}:${toolchain_directory}/bin" make \
+		CFLAGS_FOR_TARGET="${optflags} ${linkflags}" \
+		CXXFLAGS_FOR_TARGET="${optflags} ${linkflags}" \
+		all \
+		--jobs="$(nproc)"
 	make install
+	
+	patchelf --add-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triple}/12/cc1"
+	patchelf --add-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triple}/12/cc1plus"
 done
 
 tar --directory="$(dirname "${toolchain_directory}")" --create --file=- "$(basename "${toolchain_directory}")" |  xz --threads=0 --compress -9 > "${toolchain_tarball}"
