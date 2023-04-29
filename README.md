@@ -32,7 +32,7 @@ We currently build cross-compilers targeting many Linux architectures. See above
 | `arm-unknown-linux-gnueabi` | Debian 5 | Glibc 2.7 | Linux 2.6.26 |
 | `arm-unknown-linux-gnueabihf` | Debian 7 | Glibc 2.13 | Linux 3.2.102 |
 | `hppa-unknown-linux-gnu` | Debian 5 | Glibc 2.7 | Linux 2.6.26 |
-| `i486-unknown-linux-gnu` | Debian 5 | Glibc 2.7 | Linux 2.6.26 |
+| `i386-unknown-linux-gnu` | Debian 5 | Glibc 2.7 | Linux 2.6.26 |
 | `mips64el-unknown-linux-gnuabi64` | Debian 9 | Glibc 2.24 | Linux 4.9.228 |
 | `mips-unknown-linux-gnu` | Debian 5 | Glibc 2.7 | Linux 2.6.26 |
 | `mipsel-unknown-linux-gnu` | Debian 5 | Glibc 2.7 | Linux 2.6.26 |
