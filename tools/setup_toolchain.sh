@@ -11,7 +11,8 @@ if [ -d "${OBGGCC_TOOLCHAIN}" ]; then
 	return 0
 fi
 
-declare -r OBGGCC_CROSS_TAG="$(jq --raw-output '.tag_name' <<< "$(curl --retry 10 --retry-delay 3 --silent --url 'https://api.github.com/repos/AmanoTeam/obggcc/releases/latest')")"
+#declare -r OBGGCC_CROSS_TAG="$(jq --raw-output '.tag_name' <<< "$(curl --retry 10 --retry-delay 3 --silent --url 'https://api.github.com/repos/AmanoTeam/obggcc/releases/latest')")"
+OBGGCC_CROSS_TAG=0.2
 declare -r OBGGCC_CROSS_TARBALL='/tmp/obggcc.tar.xz'
 declare -r OBGGCC_CROSS_URL="https://github.com/AmanoTeam/obggcc/releases/download/${OBGGCC_CROSS_TAG}/x86_64-unknown-linux-gnu.tar.xz"
 
