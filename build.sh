@@ -23,7 +23,7 @@ declare -r binutils_tarball='/tmp/binutils.tar.xz'
 declare -r binutils_directory='/tmp/binutils-2.40'
 
 declare -r gcc_tarball='/tmp/gcc.tar.xz'
-declare -r gcc_directory='/tmp/gcc-12.2.0'
+declare -r gcc_directory='/tmp/gcc-13.1.0'
 
 declare -r optflags='-Os'
 declare -r linkflags='-Wl,-s'
@@ -51,7 +51,7 @@ if ! [ -f "${binutils_tarball}" ]; then
 fi
 
 if ! [ -f "${gcc_tarball}" ]; then
-	wget --no-verbose 'https://mirrors.kernel.org/gnu/gcc/gcc-12.2.0/gcc-12.2.0.tar.xz' --output-document="${gcc_tarball}"
+	wget --no-verbose 'https://mirrors.kernel.org/gnu/gcc/gcc-13.1.0/gcc-13.1.0.tar.xz' --output-document="${gcc_tarball}"
 	tar --directory="$(dirname "${gcc_directory}")" --extract --file="${gcc_tarball}"
 fi
 
@@ -264,6 +264,13 @@ for target in "${targets[@]}"; do
 		all \
 		--jobs="$(($(nproc) * 8))"
 	make install
+	
+	pushd "${toolchain_directory}/${triple}/bin"
+	
+	for name in *; do
+		rm "${name}"
+		ln -s "../../bin/${triple}-${name}" "${name}"
+	done
 	
 	rm --recursive "${toolchain_directory}/${triple}/bin"
 	rm --recursive "${toolchain_directory}/share"
