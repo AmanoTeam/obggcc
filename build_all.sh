@@ -32,7 +32,7 @@ for target in "${targets[@]}"; do
 	declare tarball_filename="${tarballs_directory}/${target}.tar.xz"
 	
 	tar --directory='/tmp' --create --file=- 'obggcc' |  xz --threads=0 --compress -9 > "${tarball_filename}"
-	sha256sum "${tarball_filename}" | cut -d ' ' -f 1 > "${tarball_filename}.sha256"
+	sha256sum "${tarball_filename}" > "${tarball_filename}.sha256"
 	
 	rm --recursive '/tmp/obggcc'
 done

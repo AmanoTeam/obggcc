@@ -228,7 +228,7 @@ for target in "${targets[@]}"; do
 		--enable-default-ssp \
 		--enable-gnu-indirect-function \
 		--enable-gnu-unique-object \
-		--enable-libstdcxx-backtrace \
+		--enable-libstdcxx-backtrace=no \
 		--enable-link-serialization='1' \
 		--enable-linker-build-id \
 		--enable-lto \
