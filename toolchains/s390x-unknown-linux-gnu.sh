@@ -2,7 +2,7 @@
 
 set -eu
 
-CROSS_COMPILE_TRIPLET='sparc-unknown-linux-gnu'
+CROSS_COMPILE_TRIPLET='s390x-unknown-linux-gnu'
 
 CC="${OBGGCC_TOOLCHAIN}/bin/${CROSS_COMPILE_TRIPLET}-gcc"
 CXX="${OBGGCC_TOOLCHAIN}/bin/${CROSS_COMPILE_TRIPLET}-g++"
