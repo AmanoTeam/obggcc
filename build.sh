@@ -1,7 +1,6 @@
 #!/bin/bash
 
-set -e
-set -u
+set -eu
 
 declare -r obggcc_revision="$(git rev-parse --short HEAD)"
 
@@ -22,13 +21,11 @@ declare -r mpc_directory='/tmp/mpc-1.3.1'
 declare -r binutils_tarball='/tmp/binutils.tar.xz'
 declare -r binutils_directory='/tmp/binutils-2.40'
 
-declare -r gcc_tarball='/tmp/gcc.tar.xz'
-declare -r gcc_directory='/tmp/gcc-12.2.0'
+declare -r gcc_tarball='/tmp/gcc.tar.gz'
+declare -r gcc_directory='/tmp/gcc-master'
 
 declare -r optflags='-Os'
 declare -r linkflags='-Wl,-s'
-
-source "./toolchains/${1}.sh"
 
 if ! [ -f "${gmp_tarball}" ]; then
 	wget --no-verbose 'https://mirrors.kernel.org/gnu/gmp/gmp-6.2.1.tar.xz' --output-document="${gmp_tarball}"
@@ -51,7 +48,7 @@ if ! [ -f "${binutils_tarball}" ]; then
 fi
 
 if ! [ -f "${gcc_tarball}" ]; then
-	wget --no-verbose 'https://mirrors.kernel.org/gnu/gcc/gcc-12.2.0/gcc-12.2.0.tar.xz' --output-document="${gcc_tarball}"
+	wget --no-verbose 'https://codeload.github.com/gcc-mirror/gcc/tar.gz/refs/heads/master' --output-document="${gcc_tarball}"
 	tar --directory="$(dirname "${gcc_directory}")" --extract --file="${gcc_tarball}"
 fi
 
@@ -61,7 +58,6 @@ cd "${gmp_directory}/build"
 rm --force --recursive ./*
 
 ../configure \
-	--host="${CROSS_COMPILE_TRIPLET}" \
 	--prefix="${toolchain_directory}" \
 	--enable-shared \
 	--enable-static \
@@ -69,7 +65,7 @@ rm --force --recursive ./*
 	CXXFLAGS="${optflags}" \
 	LDFLAGS="${linkflags}"
 
-make all --jobs="$(($(nproc) * 8))"
+make all --jobs
 make install
 
 [ -d "${mpfr_directory}/build" ] || mkdir "${mpfr_directory}/build"
@@ -78,7 +74,6 @@ cd "${mpfr_directory}/build"
 rm --force --recursive ./*
 
 ../configure \
-	--host="${CROSS_COMPILE_TRIPLET}" \
 	--prefix="${toolchain_directory}" \
 	--with-gmp="${toolchain_directory}" \
 	--enable-shared \
@@ -87,7 +82,7 @@ rm --force --recursive ./*
 	CXXFLAGS="${optflags}" \
 	LDFLAGS="${linkflags}"
 
-make all --jobs="$(($(nproc) * 8))"
+make all --jobs
 make install
 
 [ -d "${mpc_directory}/build" ] || mkdir "${mpc_directory}/build"
@@ -96,7 +91,6 @@ cd "${mpc_directory}/build"
 rm --force --recursive ./*
 
 ../configure \
-	--host="${CROSS_COMPILE_TRIPLET}" \
 	--prefix="${toolchain_directory}" \
 	--with-gmp="${toolchain_directory}" \
 	--enable-shared \
@@ -105,7 +99,7 @@ rm --force --recursive ./*
 	CXXFLAGS="${optflags}" \
 	LDFLAGS="${linkflags}"
 
-make all --jobs="$(($(nproc) * 8))"
+make all --jobs
 make install
 
 declare -ra targets=(
@@ -197,13 +191,12 @@ for target in "${targets[@]}"; do
 		--enable-lto \
 		--disable-gprofng \
 		--with-static-standard-libraries \
-		--host="${CROSS_COMPILE_TRIPLET}" \
 		--program-prefix="${triple}-" \
 		CFLAGS="${optflags}" \
 		CXXFLAGS="${optflags}" \
 		LDFLAGS="${linkflags}"
 	
-	make all --jobs="$(($(nproc) * 8))"
+	make all --jobs
 	make install
 	
 	[ -d "${gcc_directory}/build" ] || mkdir "${gcc_directory}/build"
@@ -212,7 +205,6 @@ for target in "${targets[@]}"; do
 	rm --force --recursive ./*
 	
 	../configure \
-		--host="${CROSS_COMPILE_TRIPLET}" \
 		--target="${triple}" \
 		--prefix="${toolchain_directory}" \
 		--with-linker-hash-style='gnu' \
@@ -247,22 +239,20 @@ for target in "${targets[@]}"; do
 		--enable-gold \
 		--with-pic \
 		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v0.3-${obggcc_revision}" \
+		--with-pkgversion="OBGGCC v0.4-${obggcc_revision}" \
 		--with-sysroot="${toolchain_directory}/${triple}" \
 		--with-native-system-header-dir='/include' \
-		--program-prefix="${triple}-" \
 		--disable-nls \
 		${extra_configure_flags} \
 		CFLAGS="${optflags}" \
 		CXXFLAGS="${optflags}" \
-		LDFLAGS="-Wl,-rpath-link,${OBGGCC_TOOLCHAIN}/${CROSS_COMPILE_TRIPLET}/lib ${linkflags}"
+		LDFLAGS="${linkflags}"
 	
 	LD_LIBRARY_PATH="${toolchain_directory}/lib" PATH="${PATH}:${toolchain_directory}/bin" make \
 		CFLAGS_FOR_TARGET="${optflags} ${linkflags}" \
 		CXXFLAGS_FOR_TARGET="${optflags} ${linkflags}" \
-		gcc_cv_objdump="${CROSS_COMPILE_TRIPLET}-objdump" \
 		all \
-		--jobs="$(($(nproc) * 8))"
+		--jobs="$(($(nproc) * 12))"
 	make install
 	
 	cd "${toolchain_directory}/${triple}/bin"
@@ -274,11 +264,9 @@ for target in "${targets[@]}"; do
 	
 	rm --recursive "${toolchain_directory}/share"
 	
-	if [ "${CROSS_COMPILE_TRIPLET}" == "${triple}" ]; then
-		rm "${toolchain_directory}/bin/${triple}-${triple}"*
-	fi
-	
-	patchelf --add-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triple}/12/cc1"
-	patchelf --add-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triple}/12/cc1plus"
-	patchelf --add-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triple}/12/lto1"
+	patchelf --add-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triple}/"*'/cc1'
+	patchelf --add-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triple}/"*'/cc1plus'
+	patchelf --add-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triple}/"*'/lto1'
 done
+
+tar --directory="$(dirname "${toolchain_directory}")" --create --file=- "$(basename "${toolchain_directory}")" |  xz --threads=0 --compress -9 > "${toolchain_tarball}"

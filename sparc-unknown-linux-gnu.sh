@@ -6,7 +6,7 @@ declare packages=(
 	'http://archive.debian.org/debian/pool/main/g/glibc/libc6_2.7-18lenny7_sparc.deb'
 )
 
-declare extra_configure_flags=''
+declare extra_configure_flags='--disable-libsanitizer'
 
 declare triple='sparc-unknown-linux-gnu'
 declare host='sparc-linux-gnu'

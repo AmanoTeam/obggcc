@@ -6,7 +6,7 @@ declare packages=(
 	'http://archive.debian.org/debian/pool/main/g/glibc/libc6_2.7-18lenny7_i386.deb'
 )
 
-declare extra_configure_flags='--with-arch=i586'
+declare extra_configure_flags='--with-arch=i586 --disable-libsanitizer'
 
 declare triple='i386-unknown-linux-gnu'
 declare host='i386-linux-gnu'

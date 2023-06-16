@@ -6,7 +6,7 @@ declare packages=(
 	'http://archive.debian.org/debian/pool/main/g/glibc/libc6_2.7-18lenny7_mipsel.deb'
 )
 
-declare extra_configure_flags=''
+declare extra_configure_flags='--disable-libsanitizer'
 
 declare triple='mipsel-unknown-linux-gnu'
 declare host='mipsel-linux-gnu'
