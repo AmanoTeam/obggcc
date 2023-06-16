@@ -264,10 +264,6 @@ for target in "${targets[@]}"; do
 	
 	rm --recursive "${toolchain_directory}/share"
 	
-	if [ "${CROSS_COMPILE_TRIPLET}" == "${triple}" ]; then
-		rm "${toolchain_directory}/bin/${triple}-${triple}"*
-	fi
-	
 	patchelf --add-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triple}/"*'/cc1'
 	patchelf --add-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triple}/"*'/cc1plus'
 	patchelf --add-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triple}/"*'/lto1'
