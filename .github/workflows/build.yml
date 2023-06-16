@@ -1,0 +1,20 @@
+name: Build
+
+on:
+  push:
+    branches:
+        - '**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@main
+      with:
+        submodules: true
+    - name: Run build script
+      run: bash ./build.sh
+    - name: Upload artifact
+      uses: actions/upload-artifact@main
+      with:
+        path: ./linux-cross.tar.xz
