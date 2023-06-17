@@ -27,6 +27,8 @@ declare -r gcc_directory='/tmp/gcc-master'
 declare -r optflags='-Os'
 declare -r linkflags='-Wl,-s'
 
+source "./toolchains/${1}.sh"
+
 if ! [ -f "${gmp_tarball}" ]; then
 	wget --no-verbose 'https://mirrors.kernel.org/gnu/gmp/gmp-6.2.1.tar.xz' --output-document="${gmp_tarball}"
 	tar --directory="$(dirname "${gmp_directory}")" --extract --file="${gmp_tarball}"
@@ -58,6 +60,7 @@ cd "${gmp_directory}/build"
 rm --force --recursive ./*
 
 ../configure \
+	--host="${CROSS_COMPILE_TRIPLET}" \
 	--prefix="${toolchain_directory}" \
 	--enable-shared \
 	--enable-static \
@@ -74,6 +77,7 @@ cd "${mpfr_directory}/build"
 rm --force --recursive ./*
 
 ../configure \
+	--host="${CROSS_COMPILE_TRIPLET}" \
 	--prefix="${toolchain_directory}" \
 	--with-gmp="${toolchain_directory}" \
 	--enable-shared \
@@ -91,6 +95,7 @@ cd "${mpc_directory}/build"
 rm --force --recursive ./*
 
 ../configure \
+	--host="${CROSS_COMPILE_TRIPLET}" \
 	--prefix="${toolchain_directory}" \
 	--with-gmp="${toolchain_directory}" \
 	--enable-shared \
@@ -184,6 +189,7 @@ for target in "${targets[@]}"; do
 	rm --force --recursive ./*
 	
 	../configure \
+		--host="${CROSS_COMPILE_TRIPLET}" \
 		--target="${triple}" \
 		--prefix="${toolchain_directory}" \
 		--enable-gold \
@@ -205,6 +211,7 @@ for target in "${targets[@]}"; do
 	rm --force --recursive ./*
 	
 	../configure \
+		--host="${CROSS_COMPILE_TRIPLET}" \
 		--target="${triple}" \
 		--prefix="${toolchain_directory}" \
 		--with-linker-hash-style='gnu' \
@@ -224,20 +231,19 @@ for target in "${targets[@]}"; do
 		--enable-link-serialization='1' \
 		--enable-linker-build-id \
 		--enable-lto \
-		--disable-multilib \
-		--enable-plugin \
 		--enable-shared \
 		--enable-threads='posix' \
 		--enable-libssp \
-		--disable-libstdcxx-pch \
-		--disable-werror \
 		--enable-languages='c,c++' \
-		--disable-libgomp \
-		--disable-bootstrap \
-		--without-headers \
 		--enable-ld \
 		--enable-gold \
-		--with-pic \
+		--disable-libgomp \
+		--disable-bootstrap \
+		--disable-libstdcxx-pch \
+		--disable-werror \
+		--disable-multilib \
+		--disable-plugin \
+		--without-headers \
 		--with-gcc-major-version-only \
 		--with-pkgversion="OBGGCC v0.4-${obggcc_revision}" \
 		--with-sysroot="${toolchain_directory}/${triple}" \
@@ -246,7 +252,7 @@ for target in "${targets[@]}"; do
 		${extra_configure_flags} \
 		CFLAGS="${optflags}" \
 		CXXFLAGS="${optflags}" \
-		LDFLAGS="${linkflags}"
+		LDFLAGS="-Wl,-rpath-link,${OBGGCC_TOOLCHAIN}/${CROSS_COMPILE_TRIPLET}/lib ${linkflags}"
 	
 	LD_LIBRARY_PATH="${toolchain_directory}/lib" PATH="${PATH}:${toolchain_directory}/bin" make \
 		CFLAGS_FOR_TARGET="${optflags} ${linkflags}" \
@@ -268,5 +274,3 @@ for target in "${targets[@]}"; do
 	patchelf --add-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triple}/"*'/cc1plus'
 	patchelf --add-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triple}/"*'/lto1'
 done
-
-tar --directory="$(dirname "${toolchain_directory}")" --create --file=- "$(basename "${toolchain_directory}")" |  xz --threads=0 --compress -9 > "${toolchain_tarball}"

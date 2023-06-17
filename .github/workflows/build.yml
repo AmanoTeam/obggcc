@@ -8,13 +8,41 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [
+          alpha-unknown-linux-gnu,
+          x86_64-unknown-linux-gnu,
+          i386-unknown-linux-gnu,
+          arm-unknown-linux-gnueabi,
+          arm-unknown-linux-gnueabihf,
+          hppa-unknown-linux-gnu,
+          aarch64-unknown-linux-gnu,
+          mips-unknown-linux-gnu,
+          mipsel-unknown-linux-gnu,
+          powerpc-unknown-linux-gnu,
+          s390-unknown-linux-gnu,
+          s390x-unknown-linux-gnu,
+          sparc-unknown-linux-gnu,
+          powerpc64le-unknown-linux-gnu
+        ]
     steps:
     - uses: actions/checkout@main
       with:
         submodules: true
-    - name: Run build script
-      run: bash ./build.sh
+    - name: Build OBGGCC with OBGGCC
+      run: |
+        source './tools/setup_toolchain.sh'
+        
+        bash './build.sh' '${{ matrix.target }}'
+    - name: Generate tarball
+      run: |
+        declare tarball_filename='${{ matrix.target }}.tar.xz'
+        tar --directory='/tmp' --create --file=- 'obggcc' |  xz --threads=0 --compress -9 > "${tarball_filename}"
+        sha256sum "${tarball_filename}" > "${tarball_filename}.sha256"
     - name: Upload artifact
       uses: actions/upload-artifact@main
       with:
-        path: ./linux-cross.tar.xz
+        path: |
+          ${{ matrix.target }}.tar.xz
+          ${{ matrix.target }}.tar.xz.sha256
