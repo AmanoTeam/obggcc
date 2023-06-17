@@ -103,7 +103,7 @@ make all --jobs
 make install
 
 declare -ra targets=(
-	'alpha-unknown-linux-gnu'
+	# 'alpha-unknown-linux-gnu'
 	'x86_64-unknown-linux-gnu'
 	'i386-unknown-linux-gnu'
 	'arm-unknown-linux-gnueabi'
