@@ -6,7 +6,7 @@ declare packages=(
 	'http://archive.debian.org/debian/pool/main/g/glibc/libc6_2.7-18lenny7_armel.deb'
 )
 
-declare extra_configure_flags='--with-arch=armv4t --with-float=soft'
+declare extra_configure_flags='--with-arch=armv4t --with-float=soft --disable-libsanitizer'
 
 declare triple='arm-unknown-linux-gnueabi'
 declare host='arm-linux-gnueabi'
