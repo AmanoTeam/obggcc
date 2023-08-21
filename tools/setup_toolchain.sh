@@ -15,7 +15,7 @@ declare -r OBGGCC_CROSS_TAG="$(jq --raw-output '.tag_name' <<< "$(curl --retry 1
 declare -r OBGGCC_CROSS_TARBALL='/tmp/obggcc.tar.xz'
 declare -r OBGGCC_CROSS_URL="https://github.com/AmanoTeam/obggcc/releases/download/${OBGGCC_CROSS_TAG}/x86_64-unknown-linux-gnu.tar.xz"
 
-curl --retry 10 --retry-delay 3 --silent --location --url "${OBGGCC_CROSS_URL}" --output "${OBGGCC_CROSS_TARBALL}"
+curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --location --url "${OBGGCC_CROSS_URL}" --output "${OBGGCC_CROSS_TARBALL}"
 tar --directory="$(dirname "${OBGGCC_CROSS_TARBALL}")" --extract --file="${OBGGCC_CROSS_TARBALL}"
 
 rm "${OBGGCC_CROSS_TARBALL}"

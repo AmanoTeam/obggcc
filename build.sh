@@ -7,7 +7,6 @@ declare -r obggcc_revision="$(git rev-parse --short HEAD)"
 declare -r current_source_directory="${PWD}"
 
 declare -r toolchain_directory='/tmp/obggcc'
-declare -r toolchain_tarball="${current_source_directory}/linux-cross.tar.xz"
 
 declare -r gmp_tarball='/tmp/gmp.tar.xz'
 declare -r gmp_directory='/tmp/gmp-6.2.1'
@@ -22,35 +21,57 @@ declare -r binutils_tarball='/tmp/binutils.tar.xz'
 declare -r binutils_directory='/tmp/binutils-2.40'
 
 declare -r gcc_tarball='/tmp/gcc.tar.gz'
-declare -r gcc_directory='/tmp/gcc-master'
+declare -r gcc_directory='/tmp/gcc-13.2.0'
 
 declare -r optflags='-Os'
 declare -r linkflags='-Wl,-s'
 
-source "./toolchains/${1}.sh"
+declare -r max_jobs="$(($(nproc) * 8))"
+
+declare build_type="${1}"
+
+if [ -z "${build_type}" ]; then
+	build_type='native'
+fi
+
+declare is_native='0'
+
+if [ "${build_type}" == 'native' ]; then
+	is_native='1'
+fi
+
+declare OBGGCC_TOOLCHAIN='/tmp/obggcc-toolchain'
+declare CROSS_COMPILE_TRIPLET=''
+
+declare cross_compile_flags=''
+
+if ! (( is_native )); then
+	source "./toolchains/${build_type}.sh"
+	cross_compile_flags+="--host=${CROSS_COMPILE_TRIPLET}"
+fi
 
 if ! [ -f "${gmp_tarball}" ]; then
-	wget --no-verbose 'https://mirrors.kernel.org/gnu/gmp/gmp-6.2.1.tar.xz' --output-document="${gmp_tarball}"
+	curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://mirrors.kernel.org/gnu/gmp/gmp-6.2.1.tar.xz' --output "${gmp_tarball}"
 	tar --directory="$(dirname "${gmp_directory}")" --extract --file="${gmp_tarball}"
 fi
 
 if ! [ -f "${mpfr_tarball}" ]; then
-	wget --no-verbose 'https://mirrors.kernel.org/gnu/mpfr/mpfr-4.2.0.tar.xz' --output-document="${mpfr_tarball}"
+	curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://mirrors.kernel.org/gnu/mpfr/mpfr-4.2.0.tar.xz' --output "${mpfr_tarball}"
 	tar --directory="$(dirname "${mpfr_directory}")" --extract --file="${mpfr_tarball}"
 fi
 
 if ! [ -f "${mpc_tarball}" ]; then
-	wget --no-verbose 'https://mirrors.kernel.org/gnu/mpc/mpc-1.3.1.tar.gz' --output-document="${mpc_tarball}"
+	curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://mirrors.kernel.org/gnu/mpc/mpc-1.3.1.tar.gz' --output "${mpc_tarball}"
 	tar --directory="$(dirname "${mpc_directory}")" --extract --file="${mpc_tarball}"
 fi
 
 if ! [ -f "${binutils_tarball}" ]; then
-	wget --no-verbose 'https://mirrors.kernel.org/gnu/binutils/binutils-2.40.tar.xz' --output-document="${binutils_tarball}"
+	curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://mirrors.kernel.org/gnu/binutils/binutils-2.40.tar.xz' --output "${binutils_tarball}"
 	tar --directory="$(dirname "${binutils_directory}")" --extract --file="${binutils_tarball}"
 fi
 
 if ! [ -f "${gcc_tarball}" ]; then
-	wget --no-verbose 'https://codeload.github.com/gcc-mirror/gcc/tar.gz/refs/heads/master' --output-document="${gcc_tarball}"
+	curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://mirrors.kernel.org/gnu/gcc/gcc-13.2.0/gcc-13.2.0.tar.xz' --output "${gcc_tarball}"
 	tar --directory="$(dirname "${gcc_directory}")" --extract --file="${gcc_tarball}"
 fi
 
@@ -108,14 +129,14 @@ make all --jobs
 make install
 
 declare -ra targets=(
-	'alpha-unknown-linux-gnu'
-	'x86_64-unknown-linux-gnu'
-	'i386-unknown-linux-gnu'
-	'arm-unknown-linux-gnueabi'
-	'arm-unknown-linux-gnueabihf'
-	'hppa-unknown-linux-gnu'
-	'aarch64-unknown-linux-gnu'
-	'mips-unknown-linux-gnu'
+	# 'alpha-unknown-linux-gnu'
+	# 'x86_64-unknown-linux-gnu'
+	# 'i386-unknown-linux-gnu'
+	# 'arm-unknown-linux-gnueabi'
+	# 'arm-unknown-linux-gnueabihf'
+	# 'hppa-unknown-linux-gnu'
+	# 'aarch64-unknown-linux-gnu'
+	# 'mips-unknown-linux-gnu'
 	'mipsel-unknown-linux-gnu'
 	'powerpc-unknown-linux-gnu'
 	's390-unknown-linux-gnu'
@@ -131,7 +152,7 @@ for target in "${targets[@]}"; do
 	cd "$(mktemp --directory)"
 	
 	for package in "${packages[@]}"; do
-		wget --no-verbose "${package}"
+		curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --location --remote-name --url "${package}"
 	done
 	
 	for file in *.deb; do
@@ -198,6 +219,7 @@ for target in "${targets[@]}"; do
 		--disable-gprofng \
 		--with-static-standard-libraries \
 		--program-prefix="${triple}-" \
+		--with-sysroot="${toolchain_directory}/${triple}" \
 		CFLAGS="${optflags}" \
 		CXXFLAGS="${optflags}" \
 		LDFLAGS="${linkflags}"
@@ -220,6 +242,10 @@ for target in "${targets[@]}"; do
 		--with-mpfr="${toolchain_directory}" \
 		--with-static-standard-libraries \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
+		--with-gcc-major-version-only \
+		--with-pkgversion="OBGGCC v0.5-${obggcc_revision}" \
+		--with-sysroot="${toolchain_directory}/${triple}" \
+		--with-native-system-header-dir='/include' \
 		--enable-__cxa_atexit \
 		--enable-cet='auto' \
 		--enable-checking='release' \
@@ -243,12 +269,8 @@ for target in "${targets[@]}"; do
 		--disable-werror \
 		--disable-multilib \
 		--disable-plugin \
-		--without-headers \
-		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v0.4-${obggcc_revision}" \
-		--with-sysroot="${toolchain_directory}/${triple}" \
-		--with-native-system-header-dir='/include' \
 		--disable-nls \
+		--without-headers \
 		${extra_configure_flags} \
 		CFLAGS="${optflags}" \
 		CXXFLAGS="${optflags}" \
