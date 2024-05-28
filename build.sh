@@ -4,29 +4,29 @@ set -eu
 
 declare -r obggcc_revision="$(git rev-parse --short HEAD)"
 
-declare -r current_source_directory="${PWD}"
+declare -r workdir="${PWD}"
 
 declare -r toolchain_directory='/tmp/obggcc'
 
 declare -r gmp_tarball='/tmp/gmp.tar.xz'
-declare -r gmp_directory='/tmp/gmp-6.2.1'
+declare -r gmp_directory='/tmp/gmp-6.3.0'
 
 declare -r mpfr_tarball='/tmp/mpfr.tar.xz'
-declare -r mpfr_directory='/tmp/mpfr-4.2.0'
+declare -r mpfr_directory='/tmp/mpfr-4.2.1'
 
 declare -r mpc_tarball='/tmp/mpc.tar.gz'
 declare -r mpc_directory='/tmp/mpc-1.3.1'
 
 declare -r binutils_tarball='/tmp/binutils.tar.xz'
-declare -r binutils_directory='/tmp/binutils-2.40'
+declare -r binutils_directory='/tmp/binutils-2.42'
 
 declare -r gcc_tarball='/tmp/gcc.tar.gz'
-declare -r gcc_directory='/tmp/gcc-13.2.0'
+declare -r gcc_directory='/tmp/gcc-14.1.0'
 
 declare -r optflags='-Os'
 declare -r linkflags='-Wl,-s'
 
-declare -r max_jobs="$(($(nproc) * 8))"
+declare -r max_jobs="$(($(nproc) * 17))"
 
 declare build_type="${1}"
 
@@ -51,27 +51,29 @@ if ! (( is_native )); then
 fi
 
 if ! [ -f "${gmp_tarball}" ]; then
-	curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://mirrors.kernel.org/gnu/gmp/gmp-6.2.1.tar.xz' --output "${gmp_tarball}"
+	wget --no-verbose 'https://ftp.gnu.org/gnu/gmp/gmp-6.3.0.tar.xz' --output-document="${gmp_tarball}"
 	tar --directory="$(dirname "${gmp_directory}")" --extract --file="${gmp_tarball}"
 fi
 
 if ! [ -f "${mpfr_tarball}" ]; then
-	curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://mirrors.kernel.org/gnu/mpfr/mpfr-4.2.0.tar.xz' --output "${mpfr_tarball}"
+	wget --no-verbose 'https://ftp.gnu.org/gnu/mpfr/mpfr-4.2.1.tar.xz' --output-document="${mpfr_tarball}"
 	tar --directory="$(dirname "${mpfr_directory}")" --extract --file="${mpfr_tarball}"
 fi
 
 if ! [ -f "${mpc_tarball}" ]; then
-	curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://mirrors.kernel.org/gnu/mpc/mpc-1.3.1.tar.gz' --output "${mpc_tarball}"
+	wget --no-verbose 'https://ftp.gnu.org/gnu/mpc/mpc-1.3.1.tar.gz' --output-document="${mpc_tarball}"
 	tar --directory="$(dirname "${mpc_directory}")" --extract --file="${mpc_tarball}"
 fi
 
 if ! [ -f "${binutils_tarball}" ]; then
-	curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://mirrors.kernel.org/gnu/binutils/binutils-2.40.tar.xz' --output "${binutils_tarball}"
+	wget --no-verbose 'https://ftp.gnu.org/gnu/binutils/binutils-2.42.tar.xz' --output-document="${binutils_tarball}"
 	tar --directory="$(dirname "${binutils_directory}")" --extract --file="${binutils_tarball}"
+	
+	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Revert-gold-Use-char16_t-char32_t-instead-of-uint16_.patch"
 fi
 
 if ! [ -f "${gcc_tarball}" ]; then
-	curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://mirrors.kernel.org/gnu/gcc/gcc-13.2.0/gcc-13.2.0.tar.xz' --output "${gcc_tarball}"
+	wget --no-verbose 'https://ftp.gnu.org/gnu/gcc/gcc-14.1.0/gcc-14.1.0.tar.xz' --output-document="${gcc_tarball}"
 	tar --directory="$(dirname "${gcc_directory}")" --extract --file="${gcc_tarball}"
 fi
 
@@ -121,7 +123,7 @@ rm --force --recursive ./*
 	--with-gmp="${toolchain_directory}" \
 	--enable-shared \
 	--enable-static \
-	CFLAGS="${optflags}" \
+	CFLAGS="${optflags} -fpermissive" \
 	CXXFLAGS="${optflags}" \
 	LDFLAGS="${linkflags}"
 
@@ -129,14 +131,15 @@ make all --jobs
 make install
 
 declare -ra targets=(
-	# 'alpha-unknown-linux-gnu'
-	# 'x86_64-unknown-linux-gnu'
-	# 'i386-unknown-linux-gnu'
-	# 'arm-unknown-linux-gnueabi'
-	# 'arm-unknown-linux-gnueabihf'
-	# 'hppa-unknown-linux-gnu'
-	# 'aarch64-unknown-linux-gnu'
-	# 'mips-unknown-linux-gnu'
+	'ia64-unknown-linux-gnu'
+	'alpha-unknown-linux-gnu'
+	'x86_64-unknown-linux-gnu'
+	'i386-unknown-linux-gnu'
+	'arm-unknown-linux-gnueabi'
+	'arm-unknown-linux-gnueabihf'
+	'hppa-unknown-linux-gnu'
+	'aarch64-unknown-linux-gnu'
+	'mips-unknown-linux-gnu'
 	'mipsel-unknown-linux-gnu'
 	'powerpc-unknown-linux-gnu'
 	's390-unknown-linux-gnu'
@@ -147,7 +150,7 @@ declare -ra targets=(
 )
 
 for target in "${targets[@]}"; do
-	source "${current_source_directory}/${target}.sh"
+	source "${workdir}/${target}.sh"
 	
 	cd "$(mktemp --directory)"
 	
@@ -192,7 +195,7 @@ for target in "${targets[@]}"; do
 	
 	find . -type l | xargs ls -l | grep '/lib/' | awk '{print "unlink "$9" && ln -s ./$(basename "$11") ./$(basename "$9")"}' | bash
 	
-	if [ "${target}" == 'alpha-unknown-linux-gnu' ]; then
+	if [ "${target}" == 'alpha-unknown-linux-gnu' ] || [ "${target}" == 'ia64-unknown-linux-gnu' ]; then
 		echo -e "OUTPUT_FORMAT(${output_format})\nGROUP ( ./libc.so.6.1 ./libc_nonshared.a  AS_NEEDED ( ./${ld} ) )" > './libc.so'
 	else
 		echo -e "OUTPUT_FORMAT(${output_format})\nGROUP ( ./libc.so.6 ./libc_nonshared.a  AS_NEEDED ( ./${ld} ) )" > './libc.so'
@@ -201,7 +204,7 @@ for target in "${targets[@]}"; do
 	echo -e "OUTPUT_FORMAT(${output_format})\nGROUP ( ./libpthread.so.0 ./libpthread_nonshared.a  )" > './libpthread.so'
 	
 	if [[ "${target}" == mips*-unknown-linux-gnu ]] || [ "${target}" == 'powerpc-unknown-linux-gnu' ] || [ "${target}" == 's390-unknown-linux-gnu' ] || [ "${target}" == 'sparc-unknown-linux-gnu' ]; then
-		patch --directory="${toolchain_directory}/${triple}" --strip='1' --input="${current_source_directory}/patches/linux_pim.patch"
+		patch --directory="${toolchain_directory}/${triple}" --strip='1' --input="${workdir}/patches/linux_pim.patch"
 	fi
 	
 	[ -d "${binutils_directory}/build" ] || mkdir "${binutils_directory}/build"
@@ -243,7 +246,7 @@ for target in "${targets[@]}"; do
 		--with-static-standard-libraries \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v0.5-${obggcc_revision}" \
+		--with-pkgversion="OBGGCC v0.6-${obggcc_revision}" \
 		--with-sysroot="${toolchain_directory}/${triple}" \
 		--with-native-system-header-dir='/include' \
 		--enable-__cxa_atexit \
@@ -280,7 +283,7 @@ for target in "${targets[@]}"; do
 		CFLAGS_FOR_TARGET="${optflags} ${linkflags}" \
 		CXXFLAGS_FOR_TARGET="${optflags} ${linkflags}" \
 		all \
-		--jobs="$(($(nproc) * 12))"
+		--jobs="${max_jobs}"
 	make install
 	
 	cd "${toolchain_directory}/${triple}/bin"

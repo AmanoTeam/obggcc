@@ -17,7 +17,7 @@ jobs:
       id: check-cache
       uses: actions/cache@main
       with:
-        key: gcc-13.2.0
+        key: gcc-14.1.0-1
         lookup-only: true
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
@@ -45,7 +45,7 @@ jobs:
       if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
       uses: actions/cache@main
       with:
-        key: gcc-13.2.0
+        key: gcc-14.1.0-1
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
           /tmp/x86_64-linux-gnu.tar.xz.sha256
@@ -58,6 +58,7 @@ jobs:
     strategy:
       matrix:
         target: [
+          'ia64-unknown-linux-gnu',
           'alpha-unknown-linux-gnu',
           'x86_64-unknown-linux-gnu',
           'i386-unknown-linux-gnu',
@@ -71,7 +72,8 @@ jobs:
           's390-unknown-linux-gnu',
           's390x-unknown-linux-gnu',
           'sparc-unknown-linux-gnu',
-          'powerpc64le-unknown-linux-gnu'
+          'powerpc64le-unknown-linux-gnu',
+          'mips64el-unknown-linux-gnuabi64'
         ]
     steps:
     - uses: actions/checkout@main
@@ -80,14 +82,13 @@ jobs:
     - name: Restore from cache
       uses: actions/cache@main
       with:
-        key: gcc-13.2.0
+        key: gcc-14.1.0-1
         fail-on-cache-miss: true
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
           /tmp/x86_64-linux-gnu.tar.xz.sha256
     - name: Setup toolchain
       run: |
-        ls /tmp/x86_64-linux-gnu.tar.xz
         tar --directory='/tmp' --extract --file='/tmp/x86_64-linux-gnu.tar.xz'
         mv '/tmp/obggcc' '/tmp/obggcc-toolchain'
     - name: Build OBGGCC with OBGGCC
@@ -103,7 +104,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-artifact@main
       with:
-        name: cross-toolchain
+        name: ${{ matrix.target }}
         if-no-files-found: error
         path: |
           /tmp/${{ matrix.target }}.tar.xz
