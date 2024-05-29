@@ -42,6 +42,7 @@ We currently build cross-compilers targeting many Linux architectures. See above
 | `s390x-unknown-linux-gnu` | Debian 7 | Glibc 2.13 | Linux 3.2.78 |
 | `sparc-unknown-linux-gnu` | Debian 5 | Glibc 2.7 | Linux 2.6.26 |
 | `x86_64-unknown-linux-gnu` | Debian 5 | Glibc 2.7 | Linux 2.6.26 |
+| `ia64-unknown-linux-gnu` | Debian 5 | Glibc 2.7 | Linux 2.6.26 |
 
 ## Releases
 
