@@ -207,6 +207,32 @@ for target in "${targets[@]}"; do
 		patch --directory="${toolchain_directory}/${triple}" --strip='1' --input="${workdir}/patches/linux_pim.patch"
 	fi
 	
+	cd "${toolchain_directory}/${triple}/include"
+	
+	if ! (( is_native )); then
+		CC="${triple}-gcc" python "${workdir}/tools/make_builtins.py"
+		
+		if [ -f './builtin_ctype.h' ]; then
+			echo '#include <builtin_ctype.h>' >> './ctype.h'
+		fi
+		
+		if [ -f './builtin_math.h' ]; then
+			echo '#include <builtin_math.h>' >> './math.h'
+		fi
+		
+		if [ -f './builtin_stdio.h' ]; then
+			echo '#include <builtin_stdio.h>' >> './stdio.h'
+		fi
+		
+		if [ -f './builtin_complex.h' ]; then
+			echo '#include <builtin_complex.h>' >> './complex.h'
+		fi
+		
+		if [ -f './builtin_stdlib.h' ]; then
+			echo '#include <builtin_stdlib.h>' >> './stdlib.h'
+		fi
+	fi
+	
 	[ -d "${binutils_directory}/build" ] || mkdir "${binutils_directory}/build"
 	
 	cd "${binutils_directory}/build"

@@ -79,6 +79,10 @@ jobs:
     - uses: actions/checkout@main
       with:
         submodules: true
+    - name: Setup Python
+      uses: actions/setup-python@main
+      with:
+        python-version: '3.12'
     - name: Restore from cache
       uses: actions/cache@main
       with:
