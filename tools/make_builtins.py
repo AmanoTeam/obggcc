@@ -63,7 +63,7 @@ def check_symbols_exists(symbol):
 	with open(file = temporary_file, mode = "w") as file:
 		file.write(text)
 	
-	process = subprocess.run([cc, "-ansi", "-w", "-fno-builtin", temporary_file, "-o", "%s.o" % temporary_file])
+	process = subprocess.run([cc, "-std=c11", "-w", "-fno-builtin", temporary_file, "-o", "%s.o" % temporary_file])
 	
 	return process.returncode == 0
 
