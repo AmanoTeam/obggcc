@@ -75,6 +75,8 @@ fi
 if ! [ -f "${gcc_tarball}" ]; then
 	wget --no-verbose 'https://ftp.gnu.org/gnu/gcc/gcc-14.2.0/gcc-14.2.0.tar.xz' --output-document="${gcc_tarball}"
 	tar --directory="$(dirname "${gcc_directory}")" --extract --file="${gcc_tarball}"
+	
+	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Revert-GCC-change-about-turning-Wimplicit-function-d.patch"
 fi
 
 [ -d "${gmp_directory}/build" ] || mkdir "${gmp_directory}/build"
@@ -207,32 +209,6 @@ for target in "${targets[@]}"; do
 		patch --directory="${toolchain_directory}/${triple}" --strip='1' --input="${workdir}/patches/linux_pim.patch"
 	fi
 	
-	cd "${toolchain_directory}/${triple}/include"
-	
-	if ! (( is_native )); then
-		CC="${triple}-gcc" python "${workdir}/tools/make_builtins.py"
-		
-		if [ -f './builtin_ctype.h' ]; then
-			echo '#include <builtin_ctype.h>' >> './ctype.h'
-		fi
-		
-		if [ -f './builtin_math.h' ]; then
-			echo '#include <builtin_math.h>' >> './math.h'
-		fi
-		
-		if [ -f './builtin_stdio.h' ]; then
-			echo '#include <builtin_stdio.h>' >> './stdio.h'
-		fi
-		
-		if [ -f './builtin_complex.h' ]; then
-			echo '#include <builtin_complex.h>' >> './complex.h'
-		fi
-		
-		if [ -f './builtin_stdlib.h' ]; then
-			echo '#include <builtin_stdlib.h>' >> './stdlib.h'
-		fi
-	fi
-	
 	[ -d "${binutils_directory}/build" ] || mkdir "${binutils_directory}/build"
 	
 	cd "${binutils_directory}/build"
@@ -272,7 +248,7 @@ for target in "${targets[@]}"; do
 		--with-static-standard-libraries \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v0.7-${obggcc_revision}" \
+		--with-pkgversion="OBGGCC v0.8-${obggcc_revision}" \
 		--with-sysroot="${toolchain_directory}/${triple}" \
 		--with-native-system-header-dir='/include' \
 		--enable-__cxa_atexit \

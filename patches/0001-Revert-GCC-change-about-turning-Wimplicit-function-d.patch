@@ -1,0 +1,62 @@
+From 9088a8ce453a6b66d51b87d096bf9cf15042794d Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sun, 11 Aug 2024 22:06:07 +0200
+Subject: [PATCH] Revert GCC change about turning -Wimplicit-function-declaration into errors
+
+Unfortunately, the new behavior breaks the compilation of some GCC dependencies and even GCC itself when building for very old targets.
+
+This is due to these platforms lacking support for some required standard library functions and APIs: Until GCC 13, the compiler always fell back to a built-in alternative in case one of those functions was missing (see https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html). The compiler, however, used to just issue an "implicit function declaration" warning for the usage of those builtins. Since this warning is now treated as an error, this simply made the compilation fail.
+---
+ gcc/c/c-decl.cc | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/gcc/c/c-decl.cc b/gcc/c/c-decl.cc
+index 0e52f2176..dde2b207c 100644
+--- a/gcc/c/c-decl.cc
++++ b/gcc/c/c-decl.cc
+@@ -3566,7 +3566,7 @@ pushdecl (tree x)
+    or NULL_TREE.  */
+ 
+ static void
+-implicit_decl_permerror (location_t loc, tree id, tree olddecl)
++implicit_decl_warning (location_t loc, tree id, tree olddecl)
+ {
+   if (!warn_implicit_function_declaration)
+     return;
+@@ -3583,13 +3583,13 @@ implicit_decl_permerror (location_t loc, tree id, tree olddecl)
+ 	{
+ 	  gcc_rich_location richloc (loc);
+ 	  richloc.add_fixit_replace (suggestion);
+-	  warned = permerror_opt (&richloc, OPT_Wimplicit_function_declaration,
++	  warned = pedwarn (&richloc, OPT_Wimplicit_function_declaration,
+ 				  "implicit declaration of function %qE;"
+ 				  " did you mean %qs?",
+ 				  id, suggestion);
+ 	}
+       else
+-	warned = permerror_opt (loc, OPT_Wimplicit_function_declaration,
++	warned = pedwarn (loc, OPT_Wimplicit_function_declaration,
+ 				"implicit declaration of function %qE", id);
+     }
+   else if (const char *suggestion = hint.suggestion ())
+@@ -3880,7 +3880,7 @@ implicitly_declare (location_t loc, tree functionid)
+ 	     then recycle the old declaration but with the new type.  */
+ 	  if (!C_DECL_IMPLICIT (decl))
+ 	    {
+-	      implicit_decl_permerror (loc, functionid, decl);
++	      implicit_decl_warning (loc, functionid, decl);
+ 	      C_DECL_IMPLICIT (decl) = 1;
+ 	    }
+ 	  if (fndecl_built_in_p (decl))
+@@ -3933,7 +3933,7 @@ implicitly_declare (location_t loc, tree functionid)
+   DECL_EXTERNAL (decl) = 1;
+   TREE_PUBLIC (decl) = 1;
+   C_DECL_IMPLICIT (decl) = 1;
+-  implicit_decl_permerror (loc, functionid, 0);
++  implicit_decl_warning (loc, functionid, 0);
+   asmspec_tree = maybe_apply_renaming_pragma (decl, /*asmname=*/NULL);
+   if (asmspec_tree)
+     set_user_assembler_name (decl, TREE_STRING_POINTER (asmspec_tree));
+-- 
+2.36.6
+
