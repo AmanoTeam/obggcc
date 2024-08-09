@@ -131,22 +131,22 @@ make all --jobs
 make install
 
 declare -ra targets=(
-	'ia64-unknown-linux-gnu'
-	'alpha-unknown-linux-gnu'
+	# 'ia64-unknown-linux-gnu'
+	# 'alpha-unknown-linux-gnu'
 	'x86_64-unknown-linux-gnu'
-	'i386-unknown-linux-gnu'
-	'arm-unknown-linux-gnueabi'
-	'arm-unknown-linux-gnueabihf'
-	'hppa-unknown-linux-gnu'
-	'aarch64-unknown-linux-gnu'
-	'mips-unknown-linux-gnu'
-	'mipsel-unknown-linux-gnu'
-	'powerpc-unknown-linux-gnu'
-	's390-unknown-linux-gnu'
-	's390x-unknown-linux-gnu'
-	'sparc-unknown-linux-gnu'
-	'powerpc64le-unknown-linux-gnu'
-	'mips64el-unknown-linux-gnuabi64'
+	# 'i386-unknown-linux-gnu'
+	# 'arm-unknown-linux-gnueabi'
+	# 'arm-unknown-linux-gnueabihf'
+	# 'hppa-unknown-linux-gnu'
+	# 'aarch64-unknown-linux-gnu'
+	# 'mips-unknown-linux-gnu'
+	# 'mipsel-unknown-linux-gnu'
+	# 'powerpc-unknown-linux-gnu'
+	# 's390-unknown-linux-gnu'
+	# 's390x-unknown-linux-gnu'
+	# 'sparc-unknown-linux-gnu'
+	# 'powerpc64le-unknown-linux-gnu'
+	# 'mips64el-unknown-linux-gnuabi64'
 )
 
 for target in "${targets[@]}"; do
@@ -207,30 +207,8 @@ for target in "${targets[@]}"; do
 		patch --directory="${toolchain_directory}/${triple}" --strip='1' --input="${workdir}/patches/linux_pim.patch"
 	fi
 	
-	cd "${toolchain_directory}/${triple}/include"
-	
 	if ! (( is_native )); then
-		CC="${triple}-gcc" python "${workdir}/tools/make_builtins.py"
-		
-		if [ -f './builtin_ctype.h' ]; then
-			echo '#include <builtin_ctype.h>' >> './ctype.h'
-		fi
-		
-		if [ -f './builtin_math.h' ]; then
-			echo '#include <builtin_math.h>' >> './math.h'
-		fi
-		
-		if [ -f './builtin_stdio.h' ]; then
-			echo '#include <builtin_stdio.h>' >> './stdio.h'
-		fi
-		
-		if [ -f './builtin_complex.h' ]; then
-			echo '#include <builtin_complex.h>' >> './complex.h'
-		fi
-		
-		if [ -f './builtin_stdlib.h' ]; then
-			echo '#include <builtin_stdlib.h>' >> './stdlib.h'
-		fi
+		C_INCLUDE_PATH="${toolchain_directory}/${triple}/include" CC="${triple}-gcc" python "${workdir}/tools/make_builtins.py"
 	fi
 	
 	[ -d "${binutils_directory}/build" ] || mkdir "${binutils_directory}/build"

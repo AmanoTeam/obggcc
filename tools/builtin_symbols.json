@@ -445,7 +445,7 @@
 	},
 	{
 		"name": "imaxabs",
-		"header": "ctype"
+		"header": "inttypes"
 	},
 	{
 		"name": "isblank",
@@ -453,7 +453,7 @@
 	},
 	{
 		"name": "iswblank",
-		"header": "ctype"
+		"header": "wctype"
 	},
 	{
 		"name": "lgammaf",
