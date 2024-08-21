@@ -248,7 +248,7 @@ for target in "${targets[@]}"; do
 		--with-static-standard-libraries \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v0.8-${obggcc_revision}" \
+		--with-pkgversion="OBGGCC v0.9-${obggcc_revision}" \
 		--with-sysroot="${toolchain_directory}/${triple}" \
 		--with-native-system-header-dir='/include' \
 		--enable-__cxa_atexit \
@@ -301,3 +301,37 @@ for target in "${targets[@]}"; do
 	patchelf --add-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triple}/"*'/cc1plus'
 	patchelf --add-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triple}/"*'/lto1'
 done
+
+declare cc='gcc'
+
+if ! (( is_native )); then
+	cc="${CC}"
+fi
+
+declare -r sysroot_tarball='/tmp/sysroot.tar.xz'
+declare -r executable='/tmp/gcc-wrapper'
+
+while read item; do
+	declare glibc_version="$(jq '.glibc_version' <<< "${item}")"
+	declare triplet="$(jq --raw-output '.triplet' <<< "${item}")"
+	
+	"${cc}" \
+		"${workdir}/tools/gcc-wrapper/filesystem.c" \
+		"${workdir}/tools/gcc-wrapper/main.c" \
+		"${workdir}/tools/gcc-wrapper/path.c" \
+		-Os \
+		-s \
+		-o "${executable}"
+	
+	cp "${executable}" "${toolchain_directory}/bin/${triplet}${glibc_version}-gcc"
+	cp "${executable}" "${toolchain_directory}/bin/${triplet}${glibc_version}-g++"
+	
+	wget --no-verbose "https://github.com/AmanoTeam/debian-sysroot/releases/latest/download/${triplet}${glibc_version}.tar.xz" --output-document="${sysroot_tarball}"
+	tar --directory="${toolchain_directory}" --extract --file="${sysroot_tarball}"
+	
+	# cp --recursive --no-dereference "${toolchain_directory}/${triplet}/bin" "${toolchain_directory}/${triplet}${glibc_version}"
+done <<< "$(jq --compact-output '.[]' "${workdir}/submodules/debian-sysroot/dist.json")"
+
+# for target in "${targets[@]}"; do
+#	rm --recursive "${toolchain_directory}/${target}"
+# done

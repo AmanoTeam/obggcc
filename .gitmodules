@@ -1,0 +1,3 @@
+[submodule "submodules/debian-sysroot"]
+	path = submodules/debian-sysroot
+	url = https://github.com/AmanoTeam/debian-sysroot

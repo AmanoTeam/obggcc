@@ -1,9 +1,9 @@
 #!/bin/bash
 
 declare packages=(
-	'https://web.archive.org/web/0if_/https://archive.debian.org/debian/pool/main/l/linux-2.6/linux-libc-dev_2.6.26-29_hppa.deb'
-	'https://web.archive.org/web/0if_/https://archive.debian.org/debian/pool/main/g/glibc/libc6-dev_2.7-18lenny7_hppa.deb'
-	'https://web.archive.org/web/0if_/https://archive.debian.org/debian/pool/main/g/glibc/libc6_2.7-18lenny7_hppa.deb'
+	'https://archive.debian.org/debian/pool/main/l/linux-2.6/linux-libc-dev_2.6.26-29_hppa.deb'
+	'https://archive.debian.org/debian/pool/main/g/glibc/libc6-dev_2.7-18lenny7_hppa.deb'
+	'https://archive.debian.org/debian/pool/main/g/glibc/libc6_2.7-18lenny7_hppa.deb'
 )
 
 declare extra_configure_flags='--disable-libsanitizer'

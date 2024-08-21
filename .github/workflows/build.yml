@@ -17,7 +17,7 @@ jobs:
       id: check-cache
       uses: actions/cache@main
       with:
-        key: gcc-14.2.0
+        key: gcc-14.2.0-6
         lookup-only: true
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
@@ -45,7 +45,7 @@ jobs:
       if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
       uses: actions/cache@main
       with:
-        key: gcc-14.2.0
+        key: gcc-14.2.0-6
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
           /tmp/x86_64-linux-gnu.tar.xz.sha256
@@ -79,14 +79,10 @@ jobs:
     - uses: actions/checkout@main
       with:
         submodules: true
-    - name: Setup Python
-      uses: actions/setup-python@main
-      with:
-        python-version: '3.12'
     - name: Restore from cache
       uses: actions/cache@main
       with:
-        key: gcc-14.2.0
+        key: gcc-14.2.0-6
         fail-on-cache-miss: true
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
