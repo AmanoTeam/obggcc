@@ -311,6 +311,20 @@ fi
 declare -r sysroot_tarball='/tmp/sysroot.tar.xz'
 declare -r executable='/tmp/gcc-wrapper'
 
+declare -r libraries=(
+	'libstdc++'
+	'libatomic'
+	'libssp'
+	'libitm'
+	'libsupc++'
+	'libgcc'
+)
+
+declare -r bits=(
+	''
+	'64'
+)
+
 while read item; do
 	declare glibc_version="$(jq '.glibc_version' <<< "${item}")"
 	declare triplet="$(jq --raw-output '.triplet' <<< "${item}")"
@@ -328,6 +342,22 @@ while read item; do
 	
 	wget --no-verbose "https://github.com/AmanoTeam/debian-sysroot/releases/latest/download/${triplet}${glibc_version}.tar.xz" --output-document="${sysroot_tarball}"
 	tar --directory="${toolchain_directory}" --extract --file="${sysroot_tarball}"
+	
+	pushd "${toolchain_directory}/${triplet}${glibc_version}/lib"
+	
+	for library in "${libraries[@]}"; do
+		for bit in "${bits[@]}"; do
+			for file in "../../${triplet}/lib${bit}/${library}"*; do
+				if [[ "${file}" == *'*' ]]; then
+					continue
+				fi
+				
+				ln --symbolic "${file}" './'
+			done
+		done
+	done
+	
+	pushd
 	
 	# cp --recursive --no-dereference "${toolchain_directory}/${triplet}/bin" "${toolchain_directory}/${triplet}${glibc_version}"
 done <<< "$(jq --compact-output '.[]' "${workdir}/submodules/debian-sysroot/dist.json")"
