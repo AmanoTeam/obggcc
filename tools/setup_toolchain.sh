@@ -2,7 +2,7 @@
 
 set -eu
 
-declare -r OBGGCC_TOOLCHAIN='/tmp/obggcc-toolchain'
+OBGGCC_TOOLCHAIN='/tmp/obggcc-toolchain'
 
 if [ -d "${OBGGCC_TOOLCHAIN}" ]; then
 	PATH+=":${OBGGCC_TOOLCHAIN}/bin"
