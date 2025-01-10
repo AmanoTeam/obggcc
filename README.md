@@ -1,10 +1,12 @@
 # OBGGCC
 
-A GCC cross-compiler targeting very old glibc versions.
+A GCC cross-compiler targeting older glibc versions.
 
 ## How does it work?
 
-I basically extracted the sysroot of some very old Linux distributions (e.g., Debian 5) and built a GCC cross-compiler against it. The result is a cross-compiler that is able to generate Linux binaries compatible with glibc versions ranging from 2.7 up to 2.19.
+I extracted the sysroot from almost all major Debian releases and built a GCC cross-compiler for each of them. This results in a GCC toolchain targeting software for a specific Debian version (and thus, a specific glibc version as well).
+
+This eliminates the need to install an ancient Linux distribution in Docker/LXC just to build portable binaries, which is the current standard practice.
 
 ## Use cases
 
@@ -19,7 +21,17 @@ This error can occur when you build your binaries on a system with a glibc newer
 
 Since OBGGCC targets older glibc versions by default, these errors are (almost) unlikely to happen. You can distribute portable Linux binaries without worrying about them being incompatible with some older distribution.
 
-OBGGCC can also be useful if you just want to test whether your program builds or runs on older systems (for portability purposes).
+OBGGCC can also be useful if you just want to test whether your program builds or runs on older systems.
+
+## Portability with C++ programs
+
+Unlike C programs, you cannot easily distribute C++ binaries in a portable way without also shipping the libstdc++ library (and sometimes, libgcc too) along with your release binary. Usually, shipping the libstdc++ library with your release binary doesn't offer much benefit in terms of libc version portability, as your program would still depend on the same libc version that libstdc++ was linked against (in this case, the one installed on your system).
+
+When building C++ programs with OBGGCC, however, your program automatically links against our variant of libstdc++, which is compiled against the same old libc version that the toolchain you're using provides. Because of this, you can statically link it with your binary (or ship the shared library with your release binary) without worrying about it increasing the libc version requirement.
+
+## Will my program run on non-Debian machines?
+
+Sure! Cross-compiling your software targeting a specific Debian version doesn't mean it will only run on Debian machines. In fact, since Debian uses the GNU C Library, it will run just fine on most Linux distributions.
 
 ## Target architectures
 
