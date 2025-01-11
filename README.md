@@ -29,9 +29,9 @@ Unlike C programs, you cannot easily distribute C++ binaries in a portable way w
 
 When building C++ programs with OBGGCC, however, your program automatically links against our variant of libstdc++, which is compiled against the same old libc version that the toolchain you're using provides. Because of this, you can statically link it with your binary (or ship the shared library with your release binary) without worrying about it increasing the libc version requirement.
 
-## Will my program run on non-Debian machines?
+## Will my program only run on Debian machines?!
 
-Sure! Cross-compiling your software targeting a specific Debian version doesn't mean it will only run on Debian machines. In fact, since Debian uses the GNU C Library, it will run just fine on most Linux distributions.
+No! Cross-compiling your software targeting a specific Debian version doesn't mean it will only run on Debian machines. In fact, since Debian uses the GNU C Library, it will run just fine on most Linux distributions.
 
 ## Target architectures
 

@@ -156,58 +156,21 @@ for target in "${targets[@]}"; do
 	
 	cd "$(mktemp --directory)"
 	
-	for package in "${packages[@]}"; do
-		curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --location --remote-name --url "${package}"
-	done
+	declare sysroot_directory="$(basename "${sysroot}" '.tar.xz')"
+	declare sysroot_file="$(basename "${sysroot}")"
 	
-	for file in *.deb; do
-		ar x "${file}"
-		
-		if [ -f './data.tar.gz' ]; then
-			declare filename='./data.tar.gz'
-		else
-			declare filename='./data.tar.xz'
-		fi
-		
-		tar --extract --file="${filename}"
-		
-		rm "${filename}"
-	done
+	wget \
+		--no-verbose \
+		--output-document="${sysroot_file}" \
+		"${sysroot}"
 	
-	[ -d "${toolchain_directory}/${triple}" ] || mkdir --parent "${toolchain_directory}/${triple}"
+	tar \
+		--extract \
+		--file="${sysroot_file}"
 	
-	cp --recursive './usr/include' "${toolchain_directory}/${triple}"
-	cp --recursive './usr/lib' "${toolchain_directory}/${triple}"
+	mv "${sysroot_directory}" "${toolchain_directory}/${triple}"
 	
-	if (( debian_release_major > 6 )); then
-		mv "./lib/${host}/"* "${toolchain_directory}/${triple}/lib"
-	else
-		mv "./lib/"* "${toolchain_directory}/${triple}/lib"
-	fi
-	
-	if (( debian_release_major > 6 )); then
-		mv "${toolchain_directory}/${triple}/lib/${host}/"* "${toolchain_directory}/${triple}/lib"
-		cp --recursive "${toolchain_directory}/${triple}/include/${host}/"* "${toolchain_directory}/${triple}/include"
-		
-		rm --recursive "${toolchain_directory}/${triple}/lib/${host}"
-		rm --recursive "${toolchain_directory}/${triple}/include/${host}"
-	fi
-	
-	cd "${toolchain_directory}/${triple}/lib"
-	
-	find . -type l | xargs ls -l | grep '/lib/' | awk '{print "unlink "$9" && ln -s ./$(basename "$11") ./$(basename "$9")"}' | bash
-	
-	if [ "${target}" == 'alpha-unknown-linux-gnu' ] || [ "${target}" == 'ia64-unknown-linux-gnu' ]; then
-		echo -e "OUTPUT_FORMAT(${output_format})\nGROUP ( ./libc.so.6.1 ./libc_nonshared.a  AS_NEEDED ( ./${ld} ) )" > './libc.so'
-	else
-		echo -e "OUTPUT_FORMAT(${output_format})\nGROUP ( ./libc.so.6 ./libc_nonshared.a  AS_NEEDED ( ./${ld} ) )" > './libc.so'
-	fi
-	
-	echo -e "OUTPUT_FORMAT(${output_format})\nGROUP ( ./libpthread.so.0 ./libpthread_nonshared.a  )" > './libpthread.so'
-	
-	if [[ "${target}" == mips*-unknown-linux-gnu ]] || [ "${target}" == 'powerpc-unknown-linux-gnu' ] || [ "${target}" == 's390-unknown-linux-gnu' ] || [ "${target}" == 'sparc-unknown-linux-gnu' ]; then
-		patch --directory="${toolchain_directory}/${triple}" --strip='1' --input="${workdir}/patches/linux_pim.patch"
-	fi
+	rm --force --recursive ./*
 	
 	[ -d "${binutils_directory}/build" ] || mkdir "${binutils_directory}/build"
 	
@@ -292,7 +255,7 @@ for target in "${targets[@]}"; do
 	
 	for name in *; do
 		rm "${name}"
-		ln -s "../../bin/${triple}-${name}" "${name}"
+		ln --symbolic "../../bin/${triple}-${name}" "${name}"
 	done
 	
 	rm --recursive "${toolchain_directory}/share"
@@ -358,10 +321,4 @@ while read item; do
 	done
 	
 	pushd
-	
-	# cp --recursive --no-dereference "${toolchain_directory}/${triplet}/bin" "${toolchain_directory}/${triplet}${glibc_version}"
 done <<< "$(jq --compact-output '.[]' "${workdir}/submodules/debian-sysroot/dist.json")"
-
-# for target in "${targets[@]}"; do
-#	rm --recursive "${toolchain_directory}/${target}"
-# done
