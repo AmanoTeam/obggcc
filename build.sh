@@ -274,6 +274,8 @@ fi
 declare -r sysroot_tarball='/tmp/sysroot.tar.xz'
 declare -r executable='/tmp/gcc-wrapper'
 
+declare -r share_directory="${toolchain_directory}/usr/local/share/obggcc"
+
 declare -r libraries=(
 	'libstdc++'
 	'libatomic'
@@ -291,6 +293,10 @@ declare -r bits=(
 while read item; do
 	declare glibc_version="$(jq '.glibc_version' <<< "${item}")"
 	declare triplet="$(jq --raw-output '.triplet' <<< "${item}")"
+	
+	if ! [ -d "${toolchain_directory}/${triplet}" ]; then
+		continue
+	fi
 	
 	"${cc}" \
 		"${workdir}/tools/gcc-wrapper/filesystem.c" \
@@ -322,3 +328,7 @@ while read item; do
 	
 	pushd
 done <<< "$(jq --compact-output '.[]' "${workdir}/submodules/debian-sysroot/dist.json")"
+
+mkdir --parent "${share_directory}"
+
+cp --recursive "${workdir}/tools/dev/"* "${share_directory}"
