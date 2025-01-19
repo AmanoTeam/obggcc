@@ -172,6 +172,11 @@ for target in "${targets[@]}"; do
 	
 	rm --force --recursive ./*
 	
+	if [ "${CROSS_COMPILE_TRIPLET}" = "${triple}" ]; then
+		cd "${toolchain_directory}/${triple}/include"
+		ln --symbolic '../../include/c++' './c++'
+	fi
+	
 	[ -d "${binutils_directory}/build" ] || mkdir "${binutils_directory}/build"
 	
 	cd "${binutils_directory}/build"
