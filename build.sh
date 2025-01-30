@@ -77,6 +77,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 	tar --directory="$(dirname "${gcc_directory}")" --extract --file="${gcc_tarball}"
 	
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Revert-GCC-change-about-turning-Wimplicit-function-d.patch"
+	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Fix-libsanitizer-build.patch"
 fi
 
 [ -d "${gmp_directory}/build" ] || mkdir "${gmp_directory}/build"
@@ -133,22 +134,22 @@ make all --jobs
 make install
 
 declare -ra targets=(
-	'ia64-unknown-linux-gnu'
-	'alpha-unknown-linux-gnu'
+	# 'ia64-unknown-linux-gnu'
+	# 'alpha-unknown-linux-gnu'
 	'x86_64-unknown-linux-gnu'
-	'i386-unknown-linux-gnu'
-	'arm-unknown-linux-gnueabi'
-	'arm-unknown-linux-gnueabihf'
-	'hppa-unknown-linux-gnu'
-	'aarch64-unknown-linux-gnu'
-	'mips-unknown-linux-gnu'
-	'mipsel-unknown-linux-gnu'
-	'powerpc-unknown-linux-gnu'
-	's390-unknown-linux-gnu'
-	's390x-unknown-linux-gnu'
-	'sparc-unknown-linux-gnu'
-	'powerpc64le-unknown-linux-gnu'
-	'mips64el-unknown-linux-gnuabi64'
+	# 'i386-unknown-linux-gnu'
+	# 'arm-unknown-linux-gnueabi'
+	# 'arm-unknown-linux-gnueabihf'
+	# 'hppa-unknown-linux-gnu'
+	# 'aarch64-unknown-linux-gnu'
+	# 'mips-unknown-linux-gnu'
+	# 'mipsel-unknown-linux-gnu'
+	# 'powerpc-unknown-linux-gnu'
+	# 's390-unknown-linux-gnu'
+	# 's390x-unknown-linux-gnu'
+	# 'sparc-unknown-linux-gnu'
+	# 'powerpc64le-unknown-linux-gnu'
+	# 'mips64el-unknown-linux-gnuabi64'
 )
 
 for target in "${targets[@]}"; do
@@ -250,8 +251,8 @@ for target in "${targets[@]}"; do
 		LDFLAGS="-Wl,-rpath-link,${OBGGCC_TOOLCHAIN}/${CROSS_COMPILE_TRIPLET}/lib ${linkflags}"
 	
 	LD_LIBRARY_PATH="${toolchain_directory}/lib" PATH="${PATH}:${toolchain_directory}/bin" make \
-		CFLAGS_FOR_TARGET="${optflags} ${linkflags}" \
-		CXXFLAGS_FOR_TARGET="${optflags} ${linkflags}" \
+		CFLAGS_FOR_TARGET="${optflags} ${linkflags} -DBACKPORT_DUP3" \
+		CXXFLAGS_FOR_TARGET="${optflags} ${linkflags} -DBACKPORT_DUP3" \
 		all \
 		--jobs="${max_jobs}"
 	make install

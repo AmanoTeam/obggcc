@@ -1,6 +1,6 @@
 #!/bin/bash
 
-declare extra_configure_flags='--disable-libsanitizer'
+declare extra_configure_flags=''
 
 declare triple='sparc-unknown-linux-gnu'
 declare host='sparc-linux-gnu'

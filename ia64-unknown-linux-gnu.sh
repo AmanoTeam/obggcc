@@ -1,6 +1,6 @@
 #!/bin/bash
 
-declare extra_configure_flags='--disable-libsanitizer --enable-obsolete'
+declare extra_configure_flags='--enable-obsolete'
 
 declare triple='ia64-unknown-linux-gnu'
 declare host='ia64-linux-gnu'

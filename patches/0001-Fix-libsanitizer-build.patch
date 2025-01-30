@@ -1,0 +1,25 @@
+From b2a119ad9bbc12ccb1f829c569dca059e6f72e5b Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Fri, 31 Jan 2025 02:53:17 +0100
+Subject: [PATCH] Fix building of libsanitizer on glibc <2.9
+
+---
+ libsanitizer/sanitizer_common/sanitizer_linux.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libsanitizer/sanitizer_common/sanitizer_linux.cpp b/libsanitizer/sanitizer_common/sanitizer_linux.cpp
+index d2b3b63..d12972a 100644
+--- a/libsanitizer/sanitizer_common/sanitizer_linux.cpp
++++ b/libsanitizer/sanitizer_common/sanitizer_linux.cpp
+@@ -471,7 +471,7 @@ uptr internal_dup(int oldfd) {
+ }
+ 
+ uptr internal_dup2(int oldfd, int newfd) {
+-#    if SANITIZER_LINUX
++#    if SANITIZER_LINUX && defined(__aarch64__)
+   return internal_syscall(SYSCALL(dup3), oldfd, newfd, 0);
+ #else
+   return internal_syscall(SYSCALL(dup2), oldfd, newfd);
+-- 
+2.36.6
+

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-declare extra_configure_flags='--disable-libsanitizer'
+declare extra_configure_flags=''
 
 declare triple='hppa-unknown-linux-gnu'
 declare host='hppa-linux-gnu'

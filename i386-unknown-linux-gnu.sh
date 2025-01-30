@@ -1,6 +1,6 @@
 #!/bin/bash
 
-declare extra_configure_flags='--with-arch=i586 --disable-libsanitizer'
+declare extra_configure_flags='--with-arch=i586'
 
 declare triple='i386-unknown-linux-gnu'
 declare host='i386-linux-gnu'
