@@ -70,6 +70,7 @@ if ! [ -f "${binutils_tarball}" ]; then
 	tar --directory="$(dirname "${binutils_directory}")" --extract --file="${binutils_tarball}"
 	
 	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Revert-gold-Use-char16_t-char32_t-instead-of-uint16_.patch"
+	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Disable-annoying-linker-warnings.patch"
 fi
 
 if ! [ -f "${gcc_tarball}" ]; then
@@ -217,7 +218,7 @@ for target in "${targets[@]}"; do
 		--with-static-standard-libraries \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v1.0-${obggcc_revision}" \
+		--with-pkgversion="OBGGCC v1.1-${obggcc_revision}" \
 		--with-sysroot="${toolchain_directory}/${triple}" \
 		--with-native-system-header-dir='/include' \
 		--enable-__cxa_atexit \
@@ -237,6 +238,7 @@ for target in "${targets[@]}"; do
 		--enable-languages='c,c++' \
 		--enable-ld \
 		--enable-gold \
+		--enable-libsanitizer \
 		--disable-libgomp \
 		--disable-bootstrap \
 		--disable-libstdcxx-pch \
@@ -251,8 +253,8 @@ for target in "${targets[@]}"; do
 		LDFLAGS="-Wl,-rpath-link,${OBGGCC_TOOLCHAIN}/${CROSS_COMPILE_TRIPLET}/lib ${linkflags}"
 	
 	LD_LIBRARY_PATH="${toolchain_directory}/lib" PATH="${PATH}:${toolchain_directory}/bin" make \
-		CFLAGS_FOR_TARGET="${optflags} ${linkflags} -DBACKPORT_DUP3" \
-		CXXFLAGS_FOR_TARGET="${optflags} ${linkflags} -DBACKPORT_DUP3" \
+		CFLAGS_FOR_TARGET="${optflags} ${linkflags}" \
+		CXXFLAGS_FOR_TARGET="${optflags} ${linkflags}" \
 		all \
 		--jobs="${max_jobs}"
 	make install
