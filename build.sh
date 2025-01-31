@@ -28,6 +28,14 @@ declare -r linkflags='-Wl,-s'
 
 declare -r max_jobs="$(($(nproc) * 17))"
 
+declare -r asan_libraries=(
+	'libasan'
+	'libhwasan'
+	'liblsan'
+	'libtsan'
+	'libubsan'
+)
+
 declare build_type="${1}"
 
 if [ -z "${build_type}" ]; then
@@ -271,6 +279,11 @@ for target in "${targets[@]}"; do
 	patchelf --add-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triple}/"*'/cc1'
 	patchelf --add-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triple}/"*'/cc1plus'
 	patchelf --add-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triple}/"*'/lto1'
+	
+	for library in "${asan_libraries[@]}"; do
+		patchelf --set-rpath '$ORIGIN' "${toolchain_directory}/lib"*"/${library}.so" || true
+		patchelf --set-rpath '$ORIGIN' "${toolchain_directory}/${triple}/lib"*"/${library}.so" || true
+	done
 done
 
 declare cc='gcc'
