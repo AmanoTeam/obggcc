@@ -36,6 +36,11 @@ declare -r asan_libraries=(
 	'libubsan'
 )
 
+declare -r plugin_libraries=(
+	'libcc1plugin'
+	'libcp1plugin'
+)
+
 declare build_type="${1}"
 
 if [ -z "${build_type}" ]; then
@@ -247,12 +252,12 @@ for target in "${targets[@]}"; do
 		--enable-ld \
 		--enable-gold \
 		--enable-libsanitizer \
+		--enable-plugin \
 		--disable-libgomp \
 		--disable-bootstrap \
 		--disable-libstdcxx-pch \
 		--disable-werror \
 		--disable-multilib \
-		--disable-plugin \
 		--disable-nls \
 		--without-headers \
 		${extra_configure_flags} \
@@ -263,6 +268,7 @@ for target in "${targets[@]}"; do
 	LD_LIBRARY_PATH="${toolchain_directory}/lib" PATH="${PATH}:${toolchain_directory}/bin" make \
 		CFLAGS_FOR_TARGET="${optflags} ${linkflags}" \
 		CXXFLAGS_FOR_TARGET="${optflags} ${linkflags}" \
+		gcc_cv_objdump="${CROSS_COMPILE_TRIPLET}-objdump" \
 		all \
 		--jobs="${max_jobs}"
 	make install
@@ -283,6 +289,10 @@ for target in "${targets[@]}"; do
 	for library in "${asan_libraries[@]}"; do
 		patchelf --set-rpath '$ORIGIN' "${toolchain_directory}/lib"*"/${library}.so" || true
 		patchelf --set-rpath '$ORIGIN' "${toolchain_directory}/${triple}/lib"*"/${library}.so" || true
+	done
+	
+	for library in "${plugin_libraries[@]}"; do
+		patchelf --set-rpath "\$ORIGIN/../../../../../${triple}/lib64:\$ORIGIN/../../../../../${triple}/lib:\$ORIGIN/../../../../../lib64:\$ORIGIN/../../../../../lib" "${toolchain_directory}/lib/gcc/${triple}/"*"/plugin/${library}.so"
 	done
 done
 
