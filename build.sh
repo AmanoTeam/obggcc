@@ -41,6 +41,20 @@ declare -r plugin_libraries=(
 	'libcp1plugin'
 )
 
+declare -r native_tools=(
+	'c++'
+	'cpp'
+	'g++'
+	'gcc'
+	'gcc-ar'
+	'gcc-nm'
+	'gcc-ranlib'
+	'gcov'
+	'gcov-dump'
+	'gcov-tool'
+	'lto-dump'
+)
+
 declare build_type="${1}"
 
 if [ -z "${build_type}" ]; then
@@ -293,6 +307,11 @@ for target in "${targets[@]}"; do
 	
 	for library in "${plugin_libraries[@]}"; do
 		patchelf --set-rpath "\$ORIGIN/../../../../../${triple}/lib64:\$ORIGIN/../../../../../${triple}/lib:\$ORIGIN/../../../../../lib64:\$ORIGIN/../../../../../lib" "${toolchain_directory}/lib/gcc/${triple}/"*"/plugin/${library}.so"
+	done
+	
+	for name in "${native_tools[@]}"; do
+		declare file="${toolchain_directory}/bin/${name}"
+		[ -f "${file}" ] && unlink "${file}"
 	done
 done
 
