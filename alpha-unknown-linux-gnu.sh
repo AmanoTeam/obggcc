@@ -1,6 +1,6 @@
 #!/bin/bash
 
-declare extra_configure_flags=''
+declare extra_configure_flags='--disable-libsanitizer'
 
 declare triple='alpha-unknown-linux-gnu'
 declare host='alpha-linux-gnu'

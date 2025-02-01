@@ -162,22 +162,22 @@ make all --jobs
 make install
 
 declare -ra targets=(
-	# 'ia64-unknown-linux-gnu'
-	# 'alpha-unknown-linux-gnu'
+	'powerpc-unknown-linux-gnu'
+	'aarch64-unknown-linux-gnu'
+	'mips-unknown-linux-gnu'
+	'mipsel-unknown-linux-gnu'
+	's390-unknown-linux-gnu'
+	's390x-unknown-linux-gnu'
+	'sparc-unknown-linux-gnu'
+	'powerpc64le-unknown-linux-gnu'
+	'mips64el-unknown-linux-gnuabi64'
+	'ia64-unknown-linux-gnu'
+	'alpha-unknown-linux-gnu'
 	'x86_64-unknown-linux-gnu'
-	# 'i386-unknown-linux-gnu'
-	# 'arm-unknown-linux-gnueabi'
-	# 'arm-unknown-linux-gnueabihf'
-	# 'hppa-unknown-linux-gnu'
-	# 'aarch64-unknown-linux-gnu'
-	# 'mips-unknown-linux-gnu'
-	# 'mipsel-unknown-linux-gnu'
-	# 'powerpc-unknown-linux-gnu'
-	# 's390-unknown-linux-gnu'
-	# 's390x-unknown-linux-gnu'
-	# 'sparc-unknown-linux-gnu'
-	# 'powerpc64le-unknown-linux-gnu'
-	# 'mips64el-unknown-linux-gnuabi64'
+	'i386-unknown-linux-gnu'
+	'arm-unknown-linux-gnueabi'
+	'arm-unknown-linux-gnueabihf'
+	'hppa-unknown-linux-gnu'
 )
 
 for target in "${targets[@]}"; do
