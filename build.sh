@@ -21,7 +21,7 @@ declare -r binutils_tarball='/tmp/binutils.tar.xz'
 declare -r binutils_directory='/tmp/binutils-2.43.1'
 
 declare -r gcc_tarball='/tmp/gcc.tar.gz'
-declare -r gcc_directory='/tmp/gcc-14.2.0'
+declare -r gcc_directory='/tmp/gcc-master'
 
 declare -r optflags='-Os'
 declare -r linkflags='-Wl,-s'
@@ -101,7 +101,7 @@ if ! [ -f "${binutils_tarball}" ]; then
 fi
 
 if ! [ -f "${gcc_tarball}" ]; then
-	wget --no-verbose 'https://ftp.gnu.org/gnu/gcc/gcc-14.2.0/gcc-14.2.0.tar.xz' --output-document="${gcc_tarball}"
+	wget --no-verbose 'https://github.com/gcc-mirror/gcc/archive/refs/heads/master.tar.gz' --output-document="${gcc_tarball}"
 	tar --directory="$(dirname "${gcc_directory}")" --extract --file="${gcc_tarball}"
 	
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Revert-GCC-change-about-turning-Wimplicit-function-d.patch"
@@ -118,7 +118,7 @@ rm --force --recursive ./*
 	--prefix="${toolchain_directory}" \
 	--enable-shared \
 	--enable-static \
-	CFLAGS="${optflags}" \
+	CFLAGS="${optflags} -std=gnu17" \
 	CXXFLAGS="${optflags}" \
 	LDFLAGS="${linkflags}"
 
@@ -222,7 +222,7 @@ for target in "${targets[@]}"; do
 		--with-static-standard-libraries \
 		--program-prefix="${triple}-" \
 		--with-sysroot="${toolchain_directory}/${triple}" \
-		CFLAGS="${optflags}" \
+		CFLAGS="${optflags} -std=gnu17" \
 		CXXFLAGS="${optflags}" \
 		LDFLAGS="${linkflags}"
 	
@@ -245,7 +245,7 @@ for target in "${targets[@]}"; do
 		--with-static-standard-libraries \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v1.1-${obggcc_revision}" \
+		--with-pkgversion="OBGGCC v1.2-${obggcc_revision}" \
 		--with-sysroot="${toolchain_directory}/${triple}" \
 		--with-native-system-header-dir='/include' \
 		--enable-__cxa_atexit \
@@ -277,7 +277,7 @@ for target in "${targets[@]}"; do
 		${extra_configure_flags} \
 		CFLAGS="${optflags}" \
 		CXXFLAGS="${optflags}" \
-		LDFLAGS="-Wl,-rpath-link,${OBGGCC_TOOLCHAIN}/${CROSS_COMPILE_TRIPLET}/lib ${linkflags}"
+		LDFLAGS="${linkflags}"
 	
 	LD_LIBRARY_PATH="${toolchain_directory}/lib" PATH="${PATH}:${toolchain_directory}/bin" make \
 		CFLAGS_FOR_TARGET="${optflags} ${linkflags}" \

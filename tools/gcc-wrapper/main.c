@@ -9,7 +9,7 @@
 #include "path.h"
 #include "pathsep.h"
 
-static const char GCC_MAJOR_VERSION[] = "14";
+static const char GCC_MAJOR_VERSION[] = "15";
 
 static const char INCLUDE_DIR[] = "/include";
 static const char LIBRARY_DIR[] = "/lib";
@@ -216,23 +216,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	strcat(gcc_include_directory, PATHSEP);
 	strcat(gcc_include_directory, GCC_MAJOR_VERSION);
 	strcat(gcc_include_directory, INCLUDE_DIR);
-	/*
-	gpp_include_directory = malloc(strlen(parent_directory) + strlen(INCLUDE_DIR) + strlen(PATHSEP) + strlen(CPP) + strlen(PATHSEP) + strlen(GCC_MAJOR_VERSION) + 1);
 	
-	if (gpp_include_directory == NULL) {
-		fprintf(stderr, "fatal error: could not allocate memory\n");
-		
-		status = EXIT_FAILURE;
-		goto end;
-	}
-	
-	strcpy(gpp_include_directory, parent_directory);
-	strcat(gpp_include_directory, INCLUDE_DIR);
-	strcat(gpp_include_directory, PATHSEP);
-	strcat(gpp_include_directory, CPP);
-	strcat(gpp_include_directory, PATHSEP);
-	strcat(gpp_include_directory, GCC_MAJOR_VERSION);
-	*/
 	gpp_include_directory = malloc(strlen(parent_directory) + strlen(PATHSEP) + strlen(triplet) + strlen(INCLUDE_DIR) + strlen(PATHSEP) + strlen(CPP) + strlen(PATHSEP) + strlen(GCC_MAJOR_VERSION) + 1);
 	
 	if (gpp_include_directory == NULL) {
