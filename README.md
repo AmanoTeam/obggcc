@@ -127,6 +127,13 @@ Unlike C programs, you cannot easily distribute C++ binaries in a portable way w
 
 When building C++ programs with OBGGCC, however, your program automatically links against our variant of libstdc++, which is compiled against the same old libc version that the toolchain you're using provides. Because of this, you can statically link it with your binary (or ship the shared library with your release binary) without worrying about it increasing the libc version requirement.
 
+## Software availability
+
+Note that all the cross-compilers only contain the minimum required to build a working C/C++ program. That is, you won't find any prebuilt binaries of popular projects like OpenSSL or zlib available for use, as you would on an average Linux distribution.
+
+If your project depends on something other than the core GNU C libraries (or the stdc++ libraries, for C++ programs), you should build it yourself.
+
 ## Releases
 
-You can obtain OBGGCC releases from the  [releases](https://github.com/AmanoTeam/obggcc/releases) page.
+* [GCC 14.x](https://github.com/AmanoTeam/obggcc/releases/tag/1.1)
+* [GCC 15.x](https://github.com/AmanoTeam/obggcc/releases/latest)
