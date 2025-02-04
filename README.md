@@ -135,5 +135,4 @@ If your project depends on something other than the core GNU C libraries (or the
 
 ## Releases
 
-* [GCC 14.x](https://github.com/AmanoTeam/obggcc/releases/tag/1.1)
-* [GCC 15.x](https://github.com/AmanoTeam/obggcc/releases/latest)
+You can obtain OBGGCC releases from the  [releases](https://github.com/AmanoTeam/obggcc/releases) page.
