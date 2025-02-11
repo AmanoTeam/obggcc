@@ -3,7 +3,7 @@
 set -e
 
 if [ -z "${OBGGCC_HOME}" ]; then
-	OBGGCC_HOME="$(realpath "$(dirname "${0}")")/../.."
+	OBGGCC_HOME="$(realpath "$(dirname "${0}")")/../../../../.."
 fi
 
 set -u
