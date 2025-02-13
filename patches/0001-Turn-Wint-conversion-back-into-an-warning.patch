@@ -1,0 +1,34 @@
+From 8cacb655f36ae4b4d00e8e8eea85b9039cef25fc Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Wed, 12 Feb 2025 07:10:13 +0100
+Subject: [PATCH] Turn -Wint-conversion back into an warning
+
+---
+ gcc/c/c-typeck.cc | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/gcc/c/c-typeck.cc b/gcc/c/c-typeck.cc
+index 9ac1fea..0b4a588 100644
+--- a/gcc/c/c-typeck.cc
++++ b/gcc/c/c-typeck.cc
+@@ -6324,7 +6324,7 @@ build_conditional_expr (location_t colon_loc, tree ifexp, bool ifexp_bcp,
+ 	   && (code2 == INTEGER_TYPE || code2 == BITINT_TYPE))
+     {
+       if (!null_pointer_constant_p (orig_op2))
+-	permerror_opt (colon_loc, OPT_Wint_conversion,
++	pedwarn (colon_loc, OPT_Wint_conversion,
+ 		       "pointer/integer type mismatch "
+ 		       "in conditional expression");
+       else
+@@ -6337,7 +6337,7 @@ build_conditional_expr (location_t colon_loc, tree ifexp, bool ifexp_bcp,
+ 	   && (code1 == INTEGER_TYPE || code1 == BITINT_TYPE))
+     {
+       if (!null_pointer_constant_p (orig_op1))
+-	permerror_opt (colon_loc, OPT_Wint_conversion,
++	pedwarn (colon_loc, OPT_Wint_conversion,
+ 		       "pointer/integer type mismatch "
+ 		       "in conditional expression");
+       else
+-- 
+2.36.6
+

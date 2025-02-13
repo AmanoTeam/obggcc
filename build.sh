@@ -23,7 +23,7 @@ declare -r binutils_directory='/tmp/binutils-with-gold-2.44'
 declare -r gcc_tarball='/tmp/gcc.tar.gz'
 declare -r gcc_directory='/tmp/gcc-master'
 
-declare -r optflags='-Os'
+declare -r optflags='-w -Os'
 declare -r linkflags='-Wl,-s'
 
 declare -r max_jobs="$(($(nproc) * 17))"
@@ -106,6 +106,10 @@ if ! [ -f "${gcc_tarball}" ]; then
 	
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Revert-GCC-change-about-turning-Wimplicit-function-d.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Fix-libsanitizer-build.patch"
+	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Change-the-default-language-version-for-C-compilatio.patch"
+	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Turn-Wimplicit-int-back-into-an-warning.patch"
+	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Turn-Wint-conversion-back-into-an-warning.patch"
+	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Fix-libgcc-build-on-arm.patch"
 fi
 
 [ -d "${gmp_directory}/build" ] || mkdir "${gmp_directory}/build"
@@ -118,7 +122,7 @@ rm --force --recursive ./*
 	--prefix="${toolchain_directory}" \
 	--enable-shared \
 	--enable-static \
-	CFLAGS="${optflags} -std=gnu17" \
+	CFLAGS="${optflags}" \
 	CXXFLAGS="${optflags}" \
 	LDFLAGS="${linkflags}"
 
@@ -222,7 +226,7 @@ for target in "${targets[@]}"; do
 		--with-static-standard-libraries \
 		--program-prefix="${triple}-" \
 		--with-sysroot="${toolchain_directory}/${triple}" \
-		CFLAGS="${optflags} -std=gnu17" \
+		CFLAGS="${optflags}" \
 		CXXFLAGS="${optflags}" \
 		LDFLAGS="${linkflags}"
 	
@@ -245,7 +249,7 @@ for target in "${targets[@]}"; do
 		--with-static-standard-libraries \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v1.2-${obggcc_revision}" \
+		--with-pkgversion="OBGGCC v1.4-${obggcc_revision}" \
 		--with-sysroot="${toolchain_directory}/${triple}" \
 		--with-native-system-header-dir='/include' \
 		--enable-__cxa_atexit \

@@ -1,0 +1,108 @@
+From 8e8f8cbc807755dd7a598009790b56a76e3d2c24 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Wed, 12 Feb 2025 21:51:40 +0100
+Subject: [PATCH] Fix libgcc build on arm
+
+---
+ libgcc/config/arm/freebsd-atomic.c     | 4 ++++
+ libgcc/config/arm/linux-atomic-64bit.c | 4 ++++
+ libgcc/config/arm/linux-atomic.c       | 4 ++++
+ libgcc/config/csky/linux-atomic.c      | 4 ++++
+ libgcc/config/nds32/linux-atomic.c     | 4 ++++
+ libgcc/unwind-arm-common.inc           | 5 +++++
+ 6 files changed, 25 insertions(+)
+
+diff --git a/libgcc/config/arm/freebsd-atomic.c b/libgcc/config/arm/freebsd-atomic.c
+index a2231c3..3898cdb 100644
+--- a/libgcc/config/arm/freebsd-atomic.c
++++ b/libgcc/config/arm/freebsd-atomic.c
+@@ -127,6 +127,10 @@ __sync_val_compare_and_swap_##N (TYPE *mem, TYPE expected,		\
+         return (old);							\
+ }
+ 
++#if __STDC_VERSION__ < 202311L
++typedef unsigned char bool;
++#endif
++
+ #define SYNC_BOOL_CAS_N(N, TYPE)                                        \
+ bool HIDDEN								\
+ __sync_bool_compare_and_swap_##N (TYPE *ptr, TYPE oldval,		\
+diff --git a/libgcc/config/arm/linux-atomic-64bit.c b/libgcc/config/arm/linux-atomic-64bit.c
+index 3a7ec91..b86e688 100644
+--- a/libgcc/config/arm/linux-atomic-64bit.c
++++ b/libgcc/config/arm/linux-atomic-64bit.c
+@@ -141,6 +141,10 @@ __sync_val_compare_and_swap_8 (long long *ptr, long long oldval,
+     }
+ }
+ 
++#if __STDC_VERSION__ < 202311L
++typedef unsigned char bool;
++#endif
++
+ bool HIDDEN
+ __sync_bool_compare_and_swap_8 (long long *ptr, long long oldval,
+ 				 long long newval)
+diff --git a/libgcc/config/arm/linux-atomic.c b/libgcc/config/arm/linux-atomic.c
+index 8f24cb3..9521423 100644
+--- a/libgcc/config/arm/linux-atomic.c
++++ b/libgcc/config/arm/linux-atomic.c
+@@ -249,6 +249,10 @@ __sync_val_compare_and_swap_4 (int *ptr, int oldval, int newval)
+ SUBWORD_VAL_CAS (short,       2)
+ SUBWORD_VAL_CAS (signed char, 1)
+ 
++#if __STDC_VERSION__ < 202311L
++typedef unsigned char bool;
++#endif
++
+ bool HIDDEN
+ __sync_bool_compare_and_swap_4 (int *ptr, int oldval, int newval)
+ {
+diff --git a/libgcc/config/csky/linux-atomic.c b/libgcc/config/csky/linux-atomic.c
+index 019980e..df0b9f0 100644
+--- a/libgcc/config/csky/linux-atomic.c
++++ b/libgcc/config/csky/linux-atomic.c
+@@ -215,6 +215,10 @@ __sync_val_compare_and_swap_4 (int *ptr, int oldval, int newval)
+ SUBWORD_VAL_CAS (unsigned short, 2)
+ SUBWORD_VAL_CAS (unsigned char,	1)
+ 
++#if __STDC_VERSION__ < 202311L
++typedef unsigned char bool;
++#endif
++
+ bool HIDDEN
+ __sync_bool_compare_and_swap_4 (int *ptr, int oldval, int newval)
+ {
+diff --git a/libgcc/config/nds32/linux-atomic.c b/libgcc/config/nds32/linux-atomic.c
+index 98e16c1..324af1b 100644
+--- a/libgcc/config/nds32/linux-atomic.c
++++ b/libgcc/config/nds32/linux-atomic.c
+@@ -208,6 +208,10 @@ __sync_val_compare_and_swap_4 (int *ptr, int oldval, int newval)
+ SUBWORD_VAL_CAS (unsigned short, 2)
+ SUBWORD_VAL_CAS (unsigned char,  1)
+ 
++#if __STDC_VERSION__ < 202311L
++typedef unsigned char bool;
++#endif
++
+ bool HIDDEN
+ __sync_bool_compare_and_swap_4 (int *ptr, int oldval, int newval)
+ {
+diff --git a/libgcc/unwind-arm-common.inc b/libgcc/unwind-arm-common.inc
+index cce3888..892bfa1 100644
+--- a/libgcc/unwind-arm-common.inc
++++ b/libgcc/unwind-arm-common.inc
+@@ -52,6 +52,11 @@
+ 
+ /* Definitions for C++ runtime support routines.  We make these weak
+    declarations to avoid pulling in libsupc++ unnecessarily.  */
++
++#if __STDC_VERSION__ < 202311L
++typedef unsigned char bool;
++#endif
++
+ typedef struct _ZSt9type_info type_info; /* This names C++ type_info type */
+ enum __cxa_type_match_result
+   {
+-- 
+2.36.6
+

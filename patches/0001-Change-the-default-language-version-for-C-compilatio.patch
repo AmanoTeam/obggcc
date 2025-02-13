@@ -1,0 +1,27 @@
+From 99f919a173631bc314cb0b9d9eda7456279e9be2 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Wed, 12 Feb 2025 20:39:27 +0100
+Subject: [PATCH] Change the default language version for C compilation from -std=gnu23 to -std=gnu17
+
+---
+ gcc/c-family/c-opts.cc | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/gcc/c-family/c-opts.cc b/gcc/c-family/c-opts.cc
+index d43b3ae..a231050 100644
+--- a/gcc/c-family/c-opts.cc
++++ b/gcc/c-family/c-opts.cc
+@@ -261,8 +261,8 @@ c_common_init_options (unsigned int decoded_options_count,
+ 
+   if (c_language == clk_c)
+     {
+-      /* The default for C is gnu23.  */
+-      set_std_c23 (false /* ISO */);
++      /* The default for C is gnu17.  */
++      set_std_c17 (false /* ISO */);
+ 
+       /* If preprocessing assembly language, accept any of the C-family
+ 	 front end options since the driver may pass them through.  */
+-- 
+2.36.6
+
