@@ -10,17 +10,22 @@ char* get_app_filename(void) {
 	Returns a null pointer on error.
 	*/
 	
+	ssize_t wsize = 0;
 	char* app_filename = malloc(PATH_MAX);
 	
 	if (app_filename == NULL) {
 		return NULL;
 	}
 	
-	if (readlink("/proc/self/exe", app_filename, PATH_MAX) == -1) {
+	wsize = readlink("/proc/self/exe", app_filename, PATH_MAX);
+	
+	if (wsize == -1 || wsize == PATH_MAX) {
 		free(app_filename);
 		return NULL;
 	}
-
+	
+	app_filename[wsize] = '\0';
+	
 	return app_filename;
 	
 }
