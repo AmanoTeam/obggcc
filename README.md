@@ -131,7 +131,7 @@ When building C++ programs with OBGGCC, however, your program automatically link
 
 Note that all the cross-compilers only contain the minimum required to build a working C/C++ program. That is, you won't find any prebuilt binaries of popular projects like OpenSSL or zlib available for use, as you would on an average Linux distribution.
 
-If your project depends on something other than the core GNU C libraries (or the stdc++ libraries, for C++ programs), you should build it yourself.
+If your project depends on something other than the GNU C library (or the C++ standard libraries, for C++ programs), you should build it yourself.
 
 ## Releases
 

@@ -2,11 +2,12 @@
 
 set -eu
 
-declare -r obggcc_revision="$(git rev-parse --short HEAD)"
+declare -r revision="$(git rev-parse --short HEAD)"
 
 declare -r workdir="${PWD}"
 
 declare -r toolchain_directory='/tmp/obggcc'
+declare -r share_directory="${toolchain_directory}/usr/local/share/obggcc"
 
 declare -r gmp_tarball='/tmp/gmp.tar.xz'
 declare -r gmp_directory='/tmp/gmp-6.3.0'
@@ -28,7 +29,10 @@ declare -r linkflags='-Wl,-s'
 
 declare -r max_jobs="$(($(nproc) * 17))"
 
-declare -r asan_libraries=(
+declare -r sysroot_tarball='/tmp/sysroot.tar.xz'
+declare -r gcc_wrapper='/tmp/gcc-wrapper'
+
+declare -ra asan_libraries=(
 	'libasan'
 	'libhwasan'
 	'liblsan'
@@ -36,12 +40,12 @@ declare -r asan_libraries=(
 	'libubsan'
 )
 
-declare -r plugin_libraries=(
+declare -ra plugin_libraries=(
 	'libcc1plugin'
 	'libcp1plugin'
 )
 
-declare -r native_tools=(
+declare -ra native_tools=(
 	'c++'
 	'cpp'
 	'g++'
@@ -53,6 +57,39 @@ declare -r native_tools=(
 	'gcov-dump'
 	'gcov-tool'
 	'lto-dump'
+)
+
+declare -ra libraries=(
+	'libstdc++'
+	'libatomic'
+	'libssp'
+	'libitm'
+	'libsupc++'
+	'libgcc'
+)
+
+declare -ra bits=(
+	''
+	'64'
+)
+
+declare -ra targets=(
+	'aarch64-unknown-linux-gnu'
+	'alpha-unknown-linux-gnu'
+	'arm-unknown-linux-gnueabi'
+	'arm-unknown-linux-gnueabihf'
+	'hppa-unknown-linux-gnu'
+	'i386-unknown-linux-gnu'
+	'ia64-unknown-linux-gnu'
+	'mips-unknown-linux-gnu'
+	'mips64el-unknown-linux-gnuabi64'
+	'mipsel-unknown-linux-gnu'
+	'powerpc-unknown-linux-gnu'
+	'powerpc64le-unknown-linux-gnu'
+	's390-unknown-linux-gnu'
+	's390x-unknown-linux-gnu'
+	'sparc-unknown-linux-gnu'
+	'x86_64-unknown-linux-gnu'
 )
 
 declare build_type="${1}"
@@ -67,7 +104,6 @@ if [ "${build_type}" == 'native' ]; then
 	is_native='1'
 fi
 
-declare OBGGCC_TOOLCHAIN='/tmp/obggcc-toolchain'
 declare CROSS_COMPILE_TRIPLET=''
 
 declare cross_compile_flags=''
@@ -77,32 +113,97 @@ if ! (( is_native )); then
 	cross_compile_flags+="--host=${CROSS_COMPILE_TRIPLET}"
 fi
 
+declare -r \
+	build_type \
+	is_native \
+	cross_compile_flags
+
 if ! [ -f "${gmp_tarball}" ]; then
-	wget --no-verbose 'https://ftp.gnu.org/gnu/gmp/gmp-6.3.0.tar.xz' --output-document="${gmp_tarball}"
-	tar --directory="$(dirname "${gmp_directory}")" --extract --file="${gmp_tarball}"
+	curl \
+		--url 'https://ftp.gnu.org/gnu/gmp/gmp-6.3.0.tar.xz' \
+		--retry '30' \
+		--retry-all-errors \
+		--retry-delay '0' \
+		--retry-max-time '0' \
+		--location \
+		--silent \
+		--output "${gmp_tarball}"
+	
+	tar \
+		--directory="$(dirname "${gmp_directory}")" \
+		--extract \
+		--file="${gmp_tarball}"
 fi
 
 if ! [ -f "${mpfr_tarball}" ]; then
-	wget --no-verbose 'https://ftp.gnu.org/gnu/mpfr/mpfr-4.2.1.tar.xz' --output-document="${mpfr_tarball}"
-	tar --directory="$(dirname "${mpfr_directory}")" --extract --file="${mpfr_tarball}"
+	curl \
+		--url 'https://ftp.gnu.org/gnu/mpfr/mpfr-4.2.1.tar.xz' \
+		--retry '30' \
+		--retry-all-errors \
+		--retry-delay '0' \
+		--retry-max-time '0' \
+		--location \
+		--silent \
+		--output "${mpfr_tarball}"
+	
+	tar \
+		--directory="$(dirname "${mpfr_directory}")" \
+		--extract \
+		--file="${mpfr_tarball}"
 fi
 
 if ! [ -f "${mpc_tarball}" ]; then
-	wget --no-verbose 'https://ftp.gnu.org/gnu/mpc/mpc-1.3.1.tar.gz' --output-document="${mpc_tarball}"
-	tar --directory="$(dirname "${mpc_directory}")" --extract --file="${mpc_tarball}"
+	curl \
+		--url 'https://ftp.gnu.org/gnu/mpc/mpc-1.3.1.tar.gz' \
+		--retry '30' \
+		--retry-all-errors \
+		--retry-delay '0' \
+		--retry-max-time '0' \
+		--location \
+		--silent \
+		--output "${mpc_tarball}"
+	
+	tar \
+		--directory="$(dirname "${mpc_directory}")" \
+		--extract \
+		--file="${mpc_tarball}"
 fi
 
 if ! [ -f "${binutils_tarball}" ]; then
-	wget --no-verbose 'https://ftp.gnu.org/gnu/binutils/binutils-with-gold-2.44.tar.xz' --output-document="${binutils_tarball}"
-	tar --directory="$(dirname "${binutils_directory}")" --extract --file="${binutils_tarball}"
+	curl \
+		--url 'https://ftp.gnu.org/gnu/binutils/binutils-with-gold-2.44.tar.xz' \
+		--retry '30' \
+		--retry-all-errors \
+		--retry-delay '0' \
+		--retry-max-time '0' \
+		--location \
+		--silent \
+		--output "${binutils_tarball}"
+	
+	tar \
+		--directory="$(dirname "${binutils_directory}")" \
+		--extract \
+		--file="${binutils_tarball}"
 	
 	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Revert-gold-Use-char16_t-char32_t-instead-of-uint16_.patch"
 	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Disable-annoying-linker-warnings.patch"
 fi
 
 if ! [ -f "${gcc_tarball}" ]; then
-	wget --no-verbose 'https://github.com/gcc-mirror/gcc/archive/refs/heads/master.tar.gz' --output-document="${gcc_tarball}"
-	tar --directory="$(dirname "${gcc_directory}")" --extract --file="${gcc_tarball}"
+	curl \
+		--url 'https://github.com/gcc-mirror/gcc/archive/refs/heads/master.tar.gz' \
+		--retry '30' \
+		--retry-all-errors \
+		--retry-delay '0' \
+		--retry-max-time '0' \
+		--location \
+		--silent \
+		--output "${gcc_tarball}"
+	
+	tar \
+		--directory="$(dirname "${gcc_directory}")" \
+		--extract \
+		--file="${gcc_tarball}"
 	
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Revert-GCC-change-about-turning-Wimplicit-function-d.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Fix-libsanitizer-build.patch"
@@ -165,25 +266,6 @@ rm --force --recursive ./*
 make all --jobs
 make install
 
-declare -ra targets=(
-	'powerpc-unknown-linux-gnu'
-	'aarch64-unknown-linux-gnu'
-	'mips-unknown-linux-gnu'
-	'mipsel-unknown-linux-gnu'
-	's390-unknown-linux-gnu'
-	's390x-unknown-linux-gnu'
-	'sparc-unknown-linux-gnu'
-	'powerpc64le-unknown-linux-gnu'
-	'mips64el-unknown-linux-gnuabi64'
-	'ia64-unknown-linux-gnu'
-	'alpha-unknown-linux-gnu'
-	'x86_64-unknown-linux-gnu'
-	'i386-unknown-linux-gnu'
-	'arm-unknown-linux-gnueabi'
-	'arm-unknown-linux-gnueabihf'
-	'hppa-unknown-linux-gnu'
-)
-
 for target in "${targets[@]}"; do
 	source "${workdir}/${target}.sh"
 	
@@ -192,21 +274,26 @@ for target in "${targets[@]}"; do
 	declare sysroot_directory="$(basename "${sysroot}" '.tar.xz')"
 	declare sysroot_file="$(basename "${sysroot}")"
 	
-	wget \
-		--no-verbose \
-		--output-document="${sysroot_file}" \
-		"${sysroot}"
+	curl \
+		--url "${sysroot}" \
+		--retry '30' \
+		--retry-all-errors \
+		--retry-delay '0' \
+		--retry-max-time '0' \
+		--location \
+		--silent \
+		--output "${sysroot_file}"
 	
 	tar \
 		--extract \
 		--file="${sysroot_file}"
 	
-	mv "${sysroot_directory}" "${toolchain_directory}/${triple}"
+	mv "${sysroot_directory}" "${toolchain_directory}/${triplet}"
 	
 	rm --force --recursive ./*
 	
-	if [ "${CROSS_COMPILE_TRIPLET}" = "${triple}" ]; then
-		cd "${toolchain_directory}/${triple}/include"
+	if [ "${CROSS_COMPILE_TRIPLET}" = "${triplet}" ]; then
+		cd "${toolchain_directory}/${triplet}/include"
 		ln --symbolic '../../include/c++' './c++'
 	fi
 	
@@ -217,15 +304,15 @@ for target in "${targets[@]}"; do
 	
 	../configure \
 		--host="${CROSS_COMPILE_TRIPLET}" \
-		--target="${triple}" \
+		--target="${triplet}" \
 		--prefix="${toolchain_directory}" \
 		--enable-gold \
 		--enable-ld \
 		--enable-lto \
 		--disable-gprofng \
 		--with-static-standard-libraries \
-		--program-prefix="${triple}-" \
-		--with-sysroot="${toolchain_directory}/${triple}" \
+		--program-prefix="${triplet}-" \
+		--with-sysroot="${toolchain_directory}/${triplet}" \
 		CFLAGS="${optflags}" \
 		CXXFLAGS="${optflags}" \
 		LDFLAGS="${linkflags}"
@@ -240,7 +327,7 @@ for target in "${targets[@]}"; do
 	
 	../configure \
 		--host="${CROSS_COMPILE_TRIPLET}" \
-		--target="${triple}" \
+		--target="${triplet}" \
 		--prefix="${toolchain_directory}" \
 		--with-linker-hash-style='gnu' \
 		--with-gmp="${toolchain_directory}" \
@@ -249,8 +336,8 @@ for target in "${targets[@]}"; do
 		--with-static-standard-libraries \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v1.4-${obggcc_revision}" \
-		--with-sysroot="${toolchain_directory}/${triple}" \
+		--with-pkgversion="OBGGCC v1.6-${revision}" \
+		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--with-native-system-header-dir='/include' \
 		--enable-__cxa_atexit \
 		--enable-cet='auto' \
@@ -291,26 +378,17 @@ for target in "${targets[@]}"; do
 		--jobs="${max_jobs}"
 	make install
 	
-	cd "${toolchain_directory}/${triple}/bin"
-	
-	for name in *; do
-		rm "${name}"
-		ln --symbolic "../../bin/${triple}-${name}" "${name}"
-	done
-	
-	rm --recursive "${toolchain_directory}/share"
-	
-	patchelf --add-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triple}/"*'/cc1'
-	patchelf --add-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triple}/"*'/cc1plus'
-	patchelf --add-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triple}/"*'/lto1'
+	patchelf --add-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/cc1'
+	patchelf --add-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/cc1plus'
+	patchelf --add-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/lto1'
 	
 	for library in "${asan_libraries[@]}"; do
 		patchelf --set-rpath '$ORIGIN' "${toolchain_directory}/lib"*"/${library}.so" || true
-		patchelf --set-rpath '$ORIGIN' "${toolchain_directory}/${triple}/lib"*"/${library}.so" || true
+		patchelf --set-rpath '$ORIGIN' "${toolchain_directory}/${triplet}/lib"*"/${library}.so" || true
 	done
 	
 	for library in "${plugin_libraries[@]}"; do
-		patchelf --set-rpath "\$ORIGIN/../../../../../${triple}/lib64:\$ORIGIN/../../../../../${triple}/lib:\$ORIGIN/../../../../../lib64:\$ORIGIN/../../../../../lib" "${toolchain_directory}/lib/gcc/${triple}/"*"/plugin/${library}.so"
+		patchelf --set-rpath "\$ORIGIN/../../../../../${triplet}/lib64:\$ORIGIN/../../../../../${triplet}/lib:\$ORIGIN/../../../../../lib64:\$ORIGIN/../../../../../lib" "${toolchain_directory}/lib/gcc/${triplet}/"*"/plugin/${library}.so"
 	done
 	
 	for name in "${native_tools[@]}"; do
@@ -325,28 +403,10 @@ if ! (( is_native )); then
 	cc="${CC}"
 fi
 
-declare -r sysroot_tarball='/tmp/sysroot.tar.xz'
-declare -r executable='/tmp/gcc-wrapper'
-
-declare -r share_directory="${toolchain_directory}/usr/local/share/obggcc"
-
-declare -r libraries=(
-	'libstdc++'
-	'libatomic'
-	'libssp'
-	'libitm'
-	'libsupc++'
-	'libgcc'
-)
-
-declare -r bits=(
-	''
-	'64'
-)
-
 while read item; do
 	declare glibc_version="$(jq '.glibc_version' <<< "${item}")"
 	declare triplet="$(jq --raw-output '.triplet' <<< "${item}")"
+	declare sysroot="https://github.com/AmanoTeam/debian-sysroot/releases/latest/download/${triplet}${glibc_version}.tar.xz"
 	
 	if ! [ -d "${toolchain_directory}/${triplet}" ]; then
 		continue
@@ -358,13 +418,25 @@ while read item; do
 		"${workdir}/tools/gcc-wrapper/path.c" \
 		-Os \
 		-s \
-		-o "${executable}"
+		-o "${gcc_wrapper}"
 	
-	cp "${executable}" "${toolchain_directory}/bin/${triplet}${glibc_version}-gcc"
-	cp "${executable}" "${toolchain_directory}/bin/${triplet}${glibc_version}-g++"
+	cp "${gcc_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-gcc"
+	cp "${gcc_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-g++"
 	
-	wget --no-verbose "https://github.com/AmanoTeam/debian-sysroot/releases/latest/download/${triplet}${glibc_version}.tar.xz" --output-document="${sysroot_tarball}"
-	tar --directory="${toolchain_directory}" --extract --file="${sysroot_tarball}"
+	curl \
+		--url "${sysroot}" \
+		--retry '30' \
+		--retry-all-errors \
+		--retry-delay '0' \
+		--retry-max-time '0' \
+		--location \
+		--silent \
+		--output "${sysroot_tarball}"
+	
+	tar \
+		--directory="${toolchain_directory}" \
+		--extract \
+		--file="${sysroot_tarball}"
 	
 	pushd "${toolchain_directory}/${triplet}${glibc_version}/lib"
 	
