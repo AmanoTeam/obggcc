@@ -66,7 +66,7 @@ Currently, OBGGCC provides cross-compilers targeting 7 major Debian releases and
 Cross-compiling CMake projects involves using a CMake toolchain file, which is a special file that defines the cross-compilation tools and also the system root CMake should use. Inside the `usr/local/share/obggcc/cmake` directory, there is a custom CMake toolchain file for each cross-compilation target OBGGCC supports:
 
 ```bash
-$ ls ./usr/local/share/obggcc/cmake
+$ ls ${OBGGCC_HOME}/usr/local/share/obggcc/cmake
 aarch64-unknown-linux-gnu2.19.cmake
 aarch64-unknown-linux-gnu2.24.cmake
 aarch64-unknown-linux-gnu2.28.cmake
@@ -83,7 +83,7 @@ To use one of them, pass the `CMAKE_TOOLCHAIN_FILE` definition to your CMake com
 
 ```bash
 cmake \
-    -DCMAKE_TOOLCHAIN_FILE=../obggcc/usr/local/share/obggcc/cmake/aarch64-unknown-linux-gnu2.19.cmake \
+    -DCMAKE_TOOLCHAIN_FILE=${OBGGCC_HOME}/usr/local/share/obggcc/cmake/aarch64-unknown-linux-gnu2.19.cmake \
     -B build \
     -S  ./
 ```
@@ -93,7 +93,7 @@ cmake \
 Configuring an autotools project for cross-compilation usually requires the user to modify the environment variables and define the compilation tools the project should use. Inside the `usr/local/share/obggcc/autotools` directory, there is a custom bash script for each cross-compilation target that OBGGCC supports:
 
 ```bash
-$ ls ./usr/local/share/obggcc/autotools
+$ ls ${OBGGCC_HOME}/usr/local/share/obggcc/autotools
 aarch64-unknown-linux-gnu2.19.sh
 aarch64-unknown-linux-gnu2.24.sh
 aarch64-unknown-linux-gnu2.28.sh
@@ -110,7 +110,7 @@ They are meant to be `source`d by you whenever you want to cross-compile somethi
 
 ```bash
 # Setup the environment for cross-compilation
-$ source ../obggcc/usr/local/share/obggcc/autotools/aarch64-unknown-linux-gnu2.19.sh
+$ source ${OBGGCC_HOME}/usr/local/share/obggcc/autotools/aarch64-unknown-linux-gnu2.19.sh
 
 # Configure & build the project
 $ ./configure --host="${CROSS_COMPILE_TRIPLET}"
@@ -132,6 +132,24 @@ When building C++ programs with OBGGCC, however, your program automatically link
 Note that all the cross-compilers only contain the minimum required to build a working C/C++ program. That is, you won't find any prebuilt binaries of popular projects like OpenSSL or zlib available for use, as you would on an average Linux distribution.
 
 If your project depends on something other than the GNU C library (or the C++ standard libraries, for C++ programs), you should build it yourself.
+
+## Behavior changes
+
+Usually, we attempt to keep the default GCC behavior unchanged. Sometimes we patch GCC here and there to make it work with older glibc versions or fix breakages after a toolchain/dependency update, but most of these changes don't affect the default behavior of GCC in any way. However, currently, there are some specific changes in place that modify the default behavior in some scenarios.
+
+### Warnings no longer treated as errors
+
+The warnings `-Wimplicit-function-declaration`, `-Wimplicit-int`, and `-Wint-conversion` are no longer treated as errors by default. Treating these warnings as errors intentionally breaks the compilation of old/legacy code and makes it difficult for people who just want to compile something without having to modify any code.
+
+You can revert to the old behavior by passing `-Werror=implicit-function-declaration -Werror=implicit-int -Werror=int-conversion` to the compiler command invocation.
+
+### The default language version for C compilation is still `gnu17` (aka C17)
+
+Changing the default language version for C compilation from `-std=gnu17` to `-std=gnu23` was one of the most noticeable changes in GCC 15, not because of all the new features it comes with, but because of the compilation breakage it caused in some [GCC dependencies](https://github.com/compiler-explorer/compiler-explorer/issues/7360) and even GCC itself after the update.
+
+It's something that essentially breaks old/legacy code. Since it causes more harm than good, we just reverted this change.
+
+You can revert to the old behavior by passing `-std=gnu17` to the compiler command invocation.
 
 ## Releases
 
