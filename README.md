@@ -31,14 +31,14 @@ Currently, OBGGCC provides cross-compilers targeting 7 major Debian releases and
 
 | distribution_version     | glibc_version    | linux_version   | availability_date | 
 | :-------------------------: | :----------------: | :----------------: | :------------------: |
-| Debian 5 (Lenny)          | Glibc 2.7        | Linux 2.6       | 2009               |
-| Debian 6 (Squeeze)        | Glibc 2.11       | Linux 2.6       | 2011               |
-| Debian 7 (Wheezy)         | Glibc 2.13       | Linux 3.2       | 2013               |
-| CentOS 7                          | Glibc 2.17       | Linux 3.10       | 2014               |
-| Debian 8 (Jessie)         | Glibc 2.19       | Linux 3.16      | 2015               |
-| Debian 9 (Stretch)        | Glibc 2.24       | Linux 4.9       | 2017               |
-| Debian 10 (Buster)        | Glibc 2.28       | Linux 4.19      | 2019               |
-| Debian 11 (Bullseye)      | Glibc 2.31       | Linux 5.10      | 2021               |
+| Debian 5 (Lenny)          | Glibc 2.7        | Linux 2.6.26       | 2009               |
+| Debian 6 (Squeeze)        | Glibc 2.11       | Linux 2.6.32       | 2011               |
+| Debian 7 (Wheezy)         | Glibc 2.13       | Linux 3.2.78       | 2013               |
+| CentOS 7                          | Glibc 2.17       | Linux 3.10.0       | 2014               |
+| Debian 8 (Jessie)         | Glibc 2.19       | Linux 3.16.56      | 2015               |
+| Debian 9 (Stretch)        | Glibc 2.24       | Linux 4.9.228       | 2017               |
+| Debian 10 (Buster)        | Glibc 2.28       | Linux 4.19.249      | 2019               |
+| Debian 11 (Bullseye)      | Glibc 2.31       | Linux 5.10.223      | 2021               |
 
 ### System architectures
 
@@ -63,7 +63,7 @@ Currently, OBGGCC provides cross-compilers targeting 7 major Debian releases and
 
 ### CMake
 
-Cross-compiling CMake projects involves using a CMake toolchain file, which is a special file that defines the cross-compilation tools and also the system root CMake should use. Inside the `usr/local/share/obggcc/cmake` directory, there is a custom CMake toolchain file for each cross-compilation target OBGGCC supports:
+Cross-compiling CMake projects involves using a CMake toolchain file, which is a special file that defines the cross-compilation tools and also the system root CMake should use. Inside the `${OBGGCC_HOME}/usr/local/share/obggcc/cmake` directory, there is a custom CMake toolchain file for each cross-compilation target OBGGCC supports:
 
 ```bash
 $ ls ${OBGGCC_HOME}/usr/local/share/obggcc/cmake
@@ -90,7 +90,7 @@ cmake \
 
 ### GNU Autotools (aka GNU Build System)
 
-Configuring an autotools project for cross-compilation usually requires the user to modify the environment variables and define the compilation tools the project should use. Inside the `usr/local/share/obggcc/autotools` directory, there is a custom bash script for each cross-compilation target that OBGGCC supports:
+Configuring an autotools project for cross-compilation usually requires the user to modify the environment variables and define the compilation tools the project should use. Inside the `${OBGGCC_HOME}/usr/local/share/obggcc/autotools` directory, there is a custom bash script for each cross-compilation target that OBGGCC supports:
 
 ```bash
 $ ls ${OBGGCC_HOME}/usr/local/share/obggcc/autotools
@@ -149,7 +149,7 @@ Changing the default language version for C compilation from `-std=gnu17` to `-s
 
 It's something that essentially breaks old/legacy code. Since it causes more harm than good, we just reverted this change.
 
-You can revert to the old behavior by passing `-std=gnu17` to the compiler command invocation.
+You can revert to the old behavior by passing `-std=gnu23` to the compiler command invocation.
 
 ## Releases
 

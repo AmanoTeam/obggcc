@@ -24,7 +24,8 @@ declare -r binutils_directory='/tmp/binutils-with-gold-2.44'
 declare -r gcc_tarball='/tmp/gcc.tar.gz'
 declare -r gcc_directory='/tmp/gcc-master'
 
-declare -r optflags='-w -Os'
+declare -r optlto='-flto -fno-fat-lto-objects'
+declare -r optflags='-w -O2'
 declare -r linkflags='-Wl,-s'
 
 declare -r max_jobs="$(($(nproc) * 17))"
@@ -106,17 +107,13 @@ fi
 
 declare CROSS_COMPILE_TRIPLET=''
 
-declare cross_compile_flags=''
-
 if ! (( is_native )); then
 	source "./toolchains/${build_type}.sh"
-	cross_compile_flags+="--host=${CROSS_COMPILE_TRIPLET}"
 fi
 
 declare -r \
 	build_type \
-	is_native \
-	cross_compile_flags
+	is_native
 
 if ! [ -f "${gmp_tarball}" ]; then
 	curl \
@@ -223,9 +220,9 @@ rm --force --recursive ./*
 	--prefix="${toolchain_directory}" \
 	--enable-shared \
 	--enable-static \
-	CFLAGS="${optflags}" \
-	CXXFLAGS="${optflags}" \
-	LDFLAGS="${linkflags}"
+	CFLAGS="${optflags} ${optlto}" \
+	CXXFLAGS="${optflags} ${optlto}" \
+	LDFLAGS="${linkflags} ${optlto}"
 
 make all --jobs
 make install
@@ -241,9 +238,9 @@ rm --force --recursive ./*
 	--with-gmp="${toolchain_directory}" \
 	--enable-shared \
 	--enable-static \
-	CFLAGS="${optflags}" \
-	CXXFLAGS="${optflags}" \
-	LDFLAGS="${linkflags}"
+	CFLAGS="${optflags} ${optlto}" \
+	CXXFLAGS="${optflags} ${optlto}" \
+	LDFLAGS="${linkflags} ${optlto}"
 
 make all --jobs
 make install
@@ -259,9 +256,9 @@ rm --force --recursive ./*
 	--with-gmp="${toolchain_directory}" \
 	--enable-shared \
 	--enable-static \
-	CFLAGS="${optflags} -fpermissive" \
-	CXXFLAGS="${optflags}" \
-	LDFLAGS="${linkflags}"
+	CFLAGS="${optflags} ${optlto}" \
+	CXXFLAGS="${optflags} ${optlto}" \
+	LDFLAGS="${linkflags} ${optlto}"
 
 make all --jobs
 make install
@@ -313,16 +310,16 @@ for target in "${targets[@]}"; do
 		--with-static-standard-libraries \
 		--program-prefix="${triplet}-" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
-		CFLAGS="${optflags}" \
-		CXXFLAGS="${optflags}" \
-		LDFLAGS="${linkflags}"
+		CFLAGS="${optflags} ${optlto}" \
+		CXXFLAGS="${optflags} ${optlto}" \
+		LDFLAGS="${linkflags} ${optlto}"
 	
 	make all --jobs
 	make install
 	
 	[ -d "${gcc_directory}/build" ] || mkdir "${gcc_directory}/build"
-	cd "${gcc_directory}/build"
 	
+	cd "${gcc_directory}/build"
 	rm --force --recursive ./*
 	
 	../configure \
@@ -336,7 +333,7 @@ for target in "${targets[@]}"; do
 		--with-static-standard-libraries \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v1.6-${revision}" \
+		--with-pkgversion="OBGGCC v1.7-${revision}" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--with-native-system-header-dir='/include' \
 		--enable-__cxa_atexit \
@@ -366,9 +363,9 @@ for target in "${targets[@]}"; do
 		--disable-nls \
 		--without-headers \
 		${extra_configure_flags} \
-		CFLAGS="${optflags}" \
-		CXXFLAGS="${optflags}" \
-		LDFLAGS="${linkflags}"
+		CFLAGS="${optflags} ${optlto}" \
+		CXXFLAGS="${optflags} ${optlto}" \
+		LDFLAGS="${linkflags} ${optlto}"
 	
 	LD_LIBRARY_PATH="${toolchain_directory}/lib" PATH="${PATH}:${toolchain_directory}/bin" make \
 		CFLAGS_FOR_TARGET="${optflags} ${linkflags}" \
@@ -416,8 +413,9 @@ while read item; do
 		"${workdir}/tools/gcc-wrapper/filesystem.c" \
 		"${workdir}/tools/gcc-wrapper/main.c" \
 		"${workdir}/tools/gcc-wrapper/path.c" \
-		-Os \
-		-s \
+		${optflags} \
+		${optlto} \
+		${linkflags} \
 		-o "${gcc_wrapper}"
 	
 	cp "${gcc_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-gcc"
