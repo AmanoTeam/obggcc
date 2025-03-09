@@ -59,6 +59,35 @@ declare -ra native_tools=(
 	'lto-dump'
 )
 
+declare -ra symlink_tools=(
+	"addr2line"
+	"ar"
+	"as"
+	"c++"
+	"c++filt"
+	"cpp"
+	"elfedit"
+	"gcc-ar"
+	"gcc-nm"
+	"gcc-ranlib"
+	"gcov"
+	"gcov-dump"
+	"gcov-tool"
+	"gprof"
+	"ld"
+	"ld.bfd"
+	"ld.gold"
+	"lto-dump"
+	"nm"
+	"objcopy"
+	"objdump"
+	"ranlib"
+	"readelf"
+	"size"
+	"strings"
+	"strip"
+)
+
 declare -ra libraries=(
 	'libstdc++'
 	'libatomic'
@@ -462,6 +491,23 @@ while read item; do
 				ln --symbolic "${file}" './'
 			done
 		done
+	done
+	
+	pushd
+	
+	pushd "${toolchain_directory}/bin"
+	
+	for name in "${symlink_tools[@]}"; do
+		source="./${triplet}-${name}"
+		destination="./${triplet}${glibc_version}-${name}"
+		
+		if ! [ -f "${source}" ]; then
+			continue
+		fi
+		
+		echo "- Symlinking '${source}' to '${destination}'"
+		
+		ln --symbolic "${source}" "${destination}" 
 	done
 	
 	pushd
