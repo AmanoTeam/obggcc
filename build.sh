@@ -335,7 +335,6 @@ for target in "${targets[@]}"; do
 		--enable-ld \
 		--enable-lto \
 		--disable-gprofng \
-		--with-static-standard-libraries \
 		--program-prefix="${triplet}-" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		CFLAGS="${optflags}" \
@@ -358,7 +357,6 @@ for target in "${targets[@]}"; do
 		--with-gmp="${toolchain_directory}" \
 		--with-mpc="${toolchain_directory}" \
 		--with-mpfr="${toolchain_directory}" \
-		--with-static-standard-libraries \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
 		--with-pkgversion="OBGGCC v1.8-${revision}" \
