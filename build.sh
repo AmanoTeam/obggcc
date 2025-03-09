@@ -18,6 +18,9 @@ declare -r mpfr_directory='/tmp/mpfr-4.2.1'
 declare -r mpc_tarball='/tmp/mpc.tar.gz'
 declare -r mpc_directory='/tmp/mpc-1.3.1'
 
+declare -r isl_tarball='/tmp/isl.tar.xz'
+declare -r isl_directory='/tmp/isl-0.27'
+
 declare -r binutils_tarball='/tmp/binutils.tar.xz'
 declare -r binutils_directory='/tmp/binutils-with-gold-2.44'
 
@@ -201,6 +204,23 @@ if ! [ -f "${mpc_tarball}" ]; then
 		--file="${mpc_tarball}"
 fi
 
+if ! [ -f "${isl_tarball}" ]; then
+	curl \
+		--url 'https://libisl.sourceforge.io/isl-0.27.tar.xz' \
+		--retry '30' \
+		--retry-all-errors \
+		--retry-delay '0' \
+		--retry-max-time '0' \
+		--location \
+		--silent \
+		--output "${isl_tarball}"
+	
+	tar \
+		--directory="$(dirname "${isl_directory}")" \
+		--extract \
+		--file="${isl_tarball}"
+fi
+
 if ! [ -f "${binutils_tarball}" ]; then
 	curl \
 		--url 'https://ftp.gnu.org/gnu/binutils/binutils-with-gold-2.44.tar.xz' \
@@ -298,6 +318,24 @@ rm --force --recursive ./*
 make all --jobs
 make install
 
+[ -d "${isl_directory}/build" ] || mkdir "${isl_directory}/build"
+
+cd "${isl_directory}/build"
+rm --force --recursive ./*
+
+../configure \
+	--host="${CROSS_COMPILE_TRIPLET}" \
+	--prefix="${toolchain_directory}" \
+	--with-gmp-prefix="${toolchain_directory}" \
+	--enable-shared \
+	--enable-static \
+	CFLAGS="${pieflags} ${optflags}" \
+	CXXFLAGS="${pieflags} ${optflags}" \
+	LDFLAGS="-Wl,-rpath-link -Wl,${toolchain_directory}/lib ${linkflags}"
+
+make all --jobs
+make install
+
 for target in "${targets[@]}"; do
 	source "${workdir}/${target}.sh"
 	
@@ -365,6 +403,7 @@ for target in "${targets[@]}"; do
 		--with-gmp="${toolchain_directory}" \
 		--with-mpc="${toolchain_directory}" \
 		--with-mpfr="${toolchain_directory}" \
+		--with-isl="${toolchain_directory}" \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
 		--with-pkgversion="OBGGCC v1.7-${revision}" \
@@ -517,6 +556,11 @@ while read item; do
 	
 	for name in "${libstdcxx_depends[@]}"; do
 		source="./${triplet}-${name}"
+		
+		if ! [ -f "${source}" ]; then
+			continue
+		fi
+		
 		patchelf --set-rpath '$ORIGIN/../lib' "${source}"
 	done
 	
