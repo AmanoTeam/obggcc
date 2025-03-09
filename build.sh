@@ -457,17 +457,10 @@ fi
 
 [ -d "${toolchain_directory}/lib" ] || mkdir "${toolchain_directory}/lib"
 
-# libstdc++.so
 declare name=$(realpath $("${cc}" --print-file-name='libstdc++.so'))
 declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
 
-cp "${name}" "${toolchain_directory}/lib"
-
-# libgcc_s.so
-declare name=$(realpath $("${cc}" --print-file-name='libgcc_s.so.1'))
-declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
-
-cp "${name}" "${toolchain_directory}/lib"
+cp "${name}" "${toolchain_directory}/lib/${soname}"
 
 while read item; do
 	declare glibc_version="$(jq '.glibc_version' <<< "${item}")"
