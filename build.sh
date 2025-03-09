@@ -68,6 +68,7 @@ declare -ra symlink_tools=(
 	"c++filt"
 	"cpp"
 	"elfedit"
+	"dwp"
 	"gcc-ar"
 	"gcc-nm"
 	"gcc-ranlib"
@@ -87,6 +88,11 @@ declare -ra symlink_tools=(
 	"size"
 	"strings"
 	"strip"
+)
+
+declare -ra libstdcxx_depends=(
+	"dwp"
+	"ld.gold"
 )
 
 declare -ra libraries=(
@@ -442,10 +448,26 @@ for target in "${targets[@]}"; do
 done
 
 declare cc='gcc'
+declare readelf='readelf'
 
 if ! (( is_native )); then
 	cc="${CC}"
+	readelf="${READELF}"
 fi
+
+[ -d "${toolchain_directory}/lib" ] || mkdir "${toolchain_directory}/lib"
+
+# libstdc++.so
+declare name=$(realpath $("${cc}" --print-file-name='libstdc++.so'))
+declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
+
+cp "${name}" "${toolchain_directory}/lib"
+
+# libgcc_s.so
+declare name=$(realpath $("${cc}" --print-file-name='libgcc_s.so.1'))
+declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
+
+cp "${name}" "${toolchain_directory}/lib"
 
 while read item; do
 	declare glibc_version="$(jq '.glibc_version' <<< "${item}")"
@@ -499,6 +521,11 @@ while read item; do
 	pushd
 	
 	pushd "${toolchain_directory}/bin"
+	
+	for name in "${libstdcxx_depends[@]}"; do
+		source="./${triplet}-${name}"
+		patchelf --set-rpath '$ORIGIN/../lib' "${source}"
+	done
 	
 	for name in "${symlink_tools[@]}"; do
 		source="./${triplet}-${name}"
