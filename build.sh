@@ -363,6 +363,7 @@ for target in "${targets[@]}"; do
 		--with-pkgversion="OBGGCC v1.7-${revision}" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--with-native-system-header-dir='/include' \
+		--with-default-libstdcxx-abi='new' \
 		--enable-__cxa_atexit \
 		--enable-cet='auto' \
 		--enable-checking='release' \
