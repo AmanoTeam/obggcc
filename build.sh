@@ -384,6 +384,7 @@ for target in "${targets[@]}"; do
 		--enable-gold \
 		--enable-libsanitizer \
 		--enable-plugin \
+		--enable-libstdcxx-time='yes' \
 		--disable-libgomp \
 		--disable-bootstrap \
 		--disable-libstdcxx-pch \
