@@ -24,6 +24,7 @@ declare -r binutils_directory='/tmp/binutils-with-gold-2.44'
 declare -r gcc_tarball='/tmp/gcc.tar.gz'
 declare -r gcc_directory='/tmp/gcc-master'
 
+declare -r pieflags='-fPIE'
 declare -r optflags='-w -O3'
 declare -r linkflags='-Wl,-s'
 
@@ -337,9 +338,9 @@ for target in "${targets[@]}"; do
 		--disable-gprofng \
 		--program-prefix="${triplet}-" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
-		--enable-host-pie \
-		CFLAGS="${optflags}" \
-		CXXFLAGS="${optflags}" \
+		--enable-plugins \
+		CFLAGS="${pieflags} ${optflags}" \
+		CXXFLAGS="${pieflags} ${optflags}" \
 		LDFLAGS="${linkflags}"
 	
 	make all --jobs
