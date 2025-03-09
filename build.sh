@@ -337,6 +337,7 @@ for target in "${targets[@]}"; do
 		--disable-gprofng \
 		--program-prefix="${triplet}-" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
+		--enable-host-pie \
 		CFLAGS="${optflags}" \
 		CXXFLAGS="${optflags}" \
 		LDFLAGS="${linkflags}"
@@ -359,13 +360,14 @@ for target in "${targets[@]}"; do
 		--with-mpfr="${toolchain_directory}" \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v1.8-${revision}" \
+		--with-pkgversion="OBGGCC v1.7-${revision}" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--with-native-system-header-dir='/include' \
 		--enable-__cxa_atexit \
 		--enable-cet='auto' \
 		--enable-checking='release' \
 		--enable-clocale='gnu' \
+		--enable-default-pie \
 		--enable-default-ssp \
 		--enable-gnu-indirect-function \
 		--enable-gnu-unique-object \
