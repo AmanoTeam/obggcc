@@ -332,7 +332,7 @@ for target in "${targets[@]}"; do
 		--with-static-standard-libraries \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v1.7-${revision}" \
+		--with-pkgversion="OBGGCC v1.8-${revision}" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--with-native-system-header-dir='/include' \
 		--enable-__cxa_atexit \
@@ -391,6 +391,22 @@ for target in "${targets[@]}"; do
 		declare file="${toolchain_directory}/bin/${name}"
 		[ -f "${file}" ] && unlink "${file}"
 	done
+	
+	if [ "${CROSS_COMPILE_TRIPLET}" = "${triplet}" ]; then
+		cd "${toolchain_directory}/${triplet}/lib"
+			
+		for library in "${libraries[@]}"; do
+			for bit in "${bits[@]}"; do
+				for file in "../../lib${bit}/${library}"*; do
+					if [[ "${file}" == *'*' ]]; then
+						continue
+					fi
+					
+					ln --symbolic "${file}" './'
+				done
+			done
+		done
+	fi
 done
 
 declare cc='gcc'
