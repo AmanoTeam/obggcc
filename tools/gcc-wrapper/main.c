@@ -15,22 +15,47 @@ static const char INCLUDE_DIR[] = "/include";
 static const char LIBRARY_DIR[] = "/lib";
 static const char GCC_LIBRARY_DIR[] = "/lib/gcc";
 
+static const char GCC_OPT_ISYSTEM[] = "-isystem";
+static const char GCC_OPT_SYSROOT[] = "--sysroot=";
+static const char GCC_OPT_NOSTDINC[] = "--no-standard-includes";
+static const char GCC_OPT_LIBDIR[] = "-L";
+static const char GCC_OPT_STATIC_LIBCXX[] = "-static-libstdc++";
+static const char GCC_OPT_L_RT[] = "-lrt";
+static const char GCC_OPT_L_STDCXX[] = "-lstdc++";
+
+#define ERR_SUCCESS 0
+#define ERR_MEMORY_ALLOCATE_FAILURE -1
+#define ERR_UNKNOWN_COMPILER -2
+#define ERR_GET_APP_FILENAME_FAILURE -3
+#define ERR_EXECVE_FAILURE -4
+
 #define CPP "c++"
 #define GCC "gcc"
 #define GPLUSPLUS "g++"
 
 int main(int argc, char* argv[], char* envp[]) {
 	
-	int status = EXIT_SUCCESS;
+	int err = ERR_SUCCESS;
+	
 	size_t size = 0;
 	size_t offset = 0;
+	size_t index = 0;
+	
+	long int glibc_version_major = 0;
+	long int glibc_version_minor = 0;
+	
+	int wants_libcxx = 0;
+	int wants_rt_library = 0;
+	
+	int have_rt_library = 0;
 	
 	char** args = NULL;
 	char* arg = NULL;
 	
 	const char* cc = NULL;
 	const char* start = NULL;
-	const char* ptr = NULL;
+	char* ptr = NULL;
+	const char* opt = NULL;
 	
 	char* executable = NULL;
 	
@@ -51,12 +76,20 @@ int main(int argc, char* argv[], char* envp[]) {
 	char* triplet = NULL;
 	char* glibc_version = NULL;
 	
+	for (index = 0; index < argc; index++) {
+		opt = argv[index];
+		
+		if (strcmp(opt, GCC_OPT_STATIC_LIBCXX) == 0 || strcmp(opt, GCC_OPT_L_STDCXX) == 0) {
+			wants_libcxx = 1;
+		} else if (strcmp(opt, GCC_OPT_L_RT) == 0) {
+			have_rt_library = 1;
+		}
+	}
+	
 	app_filename = get_app_filename();
 	
 	if (app_filename == NULL) {
-		fprintf(stderr, "fatal error: could not get app filename\n");
-		
-		status = EXIT_FAILURE;
+		err = ERR_GET_APP_FILENAME_FAILURE;
 		goto end;
 	}
 	
@@ -65,9 +98,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	parent_directory = malloc(strlen(app_filename) + 1);
 	
 	if (parent_directory == NULL) {
-		fprintf(stderr, "fatal error: could not allocate memory\n");
-		
-		status = EXIT_FAILURE;
+		err = ERR_MEMORY_ALLOCATE_FAILURE;
 		goto end;
 	}
 	
@@ -77,11 +108,11 @@ int main(int argc, char* argv[], char* envp[]) {
 	cc = ptr - 3;
 	
 	if (!(strcmp(cc, GCC) == 0 || strcmp(cc, GPLUSPLUS) == 0)) {
-		fprintf(stderr, "fatal error: unknown GCC compiler: %s\n", cc);
-		
-		status = EXIT_FAILURE;
+		err = ERR_UNKNOWN_COMPILER;
 		goto end;
 	}
+	
+	wants_libcxx += (strcmp(cc, GPLUSPLUS) == 0);
 	
 	ptr = fname;
 	
@@ -101,9 +132,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	triplet = malloc(size + 1);
 	
 	if (triplet == NULL) {
-		fprintf(stderr, "fatal error: could not allocate memory\n");
-		
-		status = EXIT_FAILURE;
+		err = ERR_MEMORY_ALLOCATE_FAILURE;
 		goto end;
 	}
 	
@@ -127,21 +156,26 @@ int main(int argc, char* argv[], char* envp[]) {
 	glibc_version = malloc(size + 1);
 	
 	if (glibc_version == NULL) {
-		fprintf(stderr, "fatal error: could not allocate memory\n");
-		
-		status = EXIT_FAILURE;
+		err = ERR_MEMORY_ALLOCATE_FAILURE;
 		goto end;
 	}
 	
 	memcpy(glibc_version, start, size);
 	glibc_version[size] = '\0';
 	
+	glibc_version_major = strtol(glibc_version, &ptr, 16);
+	
+	ptr++;
+	
+	glibc_version_minor = strtol(ptr, NULL, 16);
+	
+	/* Determine whether we need to implicit link with -lrt */
+	wants_rt_library = wants_libcxx && !have_rt_library && (glibc_version_major == 2 && glibc_version_minor < 17);
+	
 	executable = malloc(strlen(parent_directory) + strlen(PATHSEP) + strlen(triplet) + 1 + strlen(cc) + 1);
 	
 	if (executable == NULL) {
-		fprintf(stderr, "fatal error: could not allocate memory\n");
-		
-		status = EXIT_FAILURE;
+		err = ERR_MEMORY_ALLOCATE_FAILURE;
 		goto end;
 	}
 	
@@ -156,9 +190,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	sysroot_directory = malloc(strlen(parent_directory) + strlen(PATHSEP) + strlen(triplet) + strlen(glibc_version) + 1);
 	
 	if (sysroot_directory == NULL) {
-		fprintf(stderr, "fatal error: could not allocate memory\n");
-		
-		status = EXIT_FAILURE;
+		err = ERR_MEMORY_ALLOCATE_FAILURE;
 		goto end;
 	}
 	
@@ -167,21 +199,17 @@ int main(int argc, char* argv[], char* envp[]) {
 	strcat(sysroot_directory, triplet);
 	strcat(sysroot_directory, glibc_version);
 	
-	args = malloc(sizeof(char*) * (argc + 13));
+	args = malloc(sizeof(char*) * (argc + (13 + wants_rt_library)));
 	
 	if (args == NULL) {
-		fprintf(stderr, "fatal error: could not allocate memory\n");
-		
-		status = EXIT_FAILURE;
+		err = ERR_MEMORY_ALLOCATE_FAILURE;
 		goto end;
 	}
 	
 	sysroot_include_directory = malloc(strlen(sysroot_directory) + strlen(INCLUDE_DIR) + 1);
 	
 	if (sysroot_include_directory == NULL) {
-		fprintf(stderr, "fatal error: could not allocate memory\n");
-		
-		status = EXIT_FAILURE;
+		err = ERR_MEMORY_ALLOCATE_FAILURE;
 		goto end;
 	}
 	
@@ -191,9 +219,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	sysroot_library_directory = malloc(strlen(sysroot_directory) + strlen(LIBRARY_DIR) + 1);
 	
 	if (sysroot_library_directory == NULL) {
-		fprintf(stderr, "fatal error: could not allocate memory\n");
-		
-		status = EXIT_FAILURE;
+		err = ERR_MEMORY_ALLOCATE_FAILURE;
 		goto end;
 	}
 	
@@ -203,9 +229,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	gcc_include_directory = malloc(strlen(parent_directory) + strlen(GCC_LIBRARY_DIR) + strlen(PATHSEP) + strlen(triplet) + strlen(PATHSEP) + strlen(GCC_MAJOR_VERSION) + strlen(INCLUDE_DIR) + 1);
 	
 	if (gcc_include_directory == NULL) {
-		fprintf(stderr, "fatal error: could not allocate memory\n");
-		
-		status = EXIT_FAILURE;
+		err = ERR_MEMORY_ALLOCATE_FAILURE;
 		goto end;
 	}
 	
@@ -220,9 +244,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	gpp_include_directory = malloc(strlen(parent_directory) + strlen(PATHSEP) + strlen(triplet) + strlen(INCLUDE_DIR) + strlen(PATHSEP) + strlen(CPP) + strlen(PATHSEP) + strlen(GCC_MAJOR_VERSION) + 1);
 	
 	if (gpp_include_directory == NULL) {
-		fprintf(stderr, "fatal error: could not allocate memory\n");
-		
-		status = EXIT_FAILURE;
+		err = ERR_MEMORY_ALLOCATE_FAILURE;
 		goto end;
 	}
 	
@@ -238,9 +260,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	gpp_builtins_include_directory = malloc(strlen(gpp_include_directory) + strlen(PATHSEP) + strlen(triplet) + 1);
 	
 	if (gpp_builtins_include_directory == NULL) {
-		fprintf(stderr, "fatal error: could not allocate memory\n");
-		
-		status = EXIT_FAILURE;
+		err = ERR_MEMORY_ALLOCATE_FAILURE;
 		goto end;
 	}
 	
@@ -248,41 +268,44 @@ int main(int argc, char* argv[], char* envp[]) {
 	strcat(gpp_builtins_include_directory, PATHSEP);
 	strcat(gpp_builtins_include_directory, triplet);
 	
-	arg = malloc(10 + strlen(sysroot_directory) + 1);
+	arg = malloc(strlen(GCC_OPT_SYSROOT) + strlen(sysroot_directory) + 1);
 	
 	if (arg == NULL) {
-		fprintf(stderr, "fatal error: could not allocate memory\n");
-		
-		status = EXIT_FAILURE;
+		err = ERR_MEMORY_ALLOCATE_FAILURE;
 		goto end;
 	}
 	
-	strcpy(arg, "--sysroot=");
+	strcpy(arg, GCC_OPT_SYSROOT);
 	strcat(arg, sysroot_directory);
 	
 	args[offset++] = executable;
 	args[offset++] = arg;
-	args[offset++] = "--no-standard-includes";
+	args[offset++] = (char*) GCC_OPT_NOSTDINC;
 	
 	if (strcmp(cc, GPLUSPLUS) == 0) {
-		args[offset++] = "-isystem";
+		args[offset++] = (char*) GCC_OPT_ISYSTEM;
 		args[offset++] = gpp_include_directory;
 		
-		args[offset++] = "-isystem";
+		args[offset++] = (char*) GCC_OPT_ISYSTEM;
 		args[offset++] = gpp_builtins_include_directory;
 	}
 	
-	args[offset++] = "-isystem";
+	args[offset++] = (char*) GCC_OPT_ISYSTEM;
 	args[offset++] = gcc_include_directory;
-	args[offset++] = "-isystem";
+	args[offset++] = (char*) GCC_OPT_ISYSTEM;
 	args[offset++] = sysroot_include_directory;
-	args[offset++] = "-L";
+	args[offset++] = (char*) GCC_OPT_LIBDIR;
 	args[offset++] = sysroot_library_directory;
+	
+	if (wants_rt_library) {
+		fprintf(stderr, "warning: implicit linking with %s due to GLIBC < 2.17 requirement\n", GCC_OPT_L_RT);
+		args[offset++] = (char*) GCC_OPT_L_RT;
+	}
 	
 	memcpy(&args[offset], &argv[1], argc * sizeof(*argv));
 	
 	if (execve(executable, args, envp) == -1) {
-		status = EXIT_FAILURE;
+		err = ERR_EXECVE_FAILURE;
 		goto end;
 	}
 	
@@ -301,7 +324,24 @@ int main(int argc, char* argv[], char* envp[]) {
 	free(gpp_include_directory);
 	free(gpp_builtins_include_directory);
 	
-	return status;
+	switch (err) {
+		case ERR_SUCCESS:
+			opt = "Success";
+		case ERR_MEMORY_ALLOCATE_FAILURE:
+			opt = "Could not allocate memory";
+		case ERR_UNKNOWN_COMPILER:
+			opt = "Unknown GCC compiler";
+		case ERR_GET_APP_FILENAME_FAILURE:
+			opt = "Could not get app filename";
+		case ERR_EXECVE_FAILURE:
+			opt = "Call to execve failed";
+	}
+	
+	if (err != ERR_SUCCESS) {
+		fprintf(stderr, "fatal error: %s\n", opt);
+		return EXIT_FAILURE;
+	}
+	
+	return EXIT_SUCCESS;
 	
 }
-
