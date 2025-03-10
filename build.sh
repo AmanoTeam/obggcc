@@ -430,7 +430,7 @@ for target in "${targets[@]}"; do
 		--enable-gold \
 		--enable-libsanitizer \
 		--enable-plugin \
-		--enable-libstdcxx-time='yes' \
+		--enable-libstdcxx-time='rt' \
 		--disable-libgomp \
 		--disable-bootstrap \
 		--disable-libstdcxx-pch \
