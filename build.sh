@@ -28,7 +28,7 @@ declare -r gcc_tarball='/tmp/gcc.tar.gz'
 declare -r gcc_directory='/tmp/gcc-master'
 
 declare -r pieflags='-fPIE'
-declare -r optflags='-w -O3'
+declare -r optflags='-w -O2'
 declare -r linkflags='-Wl,-s'
 
 declare -r max_jobs="$(($(nproc) * 17))"
@@ -64,38 +64,38 @@ declare -ra native_tools=(
 )
 
 declare -ra symlink_tools=(
-	"addr2line"
-	"ar"
-	"as"
-	"c++"
-	"c++filt"
-	"cpp"
-	"elfedit"
-	"dwp"
-	"gcc-ar"
-	"gcc-nm"
-	"gcc-ranlib"
-	"gcov"
-	"gcov-dump"
-	"gcov-tool"
-	"gprof"
-	"ld"
-	"ld.bfd"
-	"ld.gold"
-	"lto-dump"
-	"nm"
-	"objcopy"
-	"objdump"
-	"ranlib"
-	"readelf"
-	"size"
-	"strings"
-	"strip"
+	'addr2line'
+	'ar'
+	'as'
+	'c++'
+	'c++filt'
+	'cpp'
+	'elfedit'
+	'dwp'
+	'gcc-ar'
+	'gcc-nm'
+	'gcc-ranlib'
+	'gcov'
+	'gcov-dump'
+	'gcov-tool'
+	'gprof'
+	'ld'
+	'ld.bfd'
+	'ld.gold'
+	'lto-dump'
+	'nm'
+	'objcopy'
+	'objdump'
+	'ranlib'
+	'readelf'
+	'size'
+	'strings'
+	'strip'
 )
 
 declare -ra libstdcxx_depends=(
-	"dwp"
-	"ld.gold"
+	'dwp'
+	'ld.gold'
 )
 
 declare -ra libraries=(
