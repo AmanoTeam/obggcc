@@ -63,6 +63,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	long int glibc_version_major = 0;
 	long int glibc_version_minor = 0;
 	
+	int warnings = 1;
 	int wants_system_libraries = 0;
 	
 	int wants_libcxx = 0;
@@ -101,6 +102,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	char* glibc_version = NULL;
 	
 	wants_system_libraries = getenv("OBGGCC_WANTS_SYSTEM_LIBRARIES") != NULL;
+	warnings -= getenv("OBGGCC_DISABLE_WARNINGS") != NULL;
 	
 	for (index = 0; index < argc; index++) {
 		cur = argv[index];
@@ -339,12 +341,17 @@ int main(int argc, char* argv[], char* envp[]) {
 	args[offset++] = sysroot_library_directory;
 	
 	if (wants_rt_library) {
-		fprintf(stderr, "warning: implicit linking with %s due to GLIBC < 2.17 requirement\n", GCC_OPT_L_RT);
+		if (warnings) {
+			fprintf(stderr, "warning: implicit linking with %s due to GLIBC < 2.17 requirement\n", GCC_OPT_L_RT);
+		}
+		
 		args[offset++] = (char*) GCC_OPT_L_RT;
 	}
 	
 	if (wants_system_libraries) {
-		fprintf(stderr, "warning: linking with system libraries is untested and may result in broken binaries\n");
+		if (warnings) {
+			fprintf(stderr, "warning: linking with system libraries is untested and may result in broken binaries even if the compilation succeeds\n");
+		}
 		
 		args[offset++] = (char*) GCC_OPT_I;
 		args[offset++] = (char*) SYSTEM_INCLUDE_PATH;
