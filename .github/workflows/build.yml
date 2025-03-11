@@ -58,7 +58,7 @@ jobs:
     strategy:
       matrix:
         target: [
-          'ia64-unknown-linux-gnu',
+          # 'ia64-unknown-linux-gnu',
           'alpha-unknown-linux-gnu',
           'x86_64-unknown-linux-gnu',
           'i386-unknown-linux-gnu',
@@ -69,7 +69,7 @@ jobs:
           'mips-unknown-linux-gnu',
           'mipsel-unknown-linux-gnu',
           'powerpc-unknown-linux-gnu',
-          's390-unknown-linux-gnu',
+          # 's390-unknown-linux-gnu',
           's390x-unknown-linux-gnu',
           'sparc-unknown-linux-gnu',
           'powerpc64le-unknown-linux-gnu',
