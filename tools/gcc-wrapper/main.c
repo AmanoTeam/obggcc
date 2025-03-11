@@ -12,6 +12,7 @@
 static const char GCC_MAJOR_VERSION[] = "15";
 
 static const char INCLUDE_DIR[] = "/include";
+static const char INCLUDE_MISSING_DIR[] = "/include-missing";
 static const char LIBRARY_DIR[] = "/lib";
 static const char GCC_LIBRARY_DIR[] = "/lib/gcc";
 
@@ -25,6 +26,7 @@ static const char GCC_OPT_LIBDIR[] = "-L";
 static const char GCC_OPT_STATIC_LIBCXX[] = "-static-libstdc++";
 static const char GCC_OPT_L[] = "-l";
 static const char GCC_OPT_I[] = "-I";
+static const char GCC_OPT_C[] = "-c";
 static const char GCC_OPT_L_RT[] = "-lrt";
 static const char GCC_OPT_L_STDCXX[] = "-lstdc++";
 static const char GCC_OPT_XLINKER[] = "-Xlinker";
@@ -66,6 +68,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	int warnings = 1;
 	int wants_system_libraries = 0;
 	
+	int compile_only = 0;
 	int wants_libcxx = 0;
 	int wants_rt_library = 0;
 	
@@ -90,6 +93,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	char* gcc_include_directory = NULL;
 	
 	char* sysroot_include_directory = NULL;
+	char* sysroot_include_missing_directory = NULL;
 	char* sysroot_library_directory = NULL;
 	
 	char* sysroot_directory = NULL;
@@ -107,7 +111,9 @@ int main(int argc, char* argv[], char* envp[]) {
 	for (index = 0; index < argc; index++) {
 		cur = argv[index];
 		
-		if (strcmp(cur, GCC_OPT_STATIC_LIBCXX) == 0 || strcmp(cur, GCC_OPT_L_STDCXX) == 0) {
+		if (strcmp(cur, GCC_OPT_C) == 0) {
+			compile_only = 1;
+		} else if (strcmp(cur, GCC_OPT_STATIC_LIBCXX) == 0 || strcmp(cur, GCC_OPT_L_STDCXX) == 0) {
 			wants_libcxx = 1;
 		} else if (strcmp(cur, GCC_OPT_L_RT) == 0) {
 			have_rt_library = 1;
@@ -121,6 +127,8 @@ int main(int argc, char* argv[], char* envp[]) {
 		
 		prev = cur;
 	}
+	
+	warnings -= compile_only;
 	
 	app_filename = get_app_filename();
 	
@@ -239,7 +247,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	if (wants_system_libraries) {
 		size += (sizeof(SYSTEM_LIBRARY_PATH) / sizeof(*SYSTEM_LIBRARY_PATH)) * 6;
-		size += 4;
+		size += 6;
 	}
 	
 	args = malloc(size * sizeof(char*));
@@ -258,6 +266,18 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	strcpy(sysroot_include_directory, sysroot_directory);
 	strcat(sysroot_include_directory, INCLUDE_DIR);
+	
+	if (wants_system_libraries) {
+		sysroot_include_missing_directory = malloc(strlen(sysroot_directory) + strlen(INCLUDE_MISSING_DIR) + 1);
+		
+		if (sysroot_include_missing_directory == NULL) {
+			err = ERR_MEMORY_ALLOCATE_FAILURE;
+			goto end;
+		}
+		
+		strcpy(sysroot_include_missing_directory, sysroot_directory);
+		strcat(sysroot_include_missing_directory, INCLUDE_MISSING_DIR);
+	}
 	
 	sysroot_library_directory = malloc(strlen(sysroot_directory) + strlen(LIBRARY_DIR) + 1);
 	
@@ -353,7 +373,10 @@ int main(int argc, char* argv[], char* envp[]) {
 			fprintf(stderr, "warning: linking with system libraries is untested and may result in broken binaries even if the compilation succeeds\n");
 		}
 		
-		args[offset++] = (char*) GCC_OPT_I;
+		args[offset++] = (char*) GCC_OPT_ISYSTEM;
+		args[offset++] = sysroot_include_missing_directory;
+		
+		args[offset++] = (char*) GCC_OPT_ISYSTEM;
 		args[offset++] = (char*) SYSTEM_INCLUDE_PATH;
 		
 		args[offset++] = (char*) GCC_OPT_XLINKER;
@@ -390,6 +413,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	free(args);
 	free(arg);
 	free(sysroot_include_directory);
+	free(sysroot_include_missing_directory);
 	free(sysroot_library_directory);
 	free(gcc_include_directory);
 	free(gpp_include_directory);

@@ -580,6 +580,10 @@ while read item; do
 	pushd
 done <<< "$(jq --compact-output '.[]' "${workdir}/submodules/debian-sysroot/dist.json")"
 
+for triplet in "${targets[@]}"; do
+	python3 -B "${workdir}/tools/include-missing/main.py" "${toolchain_directory}" "${triplet}"
+done
+
 mkdir --parent "${share_directory}"
 
 cp --recursive "${workdir}/tools/dev/"* "${share_directory}"
