@@ -15,13 +15,32 @@ static const char INCLUDE_DIR[] = "/include";
 static const char LIBRARY_DIR[] = "/lib";
 static const char GCC_LIBRARY_DIR[] = "/lib/gcc";
 
+static const char RT_LIBRARY[] = "rt";
+static const char STDCXX_LIBRARY[] = "stdc++";
+
 static const char GCC_OPT_ISYSTEM[] = "-isystem";
 static const char GCC_OPT_SYSROOT[] = "--sysroot=";
 static const char GCC_OPT_NOSTDINC[] = "--no-standard-includes";
 static const char GCC_OPT_LIBDIR[] = "-L";
 static const char GCC_OPT_STATIC_LIBCXX[] = "-static-libstdc++";
+static const char GCC_OPT_L[] = "-l";
+static const char GCC_OPT_I[] = "-I";
 static const char GCC_OPT_L_RT[] = "-lrt";
 static const char GCC_OPT_L_STDCXX[] = "-lstdc++";
+static const char GCC_OPT_XLINKER[] = "-Xlinker";
+static const char LD_OPT_RPATH_LINK[] = "-rpath-link";
+static const char LD_OPT_UNRESOLVED_SYMBOLS[] = "--unresolved-symbols=ignore-in-shared-libs";
+
+static const char* const SYSTEM_LIBRARY_PATH[] = {
+	"/usr/local/lib64",
+	"/usr/local/lib",
+	"/lib64",
+	"/lib",
+	"/usr/lib64",
+	"/usr/lib"
+};
+
+static const char SYSTEM_INCLUDE_PATH[] = "/usr/include";
 
 #define ERR_SUCCESS 0
 #define ERR_MEMORY_ALLOCATE_FAILURE -1
@@ -44,6 +63,8 @@ int main(int argc, char* argv[], char* envp[]) {
 	long int glibc_version_major = 0;
 	long int glibc_version_minor = 0;
 	
+	int wants_system_libraries = 0;
+	
 	int wants_libcxx = 0;
 	int wants_rt_library = 0;
 	
@@ -56,6 +77,9 @@ int main(int argc, char* argv[], char* envp[]) {
 	const char* start = NULL;
 	char* ptr = NULL;
 	const char* opt = NULL;
+	
+	const char* prev = NULL;
+	const char* cur = NULL;
 	
 	char* executable = NULL;
 	
@@ -76,14 +100,24 @@ int main(int argc, char* argv[], char* envp[]) {
 	char* triplet = NULL;
 	char* glibc_version = NULL;
 	
+	wants_system_libraries = getenv("OBGGCC_WANTS_SYSTEM_LIBRARIES") != NULL;
+	
 	for (index = 0; index < argc; index++) {
-		opt = argv[index];
+		cur = argv[index];
 		
-		if (strcmp(opt, GCC_OPT_STATIC_LIBCXX) == 0 || strcmp(opt, GCC_OPT_L_STDCXX) == 0) {
+		if (strcmp(cur, GCC_OPT_STATIC_LIBCXX) == 0 || strcmp(cur, GCC_OPT_L_STDCXX) == 0) {
 			wants_libcxx = 1;
-		} else if (strcmp(opt, GCC_OPT_L_RT) == 0) {
+		} else if (strcmp(cur, GCC_OPT_L_RT) == 0) {
 			have_rt_library = 1;
+		} else if (prev != NULL && strcmp(prev, GCC_OPT_L) == 0) {
+			if (strcmp(cur, STDCXX_LIBRARY) == 0) {
+				wants_libcxx = 1;
+			} else if (strcmp(cur, RT_LIBRARY) == 0) {
+				have_rt_library = 1;
+			}
 		}
+		
+		prev = cur;
 	}
 	
 	app_filename = get_app_filename();
@@ -199,7 +233,14 @@ int main(int argc, char* argv[], char* envp[]) {
 	strcat(sysroot_directory, triplet);
 	strcat(sysroot_directory, glibc_version);
 	
-	args = malloc(sizeof(char*) * (argc + (13 + wants_rt_library)));
+	size = argc + 13 + wants_rt_library;
+	
+	if (wants_system_libraries) {
+		size += (sizeof(SYSTEM_LIBRARY_PATH) / sizeof(*SYSTEM_LIBRARY_PATH)) * 6;
+		size += 4;
+	}
+	
+	args = malloc(size * sizeof(char*));
 	
 	if (args == NULL) {
 		err = ERR_MEMORY_ALLOCATE_FAILURE;
@@ -300,6 +341,29 @@ int main(int argc, char* argv[], char* envp[]) {
 	if (wants_rt_library) {
 		fprintf(stderr, "warning: implicit linking with %s due to GLIBC < 2.17 requirement\n", GCC_OPT_L_RT);
 		args[offset++] = (char*) GCC_OPT_L_RT;
+	}
+	
+	if (wants_system_libraries) {
+		fprintf(stderr, "warning: linking with system libraries is untested and may result in broken binaries\n");
+		
+		args[offset++] = (char*) GCC_OPT_I;
+		args[offset++] = (char*) SYSTEM_INCLUDE_PATH;
+		
+		args[offset++] = (char*) GCC_OPT_XLINKER;
+		args[offset++] = (char*) LD_OPT_UNRESOLVED_SYMBOLS;
+		
+		for (index = 0; index < sizeof(SYSTEM_LIBRARY_PATH) / sizeof(*SYSTEM_LIBRARY_PATH); index++) {
+			cur = SYSTEM_LIBRARY_PATH[index];
+			
+			args[offset++] = (char*) GCC_OPT_LIBDIR;
+			args[offset++] = (char*) cur;
+			
+			args[offset++] = (char*) GCC_OPT_XLINKER;
+			args[offset++] = (char*) LD_OPT_RPATH_LINK;
+			
+			args[offset++] = (char*) GCC_OPT_XLINKER;
+			args[offset++] = (char*) cur;
+		}
 	}
 	
 	memcpy(&args[offset], &argv[1], argc * sizeof(*argv));
