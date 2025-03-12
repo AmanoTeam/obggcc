@@ -82,10 +82,13 @@ arm-unknown-linux-gnueabi2.24.cmake
 To use one of them, pass the `CMAKE_TOOLCHAIN_FILE` definition to your CMake command invocation:
 
 ```bash
-cmake \
+# Setup the environment for cross-compilation
+$ cmake \
     -DCMAKE_TOOLCHAIN_FILE=${OBGGCC_HOME}/usr/local/share/obggcc/cmake/aarch64-unknown-linux-gnu2.19.cmake \
     -B build \
     -S  ./
+# Build the project
+$ cmake --build ./build
 ```
 
 ### GNU Autotools (aka GNU Build System)
@@ -133,6 +136,74 @@ Note that all the cross-compilers only contain the minimum required to build a w
 
 If your project depends on something other than the GNU C library (or the C++ standard libraries, for C++ programs), you should build it yourself.
 
+## Linking with system libraries
+
+By default, you can't mix headers and libraries from both the cross-compiler's system root and your host machine's system root. The main reason is that there may be incompatibilities between the two systems, which could cause the compilation to break or produce broken binaries even if the compilation succeeds. Due to this, the standard practice is that you also cross-compile any external dependency that your program may need to use and put them inside the cross-compiler's system root or explicitly point the compiler to where to find the cross-compiled dependencies by passing the appropriate flags while compiling your binary (`-I`, `-L`, and `-l`).
+
+That being said, the GNU C library is portable enough to reduce these incompatibilities to some extent.
+
+The environment variable `OBGGCC_WANTS_SYSTEM_LIBRARIES` can be used to control the default behavior when cross-compiling software.
+
+Let's take this program as an example:
+
+```c
+#include <string.h>
+#include <stdio.h>
+
+#include <openssl/sha.h>
+
+int main(void) {
+    const char* s = "OBGGCC";
+    unsigned char hash[SHA256_DIGEST_LENGTH];
+    SHA256(s, strlen(s), hash);
+    
+    puts("It works!");
+    
+    return 0;
+}
+```
+
+It uses OpenSSL to perform a simple SHA-256 calculation. When compiling this program on my host machine, it builds fine:
+
+```bash
+$ gcc main.c -lcrypto -o main
+$ ./main
+It works!
+```
+
+However, it fails when cross-compiling with OBGGCC:
+
+```bash
+$ ${OBGGCC_HOME}/bin/x86_64-unknown-linux-gnu2.7-gcc main.c -lcrypto -o main
+main.c:3:10: fatal error: openssl/sha.h: No such file or directory
+    3 | #include <openssl/sha.h>
+      |          ^~~~~~~~~~~~~~~
+compilation terminated.
+```
+
+That's expected, as there are no prebuilt OpenSSL binaries inside the cross-compiler's system root.
+
+Now let's try setting the `OBGGCC_WANTS_SYSTEM_LIBRARIES` environment variable:
+
+```bash
+$ export OBGGCC_WANTS_SYSTEM_LIBRARIES=1
+```
+
+And then compiling the program again:
+
+```bash
+$ ${OBGGCC_HOME}/bin/x86_64-unknown-linux-gnu2.7-gcc main.c -lcrypto -o main
+$ ./main
+It works!
+```
+
+The reason for the build to succeed this time is that `OBGGCC_WANTS_SYSTEM_LIBRARIES` changes the default cross-compilation behavior so that system directories of the host machine get included in both the library and header location search lists of the cross-compiler. Essentially, it:
+
+- Adds `/usr/include ` to the list of include directories
+- Adds `/usr/local/lib64`, `/usr/local/lib`, `/lib64`, `/lib`, `/usr/lib64`, and `/usr/lib` to the list of library directories
+
+Note that, despite explicitly adding directories of the host machine to the compiler invocation, any program you compile will still use headers and libraries of the cross-compiler's GLIBC. That's due to the fact that the directories of the cross-compiler's system root are checked first before the directories of your host machine's system root. Only when the compiler can't find a specific header or library in the cross-compiler's system root does it search for it in your machine's system root. This way, we can build portable programs while still linking against third-party libraries from the host machine.
+
 ## Behavior changes
 
 Usually, we attempt to keep the default GCC behavior unchanged. Sometimes we patch GCC here and there to make it work with older glibc versions or fix breakages after a toolchain/dependency update, but most of these changes don't affect the default behavior of GCC in any way. However, currently, there are some specific changes in place that modify the default behavior in some scenarios.
@@ -153,4 +224,4 @@ You can revert to the old behavior by passing `-std=gnu23` to the compiler comma
 
 ## Releases
 
-You can obtain OBGGCC releases from the  [releases](https://github.com/AmanoTeam/obggcc/releases) page.
+You can obtain OBGGCC releases from the [releases](https://github.com/AmanoTeam/obggcc/releases) page.
