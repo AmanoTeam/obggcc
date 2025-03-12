@@ -9,6 +9,7 @@ GLIBC_VERSIONS = (
 	"2.19",
 	"2.17",
 	"2.13",
+	"2.11",
 	"2.7"
 )
 
@@ -60,7 +61,7 @@ for version in GLIBC_VERSIONS:
 		
 		broken_header = os.path.join(include_missing_directory, header)
 		
-		if not os.path.exists(path = broken_header):
+		if os.path.exists(path = broken_header):
 			continue
 		
 		print("- The header '%s' does not exists in GLIBC %s; creating a broken one at '%s'" % (header, version, broken_header))
