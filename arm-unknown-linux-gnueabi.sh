@@ -1,6 +1,6 @@
 #!/bin/bash
 
-declare extra_configure_flags='--with-arch=armv4t --with-float=soft --disable-libsanitizer'
+declare extra_configure_flags='--with-arch=armv4t --with-float=soft'
 
 declare triplet='arm-unknown-linux-gnueabi'
 

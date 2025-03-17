@@ -9,6 +9,8 @@ declare -r workdir="${PWD}"
 declare -r toolchain_directory='/tmp/obggcc'
 declare -r share_directory="${toolchain_directory}/usr/local/share/obggcc"
 
+declare -r autotools_directory="${share_directory}/autotools"
+
 declare -r gmp_tarball='/tmp/gmp.tar.xz'
 declare -r gmp_directory='/tmp/gmp-6.3.0'
 
@@ -27,11 +29,13 @@ declare -r binutils_directory='/tmp/binutils-with-gold-2.44'
 declare -r gcc_tarball='/tmp/gcc.tar.gz'
 declare -r gcc_directory='/tmp/gcc-master'
 
+declare -r libsanitizer_directory="${gcc_directory}/libsanitizer"
+
 declare -r pieflags='-fPIE'
 declare -r optflags='-w -O2'
 declare -r linkflags='-Wl,-s'
 
-declare -r max_jobs="$(($(nproc) * 17))"
+declare -r max_jobs='40'
 
 declare -r sysroot_tarball='/tmp/sysroot.tar.xz'
 declare -r gcc_wrapper='/tmp/gcc-wrapper'
@@ -61,13 +65,14 @@ declare -ra native_tools=(
 	'gcov-dump'
 	'gcov-tool'
 	'lto-dump'
+	'gfortran'
+	'gm2'
 )
 
 declare -ra symlink_tools=(
 	'addr2line'
 	'ar'
 	'as'
-	'c++'
 	'c++filt'
 	'cpp'
 	'elfedit'
@@ -105,6 +110,13 @@ declare -ra libraries=(
 	'libitm'
 	'libsupc++'
 	'libgcc'
+	'libm2cor'
+	'libm2iso'
+	'libm2log'
+	'libm2min'
+	'libm2pim'
+	'libobjc'
+	'libgfortran'
 )
 
 declare -ra bits=(
@@ -113,22 +125,22 @@ declare -ra bits=(
 )
 
 declare -ra targets=(
-	# 'aarch64-unknown-linux-gnu'
-	# 'alpha-unknown-linux-gnu'
-	# 'arm-unknown-linux-gnueabi'
-	# 'arm-unknown-linux-gnueabihf'
-	# 'hppa-unknown-linux-gnu'
+	'aarch64-unknown-linux-gnu'
+	'alpha-unknown-linux-gnu'
+	'arm-unknown-linux-gnueabi'
+	'arm-unknown-linux-gnueabihf'
+	'hppa-unknown-linux-gnu'
 	'i386-unknown-linux-gnu'
-	# 'ia64-unknown-linux-gnu'
-	# 'mips-unknown-linux-gnu'
-	# 'mips64el-unknown-linux-gnuabi64'
-	# 'mipsel-unknown-linux-gnu'
-	# 'powerpc-unknown-linux-gnu'
-	# 'powerpc64le-unknown-linux-gnu'
-	# 's390-unknown-linux-gnu'
-	# 's390x-unknown-linux-gnu'
-	# 'sparc-unknown-linux-gnu'
-	# 'x86_64-unknown-linux-gnu'
+	'ia64-unknown-linux-gnu'
+	'mips-unknown-linux-gnu'
+	'mips64el-unknown-linux-gnuabi64'
+	'mipsel-unknown-linux-gnu'
+	'powerpc-unknown-linux-gnu'
+	'powerpc64le-unknown-linux-gnu'
+	's390-unknown-linux-gnu'
+	's390x-unknown-linux-gnu'
+	'sparc-unknown-linux-gnu'
+	'x86_64-unknown-linux-gnu'
 )
 
 declare build_type="${1}"
@@ -274,7 +286,7 @@ rm --force --recursive ./*
 	--host="${CROSS_COMPILE_TRIPLET}" \
 	--prefix="${toolchain_directory}" \
 	--enable-shared \
-	--enable-static \
+	--disable-static \
 	CFLAGS="${optflags}" \
 	CXXFLAGS="${optflags}" \
 	LDFLAGS="${linkflags}"
@@ -292,7 +304,7 @@ rm --force --recursive ./*
 	--prefix="${toolchain_directory}" \
 	--with-gmp="${toolchain_directory}" \
 	--enable-shared \
-	--enable-static \
+	--disable-static \
 	CFLAGS="${optflags}" \
 	CXXFLAGS="${optflags}" \
 	LDFLAGS="${linkflags}"
@@ -310,7 +322,7 @@ rm --force --recursive ./*
 	--prefix="${toolchain_directory}" \
 	--with-gmp="${toolchain_directory}" \
 	--enable-shared \
-	--enable-static \
+	--disable-static \
 	CFLAGS="${optflags}" \
 	CXXFLAGS="${optflags}" \
 	LDFLAGS="${linkflags}"
@@ -328,7 +340,7 @@ rm --force --recursive ./*
 	--prefix="${toolchain_directory}" \
 	--with-gmp-prefix="${toolchain_directory}" \
 	--enable-shared \
-	--enable-static \
+	--disable-static \
 	CFLAGS="${pieflags} ${optflags}" \
 	CXXFLAGS="${pieflags} ${optflags}" \
 	LDFLAGS="-Wl,-rpath-link -Wl,${toolchain_directory}/lib ${linkflags}"
@@ -406,7 +418,7 @@ for target in "${targets[@]}"; do
 		--with-isl="${toolchain_directory}" \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v1.8-${revision}" \
+		--with-pkgversion="OBGGCC v1.9-${revision}" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--with-native-system-header-dir='/include' \
 		--with-default-libstdcxx-abi='new' \
@@ -425,12 +437,12 @@ for target in "${targets[@]}"; do
 		--enable-shared \
 		--enable-threads='posix' \
 		--enable-libssp \
-		--enable-languages='c,c++' \
+		--enable-languages='c,c++,fortran,objc,obj-c++,m2' \
 		--enable-ld \
 		--enable-gold \
-		--enable-libsanitizer \
 		--enable-plugin \
 		--enable-libstdcxx-time='rt' \
+		--disable-libsanitizer \
 		--disable-libgomp \
 		--disable-bootstrap \
 		--disable-libstdcxx-pch \
@@ -451,14 +463,13 @@ for target in "${targets[@]}"; do
 		--jobs="${max_jobs}"
 	make install
 	
-	patchelf --add-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/cc1'
-	patchelf --add-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/cc1plus'
-	patchelf --add-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/lto1'
-	
-	for library in "${asan_libraries[@]}"; do
-		patchelf --set-rpath '$ORIGIN' "${toolchain_directory}/lib"*"/${library}.so" || true
-		patchelf --set-rpath '$ORIGIN' "${toolchain_directory}/${triplet}/lib"*"/${library}.so" || true
-	done
+	patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/cc1'
+	patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/cc1plus'
+	patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/lto1'
+	patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/cc1gm2'
+	patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/cc1obj'
+	patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/cc1objplus'
+	patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/f951'
 	
 	for library in "${plugin_libraries[@]}"; do
 		patchelf --set-rpath "\$ORIGIN/../../../../../${triplet}/lib64:\$ORIGIN/../../../../../${triplet}/lib:\$ORIGIN/../../../../../lib64:\$ORIGIN/../../../../../lib" "${toolchain_directory}/lib/gcc/${triplet}/"*"/plugin/${library}.so"
@@ -501,6 +512,11 @@ declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extend
 
 cp "${name}" "${toolchain_directory}/lib/${soname}"
 
+declare name=$(realpath $("${cc}" --print-file-name='libgcc_s.so.1'))
+declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
+ 
+cp "${name}" "${toolchain_directory}/lib/${soname}"
+
 while read item; do
 	declare glibc_version="$(jq '.glibc_version' <<< "${item}")"
 	declare triplet="$(jq --raw-output '.triplet' <<< "${item}")"
@@ -520,6 +536,9 @@ while read item; do
 	
 	cp "${gcc_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-gcc"
 	cp "${gcc_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-g++"
+	cp "${gcc_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-c++"
+	cp "${gcc_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-gm2"
+	cp "${gcc_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-gfortran"
 	
 	curl \
 		--url "${sysroot}" \
@@ -587,3 +606,45 @@ done
 mkdir --parent "${share_directory}"
 
 cp --recursive "${workdir}/tools/dev/"* "${share_directory}"
+
+[ -d "${libsanitizer_directory}/build" ] || mkdir "${libsanitizer_directory}/build"
+
+cd "${libsanitizer_directory}/build"
+
+mkdir --parent "${libsanitizer_directory}/libstdc++-v3/src"
+
+for target in "${targets[@]}"; do
+	if [[ "${target}" = 's390'* ]] || [[ "${target}" = 'mips'* ]] || [[ "${target}" = 'hppa'* ]] || [[ "${target}" = 'ia64'* ]] || [[ "${target}" = 'sparc'* ]] || [[ "${target}" = 'alpha'* ]] || [[ "${target}" = 'arm'*'eabi' ]]; then
+		continue
+	fi
+	
+	rm --force --recursive ./*
+	
+	declare prefix="${target}2.7"
+	
+	if ! [ -f "${autotools_directory}/${prefix}.sh" ]; then
+		prefix="${target}"
+	fi
+	
+	declare file="$(${toolchain_directory}/bin/${target}-g++ --print-file-name='libstdc++.la')"
+	cp "${file}" "${libsanitizer_directory}/libstdc++-v3/src"
+	
+	source "${autotools_directory}/${prefix}.sh"
+	
+	../configure \
+		--disable-multilib \
+		--with-gcc-major-version-only \
+		--host="${target}" \
+		--prefix="${toolchain_directory}" \
+		CFLAGS="${optflags}" \
+		CXXFLAGS="${optflags}" \
+		LDFLAGS="${linkflags}"
+	
+	make --jobs="${max_jobs}"
+	make install
+	
+	for library in "${asan_libraries[@]}"; do
+		patchelf --set-rpath '$ORIGIN' "${toolchain_directory}/lib"*"/${library}.so" || true
+		patchelf --set-rpath '$ORIGIN' "${toolchain_directory}/${target}/lib"*"/${library}.so" || true
+	done
+done

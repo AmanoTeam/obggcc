@@ -1,7 +1,7 @@
 #!/bin/bash
 
-declare extra_configure_flags='--disable-libsanitizer'
+declare extra_configure_flags=''
 
 declare triplet='sparc-unknown-linux-gnu'
 
-declare sysroot='https://github.com/AmanoTeam/debian-sysroot/releases/latest/download/sparc-unknown-linux-gnu2.7.tar.xz'
+declare sysroot='https://github.com/AmanoTeam/debian-sysroot/releases/latest/download/sparc-unknown-linux-gnu2.1.tar.xz'

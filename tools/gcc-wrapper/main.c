@@ -50,9 +50,11 @@ static const char SYSTEM_INCLUDE_PATH[] = "/usr/include";
 #define ERR_GET_APP_FILENAME_FAILURE -3
 #define ERR_EXECVE_FAILURE -4
 
-#define CPP "c++"
+#define CPLUSPLUS "c++"
 #define GCC "gcc"
 #define GPLUSPLUS "g++"
+#define GM2 "gm2"
+#define GFORTRAN "gfortran"
 
 int main(int argc, char* argv[], char* envp[]) {
 	
@@ -142,14 +144,25 @@ int main(int argc, char* argv[], char* envp[]) {
 	get_parent_directory(app_filename, parent_directory, 1);
 	
 	ptr = strchr(fname, '\0');
-	cc = ptr - 3;
 	
-	if (!(strcmp(cc, GCC) == 0 || strcmp(cc, GPLUSPLUS) == 0)) {
+	while (ptr != fname) {
+		const unsigned char ch = *ptr;
+		
+		if (ch == '-') {
+			break;
+		}
+		
+		ptr--;
+	}
+	
+	cc = (ptr + 1);
+	
+	if (!(strcmp(cc, GCC) == 0 || strcmp(cc, GPLUSPLUS) == 0 || strcmp(cc, CPLUSPLUS) == 0 || strcmp(cc, GM2) == 0 || strcmp(cc, GFORTRAN) == 0)) {
 		err = ERR_UNKNOWN_COMPILER;
 		goto end;
 	}
 	
-	wants_libcxx += (strcmp(cc, GPLUSPLUS) == 0);
+	wants_libcxx += (strcmp(cc, GPLUSPLUS) == 0 || strcmp(cc, CPLUSPLUS) == 0 || strcmp(cc, GM2) == 0);
 	
 	ptr = fname;
 	
@@ -297,7 +310,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	strcat(gcc_include_directory, GCC_MAJOR_VERSION);
 	strcat(gcc_include_directory, INCLUDE_DIR);
 	
-	gpp_include_directory = malloc(strlen(parent_directory) + strlen(PATHSEP) + strlen(triplet) + strlen(INCLUDE_DIR) + strlen(PATHSEP) + strlen(CPP) + strlen(PATHSEP) + strlen(GCC_MAJOR_VERSION) + 1);
+	gpp_include_directory = malloc(strlen(parent_directory) + strlen(PATHSEP) + strlen(triplet) + strlen(INCLUDE_DIR) + strlen(PATHSEP) + strlen(CPLUSPLUS) + strlen(PATHSEP) + strlen(GCC_MAJOR_VERSION) + 1);
 	
 	if (gpp_include_directory == NULL) {
 		err = ERR_MEMORY_ALLOCATE_FAILURE;
@@ -309,7 +322,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	strcat(gpp_include_directory, triplet);
 	strcat(gpp_include_directory, INCLUDE_DIR);
 	strcat(gpp_include_directory, PATHSEP);
-	strcat(gpp_include_directory, CPP);
+	strcat(gpp_include_directory, CPLUSPLUS);
 	strcat(gpp_include_directory, PATHSEP);
 	strcat(gpp_include_directory, GCC_MAJOR_VERSION);
 	
@@ -338,7 +351,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	args[offset++] = arg;
 	args[offset++] = (char*) GCC_OPT_NOSTDINC;
 	
-	if (strcmp(cc, GPLUSPLUS) == 0) {
+	if (strcmp(cc, GPLUSPLUS) == 0 || strcmp(cc, CPLUSPLUS) == 0) {
 		args[offset++] = (char*) GCC_OPT_ISYSTEM;
 		args[offset++] = gpp_include_directory;
 		
@@ -407,14 +420,19 @@ int main(int argc, char* argv[], char* envp[]) {
 	switch (err) {
 		case ERR_SUCCESS:
 			opt = "Success";
+			break;
 		case ERR_MEMORY_ALLOCATE_FAILURE:
 			opt = "Could not allocate memory";
+			break;
 		case ERR_UNKNOWN_COMPILER:
 			opt = "Unknown GCC compiler";
+			break;
 		case ERR_GET_APP_FILENAME_FAILURE:
 			opt = "Could not get app filename";
+			break;
 		case ERR_EXECVE_FAILURE:
 			opt = "Call to execve failed";
+			break;
 	}
 	
 	if (err != ERR_SUCCESS) {

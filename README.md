@@ -25,20 +25,24 @@ OBGGCC can also be useful if you just want to test whether your program builds o
 
 ## Supported targets
 
-Currently, OBGGCC provides cross-compilers targeting 7 major Debian releases and 1 major CentOS release on 16 system architectures.
+Currently, OBGGCC provides cross-compilers targeting 11 major Debian releases and 1 major CentOS release on 16 system architectures.
 
 ### Distributions
 
 | distribution_version     | glibc_version    | linux_version   | availability_date | 
 | :-------------------------: | :----------------: | :----------------: | :------------------: |
-| Debian 5 (Lenny)          | Glibc 2.7        | Linux 2.6.26       | 2009               |
-| Debian 6 (Squeeze)        | Glibc 2.11       | Linux 2.6.32       | 2011               |
-| Debian 7 (Wheezy)         | Glibc 2.13       | Linux 3.2.78       | 2013               |
-| CentOS 7                          | Glibc 2.17       | Linux 3.10.0       | 2014               |
-| Debian 8 (Jessie)         | Glibc 2.19       | Linux 3.16.56      | 2015               |
-| Debian 9 (Stretch)        | Glibc 2.24       | Linux 4.9.228       | 2017               |
-| Debian 10 (Buster)        | Glibc 2.28       | Linux 4.19.249      | 2019               |
-| Debian 11 (Bullseye)      | Glibc 2.31       | Linux 5.10.223      | 2021               |
+| Debian 2.0 (Hamm)          | glibc 2.0.7        | Linux 2.0.34       | 1998               |
+| Debian 2.2 (Potato)          | glibc 2.1.3        | Linux 2.0.38       | 2000               |
+| Debian 3 (Woody)          | glibc 2.2.5        | Linux 2.2.20       | 2002               |
+| Debian 4 (Etch)          | glibc 2.3.6        | Linux 2.6.18       | 2007               |
+| Debian 5 (Lenny)          | glibc 2.7        | Linux 2.6.26       | 2009               |
+| Debian 6 (Squeeze)        | glibc 2.11       | Linux 2.6.32       | 2011               |
+| Debian 7 (Wheezy)         | glibc 2.13       | Linux 3.2.78       | 2013               |
+| CentOS 7                          | glibc 2.17       | Linux 3.10.0       | 2014               |
+| Debian 8 (Jessie)         | glibc 2.19       | Linux 3.16.56      | 2015               |
+| Debian 9 (Stretch)        | glibc 2.24       | Linux 4.9.228       | 2017               |
+| Debian 10 (Buster)        | glibc 2.28       | Linux 4.19.249      | 2019               |
+| Debian 11 (Bullseye)      | glibc 2.31       | Linux 5.10.223      | 2021               |
 
 ### System architectures
 
@@ -138,13 +142,13 @@ If your project depends on something other than the GNU C library (or the C++ st
 
 ## Linking with system libraries
 
-By default, you can't mix headers and libraries from both the cross-compiler's system root and your host machine's system root. The main reason is that there may be incompatibilities between the two systems, which could cause the compilation to break or produce broken binaries even if the compilation succeeds. Due to this, the standard practice is that you also cross-compile any external dependency that your program may need to use and put them inside the cross-compiler's system root or explicitly point the compiler to where to find the cross-compiled dependencies by passing the appropriate flags while compiling your binary (`-I`, `-L`, and `-l`).
+By default, you can't mix headers and libraries from both the cross-compiler's system root and your host machine's system root. The main reason is that there may be incompatibilities between the two systems, which could cause the compilation to break or produce broken binaries even if the compilation succeeds. Due to this, the standard practice is that you also cross-compile any external dependency that your program may need to use and put them inside the cross-compiler's system root or explicitly point the compiler to where to find the cross-compiled dependencies by passing the appropriate flags when compiling your binary (`-I`, `-L`, and `-l`).
 
 That being said, the GNU C library is portable enough to reduce these incompatibilities to some extent.
 
 The environment variable `OBGGCC_WANTS_SYSTEM_LIBRARIES` can be used to control the default behavior when cross-compiling software.
 
-Let's take this program as an example:
+Let's take as an example this program which uses OpenSSL to perform a simple SHA-256 calculation:
 
 ```c
 #include <string.h>
@@ -153,9 +157,8 @@ Let's take this program as an example:
 #include <openssl/sha.h>
 
 int main(void) {
-    const char* s = "OBGGCC";
     unsigned char hash[SHA256_DIGEST_LENGTH];
-    SHA256(s, strlen(s), hash);
+    SHA256("OBGGCC", 6, hash);
     
     puts("It works!");
     
@@ -163,7 +166,7 @@ int main(void) {
 }
 ```
 
-It uses OpenSSL to perform a simple SHA-256 calculation. When compiling this program on my host machine, it builds fine:
+When compiling this program on my host machine, it builds fine:
 
 ```bash
 $ gcc main.c -lcrypto -o main
@@ -174,7 +177,7 @@ It works!
 However, it fails when cross-compiling with OBGGCC:
 
 ```bash
-$ ${OBGGCC_HOME}/bin/x86_64-unknown-linux-gnu2.7-gcc main.c -lcrypto -o main
+$ x86_64-unknown-linux-gnu2.7-gcc main.c -lcrypto -o main
 main.c:3:10: fatal error: openssl/sha.h: No such file or directory
     3 | #include <openssl/sha.h>
       |          ^~~~~~~~~~~~~~~
@@ -192,12 +195,14 @@ $ export OBGGCC_WANTS_SYSTEM_LIBRARIES=1
 And then compiling the program again:
 
 ```bash
-$ ${OBGGCC_HOME}/bin/x86_64-unknown-linux-gnu2.7-gcc main.c -lcrypto -o main
+$ x86_64-unknown-linux-gnu2.7-gcc main.c -lcrypto -o main
 $ ./main
 It works!
 ```
 
-The reason for the build to succeed this time is that `OBGGCC_WANTS_SYSTEM_LIBRARIES` changes the default cross-compilation behavior so that system directories of the host machine get included in both the library and header location search lists of the cross-compiler. Essentially, it:
+The reason for the build to succeed this time is that `OBGGCC_WANTS_SYSTEM_LIBRARIES` changes the default cross-compilation behavior so that system directories of the host machine get included in both the library and header location search lists of the cross-compiler.
+
+Essentially, it:
 
 - Adds `/usr/include ` to the list of include directories
 - Adds `/usr/local/lib64`, `/usr/local/lib`, `/lib64`, `/lib`, `/usr/lib64`, and `/usr/lib` to the list of library directories
