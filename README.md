@@ -25,20 +25,21 @@ OBGGCC can also be useful if you just want to test whether your program builds o
 
 ## Supported targets
 
-Currently, OBGGCC provides cross-compilers targeting 7 major Debian releases and 1 major CentOS release on 16 system architectures.
+Currently, OBGGCC provides cross-compilers targeting 8 major Debian releases and 1 major CentOS release on 16 system architectures.
 
 ### Distributions
 
 | distribution_version     | glibc_version    | linux_version   | availability_date | 
 | :-------------------------: | :----------------: | :----------------: | :------------------: |
-| Debian 5 (Lenny)          | Glibc 2.7        | Linux 2.6.26       | 2009               |
-| Debian 6 (Squeeze)        | Glibc 2.11       | Linux 2.6.32       | 2011               |
-| Debian 7 (Wheezy)         | Glibc 2.13       | Linux 3.2.78       | 2013               |
-| CentOS 7                          | Glibc 2.17       | Linux 3.10.0       | 2014               |
-| Debian 8 (Jessie)         | Glibc 2.19       | Linux 3.16.56      | 2015               |
-| Debian 9 (Stretch)        | Glibc 2.24       | Linux 4.9.228       | 2017               |
-| Debian 10 (Buster)        | Glibc 2.28       | Linux 4.19.249      | 2019               |
-| Debian 11 (Bullseye)      | Glibc 2.31       | Linux 5.10.223      | 2021               |
+| Debian 4 (Etch)          | glibc 2.3.6        | Linux 2.6.18       | 2007               |
+| Debian 5 (Lenny)          | glibc 2.7        | Linux 2.6.26       | 2009               |
+| Debian 6 (Squeeze)        | glibc 2.11       | Linux 2.6.32       | 2011               |
+| Debian 7 (Wheezy)         | glibc 2.13       | Linux 3.2.78       | 2013               |
+| CentOS 7                          | glibc 2.17       | Linux 3.10.0       | 2014               |
+| Debian 8 (Jessie)         | glibc 2.19       | Linux 3.16.56      | 2015               |
+| Debian 9 (Stretch)        | glibc 2.24       | Linux 4.9.228       | 2017               |
+| Debian 10 (Buster)        | glibc 2.28       | Linux 4.19.249      | 2019               |
+| Debian 11 (Bullseye)      | glibc 2.31       | Linux 5.10.223      | 2021               |
 
 ### System architectures
 
@@ -120,15 +121,40 @@ $ ./configure --host="${CROSS_COMPILE_TRIPLET}"
 $ make
 ```
 
-## Will my program only run on Debian machines?!
-
-No! Cross-compiling your software targeting a specific Debian version doesn't mean it will only run on Debian machines. In fact, since Debian uses the GNU C Library, it will run just fine on most Linux distributions.
-
 ## Portability with C++ programs
 
 Unlike C programs, you cannot easily distribute C++ binaries in a portable way without also shipping the libstdc++ library (and sometimes, libgcc too) along with your release binary. Usually, shipping the libstdc++ library with your release binary doesn't offer much benefit in terms of libc version portability, as your program would still depend on the same libc version that libstdc++ was linked against (in this case, the one installed on your system).
 
 When building C++ programs with OBGGCC, however, your program automatically links against our variant of libstdc++, which is compiled against the same old libc version that the toolchain you're using provides. Because of this, you can statically link it with your binary (or ship the shared library with your release binary) without worrying about it increasing the libc version requirement.
+
+## Security and stability implications
+
+Some people might think that linking a program against an old glibc version will make the compiled binary less secure and more vulnerable, as supposedly, the program will be using symbols from a standard library that's unmaintained and no longer receives security fixes. However, that's not true.
+
+Binaries compiled against an old glibc version still benefit from security fixes introduced in newer glibc versions as long as the target machine is running an updated glibc.
+
+The whole point of symbol versioning is to prevent behavior inconsistencies when running binaries compiled against different glibc versions. This is accomplished by bumping the symbol version every time a backward-incompatible change is introduced to some public function or API of the standard library. With this, programs compiled against newer versions of the standard library can benefit from newer features, while old programs will continue working as intended, as they will still be using the old version of that specific function or API.
+
+The only exception to when a "backward-incompatible change" is not considered for a symbol version bump is when it modifies undocumented or undefined behavior. Security fixes are not considered for a version bump, as they essentially fix something that was not intended to work that way — undefined behavior.
+
+Changes introduced in a newer glibc version that are not considered for a symbol version bump take effect in all versions of that symbol, even in programs that were compiled for a glibc version that didn't receive that change at all. That means your program will still be running secure and optimized code as long as it's running on an up-to-date system.
+
+> [!NOTE]  
+> It should be noted that "an up-to-date system" does not specifically refer to a system where all packages — including glibc — are updated to their latest versions, but to a system that, at the bare minimum, receives security updates even if the system itself or its packages don't receive a major upgrade. This is especially true for Long-Term Support (LTS) Linux distributions.
+
+## Can we go even further?
+
+Currently, the minimum supported glibc version for cross-compilation in OBGGCC is glibc 2.3.6. This version is over 20 years old, and while you might be wondering why anyone would be interested in building software for such ancient versions, you might also be curious about whether it is possible to go even further and cross-compile software for glibc 2.2/2.1/2.0 or even glibc 1.x.
+
+Here are my findings:
+
+glibc 1.x and glibc 2.x are not backward compatible in any way, meaning that software built for one cannot run on the other. glibc 1.x also received a lot of criticism in the past for failing to fully comply with the POSIX standard at the time it was still developed. I have not tried to build a cross-compiler for it, but I find it very unlikely that any recent GCC version still has support for such versions. At a bare minimum, heavy patching of the toolchain would be needed to make it work. It's not really worth it.
+
+glibc 2.0 and glibc 2.1 were not binary-compatible on some architectures, as stated in the [release notes](https://sourceware.org/legacy-ml/libc-alpha/1999-q1/msg00310.html) of the said version. Also, symbol versioning did not exist in glibc until the 2.1 release. I'm not sure if software built for glibc 2.0 can run on glibc 2.1 and up.
+
+Support for x86_64 first appeared in glibc 2.2.5, only gaining overall stability in glibc 2.3 onwards. Starting from glibc 2.2 and lower, libstdc++ fails to build due to the absence of some required functions in the standard library. It might work with some patching, but I did not bother trying.
+
+So, with that in mind, glibc 2.3 seems to be the minimum version that GCC is able to produce a cross-compiler for without breaking anything and requiring tons of patches.
 
 ## Software availability
 
@@ -138,13 +164,13 @@ If your project depends on something other than the GNU C library (or the C++ st
 
 ## Linking with system libraries
 
-By default, you can't mix headers and libraries from both the cross-compiler's system root and your host machine's system root. The main reason is that there may be incompatibilities between the two systems, which could cause the compilation to break or produce broken binaries even if the compilation succeeds. Due to this, the standard practice is that you also cross-compile any external dependency that your program may need to use and put them inside the cross-compiler's system root or explicitly point the compiler to where to find the cross-compiled dependencies by passing the appropriate flags while compiling your binary (`-I`, `-L`, and `-l`).
+By default, you can't mix headers and libraries from both the cross-compiler's system root and your host machine's system root. The main reason is that there may be incompatibilities between the two systems, which could cause the compilation to break or produce broken binaries even if the compilation succeeds. Due to this, the standard practice is that you also cross-compile any external dependency that your program may need to use and put them inside the cross-compiler's system root or explicitly point the compiler to where to find the cross-compiled dependencies by passing the appropriate flags when compiling your binary (`-I`, `-L`, and `-l`).
 
 That being said, the GNU C library is portable enough to reduce these incompatibilities to some extent.
 
 The environment variable `OBGGCC_WANTS_SYSTEM_LIBRARIES` can be used to control the default behavior when cross-compiling software.
 
-Let's take this program as an example:
+Let's take as an example this program which uses OpenSSL to perform a simple SHA-256 calculation:
 
 ```c
 #include <string.h>
@@ -153,9 +179,8 @@ Let's take this program as an example:
 #include <openssl/sha.h>
 
 int main(void) {
-    const char* s = "OBGGCC";
     unsigned char hash[SHA256_DIGEST_LENGTH];
-    SHA256(s, strlen(s), hash);
+    SHA256("OBGGCC", 6, hash);
     
     puts("It works!");
     
@@ -163,7 +188,7 @@ int main(void) {
 }
 ```
 
-It uses OpenSSL to perform a simple SHA-256 calculation. When compiling this program on my host machine, it builds fine:
+When compiling this program on my host machine, it builds fine:
 
 ```bash
 $ gcc main.c -lcrypto -o main
@@ -174,7 +199,7 @@ It works!
 However, it fails when cross-compiling with OBGGCC:
 
 ```bash
-$ ${OBGGCC_HOME}/bin/x86_64-unknown-linux-gnu2.7-gcc main.c -lcrypto -o main
+$ x86_64-unknown-linux-gnu2.7-gcc main.c -lcrypto -o main
 main.c:3:10: fatal error: openssl/sha.h: No such file or directory
     3 | #include <openssl/sha.h>
       |          ^~~~~~~~~~~~~~~
@@ -192,12 +217,14 @@ $ export OBGGCC_WANTS_SYSTEM_LIBRARIES=1
 And then compiling the program again:
 
 ```bash
-$ ${OBGGCC_HOME}/bin/x86_64-unknown-linux-gnu2.7-gcc main.c -lcrypto -o main
+$ x86_64-unknown-linux-gnu2.7-gcc main.c -lcrypto -o main
 $ ./main
 It works!
 ```
 
-The reason for the build to succeed this time is that `OBGGCC_WANTS_SYSTEM_LIBRARIES` changes the default cross-compilation behavior so that system directories of the host machine get included in both the library and header location search lists of the cross-compiler. Essentially, it:
+The reason for the build to succeed this time is that `OBGGCC_WANTS_SYSTEM_LIBRARIES` changes the default cross-compilation behavior so that system directories of the host machine get included in both the library and header location search lists of the cross-compiler.
+
+Essentially, it:
 
 - Adds `/usr/include ` to the list of include directories
 - Adds `/usr/local/lib64`, `/usr/local/lib`, `/lib64`, `/lib`, `/usr/lib64`, and `/usr/lib` to the list of library directories

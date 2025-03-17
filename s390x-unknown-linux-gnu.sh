@@ -1,6 +1,7 @@
 #!/bin/bash
 
-declare extra_configure_flags='--disable-libsanitizer'
+declare extra_configure_flags=''
+declare extra_cxx_flags=''
 
 declare triplet='s390x-unknown-linux-gnu'
 

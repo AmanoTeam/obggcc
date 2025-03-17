@@ -25,6 +25,7 @@ static const char GCC_OPT_NOSTDINC[] = "--no-standard-includes";
 static const char GCC_OPT_LIBDIR[] = "-L";
 static const char GCC_OPT_STATIC_LIBCXX[] = "-static-libstdc++";
 static const char GCC_OPT_L[] = "-l";
+static const char GCC_OPT_V[] = "-v";
 static const char GCC_OPT_I[] = "-I";
 static const char GCC_OPT_C[] = "-c";
 static const char GCC_OPT_L_RT[] = "-lrt";
@@ -50,9 +51,11 @@ static const char SYSTEM_INCLUDE_PATH[] = "/usr/include";
 #define ERR_GET_APP_FILENAME_FAILURE -3
 #define ERR_EXECVE_FAILURE -4
 
-#define CPP "c++"
+#define CPLUSPLUS "c++"
 #define GCC "gcc"
 #define GPLUSPLUS "g++"
+#define GM2 "gm2"
+#define GFORTRAN "gfortran"
 
 int main(int argc, char* argv[], char* envp[]) {
 	
@@ -67,6 +70,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	int wants_system_libraries = 0;
 	
+	int verbose = 0;
 	int wants_libcxx = 0;
 	int wants_rt_library = 0;
 	
@@ -108,7 +112,9 @@ int main(int argc, char* argv[], char* envp[]) {
 	for (index = 0; index < argc; index++) {
 		cur = argv[index];
 		
-		if (strcmp(cur, GCC_OPT_STATIC_LIBCXX) == 0 || strcmp(cur, GCC_OPT_L_STDCXX) == 0) {
+		if (strcmp(cur, GCC_OPT_V) == 0) {
+			verbose = 1;
+		} else if (strcmp(cur, GCC_OPT_STATIC_LIBCXX) == 0 || strcmp(cur, GCC_OPT_L_STDCXX) == 0) {
 			wants_libcxx = 1;
 		} else if (strcmp(cur, GCC_OPT_L_RT) == 0) {
 			have_rt_library = 1;
@@ -142,14 +148,25 @@ int main(int argc, char* argv[], char* envp[]) {
 	get_parent_directory(app_filename, parent_directory, 1);
 	
 	ptr = strchr(fname, '\0');
-	cc = ptr - 3;
 	
-	if (!(strcmp(cc, GCC) == 0 || strcmp(cc, GPLUSPLUS) == 0)) {
+	while (ptr != fname) {
+		const unsigned char ch = *ptr;
+		
+		if (ch == '-') {
+			break;
+		}
+		
+		ptr--;
+	}
+	
+	cc = (ptr + 1);
+	
+	if (!(strcmp(cc, GCC) == 0 || strcmp(cc, GPLUSPLUS) == 0 || strcmp(cc, CPLUSPLUS) == 0 || strcmp(cc, GM2) == 0 || strcmp(cc, GFORTRAN) == 0)) {
 		err = ERR_UNKNOWN_COMPILER;
 		goto end;
 	}
 	
-	wants_libcxx += (strcmp(cc, GPLUSPLUS) == 0);
+	wants_libcxx += (strcmp(cc, GPLUSPLUS) == 0 || strcmp(cc, CPLUSPLUS) == 0 || strcmp(cc, GM2) == 0);
 	
 	ptr = fname;
 	
@@ -157,7 +174,7 @@ int main(int argc, char* argv[], char* envp[]) {
 		const unsigned char a = *ptr;
 		const unsigned char b = *(ptr + 1);
 		
-		if (isdigit(a) && b == '.') {
+		if (a == '2' && (b == '.' || b == '-')) {
 			break;
 		}
 		
@@ -202,9 +219,9 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	glibc_version_major = strtol(glibc_version, &ptr, 16);
 	
-	ptr++;
-	
-	glibc_version_minor = strtol(ptr, NULL, 16);
+	if (*ptr != '-') {
+		glibc_version_minor = strtol(ptr + 1, NULL, 16);
+	}
 	
 	/* Determine whether we need to implicit link with -lrt */
 	wants_rt_library = wants_libcxx && !have_rt_library && (glibc_version_major == 2 && glibc_version_minor < 17);
@@ -297,7 +314,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	strcat(gcc_include_directory, GCC_MAJOR_VERSION);
 	strcat(gcc_include_directory, INCLUDE_DIR);
 	
-	gpp_include_directory = malloc(strlen(parent_directory) + strlen(PATHSEP) + strlen(triplet) + strlen(INCLUDE_DIR) + strlen(PATHSEP) + strlen(CPP) + strlen(PATHSEP) + strlen(GCC_MAJOR_VERSION) + 1);
+	gpp_include_directory = malloc(strlen(parent_directory) + strlen(PATHSEP) + strlen(triplet) + strlen(INCLUDE_DIR) + strlen(PATHSEP) + strlen(CPLUSPLUS) + strlen(PATHSEP) + strlen(GCC_MAJOR_VERSION) + 1);
 	
 	if (gpp_include_directory == NULL) {
 		err = ERR_MEMORY_ALLOCATE_FAILURE;
@@ -309,7 +326,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	strcat(gpp_include_directory, triplet);
 	strcat(gpp_include_directory, INCLUDE_DIR);
 	strcat(gpp_include_directory, PATHSEP);
-	strcat(gpp_include_directory, CPP);
+	strcat(gpp_include_directory, CPLUSPLUS);
 	strcat(gpp_include_directory, PATHSEP);
 	strcat(gpp_include_directory, GCC_MAJOR_VERSION);
 	
@@ -338,7 +355,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	args[offset++] = arg;
 	args[offset++] = (char*) GCC_OPT_NOSTDINC;
 	
-	if (strcmp(cc, GPLUSPLUS) == 0) {
+	if (strcmp(cc, GPLUSPLUS) == 0 || strcmp(cc, CPLUSPLUS) == 0) {
 		args[offset++] = (char*) GCC_OPT_ISYSTEM;
 		args[offset++] = gpp_include_directory;
 		
@@ -383,6 +400,26 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	memcpy(&args[offset], &argv[1], argc * sizeof(*argv));
 	
+	if (verbose) {
+		printf("%s", "+ ");
+		
+		for (index = 0; 1; index++) {
+			cur = args[index];
+			
+			if (cur == NULL) {
+				break;
+			}
+			
+			if (index != 0) {
+				printf("%s", " ");
+			}
+			
+			printf("%s", cur);
+		}
+		
+		printf("%s", "\n");
+	}
+	
 	if (execve(executable, args, envp) == -1) {
 		err = ERR_EXECVE_FAILURE;
 		goto end;
@@ -407,14 +444,19 @@ int main(int argc, char* argv[], char* envp[]) {
 	switch (err) {
 		case ERR_SUCCESS:
 			opt = "Success";
+			break;
 		case ERR_MEMORY_ALLOCATE_FAILURE:
 			opt = "Could not allocate memory";
+			break;
 		case ERR_UNKNOWN_COMPILER:
 			opt = "Unknown GCC compiler";
+			break;
 		case ERR_GET_APP_FILENAME_FAILURE:
 			opt = "Could not get app filename";
+			break;
 		case ERR_EXECVE_FAILURE:
 			opt = "Call to execve failed";
+			break;
 	}
 	
 	if (err != ERR_SUCCESS) {

@@ -1,9 +1,12 @@
 #/bin/bash
 
+kopt="${-}"
+
+set +u
 set -e
 
 if [ -z "${OBGGCC_HOME}" ]; then
-	OBGGCC_HOME="$(realpath "$(dirname "${0}")")/../../../../.."
+	OBGGCC_HOME="$(realpath "$(( [ -n "${BASH_SOURCE}" ] && dirname "$(realpath "${BASH_SOURCE[0]}")" ) || dirname "$(realpath "${0}")")""/../../../../..")"
 fi
 
 set -u
@@ -42,4 +45,5 @@ export \
 	OBJCOPY \
 	READELF
 
-set +eu
+[[ "${kopt}" = *e*  ]] || set +e
+[[ "${kopt}" = *u*  ]] || set +u
