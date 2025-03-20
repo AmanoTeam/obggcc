@@ -125,8 +125,8 @@ declare -ra bits=(
 )
 
 declare -ra targets=(
-	'aarch64-unknown-linux-gnu'
 	'alpha-unknown-linux-gnu'
+	'aarch64-unknown-linux-gnu'
 	'arm-unknown-linux-gnueabi'
 	'arm-unknown-linux-gnueabihf'
 	'hppa-unknown-linux-gnu'
