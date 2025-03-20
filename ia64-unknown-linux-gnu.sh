@@ -4,4 +4,4 @@ declare extra_configure_flags='--enable-obsolete'
 
 declare triplet='ia64-unknown-linux-gnu'
 
-declare sysroot='https://github.com/AmanoTeam/debian-sysroot/releases/latest/download/ia64-unknown-linux-gnu2.2.tar.xz'
+declare sysroot='https://github.com/AmanoTeam/debian-sysroot/releases/latest/download/ia64-unknown-linux-gnu2.3.tar.xz'
