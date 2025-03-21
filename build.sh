@@ -125,7 +125,6 @@ declare -ra bits=(
 )
 
 declare -ra targets=(
-	'i386-unknown-linux-gnu'
 	'ia64-unknown-linux-gnu'
 	'mips-unknown-linux-gnu'
 	'mips64el-unknown-linux-gnuabi64'
@@ -141,6 +140,7 @@ declare -ra targets=(
 	'arm-unknown-linux-gnueabi'
 	'arm-unknown-linux-gnueabihf'
 	'hppa-unknown-linux-gnu'
+	'i386-unknown-linux-gnu'
 )
 
 declare build_type="${1}"
@@ -447,7 +447,7 @@ for target in "${targets[@]}"; do
 		--enable-gold \
 		--enable-plugin \
 		--enable-libstdcxx-time='rt' \
-		--enable-cxx-flags='-D_GLIBCXX_HAVE_FABSF -D_GLIBCXX_HAVE_FABSL -D_GLIBCXX_HAVE_FLOORF -D_GLIBCXX_HAVE_CEILF -D_GLIBCXX_HAVE_HYPOTF -D_GLIBCXX_HAVE_HYPOTL -D_GLIBCXX_HAVE_FLOORL -D_GLIBCXX_HAVE_CEILL' \
+		--enable-cxx-flags="${extra_cxx_flags}" \
 		--disable-libsanitizer \
 		--disable-libgomp \
 		--disable-bootstrap \
