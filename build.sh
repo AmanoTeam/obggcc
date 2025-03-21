@@ -349,6 +349,7 @@ make all --jobs
 make install
 
 for target in "${targets[@]}"; do
+	extra_cxx_flags=''
 	source "${workdir}/${target}.sh"
 	
 	cd "$(mktemp --directory)"
