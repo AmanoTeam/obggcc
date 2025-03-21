@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -eu
-set +u
+
 declare -r revision="$(git rev-parse --short HEAD)"
 
 declare -r workdir="${PWD}"
@@ -32,7 +32,7 @@ declare -r gcc_directory='/tmp/gcc-master'
 declare -r libsanitizer_directory="${gcc_directory}/libsanitizer"
 
 declare -r pieflags='-fPIE'
-declare -r optflags='-w -O2'
+declare -r optflags='-w -Os'
 declare -r linkflags='-Wl,-s'
 
 declare -r max_jobs='40'
@@ -125,6 +125,10 @@ declare -ra bits=(
 )
 
 declare -ra targets=(
+	'i386-unknown-linux-gnu'
+)
+
+declare -ra t2argets=(
 	'ia64-unknown-linux-gnu'
 	'mips-unknown-linux-gnu'
 	'mips64el-unknown-linux-gnuabi64'
@@ -349,7 +353,6 @@ make all --jobs
 make install
 
 for target in "${targets[@]}"; do
-	extra_cxx_flags=''
 	source "${workdir}/${target}.sh"
 	
 	cd "$(mktemp --directory)"
@@ -562,7 +565,7 @@ while read item; do
 		--extract \
 		--file="${sysroot_tarball}"
 	
-	pushd "${toolchain_directory}/${triplet}${glibc_version}/lib"
+	cd "${toolchain_directory}/${triplet}${glibc_version}/lib"
 	
 	for library in "${libraries[@]}"; do
 		for bit in "${bits[@]}"; do
@@ -576,9 +579,7 @@ while read item; do
 		done
 	done
 	
-	pushd
-	
-	pushd "${toolchain_directory}/bin"
+	cd "${toolchain_directory}/bin"
 	
 	for name in "${libstdcxx_depends[@]}"; do
 		source="./${triplet}-${name}"
@@ -602,8 +603,6 @@ while read item; do
 		
 		ln --symbolic "${source}" "${destination}" 
 	done
-	
-	pushd
 done <<< "$(jq --compact-output '.[]' "${workdir}/submodules/debian-sysroot/dist.json")"
 
 for triplet in "${targets[@]}"; do

@@ -1,6 +1,7 @@
 #!/bin/bash
 
 declare extra_configure_flags=''
+declare extra_cxx_flags=''
 
 declare triplet='powerpc64le-unknown-linux-gnu'
 
