@@ -550,6 +550,8 @@ while read item; do
 	cp "${gcc_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-gm2"
 	cp "${gcc_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-gfortran"
 	
+	echo "- Fetching data from '${sysroot}'"
+	
 	curl \
 		--url "${sysroot}" \
 		--retry '30' \
