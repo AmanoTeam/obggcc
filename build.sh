@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -eu
-
+set +u
 declare -r revision="$(git rev-parse --short HEAD)"
 
 declare -r workdir="${PWD}"
@@ -431,17 +431,23 @@ for target in "${targets[@]}"; do
 		--enable-gnu-indirect-function \
 		--enable-gnu-unique-object \
 		--enable-libstdcxx-backtrace \
+		--enable-libstdcxx-filesystem-ts \
+		--enable-libstdcxx-static-eh-pool \
+		--with-libstdcxx-zoneinfo='static' \
+		--with-libstdcxx-lock-policy='mutex' \
 		--enable-link-serialization='1' \
 		--enable-linker-build-id \
 		--enable-lto \
 		--enable-shared \
 		--enable-threads='posix' \
+		--enable-libstdcxx-threads \
 		--enable-libssp \
 		--enable-languages='c,c++,fortran,objc,obj-c++,m2' \
 		--enable-ld \
 		--enable-gold \
 		--enable-plugin \
 		--enable-libstdcxx-time='rt' \
+		--enable-cxx-flags="${extra_cxx_flags}" \
 		--disable-libsanitizer \
 		--disable-libgomp \
 		--disable-bootstrap \
