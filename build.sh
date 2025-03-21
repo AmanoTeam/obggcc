@@ -126,11 +126,6 @@ declare -ra bits=(
 
 declare -ra targets=(
 	'i386-unknown-linux-gnu'
-	'alpha-unknown-linux-gnu'
-	'aarch64-unknown-linux-gnu'
-	'arm-unknown-linux-gnueabi'
-	'arm-unknown-linux-gnueabihf'
-	'hppa-unknown-linux-gnu'
 	'ia64-unknown-linux-gnu'
 	'mips-unknown-linux-gnu'
 	'mips64el-unknown-linux-gnuabi64'
@@ -141,6 +136,11 @@ declare -ra targets=(
 	's390x-unknown-linux-gnu'
 	'sparc-unknown-linux-gnu'
 	'x86_64-unknown-linux-gnu'
+	'alpha-unknown-linux-gnu'
+	'aarch64-unknown-linux-gnu'
+	'arm-unknown-linux-gnueabi'
+	'arm-unknown-linux-gnueabihf'
+	'hppa-unknown-linux-gnu'
 )
 
 declare build_type="${1}"
