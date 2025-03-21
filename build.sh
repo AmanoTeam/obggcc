@@ -447,7 +447,7 @@ for target in "${targets[@]}"; do
 		--enable-gold \
 		--enable-plugin \
 		--enable-libstdcxx-time='rt' \
-		--enable-cxx-flags="${extra_cxx_flags}" \
+		--enable-cxx-flags='-D_GLIBCXX_HAVE_FABSF -D_GLIBCXX_HAVE_FABSL -D_GLIBCXX_HAVE_FLOORF -D_GLIBCXX_HAVE_CEILF -D_GLIBCXX_HAVE_HYPOTF -D_GLIBCXX_HAVE_HYPOTL -D_GLIBCXX_HAVE_FLOORL -D_GLIBCXX_HAVE_CEILL' \
 		--disable-libsanitizer \
 		--disable-libgomp \
 		--disable-bootstrap \
