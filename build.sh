@@ -32,7 +32,7 @@ declare -r gcc_directory='/tmp/gcc-master'
 declare -r libsanitizer_directory="${gcc_directory}/libsanitizer"
 
 declare -r pieflags='-fPIE'
-declare -r optflags='-w -Os'
+declare optflags='-w -Os'
 declare -r linkflags='-Xlinker -s'
 
 declare -r max_jobs='40'
@@ -168,6 +168,10 @@ fi
 declare -r \
 	build_type \
 	is_native
+
+if (( is_native )); then
+	optflags+=' -march=native'
+fi
 
 if ! [ -f "${gmp_tarball}" ]; then
 	curl \
