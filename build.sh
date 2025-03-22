@@ -33,7 +33,7 @@ declare -r libsanitizer_directory="${gcc_directory}/libsanitizer"
 
 declare -r nativeflags='-march=native'
 declare -r pieflags='-fPIE'
-declare -r optflags="-w -O2 ${nativeflags}"
+declare optflags="-w -O2"
 declare -r linkflags='-Xlinker -s'
 
 declare -r max_jobs='40'
