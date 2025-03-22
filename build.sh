@@ -172,7 +172,7 @@ declare -r \
 	is_native
 
 if (( is_native )); then
-	optflags+=' -march=native'
+	# optflags+=' -march=native'
 fi
 
 if ! [ -f "${gmp_tarball}" ]; then
