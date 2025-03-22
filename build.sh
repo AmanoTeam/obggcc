@@ -32,7 +32,7 @@ declare -r gcc_directory='/tmp/gcc-master'
 declare -r libsanitizer_directory="${gcc_directory}/libsanitizer"
 
 declare -r pieflags='-fPIE'
-declare optflags='-w -Os'
+declare optflags='-w -O2'
 declare -r linkflags='-Xlinker -s'
 
 declare -r max_jobs='40'
@@ -126,6 +126,7 @@ declare -ra bits=(
 
 declare -ra targets=(
 	'i386-unknown-linux-gnu'
+	'x86_64-unknown-linux-gnu'
 )
 
 declare -ra t2argets=(
