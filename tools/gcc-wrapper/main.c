@@ -25,6 +25,7 @@ static const char GCC_OPT_NOSTDINC[] = "--no-standard-includes";
 static const char GCC_OPT_LIBDIR[] = "-L";
 static const char GCC_OPT_STATIC_LIBCXX[] = "-static-libstdc++";
 static const char GCC_OPT_L[] = "-l";
+static const char GCC_OPT_V[] = "-v";
 static const char GCC_OPT_I[] = "-I";
 static const char GCC_OPT_C[] = "-c";
 static const char GCC_OPT_L_RT[] = "-lrt";
@@ -69,6 +70,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	int wants_system_libraries = 0;
 	
+	int verbose = 0;
 	int wants_libcxx = 0;
 	int wants_rt_library = 0;
 	
@@ -110,7 +112,9 @@ int main(int argc, char* argv[], char* envp[]) {
 	for (index = 0; index < argc; index++) {
 		cur = argv[index];
 		
-		if (strcmp(cur, GCC_OPT_STATIC_LIBCXX) == 0 || strcmp(cur, GCC_OPT_L_STDCXX) == 0) {
+		if (strcmp(cur, GCC_OPT_V) == 0) {
+			verbose = 1;
+		} else if (strcmp(cur, GCC_OPT_STATIC_LIBCXX) == 0 || strcmp(cur, GCC_OPT_L_STDCXX) == 0) {
 			wants_libcxx = 1;
 		} else if (strcmp(cur, GCC_OPT_L_RT) == 0) {
 			have_rt_library = 1;
@@ -170,7 +174,7 @@ int main(int argc, char* argv[], char* envp[]) {
 		const unsigned char a = *ptr;
 		const unsigned char b = *(ptr + 1);
 		
-		if (isdigit(a) && b == '.') {
+		if (a == '2' && (b == '.' || b == '-')) {
 			break;
 		}
 		
@@ -212,12 +216,12 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	memcpy(glibc_version, start, size);
 	glibc_version[size] = '\0';
-	
+	puts(glibc_version);
 	glibc_version_major = strtol(glibc_version, &ptr, 16);
 	
-	ptr++;
-	
-	glibc_version_minor = strtol(ptr, NULL, 16);
+	if (*ptr != '-') {
+		glibc_version_minor = strtol(ptr + 1, NULL, 16);
+	}
 	
 	/* Determine whether we need to implicit link with -lrt */
 	wants_rt_library = wants_libcxx && !have_rt_library && (glibc_version_major == 2 && glibc_version_minor < 17);
@@ -395,6 +399,26 @@ int main(int argc, char* argv[], char* envp[]) {
 	}
 	
 	memcpy(&args[offset], &argv[1], argc * sizeof(*argv));
+	
+	if (verbose) {
+		printf("%s", "+");
+		
+		for (index = 0; 1; index++) {
+			cur = args[index];
+			
+			if (cur == NULL) {
+				break;
+			}
+			
+			if (index != 0) {
+				printf("%s", " ");
+			}
+			
+			printf("%s", cur);
+		}
+		
+		printf("%s", "\n");
+	}
 	
 	if (execve(executable, args, envp) == -1) {
 		err = ERR_EXECVE_FAILURE;

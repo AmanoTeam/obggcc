@@ -130,6 +130,8 @@ declare -ra targets=(
 	'x86_64-unknown-linux-gnu'
 )
 
+declare -r languages='c,c++,fortran,objc,obj-c++,m2'
+
 declare -ra t2argets=(
 	'ia64-unknown-linux-gnu'
 	'mips-unknown-linux-gnu'
@@ -172,7 +174,7 @@ declare -r \
 	is_native
 
 if (( is_native )); then
-	# optflags+=' -march=native'
+	optflags+=' -march=native'
 fi
 
 if ! [ -f "${gmp_tarball}" ]; then
@@ -454,12 +456,13 @@ for target in "${targets[@]}"; do
 		--enable-threads='posix' \
 		--enable-libstdcxx-threads \
 		--enable-libssp \
-		--enable-languages='c,c++,fortran,objc,obj-c++,m2' \
+		--enable-languages="${languages}" \
 		--enable-ld \
 		--enable-gold \
 		--enable-plugin \
 		--enable-libstdcxx-time='rt' \
 		--enable-cxx-flags="${extra_cxx_flags}" \
+		--disable-libstdcxx \
 		--disable-libsanitizer \
 		--disable-libgomp \
 		--disable-bootstrap \
@@ -487,10 +490,22 @@ for target in "${targets[@]}"; do
 	patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/cc1'
 	patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/cc1plus'
 	patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/lto1'
-	patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/cc1gm2'
-	patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/cc1obj'
-	patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/cc1objplus'
-	patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/f951'
+	
+	if [[ "${languages}" = *'m2'* ]]; then
+		patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/cc1gm2'
+	fi
+	
+	if [[ "${languages}" = *'objc'* ]]; then
+		patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/cc1obj'
+	fi
+	
+	if [[ "${languages}" = *'obj-c++'* ]]; then
+		patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/cc1objplus'
+	fi
+	
+	if [[ "${languages}" = *'fortran'* ]]; then
+		patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/f951'
+	fi
 	
 	for library in "${plugin_libraries[@]}"; do
 		patchelf --set-rpath "\$ORIGIN/../../../../../${triplet}/lib64:\$ORIGIN/../../../../../${triplet}/lib:\$ORIGIN/../../../../../lib64:\$ORIGIN/../../../../../lib" "${toolchain_directory}/lib/gcc/${triplet}/"*"/plugin/${library}.so"
@@ -568,8 +583,14 @@ while read item; do
 	cp "${gcc_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-gcc"
 	cp "${gcc_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-g++"
 	cp "${gcc_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-c++"
-	cp "${gcc_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-gm2"
-	cp "${gcc_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-gfortran"
+	
+	if [[ "${languages}" = *'m2'* ]]; then
+		cp "${gcc_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-gm2"
+	fi
+	
+	if [[ "${languages}" = *'fortran'* ]]; then
+		cp "${gcc_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-gfortran"
+	fi
 	
 	echo "- Fetching data from '${sysroot}'"
 	
@@ -643,8 +664,8 @@ cp --recursive "${workdir}/tools/dev/"* "${share_directory}"
 cd "${libsanitizer_directory}/build"
 
 mkdir --parent "${libsanitizer_directory}/libstdc++-v3/src"
-
-for target in "${targets[@]}"; do
+declare a=()
+for target in "${a[@]}"; do
 	if [[ "${target}" = 's390'* ]] || [[ "${target}" = 'mips'* ]] || [[ "${target}" = 'hppa'* ]] || [[ "${target}" = 'ia64'* ]] || [[ "${target}" = 'sparc'* ]] || [[ "${target}" = 'alpha'* ]] || [[ "${target}" = 'arm'*'eabi' ]]; then
 		continue
 	fi
