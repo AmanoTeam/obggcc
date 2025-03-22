@@ -515,34 +515,41 @@ if ! (( is_native )); then
 	readelf="${READELF}"
 fi
 
-[ -d "${toolchain_directory}/lib" ] || mkdir "${toolchain_directory}/lib"
+# Bundle both libstdc++ and libgcc within host tools
+if ! (( is_native )); then
+	[ -d "${toolchain_directory}/lib" ] || mkdir "${toolchain_directory}/lib"
+	
+	declare name=$(realpath $("${cc}" --print-file-name='libstdc++.so'))
+	declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
+	
+	cp "${name}" "${toolchain_directory}/lib/${soname}"
+	
+	declare name=$(realpath $("${cc}" --print-file-name='libgcc_s.so.1'))
+	declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
+	
+	cp "${name}" "${toolchain_directory}/lib/${soname}"
+fi
 
-declare name=$(realpath $("${cc}" --print-file-name='libstdc++.so'))
-declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
-
-cp "${name}" "${toolchain_directory}/lib/${soname}"
-
-declare name=$(realpath $("${cc}" --print-file-name='libgcc_s.so.1'))
-declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
- 
-cp "${name}" "${toolchain_directory}/lib/${soname}"
+"${cc}" \
+	"${workdir}/tools/gcc-wrapper/filesystem.c" \
+	"${workdir}/tools/gcc-wrapper/main.c" \
+	"${workdir}/tools/gcc-wrapper/path.c" \
+	${optflags} \
+	${linkflags} \
+	-o "${gcc_wrapper}"
 
 while read item; do
 	declare glibc_version="$(jq '.glibc_version' <<< "${item}")"
 	declare triplet="$(jq --raw-output '.triplet' <<< "${item}")"
 	declare sysroot="https://github.com/AmanoTeam/debian-sysroot/releases/latest/download/${triplet}${glibc_version}.tar.xz"
 	
+	if [ "${glibc_version}" = '2.0' ]; then
+		glibc_version='2'
+	fi
+	
 	if ! [ -d "${toolchain_directory}/${triplet}" ]; then
 		continue
 	fi
-	
-	"${cc}" \
-		"${workdir}/tools/gcc-wrapper/filesystem.c" \
-		"${workdir}/tools/gcc-wrapper/main.c" \
-		"${workdir}/tools/gcc-wrapper/path.c" \
-		${optflags} \
-		${linkflags} \
-		-o "${gcc_wrapper}"
 	
 	cp "${gcc_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-gcc"
 	cp "${gcc_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-g++"
