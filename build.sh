@@ -33,7 +33,7 @@ declare -r libsanitizer_directory="${gcc_directory}/libsanitizer"
 
 declare -r pieflags='-fPIE'
 declare -r optflags='-w -Os'
-declare -r linkflags='-Wl,-s'
+declare -r linkflags='-Xlinker -s'
 
 declare -r max_jobs='40'
 
@@ -347,7 +347,7 @@ rm --force --recursive ./*
 	--disable-static \
 	CFLAGS="${pieflags} ${optflags}" \
 	CXXFLAGS="${pieflags} ${optflags}" \
-	LDFLAGS="-Wl,-rpath-link -Wl,${toolchain_directory}/lib ${linkflags}"
+	LDFLAGS="-Xlinker -rpath-link -Xlinker ${toolchain_directory}/lib ${linkflags}"
 
 make all --jobs
 make install
@@ -359,6 +359,8 @@ for target in "${targets[@]}"; do
 	
 	declare sysroot_directory="$(basename "${sysroot}" '.tar.xz')"
 	declare sysroot_file="$(basename "${sysroot}")"
+	
+	echo "- Fetching data from '${sysroot}'"
 	
 	curl \
 		--url "${sysroot}" \
@@ -500,6 +502,8 @@ for target in "${targets[@]}"; do
 						continue
 					fi
 					
+					echo "- Symlinking '${file}' to '${PWD}'"
+					
 					ln --symbolic "${file}" './'
 				done
 			done
@@ -541,11 +545,12 @@ fi
 while read item; do
 	declare glibc_version="$(jq '.glibc_version' <<< "${item}")"
 	declare triplet="$(jq --raw-output '.triplet' <<< "${item}")"
-	declare sysroot="https://github.com/AmanoTeam/debian-sysroot/releases/latest/download/${triplet}${glibc_version}.tar.xz"
 	
 	if [ "${glibc_version}" = '2.0' ]; then
 		glibc_version='2'
 	fi
+	
+	declare sysroot="https://github.com/AmanoTeam/debian-sysroot/releases/latest/download/${triplet}${glibc_version}.tar.xz"
 	
 	if ! [ -d "${toolchain_directory}/${triplet}" ]; then
 		continue
@@ -582,6 +587,8 @@ while read item; do
 				if [[ "${file}" == *'*' ]]; then
 					continue
 				fi
+				
+				echo "- Symlinking '${file}' to '${PWD}'"
 				
 				ln --symbolic "${file}" './'
 			done
