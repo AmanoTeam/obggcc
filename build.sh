@@ -31,8 +31,9 @@ declare -r gcc_directory='/tmp/gcc-master'
 
 declare -r libsanitizer_directory="${gcc_directory}/libsanitizer"
 
+declare -r nativeflags='-march=native'
 declare -r pieflags='-fPIE'
-declare optflags='-w -O2'
+declare -r optflags="-w -O2 ${nativeflags}"
 declare -r linkflags='-Xlinker -s'
 
 declare -r max_jobs='40'
@@ -472,9 +473,12 @@ for target in "${targets[@]}"; do
 		CXXFLAGS="${optflags}" \
 		LDFLAGS="${linkflags}"
 	
+	cflags_for_target="${optflags/${nativeflags}/} ${linkflags}"
+	cxxflags_for_target="${cflags_for_target}"
+	
 	LD_LIBRARY_PATH="${toolchain_directory}/lib" PATH="${PATH}:${toolchain_directory}/bin" make \
-		CFLAGS_FOR_TARGET="${optflags} ${linkflags}" \
-		CXXFLAGS_FOR_TARGET="${optflags} ${linkflags}" \
+		CFLAGS_FOR_TARGET="${cflags_for_target}" \
+		CXXFLAGS_FOR_TARGET="${cxxflags_for_target}" \
 		gcc_cv_objdump="${CROSS_COMPILE_TRIPLET}-objdump" \
 		all \
 		--jobs="${max_jobs}"
