@@ -31,7 +31,9 @@ static const char GCC_OPT_C[] = "-c";
 static const char GCC_OPT_L_RT[] = "-lrt";
 static const char GCC_OPT_L_STDCXX[] = "-lstdc++";
 static const char GCC_OPT_XLINKER[] = "-Xlinker";
+static const char LD_OPT_DYNAMIC_LINKER[] = "-dynamic-linker";
 static const char LD_OPT_RPATH_LINK[] = "-rpath-link";
+static const char LD_OPT_RPATH[] = "-rpath";
 static const char LD_OPT_UNRESOLVED_SYMBOLS[] = "--unresolved-symbols=ignore-in-shared-libs";
 
 static const char* const SYSTEM_LIBRARY_PATH[] = {
@@ -57,6 +59,80 @@ static const char SYSTEM_INCLUDE_PATH[] = "/usr/include";
 #define GM2 "gm2"
 #define GFORTRAN "gfortran"
 
+const char* get_loader(const char* const triplet) {
+	
+	if (strcmp(triplet, "aarch64-unknown-linux-gnu") == 0) {
+		return "ld-linux-aarch64.so.1";
+	}
+	
+	if (strcmp(triplet, "alpha-unknown-linux-gnu") == 0) {
+		return "ld-linux.so.2";
+	}
+	
+	if (strcmp(triplet, "arm-unknown-linux-gnueabi") == 0) {
+		return "ld-linux.so.3";
+	}
+	
+	if (strcmp(triplet, "arm-unknown-linux-gnueabi") == 0) {
+		return "ld-linux.so.3";
+	}
+	
+	if (strcmp(triplet, "arm-unknown-linux-gnueabihf") == 0) {
+		return "ld-linux-armhf.so.3";
+	}
+	
+	if (strcmp(triplet, "hppa-unknown-linux-gnu") == 0) {
+		return "ld.so.1";
+	}
+	
+	if (strcmp(triplet, "i386-unknown-linux-gnu") == 0) {
+		return "ld-linux.so.2";
+	}
+	
+	if (strcmp(triplet, "ia64-unknown-linux-gnu") == 0) {
+		return "ld-linux-ia64.so.2";
+	}
+	
+	if (strcmp(triplet, "mips64el-unknown-linux-gnuabi64") == 0) {
+		return "ld.so.1";
+	}
+	
+	if (strcmp(triplet, "mipsel-unknown-linux-gnu") == 0) {
+		return "ld.so.1";
+	}
+	
+	if (strcmp(triplet, "mips-unknown-linux-gnu") == 0) {
+		return "ld.so.1";
+	}
+	
+	if (strcmp(triplet, "powerpc64le-unknown-linux-gnu") == 0) {
+		return "ld64.so.2";
+	}
+	
+	if (strcmp(triplet, "powerpc-unknown-linux-gnu") == 0) {
+		return "ld.so.1";
+	}
+	
+	if (strcmp(triplet, "s390-unknown-linux-gnu") == 0) {
+		return "ld.so.1";
+	}
+	
+	if (strcmp(triplet, "s390x-unknown-linux-gnu") == 0) {
+		return "ld64.so.1";
+	}
+	
+	if (strcmp(triplet, "sparc-unknown-linux-gnu") == 0) {
+		return "ld-linux.so.2";
+	}
+	
+	if (strcmp(triplet, "x86_64-unknown-linux-gnu") == 0) {
+		return "ld-linux-x86-64.so.2";
+	}
+	
+	return NULL;
+	
+}
+
 int main(int argc, char* argv[], char* envp[]) {
 	
 	int err = ERR_SUCCESS;
@@ -69,6 +145,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	long int glibc_version_minor = 0;
 	
 	int wants_system_libraries = 0;
+	int wants_builtin_loader = 0;
 	
 	int verbose = 0;
 	int wants_libcxx = 0;
@@ -98,6 +175,8 @@ int main(int argc, char* argv[], char* envp[]) {
 	char* sysroot_include_missing_directory = NULL;
 	char* sysroot_library_directory = NULL;
 	
+	char* sysroot_dynamic_linker = NULL;
+	
 	char* sysroot_directory = NULL;
 	char* parent_directory = NULL;
 	
@@ -108,6 +187,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	char* glibc_version = NULL;
 	
 	wants_system_libraries = getenv("OBGGCC_WANTS_SYSTEM_LIBRARIES") != NULL;
+	wants_builtin_loader = getenv("OBGGCC_BUILTIN_LOADER") != NULL;
 	
 	for (index = 0; index < argc; index++) {
 		cur = argv[index];
@@ -260,6 +340,10 @@ int main(int argc, char* argv[], char* envp[]) {
 		size += 6;
 	}
 	
+	if (wants_builtin_loader) {
+		size += 8;
+	}
+	
 	args = malloc(size * sizeof(char*));
 	
 	if (args == NULL) {
@@ -298,6 +382,21 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	strcpy(sysroot_library_directory, sysroot_directory);
 	strcat(sysroot_library_directory, LIBRARY_DIR);
+	
+	if (wants_builtin_loader) {
+		opt = get_loader(triplet);
+		
+		sysroot_dynamic_linker = malloc(strlen(sysroot_library_directory) + strlen(PATHSEP) + strlen(opt) + 1);
+		
+		if (sysroot_dynamic_linker == NULL) {
+			err = ERR_MEMORY_ALLOCATE_FAILURE;
+			goto end;
+		}
+		
+		strcpy(sysroot_dynamic_linker, sysroot_library_directory);
+		strcat(sysroot_dynamic_linker, PATHSEP);
+		strcat(sysroot_dynamic_linker, opt);
+	}
 	
 	gcc_include_directory = malloc(strlen(parent_directory) + strlen(GCC_LIBRARY_DIR) + strlen(PATHSEP) + strlen(triplet) + strlen(PATHSEP) + strlen(GCC_MAJOR_VERSION) + strlen(INCLUDE_DIR) + 1);
 	
@@ -396,6 +495,20 @@ int main(int argc, char* argv[], char* envp[]) {
 			args[offset++] = (char*) GCC_OPT_XLINKER;
 			args[offset++] = (char*) cur;
 		}
+	}
+	
+	if (wants_builtin_loader) {
+		args[offset++] = (char*) GCC_OPT_XLINKER;
+		args[offset++] = (char*) LD_OPT_DYNAMIC_LINKER;
+		
+		args[offset++] = (char*) GCC_OPT_XLINKER;
+		args[offset++] = sysroot_dynamic_linker;
+		
+		args[offset++] = (char*) GCC_OPT_XLINKER;
+		args[offset++] = (char*) LD_OPT_RPATH;
+		
+		args[offset++] = (char*) GCC_OPT_XLINKER;
+		args[offset++] = sysroot_library_directory;
 	}
 	
 	memcpy(&args[offset], &argv[1], argc * sizeof(*argv));

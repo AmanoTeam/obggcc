@@ -154,7 +154,7 @@ glibc 2.0 and glibc 2.1 were not binary-compatible on some architectures, as sta
 
 Support for x86_64 first appeared in glibc 2.2.5, only gaining overall stability in glibc 2.3 onwards. Starting from glibc 2.2 and lower, libstdc++ fails to build due to the absence of some required functions in the standard library. It might work with some patching, but I did not bother trying.
 
-So, with that in mind, glibc 2.3 seems to be the minimum version that GCC is able to produce a cross-compiler for without breaking anything and requiring tons of patches.
+So, with that in mind, glibc 2.3 seems to be the minimum version that GCC is able to produce a cross-compiler for without breaking anything.
 
 ## Software availability
 
