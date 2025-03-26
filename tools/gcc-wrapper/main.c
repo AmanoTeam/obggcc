@@ -186,7 +186,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	char* triplet = NULL;
 	char* glibc_version = NULL;
 	
-	wants_system_libraries = getenv("OBGGCC_WANTS_SYSTEM_LIBRARIES") != NULL;
+	wants_system_libraries = getenv("OBGGCC_SYSTEM_LIBRARIES") != NULL;
 	wants_builtin_loader = getenv("OBGGCC_BUILTIN_LOADER") != NULL;
 	
 	for (index = 0; index < argc; index++) {

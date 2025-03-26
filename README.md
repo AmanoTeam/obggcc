@@ -168,7 +168,7 @@ By default, you can't mix headers and libraries from both the cross-compiler's s
 
 That being said, the GNU C library is portable enough to reduce these incompatibilities to some extent.
 
-The environment variable `OBGGCC_WANTS_SYSTEM_LIBRARIES` can be used to control the default behavior when cross-compiling software.
+The environment variable `OBGGCC_SYSTEM_LIBRARIES` can be used to control the default behavior when cross-compiling software.
 
 Let's take as an example this program which uses OpenSSL to perform a simple SHA-256 calculation:
 
@@ -208,10 +208,10 @@ compilation terminated.
 
 That's expected, as there are no prebuilt OpenSSL binaries inside the cross-compiler's system root.
 
-Now let's try setting the `OBGGCC_WANTS_SYSTEM_LIBRARIES` environment variable:
+Now let's try setting the `OBGGCC_SYSTEM_LIBRARIES` environment variable:
 
 ```bash
-$ export OBGGCC_WANTS_SYSTEM_LIBRARIES=1
+$ export OBGGCC_SYSTEM_LIBRARIES=1
 ```
 
 And then compiling the program again:
@@ -222,7 +222,7 @@ $ ./main
 It works!
 ```
 
-The reason for the build to succeed this time is that `OBGGCC_WANTS_SYSTEM_LIBRARIES` changes the default cross-compilation behavior so that system directories of the host machine get included in both the library and header location search lists of the cross-compiler.
+The reason for the build to succeed this time is that `OBGGCC_SYSTEM_LIBRARIES` changes the default cross-compilation behavior so that system directories of the host machine get included in both the library and header location search lists of the cross-compiler.
 
 Essentially, it:
 
