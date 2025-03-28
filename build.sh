@@ -434,7 +434,7 @@ for target in "${targets[@]}"; do
 		--with-isl="${toolchain_directory}" \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v1.9-${revision}" \
+		--with-pkgversion="OBGGCC v2.0-${revision}" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--with-native-system-header-dir='/include' \
 		--with-default-libstdcxx-abi='new' \
@@ -450,7 +450,7 @@ for target in "${targets[@]}"; do
 		--enable-libstdcxx-filesystem-ts \
 		--enable-libstdcxx-static-eh-pool \
 		--with-libstdcxx-zoneinfo='static' \
-		--with-libstdcxx-lock-policy='mutex' \
+		--with-libstdcxx-lock-policy='atomic' \
 		--enable-link-serialization='1' \
 		--enable-linker-build-id \
 		--enable-lto \
@@ -463,7 +463,7 @@ for target in "${targets[@]}"; do
 		--enable-gold \
 		--enable-plugin \
 		--enable-libstdcxx-time='rt' \
-		--enable-cxx-flags="${extra_cxx_flags}" \
+		--enable-cxx-flags="${optflags} ${linkflags} ${extra_cxx_flags}" \
 		--disable-libsanitizer \
 		--disable-libgomp \
 		--disable-bootstrap \
@@ -489,6 +489,10 @@ for target in "${targets[@]}"; do
 		all \
 		--jobs="${max_jobs}"
 	make install
+	
+	if ! [ "${triplet}" = 'mips64el-unknown-linux-gnuabi64' ]; then
+		rm "${toolchain_directory}/${triplet}/lib/"*.o
+	fi
 	
 	patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/cc1'
 	patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/cc1plus'

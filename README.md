@@ -25,7 +25,7 @@ OBGGCC can also be useful if you just want to test whether your program builds o
 
 ## Supported targets
 
-Currently, OBGGCC provides cross-compilers targeting 8 major Debian releases and 1 major CentOS release on 16 system architectures.
+Currently, OBGGCC provides cross-compilers targeting 6 major Ubuntu releases, 8 major Debian releases and 1 major CentOS release on 16 system architectures.
 
 ### Distributions
 
@@ -35,11 +35,16 @@ Currently, OBGGCC provides cross-compilers targeting 8 major Debian releases and
 | Debian 5 (Lenny)          | glibc 2.7        | Linux 2.6.26       | 2009               |
 | Debian 6 (Squeeze)        | glibc 2.11       | Linux 2.6.32       | 2011               |
 | Debian 7 (Wheezy)         | glibc 2.13       | Linux 3.2.78       | 2013               |
+| Ubuntu 12.04 (Precise Pangolin)      | glibc 2.15       | Linux 3.2.0      | 2012               |
 | CentOS 7                          | glibc 2.17       | Linux 3.10.0       | 2014               |
 | Debian 8 (Jessie)         | glibc 2.19       | Linux 3.16.56      | 2015               |
+| Ubuntu 16.04 (Xenial Xerus)      | glibc 2.23       | Linux 4.4.0      | 2016               |
 | Debian 9 (Stretch)        | glibc 2.24       | Linux 4.9.228       | 2017               |
+| Ubuntu 18.04 (Bionic Beaver)      | glibc 2.27       | Linux 4.15.0      | 2018               |
 | Debian 10 (Buster)        | glibc 2.28       | Linux 4.19.249      | 2019               |
 | Debian 11 (Bullseye)      | glibc 2.31       | Linux 5.10.223      | 2021               |
+| Ubuntu 22.04 (Jammy Jellyfish)      | glibc 2.35       | Linux 5.15.0      | 2022               |
+| Ubuntu 24.04 (Noble Numbat)      | glibc 2.39       | Linux 6.8.0      | 2024               |
 
 ### System architectures
 
@@ -129,9 +134,7 @@ When building C++ programs with OBGGCC, however, your program automatically link
 
 ## Security and stability implications
 
-Some people might think that linking a program against an old glibc version will make the compiled binary less secure and more vulnerable, as supposedly, the program will be using symbols from a standard library that's unmaintained and no longer receives security fixes. However, that's not true.
-
-Binaries compiled against an old glibc version still benefit from security fixes introduced in newer glibc versions as long as the target machine is running an updated glibc.
+Some people might think that linking a program against an old glibc version will make the compiled binary less secure and more vulnerable, as supposedly, the program will be using symbols from a standard library that's unmaintained and no longer receives security fixes. However, that's not true. Binaries compiled against an old glibc version still benefit from security fixes introduced in newer glibc versions as long as the target machine is running an updated glibc.
 
 The whole point of symbol versioning is to prevent behavior inconsistencies when running binaries compiled against different glibc versions. This is accomplished by bumping the symbol version every time a backward-incompatible change is introduced to some public function or API of the standard library. With this, programs compiled against newer versions of the standard library can benefit from newer features, while old programs will continue working as intended, as they will still be using the old version of that specific function or API.
 
@@ -199,7 +202,7 @@ It works!
 However, it fails when cross-compiling with OBGGCC:
 
 ```bash
-$ x86_64-unknown-linux-gnu2.7-gcc main.c -lcrypto -o main
+$ x86_64-unknown-linux-gnu2.3-gcc main.c -lcrypto -o main
 main.c:3:10: fatal error: openssl/sha.h: No such file or directory
     3 | #include <openssl/sha.h>
       |          ^~~~~~~~~~~~~~~
@@ -217,7 +220,7 @@ $ export OBGGCC_SYSTEM_LIBRARIES=1
 And then compiling the program again:
 
 ```bash
-$ x86_64-unknown-linux-gnu2.7-gcc main.c -lcrypto -o main
+$ x86_64-unknown-linux-gnu2.3-gcc main.c -lcrypto -o main
 $ ./main
 It works!
 ```
@@ -230,6 +233,108 @@ Essentially, it:
 - Adds `/usr/local/lib64`, `/usr/local/lib`, `/lib64`, `/lib`, `/usr/lib64`, and `/usr/lib` to the list of library directories
 
 Note that, despite explicitly adding directories of the host machine to the compiler invocation, any program you compile will still use headers and libraries of the cross-compiler's GLIBC. That's due to the fact that the directories of the cross-compiler's system root are checked first before the directories of your host machine's system root. Only when the compiler can't find a specific header or library in the cross-compiler's system root does it search for it in your machine's system root. This way, we can build portable programs while still linking against third-party libraries from the host machine.
+
+## Running binaries with a specific glibc
+
+There may be cases where you might want to run your software under a specific glibc version, either to check how it will behave or to try a new glibc feature that was added in a later version but is not available in the glibc installed on your system.
+
+The environment variable `OBGGCC_BUILTIN_LOADER` can be used to change the default loader (aka dynamic linker) of an executable when cross-compiling. In other words, you can use this to force your binary to use a different glibc at runtime, ignoring the one available in your system.
+
+For some background, here is my current system:
+
+```bash
+$ cat /etc/os-release
+NAME="CentOS Linux"
+VERSION="7 (Core)"
+ID="centos"
+ID_LIKE="rhel fedora"
+VERSION_ID="7"
+PRETTY_NAME="CentOS Linux 7 (Core)"
+ANSI_COLOR="0;31"
+CPE_NAME="cpe:/o:centos:centos:7"
+HOME_URL="https://www.centos.org/"
+BUG_REPORT_URL="https://bugs.centos.org/"
+
+CENTOS_MANTISBT_PROJECT="CentOS-7"
+CENTOS_MANTISBT_PROJECT_VERSION="7"
+REDHAT_SUPPORT_PRODUCT="centos"
+REDHAT_SUPPORT_PRODUCT_VERSION="7"
+
+$ ldd --version
+ldd (GNU libc) 2.17
+Copyright (C) 2012 Free Software Foundation, Inc.
+This is free software; see the source for copying condit
+ions.There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A 
+PARTICULAR PURPOSE.
+Written by Roland McGrath and Ulrich Drepper.
+```
+
+I'm running CentOS 7 with glibc 2.17. Let's suppose I want to try the new `getrandom()` routine that was introduced in glibc 2.25. I would then write something like this:
+
+```c
+#include <stdio.h>
+
+#include <sys/random.h>
+
+int main(void) {
+    
+    size_t index = 0;
+    
+    unsigned char buffer[16];
+    getrandom(buffer, sizeof(buffer), 0);
+    
+    for (index = 0; index < sizeof(buffer); index++) {
+        if (index != 0) {
+            printf(" ");
+        }
+        
+        printf("0x%X", buffer[index]);
+    }
+    
+    printf("\nIt works!\n");
+    
+}
+```
+
+I can try compiling it on my host machine, but that will just fail:
+
+```bash
+$ gcc main.c
+main.c:3:10: fatal error: sys/random.h: No such file or directory
+    3 | #include <sys/random.h>
+      |          ^~~~~~~~~~~~~~
+compilation terminated.
+```
+
+There is obviously no `sys/random.h` in glibc 2.17. I can try cross-compiling my code to glibc 2.25+, but then I would not be able to run it on my machine due to the older glibc it has:
+
+```
+$ x86_64-unknown-linux-gnu2.27-gcc main.c -o main
+$ ./main
+./main: /lib64/libc.so.6: version `GLIBC_2.25' not found (required by ./main)
+```
+
+However, things change when I use `OBGGCC_BUILTIN_LOADER`:
+
+```bash
+$ export OBGGCC_BUILTIN_LOADER=1
+$ x86_64-unknown-linux-gnu2.27-gcc main.c -o main
+$ ./main
+0x67 0xE4 0xD3 0x9B 0xBD 0xD2 0x59 0x86 0xC0 0xE7 0x79 0xD2 0x2 0x92 0x3C 0x85
+It works!
+```
+
+This worked this time because `OBGGCC_BUILTIN_LOADER` changed the default loader for the executable `main` so that at runtime it uses the glibc bundled within OBGGCC instead of relying on the glibc library installed on my system.
+
+We can check this by inspecting the executable with `readelf`:
+
+```bash
+$ readelf -l main | grep "interpreter:"
+    [Requesting program interpreter: /home/kartz/obggcc/x86_64-unknown-linux-gnu2.27/lib/ld-linux-x86-64.so.2]
+$ readelf -d main | grep "RPATH"
+    Library rpath: [/home/kartz/obggcc/x86_64-unknown-linux-gnu2.27/lib]
+```
 
 ## Behavior changes
 
