@@ -434,7 +434,7 @@ for target in "${targets[@]}"; do
 		--with-isl="${toolchain_directory}" \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v1.9-${revision}" \
+		--with-pkgversion="OBGGCC v2.0-${revision}" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--with-native-system-header-dir='/include' \
 		--with-default-libstdcxx-abi='new' \
@@ -489,6 +489,10 @@ for target in "${targets[@]}"; do
 		all \
 		--jobs="${max_jobs}"
 	make install
+	
+	if ! [ "${triplet}" = 'mips64el-unknown-linux-gnuabi64' ]; then
+		rm "${toolchain_directory}/${triplet}/lib/"*.o
+	fi
 	
 	patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/cc1'
 	patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/cc1plus'
