@@ -363,6 +363,11 @@ make install
 
 for target in "${targets[@]}"; do
 	source "${workdir}/${target}.sh"
+	declare lock_policy='atomic'
+	
+	if [ "${triplet}" = 'sparc-unknown-linux-gnu' ]; then
+		lock_policy='mutex'
+	fi
 	
 	cd "$(mktemp --directory)"
 	
@@ -450,7 +455,7 @@ for target in "${targets[@]}"; do
 		--enable-libstdcxx-filesystem-ts \
 		--enable-libstdcxx-static-eh-pool \
 		--with-libstdcxx-zoneinfo='static' \
-		--with-libstdcxx-lock-policy='atomic' \
+		--with-libstdcxx-lock-policy="${lock_policy}" \
 		--enable-link-serialization='1' \
 		--enable-linker-build-id \
 		--enable-lto \
@@ -463,7 +468,7 @@ for target in "${targets[@]}"; do
 		--enable-gold \
 		--enable-plugin \
 		--enable-libstdcxx-time='rt' \
-		--enable-cxx-flags="${optflags} ${linkflags} ${extra_cxx_flags}" \
+		--enable-cxx-flags="${linkflags} ${extra_cxx_flags}" \
 		--disable-libsanitizer \
 		--disable-libgomp \
 		--disable-bootstrap \
