@@ -134,10 +134,6 @@ declare -ra bits=(
 declare -r languages='c,c++'
 
 declare -ra targets=(
-	'x86_64-unknown-linux-gnu'
-)
-
-declare -ra t2argets=(
 	'ia64-unknown-linux-gnu'
 	'mips-unknown-linux-gnu'
 	'mips64el-unknown-linux-gnuabi64'
