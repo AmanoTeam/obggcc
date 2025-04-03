@@ -29,7 +29,8 @@ declare -r binutils_directory='/tmp/binutils-with-gold-2.44'
 declare -r gcc_tarball='/tmp/gcc.tar.gz'
 declare -r gcc_directory='/tmp/gcc-master'
 
-declare -r libsanitizer_directory="${gcc_directory}/libsanitizer"
+declare -r libsanitizer_tarball='/tmp/libsanitizer.tar.xz'
+declare -r libsanitizer_directory='/tmp/libsanitizer'
 
 declare -r nativeflags='-march=native'
 declare -r pieflags='-fPIE'
@@ -40,14 +41,6 @@ declare -r max_jobs='40'
 
 declare -r sysroot_tarball='/tmp/sysroot.tar.xz'
 declare -r gcc_wrapper='/tmp/gcc-wrapper'
-
-declare -ra asan_libraries=(
-	'libasan'
-	'libhwasan'
-	'liblsan'
-	'libtsan'
-	'libubsan'
-)
 
 declare -ra plugin_libraries=(
 	'libcc1plugin'
@@ -124,6 +117,11 @@ declare -ra libraries=(
 	'libm2pim'
 	'libobjc'
 	'libgfortran'
+	'libasan'
+	'libhwasan'
+	'liblsan'
+	'libtsan'
+	'libubsan'
 )
 
 declare -ra bits=(
@@ -134,6 +132,10 @@ declare -ra bits=(
 declare -r languages='c,c++'
 
 declare -ra targets=(
+	'x86_64-unknown-linux-gnu'
+)
+
+declare -ra ta2rgets=(
 	'ia64-unknown-linux-gnu'
 	'mips-unknown-linux-gnu'
 	'mips64el-unknown-linux-gnuabi64'
@@ -548,6 +550,36 @@ for target in "${targets[@]}"; do
 	fi
 done
 
+while read triplet; do
+	if ! [ -d "${toolchain_directory}/${triplet}" ]; then
+		continue
+	fi
+	
+	declare url="https://github.com/AmanoTeam/libsanitizer/releases/latest/download/${triplet}.tar.xz"
+	
+	echo "- Fetching data from '${url}'"
+	
+	curl \
+		--url "${url}" \
+		--retry '30' \
+		--retry-all-errors \
+		--retry-delay '0' \
+		--retry-max-time '0' \
+		--location \
+		--silent \
+		--output "${libsanitizer_tarball}"
+	
+	tar \
+		--directory="$(dirname "${libsanitizer_directory}")" \
+		--extract \
+		--file="${libsanitizer_tarball}"
+	
+	cp --recursive "${libsanitizer_directory}/lib/gcc" "${toolchain_directory}/lib"
+	cp --recursive "${libsanitizer_directory}/lib/lib"* "${toolchain_directory}/${triplet}/lib"
+	
+	rm --recursive "${libsanitizer_directory}"
+done <<< "$(jq --raw-output --compact-output '.[]' "${workdir}/submodules/libsanitizer/triplets.json")"
+
 declare cc='gcc'
 declare readelf='readelf'
 
@@ -671,46 +703,3 @@ done
 mkdir --parent "${share_directory}"
 
 cp --recursive "${workdir}/tools/dev/"* "${share_directory}"
-
-# 
-# [ -d "${libsanitizer_directory}/build" ] || mkdir "${libsanitizer_directory}/build"
-# 
-# cd "${libsanitizer_directory}/build"
-# 
-# mkdir --parent "${libsanitizer_directory}/libstdc++-v3/src"
-# 
-# for target in "${targets[@]}"; do
-# 	if [[ "${target}" = 's390'* ]] || [[ "${target}" = 'mips'* ]] || [[ "${target}" = 'hppa'* ]] || [[ "${target}" = 'ia64'* ]] || [[ "${target}" = 'sparc'* ]] || [[ "${target}" = 'alpha'* ]] || [[ "${target}" = 'arm'*'eabi' ]]; then
-# 		continue
-# 	fi
-# 	
-# 	rm --force --recursive ./*
-# 	
-# 	declare prefix="${target}2.7"
-# 	
-# 	if ! [ -f "${autotools_directory}/${prefix}.sh" ]; then
-# 		prefix="${target}"
-# 	fi
-# 	
-# 	declare file="$(${toolchain_directory}/bin/${target}-g++ --print-file-name='libstdc++.la')"
-# 	cp "${file}" "${libsanitizer_directory}/libstdc++-v3/src"
-# 	
-# 	source "${autotools_directory}/${prefix}.sh"
-# 	
-# 	../configure \
-# 		--disable-multilib \
-# 		--with-gcc-major-version-only \
-# 		--host="${target}" \
-# 		--prefix="${toolchain_directory}" \
-# 		CFLAGS="${optflags}" \
-# 		CXXFLAGS="${optflags}" \
-# 		LDFLAGS="${linkflags}"
-# 	
-# 	make --jobs="${max_jobs}"
-# 	make install
-# 	
-# 	for library in "${asan_libraries[@]}"; do
-# 		patchelf --set-rpath '$ORIGIN' "${toolchain_directory}/lib"*"/${library}.so" || true
-# 		patchelf --set-rpath '$ORIGIN' "${toolchain_directory}/${target}/lib"*"/${library}.so" || true
-# 	done
-# done

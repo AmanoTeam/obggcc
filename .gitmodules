@@ -1,3 +1,9 @@
 [submodule "submodules/debian-sysroot"]
 	path = submodules/debian-sysroot
 	url = https://github.com/AmanoTeam/debian-sysroot
+[submodule "submodules/libsanitizer"]
+	path = submodules/libsanitizer
+	url = https://github.com/AmanoTeam/libsanitizer
+[submodule "submodules/gdb"]
+	path = submodules/gdb
+	url = https://github.com/AmanoTeam/GDB-Builds
