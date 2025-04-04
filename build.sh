@@ -135,10 +135,6 @@ declare -ra bits=(
 declare -r languages='c,c++'
 
 declare -ra targets=(
-	'x86_64-unknown-linux-gnu'
-)
-
-declare -ra ta2rgets=(
 	'ia64-unknown-linux-gnu'
 	'mips-unknown-linux-gnu'
 	'mips64el-unknown-linux-gnuabi64'
@@ -444,7 +440,7 @@ for target in "${targets[@]}"; do
 		--with-isl="${toolchain_directory}" \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v2.1-${revision}" \
+		--with-pkgversion="OBGGCC v2.2-${revision}" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--with-native-system-header-dir='/include' \
 		--with-default-libstdcxx-abi='new' \
