@@ -32,6 +32,9 @@ declare -r gcc_directory='/tmp/gcc-master'
 declare -r libsanitizer_tarball='/tmp/libsanitizer.tar.xz'
 declare -r libsanitizer_directory='/tmp/libsanitizer'
 
+declare -r gdb_tarball='/tmp/gdb.tar.xz'
+declare -r gdb_directory='/tmp/gdb'
+
 declare -r nativeflags='-march=native'
 declare -r pieflags='-fPIE'
 declare optflags="-w -O2"
@@ -579,6 +582,34 @@ while read triplet; do
 	
 	rm --recursive "${libsanitizer_directory}"
 done <<< "$(jq --raw-output --compact-output '.[]' "${workdir}/submodules/libsanitizer/triplets.json")"
+
+if ! (( is_native )); then
+	declare url="https://github.com/AmanoTeam/GDB-Builds/releases/latest/download/${CROSS_COMPILE_TRIPLET}.tar.xz"
+	
+	echo "- Fetching data from '${url}'"
+	
+	curl \
+		--url "${url}" \
+		--retry '30' \
+		--retry-all-errors \
+		--retry-delay '0' \
+		--retry-max-time '0' \
+		--location \
+		--silent \
+		--output "${gdb_tarball}"
+	
+	tar \
+		--directory="$(dirname "${gdb_directory}")" \
+		--extract \
+		--file="${gdb_tarball}" 2>/dev/null || true
+	
+	if ! [ -d "${gdb_directory}" ]; then
+		continue
+	fi
+	
+	cp --recursive "${gdb_directory}/bin" "${toolchain_directory}"
+	rm --recursive "${gdb_directory}"
+fi
 
 declare cc='gcc'
 declare readelf='readelf'
