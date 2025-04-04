@@ -544,6 +544,10 @@ for target in "${targets[@]}"; do
 						continue
 					fi
 					
+					if ! ( [[ "${file}" == *'.so'* ]] || [[ "${file}" == *'.a' ]] ); then
+						continue
+					fi
+					
 					echo "- Symlinking '${file}' to '${PWD}'"
 					
 					ln --symbolic "${file}" './'
@@ -603,12 +607,10 @@ if ! (( is_native )); then
 		--extract \
 		--file="${gdb_tarball}" 2>/dev/null || true
 	
-	if ! [ -d "${gdb_directory}" ]; then
-		continue
+	if [ -d "${gdb_directory}" ]; then
+		cp --recursive "${gdb_directory}/bin" "${toolchain_directory}"
+		rm --recursive "${gdb_directory}"
 	fi
-	
-	cp --recursive "${gdb_directory}/bin" "${toolchain_directory}"
-	rm --recursive "${gdb_directory}"
 fi
 
 declare cc='gcc'
@@ -686,6 +688,7 @@ while read item; do
 		--file="${sysroot_tarball}"
 	
 	cd "${toolchain_directory}/${triplet}${glibc_version}/lib"
+	mkdir 'gcc'
 	
 	for library in "${libraries[@]}"; do
 		for bit in "${bits[@]}"; do
@@ -694,9 +697,23 @@ while read item; do
 					continue
 				fi
 				
+				if ! ( [[ "${file}" == *'.so'* ]] || [[ "${file}" == *'.a' ]] ); then
+					continue
+				fi
+				
 				echo "- Symlinking '${file}' to '${PWD}'"
 				
 				ln --symbolic "${file}" './'
+				
+				cd './gcc'
+				
+				file="../$(basename "${file}")"
+				
+				echo "- Symlinking '${file}' to '${PWD}'"
+				
+				ln --symbolic "${file}" './'
+				
+				cd '../'
 			done
 		done
 	done

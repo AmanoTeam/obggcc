@@ -59,7 +59,7 @@ static const char SYSTEM_INCLUDE_PATH[] = "/usr/include";
 #define GM2 "gm2"
 #define GFORTRAN "gfortran"
 
-const char* get_loader(const char* const triplet) {
+static const char* get_loader(const char* const triplet) {
 	
 	if (strcmp(triplet, "aarch64-unknown-linux-gnu") == 0) {
 		return "ld-linux-aarch64.so.1";
@@ -133,6 +133,18 @@ const char* get_loader(const char* const triplet) {
 	
 }
 
+static int get_env(const char* const key) {
+	
+	const char* const value = getenv(key);
+	
+	if (value == NULL) {
+		return 0;
+	}
+	
+	return (strcmp(value, "1") == 0);
+	
+}
+
 int main(int argc, char* argv[], char* envp[]) {
 	
 	int err = ERR_SUCCESS;
@@ -146,6 +158,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	int wants_system_libraries = 0;
 	int wants_builtin_loader = 0;
+	int wants_runtime_rpath = 0;
 	
 	int verbose = 0;
 	int wants_libcxx = 0;
@@ -174,6 +187,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	char* sysroot_include_directory = NULL;
 	char* sysroot_include_missing_directory = NULL;
 	char* sysroot_library_directory = NULL;
+	char* sysroot_runtime_directory = NULL;
 	
 	char* sysroot_dynamic_linker = NULL;
 	
@@ -186,8 +200,9 @@ int main(int argc, char* argv[], char* envp[]) {
 	char* triplet = NULL;
 	char* glibc_version = NULL;
 	
-	wants_system_libraries = getenv("OBGGCC_SYSTEM_LIBRARIES") != NULL;
-	wants_builtin_loader = getenv("OBGGCC_BUILTIN_LOADER") != NULL;
+	wants_system_libraries = get_env("OBGGCC_SYSTEM_LIBRARIES");
+	wants_builtin_loader = get_env("OBGGCC_BUILTIN_LOADER");
+	wants_runtime_rpath = get_env("OBGGCC_RUNTIME_RPATH");
 	
 	for (index = 0; index < argc; index++) {
 		cur = argv[index];
@@ -344,6 +359,10 @@ int main(int argc, char* argv[], char* envp[]) {
 		size += 8;
 	}
 	
+	if (wants_runtime_rpath) {
+		size += 4;
+	}
+	
 	args = malloc(size * sizeof(char*));
 	
 	if (args == NULL) {
@@ -382,6 +401,19 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	strcpy(sysroot_library_directory, sysroot_directory);
 	strcat(sysroot_library_directory, LIBRARY_DIR);
+	
+	if (wants_runtime_rpath) {
+		sysroot_runtime_directory = malloc(strlen(sysroot_library_directory) + strlen(PATHSEP) + strlen(GCC) + 1);
+		
+		if (sysroot_runtime_directory == NULL) {
+			err = ERR_MEMORY_ALLOCATE_FAILURE;
+			goto end;
+		}
+		
+		strcpy(sysroot_runtime_directory, sysroot_library_directory);
+		strcat(sysroot_runtime_directory, PATHSEP);
+		strcat(sysroot_runtime_directory, GCC);
+	}
 	
 	if (wants_builtin_loader) {
 		opt = get_loader(triplet);
@@ -509,6 +541,14 @@ int main(int argc, char* argv[], char* envp[]) {
 		
 		args[offset++] = (char*) GCC_OPT_XLINKER;
 		args[offset++] = sysroot_library_directory;
+	}
+	
+	if (wants_runtime_rpath) {
+		args[offset++] = (char*) GCC_OPT_XLINKER;
+		args[offset++] = (char*) LD_OPT_RPATH;
+		
+		args[offset++] = (char*) GCC_OPT_XLINKER;
+		args[offset++] = sysroot_runtime_directory;
 	}
 	
 	memcpy(&args[offset], &argv[1], argc * sizeof(*argv));
