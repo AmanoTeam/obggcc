@@ -694,6 +694,12 @@ while read item; do
 		
 		ln --symbolic "${source}" "${destination}" 
 	done
+	
+	cd "${toolchain_directory}/${triplet}/bin"
+	
+	if [ -f './ld.gold' ]; then
+		patchelf --set-rpath '$ORIGIN/../../lib' './ld.gold'
+	fi
 done <<< "$(jq --compact-output '.[]' "${workdir}/submodules/debian-sysroot/dist.json")"
 
 for triplet in "${targets[@]}"; do
