@@ -149,13 +149,13 @@ Changes introduced in a newer glibc version that are not considered for a symbol
 
 Currently, the minimum supported glibc version for cross-compilation in OBGGCC is glibc 2.3.6. This version is over 20 years old, and while you might be wondering why anyone would be interested in building software for such ancient versions, you might also be curious about whether it is possible to go even further and cross-compile software for glibc 2.2/2.1/2.0 or even glibc 1.x.
 
-Here are my findings:
+### My findings
 
 glibc 1.x and glibc 2.x are not backward compatible in any way, meaning that software built for one cannot run on the other. glibc 1.x also received a lot of criticism in the past for failing to fully comply with the POSIX standard at the time it was still developed. I have not tried to build a cross-compiler for it, but I find it very unlikely that any recent GCC version still has support for such versions. At a bare minimum, heavy patching of the toolchain would be needed to make it work. It's not really worth it.
 
 glibc 2.0 and glibc 2.1 were not binary-compatible on some architectures, as stated in the [release notes](https://sourceware.org/legacy-ml/libc-alpha/1999-q1/msg00310.html) of the said version. Also, symbol versioning did not exist in glibc until the 2.1 release. I'm not sure if software built for glibc 2.0 can run on glibc 2.1 and up.
 
-Support for x86_64 first appeared in glibc 2.2.5, only gaining overall stability in glibc 2.3 onwards. Starting from glibc 2.2 and lower, libstdc++ fails to build due to the absence of some required functions in the standard library. It might work with some patching, but I did not bother trying.
+Support for x86_64 first appeared in glibc 2.2.5, only gaining overall stability in glibc 2.3 onwards. Starting from glibc 2.2 and lower, `libstdc++` fails to build due to the absence of some required functions in the standard library. It might work with some patching, but I did not bother trying.
 
 So, with that in mind, glibc 2.3 seems to be the minimum version that GCC is able to produce a cross-compiler for without breaking anything.
 
@@ -233,6 +233,22 @@ Essentially, it:
 - Adds `/usr/local/lib64`, `/usr/local/lib`, `/lib64`, `/lib`, `/usr/lib64`, and `/usr/lib` to the list of library directories
 
 Note that, despite explicitly adding directories of the host machine to the compiler invocation, any program you compile will still use headers and libraries of the cross-compiler's GLIBC. That's due to the fact that the directories of the cross-compiler's system root are checked first before the directories of your host machine's system root. Only when the compiler can't find a specific header or library in the cross-compiler's system root does it search for it in your machine's system root. This way, we can build portable programs while still linking against third-party libraries from the host machine.
+
+Keep in mind that `OBGGCC_SYSTEM_LIBRARIES` is only useful when you are cross-compiling software to a target that matches the one of your host machine (e.g., your host machine is an `x86_64-linux-gnu` system, and you are cross-compiling software targeting an `x86_64-linux-gnu` system as well), as you can't link binaries with mismatching ABIs:
+
+```bash
+$ gcc -dumpmachine
+x86_64-unknown-linux-gnu
+$ aarch64-unknown-linux-gnu2.19-gcc main.c -lcrypto -o main
+/home/runner/obggcc/bin/../lib/gcc/aarch64-unknown-linux-gnu/15/../../../../aarch64-unknown-linux-gnu/bin/ld: skipping incompatible /lib64/libcrypto.so when searching for -lcrypto
+/home/runner/obggcc/bin/../lib/gcc/aarch64-unknown-linux-gnu/15/../../../../aarch64-unknown-linux-gnu/bin/ld: skipping incompatible /usr/lib64/libcrypto.so when searching for -lcrypto
+/home/runner/obggcc/bin/../lib/gcc/aarch64-unknown-linux-gnu/15/../../../../aarch64-unknown-linux-gnu/bin/ld: cannot find -lcrypto: No such file or directory
+/home/runner/obggcc/bin/../lib/gcc/aarch64-unknown-linux-gnu/15/../../../../aarch64-unknown-linux-gnu/bin/ld: skipping incompatible /lib64/libcrypto.so when searching for -lcrypto
+/home/runner/obggcc/bin/../lib/gcc/aarch64-unknown-linux-gnu/15/../../../../aarch64-unknown-linux-gnu/bin/ld: skipping incompatible /usr/lib64/libcrypto.so when searching for -lcrypto
+collect2: error: ld returned 1 exit status
+```
+
+This also works if your system has multilib support (i.e., both 32-bit and 64-bit libraries coexist on the same system) and you are cross-compiling software targeting the 32-bit version of your system.
 
 ## Running binaries with a specific glibc
 

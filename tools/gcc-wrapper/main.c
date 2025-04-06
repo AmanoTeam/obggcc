@@ -29,6 +29,7 @@ static const char GCC_OPT_V[] = "-v";
 static const char GCC_OPT_I[] = "-I";
 static const char GCC_OPT_C[] = "-c";
 static const char GCC_OPT_L_RT[] = "-lrt";
+static const char GCC_OPT_FSANITIZE[] = "-fsanitize=";
 static const char GCC_OPT_L_STDCXX[] = "-lstdc++";
 static const char GCC_OPT_XLINKER[] = "-Xlinker";
 static const char LD_OPT_DYNAMIC_LINKER[] = "-dynamic-linker";
@@ -160,6 +161,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	int wants_builtin_loader = 0;
 	int wants_runtime_rpath = 0;
 	
+	int address_sanitizer = 0;
 	int verbose = 0;
 	int wants_libcxx = 0;
 	int wants_rt_library = 0;
@@ -207,7 +209,9 @@ int main(int argc, char* argv[], char* envp[]) {
 	for (index = 0; index < argc; index++) {
 		cur = argv[index];
 		
-		if (strcmp(cur, GCC_OPT_V) == 0) {
+		if (strncmp(cur, GCC_OPT_FSANITIZE, strlen(GCC_OPT_FSANITIZE)) == 0) {
+			address_sanitizer = 1;
+		} else if (strcmp(cur, GCC_OPT_V) == 0) {
 			verbose = 1;
 		} else if (strcmp(cur, GCC_OPT_STATIC_LIBCXX) == 0 || strcmp(cur, GCC_OPT_L_STDCXX) == 0) {
 			wants_libcxx = 1;
@@ -361,6 +365,10 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	if (wants_runtime_rpath) {
 		size += 4;
+	}
+	
+	if (address_sanitizer) {
+		size += 2;
 	}
 	
 	args = malloc(size * sizeof(char*));
@@ -549,6 +557,11 @@ int main(int argc, char* argv[], char* envp[]) {
 		
 		args[offset++] = (char*) GCC_OPT_XLINKER;
 		args[offset++] = sysroot_runtime_directory;
+	}
+	
+	if (address_sanitizer) {
+		args[offset++] = (char*) GCC_OPT_XLINKER;
+		args[offset++] = (char*) LD_OPT_UNRESOLVED_SYMBOLS;
 	}
 	
 	memcpy(&args[offset], &argv[1], argc * sizeof(*argv));
