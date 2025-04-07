@@ -440,7 +440,7 @@ for target in "${targets[@]}"; do
 		--with-isl="${toolchain_directory}" \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v2.2-${revision}" \
+		--with-pkgversion="OBGGCC v2.3-${revision}" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--with-native-system-header-dir='/include' \
 		--with-default-libstdcxx-abi='new' \
