@@ -10,16 +10,16 @@ This eliminates the need to install an ancient Linux distribution in Docker/LXC 
 
 ## Use cases
 
-Initially, I just wanted the get rid of errors like this:
+Initially, I just wanted to get rid of errors like this:
 
 ```
 ./main: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by ./main)
 ./main: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by ./main)
 ```
 
-This error can occur when you build your binaries on a system with a glibc newer than the one installed on the target system. This is pretty annoying because it prevents users on older Linux distributions from using your software.
+This error can occur when you build your binaries on a system with a glibc version newer than the one installed on the target system. This is pretty annoying because it prevents users on older Linux distributions from using your software.
 
-Since OBGGCC targets older glibc versions by default, these errors are (almost) unlikely to happen. You can distribute portable Linux binaries without worrying about them being incompatible with some older distribution.
+Since OBGGCC targets older glibc versions by default, these errors are (almost) unlikely to happen. You can distribute portable Linux binaries without worrying about them being incompatible with some older distributions.
 
 OBGGCC can also be useful if you just want to test whether your program builds or runs on older systems.
 
@@ -155,7 +155,9 @@ glibc 1.x and glibc 2.x are not backward compatible in any way, meaning that sof
 
 glibc 2.0 and glibc 2.1 were not binary-compatible on some architectures, as stated in the [release notes](https://sourceware.org/legacy-ml/libc-alpha/1999-q1/msg00310.html) of the said version. Also, symbol versioning did not exist in glibc until the 2.1 release. I'm not sure if software built for glibc 2.0 can run on glibc 2.1 and up.
 
-Support for x86_64 first appeared in glibc 2.2.5, only gaining overall stability in glibc 2.3 onwards. Starting from glibc 2.2 and lower, `libstdc++` fails to build due to the absence of some required functions in the standard library. It might work with some patching, but I did not bother trying.
+Support for x86_64 (amd64) first appeared in glibc 2.2.5, only gaining overall stability in glibc 2.3 and onwards. Even if we manage to build a working cross-compiler targeting pre-glibc 2.2 releases or older, we would only be able to target very old (and potentially no longer used) system architectures.
+
+Also, starting from glibc 2.2 and lower, `libstdc++` fails to build due to the absence of some required functions in the standard library. It might work with some patching, but I did not bother trying.
 
 So, with that in mind, glibc 2.3 seems to be the minimum version that GCC is able to produce a cross-compiler for without breaking anything.
 
@@ -248,7 +250,17 @@ $ aarch64-unknown-linux-gnu2.19-gcc main.c -lcrypto -o main
 collect2: error: ld returned 1 exit status
 ```
 
-This also works if your system has multilib support (i.e., both 32-bit and 64-bit libraries coexist on the same system) and you are cross-compiling software targeting the 32-bit version of your system.
+This also works if your system has multilib support (i.e., both 32-bit and 64-bit libraries coexist on the same system) and you are cross-compiling software targeting the 32-bit version of your system:
+
+```bash
+$ dpkg --print-architecture
+amd64
+$ dpkg --print-foreign-architectures
+i386
+$ i386-unknown-linux-gnu2.3-gcc main.c -lcrypto -o main
+$ ./main
+It works!
+```
 
 ## Running binaries with a specific glibc
 
@@ -347,10 +359,87 @@ We can check this by inspecting the executable with `readelf`:
 
 ```bash
 $ readelf -l main | grep "interpreter:"
-    [Requesting program interpreter: /home/kartz/obggcc/x86_64-unknown-linux-gnu2.27/lib/ld-linux-x86-64.so.2]
+    [Requesting program interpreter: /home/runner/obggcc/x86_64-unknown-linux-gnu2.27/lib/ld-linux-x86-64.so.2]
 $ readelf -d main | grep "RPATH"
-    Library rpath: [/home/kartz/obggcc/x86_64-unknown-linux-gnu2.27/lib]
+    Library rpath: [/home/runner/obggcc/x86_64-unknown-linux-gnu2.27/lib]
 ```
+
+## Debugging
+
+### AddressSanitizer
+
+AddressSanitizer is available for almost all cross-compilation targets, so you can use it with the usual `-fsanitize=...` flags if needed:
+
+```bash
+$ cat << asan > main.c
+#include <stddef.h>
+
+int main() {
+	char s =  *((char*) NULL);
+}
+asan
+$ x86_64-unknown-linux-gnu2.3-gcc -fsanitize=address main.c -o main -O0 -g
+$ ./main
+AddressSanitizer:DEADLYSIGNAL
+=================================================================
+==19765==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000000 (pc 0x561e38623255 bp 0x7ffefb9bc660 sp 0x7ffefb9bc650 T0)
+==19765==The signal is caused by a READ memory access.
+==19765==Hint: address points to the zero page.
+    #0 0x561e38623255 in main /home/runner/main.c:4
+    #1 0x7fee199a7554 in __libc_start_main (/lib64/libc.so.6+0x22554) (BuildId: 32c239e375f673bcca264b717e7ac4b7bd5abadc)
+    #2 0x561e38623099  (/home/runner/x+0x1099) (BuildId: 697cbcafa9e8da9eed79035cfb8755db7456b763)
+
+==19765==Register values:
+rax = 0x0000000000000000  rbx = 0x0000000000000000  rcx = 0x0000000000000000  rdx = 0x0000000000000000  
+rdi = 0x0000000000000000  rsi = 0x00007ffefb9bc700  rbp = 0x00007ffefb9bc660  rsp = 0x00007ffefb9bc650  
+ r8 = 0x00007fee19d4de80   r9 = 0x0000000000000000  r10 = 0x00007ffefb9bc0a0  r11 = 0x00007fee19e773d0  
+r12 = 0x0000561e38623070  r13 = 0x00007ffefb9bc740  r14 = 0x0000000000000000  r15 = 0x0000000000000000  
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /home/runner/main.c:4 in main
+==19765==ABORTING
+```
+
+If you are playing around with AddressSanitizer, you might want to set the `OBGGCC_RUNTIME_RPATH` environment variable:
+
+```bash
+export OBGGCC_RUNTIME_RPATH=1
+```
+
+This tells the linker to automatically add the `RPATH` of the directory containing the AddressSanitizer libraries to your executable, so you don't have to bother with setting the `LD_LIBRARY_PATH` or adding the rpath manually:
+
+```bash
+$ x86_64-unknown-linux-gnu2.3-gcc -fsanitize=address main.c -o main
+$ ./main
+./main: error while loading shared libraries: libasan.so.8: cannot open shared object file: No such file or directory
+$ export OBGGCC_RUNTIME_RPATH=1
+$ x86_64-unknown-linux-gnu2.3-gcc -fsanitize=address main.c -o main
+$ ./main
+<it works>
+```
+
+## GDB (GNU Debugger)
+
+There are also bundled binaries of GDB available for use:
+
+```
+$ ls ${OBGGCC_HOME}/bin/*-gdb
+obggcc/bin/aarch64-unknown-linux-gnu-gdb                obggcc/bin/alpha-unknown-linux-gnu-gdb
+obggcc/bin/arm-unknown-linux-gnueabi-gdb
+obggcc/bin/arm-unknown-linux-gnueabihf-gdb
+obggcc/bin/hppa-unknown-linux-gnu-gdb
+obggcc/bin/i386-unknown-linux-gnu-gdb
+obggcc/bin/ia64-unknown-linux-gnu-gdb
+obggcc/bin/mips64el-unknown-linux-gnuabi64-gdb
+obggcc/bin/mipsel-unknown-linux-gnu-gdb
+obggcc/bin/mips-unknown-linux-gnu-gdb
+obggcc/bin/powerpc64le-unknown-linux-gnu-gdb
+obggcc/bin/powerpc-unknown-linux-gnu-gdb
+obggcc/bin/s390-unknown-linux-gnu-gdb
+obggcc/bin/s390x-unknown-linux-gnu-gdb
+obggcc/bin/x86_64-unknown-linux-gnu-gdb
+```
+
+Note that we don't provide prebuilt binaries of the gdb-server. If you want to use GDB for cross-debugging, you should build it yourself.
 
 ## Behavior changes
 
