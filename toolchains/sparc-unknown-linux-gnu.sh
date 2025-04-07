@@ -2,7 +2,7 @@
 
 set -eu
 
-TARGET_GLIBC='2.7'
+TARGET_GLIBC='2.3'
 CROSS_COMPILE_TRIPLET='sparc-unknown-linux-gnu'
 
 CC="${OBGGCC_TOOLCHAIN}/bin/${CROSS_COMPILE_TRIPLET}${TARGET_GLIBC}-gcc"

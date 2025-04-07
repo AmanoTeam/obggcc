@@ -37,7 +37,7 @@ declare -r gdb_directory='/tmp/gdb'
 
 declare -r nativeflags='-march=native'
 declare -r pieflags='-fPIE'
-declare optflags="-w -O2"
+declare optflags='-w -O2 -Xlinker --allow-multiple-definition'
 declare -r linkflags='-Xlinker -s'
 
 declare -r max_jobs='40'
