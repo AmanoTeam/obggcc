@@ -504,6 +504,8 @@ for target in "${targets[@]}"; do
 	patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/cc1plus'
 	patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/lto1'
 	patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/collect2'
+	patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/lto-wrapper'
+	patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/g++-mapper-server'
 	
 	if [[ "${languages}" = *'m2'* ]]; then
 		patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/cc1gm2'
