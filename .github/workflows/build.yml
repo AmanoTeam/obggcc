@@ -17,7 +17,7 @@ jobs:
       id: check-cache
       uses: actions/cache@main
       with:
-        key: gcc-15.0.1-16
+        key: gcc-15.1.0-1
         lookup-only: true
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
@@ -45,7 +45,7 @@ jobs:
       if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
       uses: actions/cache@main
       with:
-        key: gcc-15.0.1-16
+        key: gcc-15.1.0-1
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
           /tmp/x86_64-linux-gnu.tar.xz.sha256
@@ -58,7 +58,7 @@ jobs:
     strategy:
       matrix:
         target: [
-          # 'ia64-unknown-linux-gnu',
+          'ia64-unknown-linux-gnu',
           'alpha-unknown-linux-gnu',
           'x86_64-unknown-linux-gnu',
           'i386-unknown-linux-gnu',
@@ -69,7 +69,7 @@ jobs:
           'mips-unknown-linux-gnu',
           'mipsel-unknown-linux-gnu',
           'powerpc-unknown-linux-gnu',
-          # 's390-unknown-linux-gnu',
+          's390-unknown-linux-gnu',
           's390x-unknown-linux-gnu',
           'sparc-unknown-linux-gnu',
           'powerpc64le-unknown-linux-gnu',
@@ -82,7 +82,7 @@ jobs:
     - name: Restore from cache
       uses: actions/cache@main
       with:
-        key: gcc-15.0.1-16
+        key: gcc-15.1.0-1
         fail-on-cache-miss: true
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
