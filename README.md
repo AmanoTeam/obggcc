@@ -25,7 +25,7 @@ OBGGCC can also be useful if you just want to test whether your program builds o
 
 ## Supported targets
 
-Currently, OBGGCC provides cross-compilers targeting 6 major Ubuntu releases, 8 major Debian releases and 1 major CentOS release on 16 system architectures.
+Currently, OBGGCC provides cross-compilers targeting 6 major Ubuntu releases, 9 major Debian releases on 16 system architectures.
 
 ### Distributions
 
@@ -36,7 +36,7 @@ Currently, OBGGCC provides cross-compilers targeting 6 major Ubuntu releases, 8 
 | Debian 6 (Squeeze)        | glibc 2.11       | Linux 2.6.32       | 2011               |
 | Debian 7 (Wheezy)         | glibc 2.13       | Linux 3.2.78       | 2013               |
 | Ubuntu 12.04 (Precise Pangolin)      | glibc 2.15       | Linux 3.2.0      | 2012               |
-| CentOS 7                          | glibc 2.17       | Linux 3.10.0       | 2014               |
+| Debian 7 (Sid)         | glibc 2.17       | Linux 3.12.9       | 2014               |
 | Debian 8 (Jessie)         | glibc 2.19       | Linux 3.16.56      | 2015               |
 | Ubuntu 16.04 (Xenial Xerus)      | glibc 2.23       | Linux 4.4.0      | 2016               |
 | Debian 9 (Stretch)        | glibc 2.24       | Linux 4.9.228       | 2017               |
