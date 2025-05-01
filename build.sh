@@ -364,11 +364,6 @@ make install
 
 for target in "${targets[@]}"; do
 	source "${workdir}/${target}.sh"
-	declare lock_policy='atomic'
-	
-	if [ "${triplet}" = 'sparc-unknown-linux-gnu' ]; then
-		lock_policy='mutex'
-	fi
 	
 	cd "$(mktemp --directory)"
 	
@@ -440,7 +435,7 @@ for target in "${targets[@]}"; do
 		--with-isl="${toolchain_directory}" \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v2.3-${revision}" \
+		--with-pkgversion="OBGGCC v2.4-${revision}" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--with-native-system-header-dir='/include' \
 		--with-default-libstdcxx-abi='new' \
@@ -456,7 +451,7 @@ for target in "${targets[@]}"; do
 		--enable-libstdcxx-filesystem-ts \
 		--enable-libstdcxx-static-eh-pool \
 		--with-libstdcxx-zoneinfo='static' \
-		--with-libstdcxx-lock-policy="${lock_policy}" \
+		--with-libstdcxx-lock-policy='atomic' \
 		--enable-link-serialization='1' \
 		--enable-linker-build-id \
 		--enable-lto \

@@ -17,6 +17,7 @@ static const char LIBRARY_DIR[] = "/lib";
 static const char GCC_LIBRARY_DIR[] = "/lib/gcc";
 
 static const char RT_LIBRARY[] = "rt";
+static const char ATOMIC_LIBRARY[] = "atomic";
 static const char STDCXX_LIBRARY[] = "stdc++";
 
 static const char GCC_OPT_ISYSTEM[] = "-isystem";
@@ -31,6 +32,7 @@ static const char GCC_OPT_C[] = "-c";
 static const char GCC_OPT_L_RT[] = "-lrt";
 static const char GCC_OPT_FSANITIZE[] = "-fsanitize=";
 static const char GCC_OPT_L_STDCXX[] = "-lstdc++";
+static const char GCC_OPT_L_ATOMIC[] = "-latomic";
 static const char GCC_OPT_XLINKER[] = "-Xlinker";
 static const char LD_OPT_DYNAMIC_LINKER[] = "-dynamic-linker";
 static const char LD_OPT_RPATH_LINK[] = "-rpath-link";
@@ -165,8 +167,10 @@ int main(int argc, char* argv[], char* envp[]) {
 	int verbose = 0;
 	int wants_libcxx = 0;
 	int wants_rt_library = 0;
+	int require_atomic_library = 0;
 	
 	int have_rt_library = 0;
+	int have_atomic_library = 0;
 	
 	char** args = NULL;
 	char* arg = NULL;
@@ -217,11 +221,15 @@ int main(int argc, char* argv[], char* envp[]) {
 			wants_libcxx = 1;
 		} else if (strcmp(cur, GCC_OPT_L_RT) == 0) {
 			have_rt_library = 1;
+		} else if (strcmp(cur, GCC_OPT_L_ATOMIC) == 0) {
+			have_atomic_library = 1;
 		} else if (prev != NULL && strcmp(prev, GCC_OPT_L) == 0) {
 			if (strcmp(cur, STDCXX_LIBRARY) == 0) {
 				wants_libcxx = 1;
 			} else if (strcmp(cur, RT_LIBRARY) == 0) {
 				have_rt_library = 1;
+			} else if (strcmp(cur, ATOMIC_LIBRARY) == 0) {
+				have_atomic_library = 1;
 			}
 		}
 		
@@ -291,6 +299,9 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	memcpy(triplet, fname, size);
 	triplet[size] = '\0';
+	
+	/* Atomics are not natively supported on SPARC, so we need to rely on -latomic. */
+	require_atomic_library = strcmp(triplet, "sparc-unknown-linux-gnu") == 0;
 	
 	start = ptr;
 	
@@ -369,6 +380,10 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	if (address_sanitizer) {
 		size += 2;
+	}
+	
+	if (require_atomic_library) {
+		size += 1;
 	}
 	
 	args = malloc(size * sizeof(char*));
@@ -511,6 +526,10 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	if (wants_rt_library) {
 		args[offset++] = (char*) GCC_OPT_L_RT;
+	}
+	
+	if (require_atomic_library) {
+		args[offset++] = (char*) GCC_OPT_L_ATOMIC;
 	}
 	
 	if (wants_system_libraries) {
