@@ -1,6 +1,6 @@
 #!/bin/bash
 
-declare extra_configure_flags='--enable-obsolete'
+declare extra_configure_flags=''
 declare extra_cxx_flags=''
 
 declare triplet='ia64-unknown-linux-gnu'
