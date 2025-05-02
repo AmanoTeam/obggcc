@@ -204,7 +204,8 @@ int main(int argc, char* argv[], char* envp[]) {
 	char* primary_library_directory = NULL;
 	char* secondary_library_directory = NULL;
 	
-	char* directory = NULL;
+	static char* directory = NULL;
+	
 	char* nz_sysroot_directory = NULL;
 	
 	char* sysroot_include_directory = NULL;
@@ -220,6 +221,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	char* fname = NULL;
 	char* app_filename = NULL;
 	
+	char* non_prefixed_triplet = NULL;
 	char* triplet = NULL;
 	char* glibc_version = NULL;
 	
@@ -320,8 +322,6 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	/* Atomics are not natively supported on SPARC, so we need to rely on -latomic. */
 	require_atomic_library = strcmp(triplet, "sparc-unknown-linux-gnu") == 0;
-	
-	char* non_prefixed_triplet = NULL;
 	
 	non_prefixed_triplet = malloc(strlen(triplet) + 1);
 	
@@ -438,12 +438,12 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	if (wants_system_libraries) {
 		size += (sizeof(SYSTEM_LIBRARY_PATH) / sizeof(*SYSTEM_LIBRARY_PATH)) * 6;
-		size += 6;
+		size += 8;
 	}
 	
 	if (wants_nz) {
 		size += (sizeof(SYSTEM_LIBRARY_PATH) / sizeof(*SYSTEM_LIBRARY_PATH)) * 6;
-		size += 6;
+		size += 8;
 	}
 	
 	if (wants_builtin_loader) {
@@ -622,8 +622,6 @@ int main(int argc, char* argv[], char* envp[]) {
 		args[offset++] = (char*) GCC_OPT_ISYSTEM;
 		args[offset++] = sysroot_include_missing_directory;
 		
-		args[offset++] = (char*) GCC_OPT_ISYSTEM;
-		
 		directory = malloc(strlen(nz_sysroot_directory) + strlen(SYSTEM_INCLUDE_PATH) + 1);
 		
 		if (directory == NULL) {
@@ -634,6 +632,22 @@ int main(int argc, char* argv[], char* envp[]) {
 		strcpy(directory, nz_sysroot_directory);
 		strcat(directory, SYSTEM_INCLUDE_PATH);
 		
+		args[offset++] = (char*) GCC_OPT_ISYSTEM;
+		args[offset++] = directory;
+		
+		directory = malloc(strlen(nz_sysroot_directory) + strlen(SYSTEM_INCLUDE_PATH) + strlen(PATHSEP) + strlen(non_prefixed_triplet) + 1);
+		
+		if (directory == NULL) {
+			err = ERR_MEMORY_ALLOCATE_FAILURE;
+			goto end;
+		}
+		
+		strcpy(directory, nz_sysroot_directory);
+		strcat(directory, SYSTEM_INCLUDE_PATH);
+		strcat(directory, PATHSEP);
+		strcat(directory, non_prefixed_triplet);
+		
+		args[offset++] = (char*) GCC_OPT_ISYSTEM;
 		args[offset++] = directory;
 		
 		args[offset++] = (char*) GCC_OPT_XLINKER;
@@ -669,6 +683,20 @@ int main(int argc, char* argv[], char* envp[]) {
 		
 		args[offset++] = (char*) GCC_OPT_ISYSTEM;
 		args[offset++] = (char*) SYSTEM_INCLUDE_PATH;
+		
+		directory = malloc(strlen(SYSTEM_INCLUDE_PATH) + strlen(PATHSEP) + strlen(non_prefixed_triplet) + 1);
+		
+		if (directory == NULL) {
+			err = ERR_MEMORY_ALLOCATE_FAILURE;
+			goto end;
+		}
+		
+		strcpy(directory, SYSTEM_INCLUDE_PATH);
+		strcat(directory, PATHSEP);
+		strcat(directory, non_prefixed_triplet);
+		
+		args[offset++] = (char*) GCC_OPT_ISYSTEM;
+		args[offset++] = directory;
 		
 		args[offset++] = (char*) GCC_OPT_XLINKER;
 		args[offset++] = (char*) LD_OPT_UNRESOLVED_SYMBOLS;
