@@ -39,14 +39,21 @@ static const char LD_OPT_RPATH_LINK[] = "-rpath-link";
 static const char LD_OPT_RPATH[] = "-rpath";
 static const char LD_OPT_UNRESOLVED_SYMBOLS[] = "--unresolved-symbols=ignore-in-shared-libs";
 
-static const char* const SYSTEM_LIBRARY_PATH[] = {
+static char* SYSTEM_LIBRARY_PATH[] = {
 	"/usr/local/lib64",
 	"/usr/local/lib",
 	"/lib64",
 	"/lib",
 	"/usr/lib64",
-	"/usr/lib"
+	"/usr/lib",
+	NULL,
+	NULL
 };
+
+static const char USR_DIRECTORY[] = "/usr";
+static const char LIB_DIRECTORY[] = "/lib";
+
+static const char NZ_SYSROOT[] = "/lib/nouzen/sysroot";
 
 static const char SYSTEM_INCLUDE_PATH[] = "/usr/include";
 
@@ -55,6 +62,7 @@ static const char SYSTEM_INCLUDE_PATH[] = "/usr/include";
 #define ERR_UNKNOWN_COMPILER -2
 #define ERR_GET_APP_FILENAME_FAILURE -3
 #define ERR_EXECVE_FAILURE -4
+#define ERR_BAD_TRIPLET -5
 
 #define CPLUSPLUS "c++"
 #define GCC "gcc"
@@ -162,6 +170,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	int wants_system_libraries = 0;
 	int wants_builtin_loader = 0;
 	int wants_runtime_rpath = 0;
+	int wants_nz = 0;
 	
 	int address_sanitizer = 0;
 	int verbose = 0;
@@ -176,9 +185,11 @@ int main(int argc, char* argv[], char* envp[]) {
 	char* arg = NULL;
 	
 	const char* cc = NULL;
-	const char* start = NULL;
+	char* start = NULL;
 	char* ptr = NULL;
+	char* dst = NULL;
 	const char* opt = NULL;
+	const char* pattern = NULL;
 	
 	const char* prev = NULL;
 	const char* cur = NULL;
@@ -189,6 +200,12 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	char* gpp_include_directory = NULL;
 	char* gcc_include_directory = NULL;
+	
+	char* primary_library_directory = NULL;
+	char* secondary_library_directory = NULL;
+	
+	char* directory = NULL;
+	char* nz_sysroot_directory = NULL;
 	
 	char* sysroot_include_directory = NULL;
 	char* sysroot_include_missing_directory = NULL;
@@ -209,6 +226,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	wants_system_libraries = get_env("OBGGCC_SYSTEM_LIBRARIES");
 	wants_builtin_loader = get_env("OBGGCC_BUILTIN_LOADER");
 	wants_runtime_rpath = get_env("OBGGCC_RUNTIME_RPATH");
+	wants_nz = get_env("OBGGCC_NZ");
 	
 	for (index = 0; index < argc; index++) {
 		cur = argv[index];
@@ -303,6 +321,59 @@ int main(int argc, char* argv[], char* envp[]) {
 	/* Atomics are not natively supported on SPARC, so we need to rely on -latomic. */
 	require_atomic_library = strcmp(triplet, "sparc-unknown-linux-gnu") == 0;
 	
+	char* non_prefixed_triplet = NULL;
+	
+	non_prefixed_triplet = malloc(strlen(triplet) + 1);
+	
+	if (non_prefixed_triplet == NULL) {
+		err = ERR_MEMORY_ALLOCATE_FAILURE;
+		goto end;
+	}
+	
+	strcpy(non_prefixed_triplet, triplet);
+	
+	pattern = "-unknown";
+	start = strstr(non_prefixed_triplet, pattern);
+	
+	if (start == NULL) {
+		err = ERR_BAD_TRIPLET;
+		goto end;
+	}
+	
+	dst = start;
+	start += strlen(pattern);
+	size = strlen(start) + 1;
+	
+	memmove(dst, start, size);
+	
+	if (wants_system_libraries || wants_nz) {
+		primary_library_directory = malloc(strlen(USR_DIRECTORY) + strlen(LIB_DIRECTORY) + strlen(PATHSEP) + strlen(non_prefixed_triplet) + 1);
+		
+		if (primary_library_directory == NULL) {
+			err = ERR_MEMORY_ALLOCATE_FAILURE;
+			goto end;
+		}
+		
+		strcpy(primary_library_directory, USR_DIRECTORY);
+		strcat(primary_library_directory, LIB_DIRECTORY);
+		strcat(primary_library_directory, PATHSEP);
+		strcat(primary_library_directory, non_prefixed_triplet);
+		
+		secondary_library_directory = malloc(strlen(LIB_DIRECTORY) + strlen(PATHSEP) + strlen(non_prefixed_triplet) + 1);
+		
+		if (secondary_library_directory == NULL) {
+			err = ERR_MEMORY_ALLOCATE_FAILURE;
+			goto end;
+		}
+		
+		strcpy(secondary_library_directory, LIB_DIRECTORY);
+		strcat(secondary_library_directory, PATHSEP);
+		strcat(secondary_library_directory, non_prefixed_triplet);
+		
+		SYSTEM_LIBRARY_PATH[6] = primary_library_directory;
+		SYSTEM_LIBRARY_PATH[7] = secondary_library_directory;
+	}
+	
 	start = ptr;
 	
 	while (1) {
@@ -370,6 +441,11 @@ int main(int argc, char* argv[], char* envp[]) {
 		size += 6;
 	}
 	
+	if (wants_nz) {
+		size += (sizeof(SYSTEM_LIBRARY_PATH) / sizeof(*SYSTEM_LIBRARY_PATH)) * 6;
+		size += 6;
+	}
+	
 	if (wants_builtin_loader) {
 		size += 8;
 	}
@@ -403,7 +479,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	strcpy(sysroot_include_directory, sysroot_directory);
 	strcat(sysroot_include_directory, INCLUDE_DIR);
 	
-	if (wants_system_libraries) {
+	if (wants_system_libraries || wants_nz) {
 		sysroot_include_missing_directory = malloc(strlen(sysroot_directory) + strlen(INCLUDE_MISSING_DIR) + 1);
 		
 		if (sysroot_include_missing_directory == NULL) {
@@ -532,6 +608,61 @@ int main(int argc, char* argv[], char* envp[]) {
 		args[offset++] = (char*) GCC_OPT_L_ATOMIC;
 	}
 	
+	if (wants_nz) {
+		nz_sysroot_directory = malloc(strlen(sysroot_directory) + strlen(NZ_SYSROOT) + 1);
+		
+		if (nz_sysroot_directory == NULL) {
+			err = ERR_MEMORY_ALLOCATE_FAILURE;
+			goto end;
+		}
+		
+		strcpy(nz_sysroot_directory, sysroot_directory);
+		strcat(nz_sysroot_directory, NZ_SYSROOT);
+		
+		args[offset++] = (char*) GCC_OPT_ISYSTEM;
+		args[offset++] = sysroot_include_missing_directory;
+		
+		args[offset++] = (char*) GCC_OPT_ISYSTEM;
+		
+		directory = malloc(strlen(nz_sysroot_directory) + strlen(SYSTEM_INCLUDE_PATH) + 1);
+		
+		if (directory == NULL) {
+			err = ERR_MEMORY_ALLOCATE_FAILURE;
+			goto end;
+		}
+		
+		strcpy(directory, nz_sysroot_directory);
+		strcat(directory, SYSTEM_INCLUDE_PATH);
+		
+		args[offset++] = directory;
+		
+		args[offset++] = (char*) GCC_OPT_XLINKER;
+		args[offset++] = (char*) LD_OPT_UNRESOLVED_SYMBOLS;
+		
+		for (index = 0; index < sizeof(SYSTEM_LIBRARY_PATH) / sizeof(*SYSTEM_LIBRARY_PATH); index++) {
+			cur = SYSTEM_LIBRARY_PATH[index];
+			
+			directory = malloc(strlen(nz_sysroot_directory) + strlen(cur) + 1);
+			
+			if (directory == NULL) {
+				err = ERR_MEMORY_ALLOCATE_FAILURE;
+				goto end;
+			}
+			
+			strcpy(directory, nz_sysroot_directory);
+			strcat(directory, cur);
+			
+			args[offset++] = (char*) GCC_OPT_LIBDIR;
+			args[offset++] = (char*) directory;
+			
+			args[offset++] = (char*) GCC_OPT_XLINKER;
+			args[offset++] = (char*) LD_OPT_RPATH_LINK;
+			
+			args[offset++] = (char*) GCC_OPT_XLINKER;
+			args[offset++] = (char*) directory;
+		}
+	}
+	
 	if (wants_system_libraries) {
 		args[offset++] = (char*) GCC_OPT_ISYSTEM;
 		args[offset++] = sysroot_include_missing_directory;
@@ -625,6 +756,10 @@ int main(int argc, char* argv[], char* envp[]) {
 	free(gcc_include_directory);
 	free(gpp_include_directory);
 	free(gpp_builtins_include_directory);
+	free(primary_library_directory);
+	free(secondary_library_directory);
+	free(nz_sysroot_directory);
+	free(non_prefixed_triplet);
 	
 	switch (err) {
 		case ERR_SUCCESS:
@@ -641,6 +776,9 @@ int main(int argc, char* argv[], char* envp[]) {
 			break;
 		case ERR_EXECVE_FAILURE:
 			opt = "Call to execve failed";
+			break;
+		case ERR_BAD_TRIPLET:
+			opt = "Unknown triplet";
 			break;
 	}
 	

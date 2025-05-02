@@ -35,9 +35,12 @@ declare -r libsanitizer_directory='/tmp/libsanitizer'
 declare -r gdb_tarball='/tmp/gdb.tar.xz'
 declare -r gdb_directory='/tmp/gdb'
 
+declare -r nz_tarball='/tmp/nz.tar.xz'
+declare nz_directory=""
+
 declare -r nativeflags='-march=native'
 declare -r pieflags='-fPIE'
-declare optflags='-w -O2 -Xlinker --allow-multiple-definition'
+declare optflags='-w -Os -Xlinker --allow-multiple-definition'
 declare -r linkflags='-Xlinker -s'
 
 declare -r max_jobs='40'
@@ -135,22 +138,22 @@ declare -ra bits=(
 declare -r languages='c,c++'
 
 declare -ra targets=(
-	'ia64-unknown-linux-gnu'
-	'mips-unknown-linux-gnu'
-	'mips64el-unknown-linux-gnuabi64'
-	'mipsel-unknown-linux-gnu'
-	'powerpc-unknown-linux-gnu'
-	'powerpc64le-unknown-linux-gnu'
-	's390-unknown-linux-gnu'
-	's390x-unknown-linux-gnu'
-	'sparc-unknown-linux-gnu'
+	# 'ia64-unknown-linux-gnu'
+	# 'mips-unknown-linux-gnu'
+	# 'mips64el-unknown-linux-gnuabi64'
+	# 'mipsel-unknown-linux-gnu'
+	# 'powerpc-unknown-linux-gnu'
+	# 'powerpc64le-unknown-linux-gnu'
+	# 's390-unknown-linux-gnu'
+	# 's390x-unknown-linux-gnu'
+	# 'sparc-unknown-linux-gnu'
 	'x86_64-unknown-linux-gnu'
-	'alpha-unknown-linux-gnu'
-	'aarch64-unknown-linux-gnu'
-	'arm-unknown-linux-gnueabi'
-	'arm-unknown-linux-gnueabihf'
-	'hppa-unknown-linux-gnu'
-	'i386-unknown-linux-gnu'
+	# 'alpha-unknown-linux-gnu'
+	# 'aarch64-unknown-linux-gnu'
+	# 'arm-unknown-linux-gnueabi'
+	# 'arm-unknown-linux-gnueabihf'
+	# 'hppa-unknown-linux-gnu'
+	# 'i386-unknown-linux-gnu'
 )
 
 declare build_type="${1}"
@@ -606,6 +609,28 @@ if ! (( is_native )); then
 		cp --recursive "${gdb_directory}/bin" "${toolchain_directory}"
 		rm --recursive "${gdb_directory}"
 	fi
+	
+	declare url="https://github.com/AmanoTeam/Nouzen/releases/latest/download/${CROSS_COMPILE_TRIPLET}.tar.xz"
+	declare nz_directory="/tmp/${CROSS_COMPILE_TRIPLET}"
+	
+	rm --force --recursive "${nz_directory}"
+	
+	echo "- Fetching data from '${url}'"
+	
+	curl \
+		--url "${url}" \
+		--retry '30' \
+		--retry-all-errors \
+		--retry-delay '0' \
+		--retry-max-time '0' \
+		--location \
+		--silent \
+		--output "${nz_tarball}"
+	
+	tar \
+		--directory="$(dirname "${nz_directory}")" \
+		--extract \
+		--file="${nz_tarball}" 2>/dev/null || true
 fi
 
 declare cc='gcc'
@@ -642,6 +667,11 @@ fi
 while read item; do
 	declare glibc_version="$(jq '.glibc_version' <<< "${item}")"
 	declare triplet="$(jq --raw-output '.triplet' <<< "${item}")"
+	
+	declare repository="$(jq --raw-output '.repository.url' <<< "${item}")"
+	declare release="$(jq --raw-output '.repository.release' <<< "${item}")"
+	declare resource="$(jq --raw-output '.repository.resource' <<< "${item}")"
+	declare architecture="$(jq --raw-output '.repository.architecture' <<< "${item}")"
 	
 	if [ "${glibc_version}" = '2' ] || [ "${glibc_version}" = '2.0' ] || [ "${glibc_version}" = '2.1' ] || [ "${glibc_version}" = '2.2' ]; then
 		continue
@@ -683,7 +713,14 @@ while read item; do
 		--file="${sysroot_tarball}"
 	
 	cd "${toolchain_directory}/${triplet}${glibc_version}/lib"
-	mkdir 'gcc'
+	mkdir 'gcc' 'nouzen'
+	
+	if [ -d "${nz_directory}" ]; then
+		cp --recursive "${nz_directory}/"* './nouzen'
+		mkdir --parent './nouzen/etc/nouzen/sources.list'
+		
+		echo -e "repository = ${repository}\nrelease = ${release}\nresource = ${resource}\narchitecture = ${architecture}" > './nouzen/etc/nouzen/sources.list/obggcc.conf'
+	fi
 	
 	for library in "${libraries[@]}"; do
 		for bit in "${bits[@]}"; do
@@ -713,7 +750,18 @@ while read item; do
 		done
 	done
 	
+	cd '../'
+	
+	mkdir 'bin'
+	cd 'bin'
+	
+	ln --symbolic '../lib/nouzen/bin/'* .
+	
 	cd "${toolchain_directory}/bin"
+	
+	ln --symbolic "../${triplet}${glibc_version}/bin/nz" "./${triplet}${glibc_version}-nz"
+	ln --symbolic "../${triplet}${glibc_version}/bin/apt" "./${triplet}${glibc_version}-apt"
+	ln --symbolic "../${triplet}${glibc_version}/bin/apt-get" "./${triplet}${glibc_version}-apt-get"
 	
 	for name in "${libstdcxx_depends[@]}"; do
 		source="./${triplet}-${name}"

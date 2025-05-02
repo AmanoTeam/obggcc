@@ -7,3 +7,6 @@
 [submodule "submodules/gdb"]
 	path = submodules/gdb
 	url = https://github.com/AmanoTeam/GDB-Builds
+[submodule "submodules/nz"]
+	path = submodules/nz
+	url = https://github.com/AmanoTeam/Nouzen
