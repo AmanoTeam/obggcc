@@ -40,7 +40,7 @@ declare nz_directory=""
 
 declare -r nativeflags='-march=native'
 declare -r pieflags='-fPIE'
-declare optflags='-w -Os -Xlinker --allow-multiple-definition'
+declare optflags='-w -O2 -Xlinker --allow-multiple-definition'
 declare -r linkflags='-Xlinker -s'
 
 declare -r max_jobs='40'
@@ -138,22 +138,22 @@ declare -ra bits=(
 declare -r languages='c,c++'
 
 declare -ra targets=(
-	# 'ia64-unknown-linux-gnu'
-	# 'mips-unknown-linux-gnu'
-	# 'mips64el-unknown-linux-gnuabi64'
-	# 'mipsel-unknown-linux-gnu'
-	# 'powerpc-unknown-linux-gnu'
-	# 'powerpc64le-unknown-linux-gnu'
-	# 's390-unknown-linux-gnu'
-	# 's390x-unknown-linux-gnu'
-	# 'sparc-unknown-linux-gnu'
+	'ia64-unknown-linux-gnu'
+	'mips-unknown-linux-gnu'
+	'mips64el-unknown-linux-gnuabi64'
+	'mipsel-unknown-linux-gnu'
+	'powerpc-unknown-linux-gnu'
+	'powerpc64le-unknown-linux-gnu'
+	's390-unknown-linux-gnu'
+	's390x-unknown-linux-gnu'
+	'sparc-unknown-linux-gnu'
 	'x86_64-unknown-linux-gnu'
-	# 'alpha-unknown-linux-gnu'
-	# 'aarch64-unknown-linux-gnu'
-	# 'arm-unknown-linux-gnueabi'
-	# 'arm-unknown-linux-gnueabihf'
-	# 'hppa-unknown-linux-gnu'
-	# 'i386-unknown-linux-gnu'
+	'alpha-unknown-linux-gnu'
+	'aarch64-unknown-linux-gnu'
+	'arm-unknown-linux-gnueabi'
+	'arm-unknown-linux-gnueabihf'
+	'hppa-unknown-linux-gnu'
+	'i386-unknown-linux-gnu'
 )
 
 declare build_type="${1}"
