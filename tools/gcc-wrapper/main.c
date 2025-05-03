@@ -448,6 +448,10 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	if (wants_builtin_loader) {
 		size += 8;
+		
+		if (wants_nz) {
+			size += (sizeof(SYSTEM_LIBRARY_PATH) / sizeof(*SYSTEM_LIBRARY_PATH)) * 4;
+		}
 	}
 	
 	if (wants_runtime_rpath) {
@@ -581,6 +585,16 @@ int main(int argc, char* argv[], char* envp[]) {
 	strcpy(arg, GCC_OPT_SYSROOT);
 	strcat(arg, sysroot_directory);
 	
+	nz_sysroot_directory = malloc(strlen(sysroot_directory) + strlen(NZ_SYSROOT) + 1);
+	
+	if (nz_sysroot_directory == NULL) {
+		err = ERR_MEMORY_ALLOCATE_FAILURE;
+		goto end;
+	}
+	
+	strcpy(nz_sysroot_directory, sysroot_directory);
+	strcat(nz_sysroot_directory, NZ_SYSROOT);
+		
 	args[offset++] = executable;
 	args[offset++] = arg;
 	args[offset++] = (char*) GCC_OPT_NOSTDINC;
@@ -609,16 +623,6 @@ int main(int argc, char* argv[], char* envp[]) {
 	}
 	
 	if (wants_nz) {
-		nz_sysroot_directory = malloc(strlen(sysroot_directory) + strlen(NZ_SYSROOT) + 1);
-		
-		if (nz_sysroot_directory == NULL) {
-			err = ERR_MEMORY_ALLOCATE_FAILURE;
-			goto end;
-		}
-		
-		strcpy(nz_sysroot_directory, sysroot_directory);
-		strcat(nz_sysroot_directory, NZ_SYSROOT);
-		
 		args[offset++] = (char*) GCC_OPT_ISYSTEM;
 		args[offset++] = sysroot_include_missing_directory;
 		
@@ -727,6 +731,26 @@ int main(int argc, char* argv[], char* envp[]) {
 		
 		args[offset++] = (char*) GCC_OPT_XLINKER;
 		args[offset++] = sysroot_library_directory;
+		
+		for (index = 0; wants_nz && index < sizeof(SYSTEM_LIBRARY_PATH) / sizeof(*SYSTEM_LIBRARY_PATH); index++) {
+			cur = SYSTEM_LIBRARY_PATH[index];
+			
+			directory = malloc(strlen(nz_sysroot_directory) + strlen(cur) + 1);
+			
+			if (directory == NULL) {
+				err = ERR_MEMORY_ALLOCATE_FAILURE;
+				goto end;
+			}
+			
+			strcpy(directory, nz_sysroot_directory);
+			strcat(directory, cur);
+			
+			args[offset++] = (char*) GCC_OPT_XLINKER;
+			args[offset++] = (char*) LD_OPT_RPATH;
+			
+			args[offset++] = (char*) GCC_OPT_XLINKER;
+			args[offset++] = (char*) directory;
+		}
 	}
 	
 	if (wants_runtime_rpath) {
