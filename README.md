@@ -136,11 +136,11 @@ When building C++ programs with OBGGCC, however, your program automatically link
 
 Some people might think that linking a program against an old glibc version will make the compiled binary less secure and more vulnerable, as supposedly, the program will be using symbols from a standard library that's unmaintained and no longer receives security fixes. However, that's not true. Binaries compiled against an old glibc version still benefit from security fixes introduced in newer glibc versions as long as the target machine is running an updated glibc.
 
-The whole point of symbol versioning is to prevent behavior inconsistencies when running binaries compiled against different glibc versions. This is accomplished by bumping the symbol version every time a backward-incompatible change is introduced to some public function or API of the standard library. With this, programs compiled against newer versions of the standard library can benefit from newer features, while old programs will continue working as intended, as they will still be using the old version of that specific function or API.
+The whole point of symbol versioning is to prevent behavior inconsistencies when running binaries compiled against different glibc versions. This is accomplished by bumping the symbol version every time a backward-incompatible change is introduced to some public function or API of the standard library. With this, programs compiled against newer versions of the standard library can benefit from newer features, while old programs will continue working as intended, as they will still be using the same version of that specific function or API that was available when the binary was compiled.
 
-The only exception to when a "backward-incompatible change" is not considered for a symbol version bump is when it modifies undocumented or undefined behavior. Security fixes are not considered for a version bump, as they essentially fix something that was not intended to work that way — undefined behavior.
+The only exception to when a "backward-incompatible change" is not considered for a symbol version bump is when it modifies undocumented behavior. Security fixes are not considered for a version bump, as they essentially correct something that was never intended to work that way — undocumented behavior.
 
-Changes introduced in a newer glibc version that are not considered for a symbol version bump take effect in all versions of that symbol, even in programs that were compiled for a glibc version that didn't receive that change at all. That means your program will still be running secure and optimized code as long as it's running on an up-to-date system.
+Changes introduced in a newer glibc version that are not considered for a symbol version bump (including security fixes) take effect in all versions of that symbol, even in programs that were compiled for a glibc version that didn’t include that change. That means your program will still be running secure and optimized code, as long as it’s running on an up-to-date system.
 
 > [!NOTE]  
 > It should be noted that "an up-to-date system" does not specifically refer to a system where all packages — including glibc — are updated to their latest versions, but to a system that, at the bare minimum, receives security updates even if the system itself or its packages don't receive a major upgrade. This is especially true for Long-Term Support (LTS) Linux distributions.
@@ -155,7 +155,7 @@ glibc 1.x and glibc 2.x are not backward compatible in any way, meaning that sof
 
 glibc 2.0 and glibc 2.1 were not binary-compatible on some architectures, as stated in the [release notes](https://sourceware.org/legacy-ml/libc-alpha/1999-q1/msg00310.html) of the said version. Also, symbol versioning did not exist in glibc until the 2.1 release. I'm not sure if software built for glibc 2.0 can run on glibc 2.1 and up.
 
-Support for x86_64 (amd64) first appeared in glibc 2.2.5, only gaining overall stability in glibc 2.3 and onwards. Even if we manage to build a working cross-compiler targeting pre-glibc 2.2 releases or older, we would only be able to target very old (and potentially no longer used) system architectures.
+Support for x86_64 (`amd64`) first appeared in glibc 2.2.5, only gaining overall stability in glibc 2.3 and onwards. Even if we manage to build a working cross-compiler targeting pre-glibc 2.2 releases or older, we would only be able to target very old (and potentially no longer used) system architectures.
 
 Also, starting from glibc 2.2 and lower, `libstdc++` fails to build due to the absence of some required functions in the standard library. It might work with some patching, but I did not bother trying.
 
@@ -165,7 +165,72 @@ So, with that in mind, glibc 2.3 seems to be the minimum version that GCC is abl
 
 Note that all the cross-compilers only contain the minimum required to build a working C/C++ program. That is, you won't find any prebuilt binaries of popular projects like OpenSSL or zlib available for use, as you would on an average Linux distribution.
 
-If your project depends on something other than the GNU C library (or the C++ standard libraries, for C++ programs), you should build it yourself.
+If your project depends on something other than the GNU C library (or the C++ standard libraries, for C++ programs), you need to either build it yourself or install it from somewhere else. For convenience, OBGGCC provides an APT-like tool to install packages from APT repositories to a local directory and enable their usage during cross-compilations.
+
+### Installing project dependencies with `nz`
+
+You can install packages to a specific system root using the corresponding `<triplet><glibc_version>-nz` command inside the `${OBGGCC_HOME}/bin` directory.
+
+For example, let's suppose you want to cross-compile curl for Ubuntu 16.04 (glibc 2.23) with SSL and HTTP/2 support:
+
+#### Step 1
+
+First, fetch curl sources and generate the required build files:
+
+```bash
+$ git clone https://github.com/curl/curl
+$ cd curl
+$ autoreconf -fi
+```
+
+#### Step 2
+
+Now, configure the environment for cross-compilation:
+
+```bash
+$ source ${OBGGCC_HOME}/usr/local/share/obggcc/autotools/x86_64-unknown-linux-gnu2.23.sh
+```
+
+#### Step 3
+
+Install the required dependencies:
+
+```bash
+$ x86_64-unknown-linux-gnu2.23-nz \
+    --install 'libnghttp2-dev;libssl-dev;zlib1g-dev;libpsl-dev'
+```
+
+There is also an `apt` script wrapper around `nz` that you can use to install packages _à la_ the APT way:
+
+```bash
+$ x86_64-unknown-linux-gnu2.23-apt install \
+    libnghttp2-dev \
+    libssl-dev \
+    zlib1g-dev \
+    libpsl-dev
+```
+
+#### Step 4
+
+Before cross-compiling curl, set the `OBGGCC_NZ` environment variable to enable OBGGCC to use libraries from nz's system root during the build:
+
+```bash
+$ export OBGGCC_NZ=1
+```
+
+By default, OBGGCC won't use the libraries and headers from nz's system root unless explicitly told to. That's because OBGGCC assumes that most of the time you want to cross-compile software using only the core GNU C/C++ libraries (glibc and stdc++).
+
+#### Step 5
+
+Now you can build curl the usual way:
+
+```bash
+$ ./configure \
+    --host="${CROSS_COMPILE_TRIPLET}" \
+    --with-openssl \
+    --with-nghttp2 
+$ make
+```
 
 ## Linking with system libraries
 
@@ -173,7 +238,7 @@ By default, you can't mix headers and libraries from both the cross-compiler's s
 
 That being said, the GNU C library is portable enough to reduce these incompatibilities to some extent.
 
-The environment variable `OBGGCC_SYSTEM_LIBRARIES` can be used to control the default behavior when cross-compiling software.
+The environment variable `OBGGCC_SYSTEM_LIBRARIES` can be used to force OBGGCC to use your host machine's system root when cross-compiling.
 
 Let's take as an example this program which uses OpenSSL to perform a simple SHA-256 calculation:
 
@@ -234,7 +299,7 @@ Essentially, it:
 - Adds `/usr/include ` to the list of include directories
 - Adds `/usr/local/lib64`, `/usr/local/lib`, `/lib64`, `/lib`, `/usr/lib64`, and `/usr/lib` to the list of library directories
 
-Note that, despite explicitly adding directories of the host machine to the compiler invocation, any program you compile will still use headers and libraries of the cross-compiler's GLIBC. That's due to the fact that the directories of the cross-compiler's system root are checked first before the directories of your host machine's system root. Only when the compiler can't find a specific header or library in the cross-compiler's system root does it search for it in your machine's system root. This way, we can build portable programs while still linking against third-party libraries from the host machine.
+Note that, despite explicitly adding directories of the host machine to the compiler invocation, any program you compile will still link against the cross-compiler's glibc. That's due to the fact that the directories of the cross-compiler's system root are checked first before the directories of your host machine's system root. Only when the compiler can't find a specific header or library in the cross-compiler's system root does it search for it in your machine's system root. This way, we can build portable programs while still linking against third-party libraries from the host machine.
 
 Keep in mind that `OBGGCC_SYSTEM_LIBRARIES` is only useful when you are cross-compiling software to a target that matches the one of your host machine (e.g., your host machine is an `x86_64-linux-gnu` system, and you are cross-compiling software targeting an `x86_64-linux-gnu` system as well), as you can't link binaries with mismatching ABIs:
 
@@ -264,7 +329,7 @@ It works!
 
 ## Running binaries with a specific glibc
 
-There may be cases where you might want to run your software under a specific glibc version, either to check how it will behave or to try a new glibc feature that was added in a later version but is not available in the glibc installed on your system.
+There may be cases where you might want to run your software under a specific glibc version—either to check how it will behave or to try a new glibc feature that was added in a later version but isn’t available in the glibc installed on your system.
 
 The environment variable `OBGGCC_BUILTIN_LOADER` can be used to change the default loader (aka dynamic linker) of an executable when cross-compiling. In other words, you can use this to force your binary to use a different glibc at runtime, ignoring the one available in your system.
 
@@ -335,7 +400,7 @@ main.c:3:10: fatal error: sys/random.h: No such file or directory
 compilation terminated.
 ```
 
-There is obviously no `sys/random.h` in glibc 2.17. I can try cross-compiling my code to glibc 2.25+, but then I would not be able to run it on my machine due to the older glibc it has:
+I can try cross-compiling my code to glibc 2.25+, but then I would not be able to run it on my machine due to the older glibc it has:
 
 ```
 $ x86_64-unknown-linux-gnu2.27-gcc main.c -o main
@@ -375,26 +440,13 @@ $ cat << asan > main.c
 #include <stddef.h>
 
 int main() {
-	char s =  *((char*) NULL);
+    char s =  *((char*) NULL);
 }
 asan
 $ x86_64-unknown-linux-gnu2.3-gcc -fsanitize=address main.c -o main -O0 -g
 $ ./main
 AddressSanitizer:DEADLYSIGNAL
-=================================================================
-==19765==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000000 (pc 0x561e38623255 bp 0x7ffefb9bc660 sp 0x7ffefb9bc650 T0)
-==19765==The signal is caused by a READ memory access.
-==19765==Hint: address points to the zero page.
-    #0 0x561e38623255 in main /home/runner/main.c:4
-    #1 0x7fee199a7554 in __libc_start_main (/lib64/libc.so.6+0x22554) (BuildId: 32c239e375f673bcca264b717e7ac4b7bd5abadc)
-    #2 0x561e38623099  (/home/runner/x+0x1099) (BuildId: 697cbcafa9e8da9eed79035cfb8755db7456b763)
-
-==19765==Register values:
-rax = 0x0000000000000000  rbx = 0x0000000000000000  rcx = 0x0000000000000000  rdx = 0x0000000000000000  
-rdi = 0x0000000000000000  rsi = 0x00007ffefb9bc700  rbp = 0x00007ffefb9bc660  rsp = 0x00007ffefb9bc650  
- r8 = 0x00007fee19d4de80   r9 = 0x0000000000000000  r10 = 0x00007ffefb9bc0a0  r11 = 0x00007fee19e773d0  
-r12 = 0x0000561e38623070  r13 = 0x00007ffefb9bc740  r14 = 0x0000000000000000  r15 = 0x0000000000000000  
-AddressSanitizer can not provide additional info.
+...
 SUMMARY: AddressSanitizer: SEGV /home/runner/main.c:4 in main
 ==19765==ABORTING
 ```
