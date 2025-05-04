@@ -468,6 +468,7 @@ for target in "${targets[@]}"; do
 		--enable-plugin \
 		--enable-libstdcxx-time='rt' \
 		--enable-cxx-flags="${linkflags} ${extra_cxx_flags}" \
+		--disable-fixincludes \
 		--disable-libsanitizer \
 		--disable-libgomp \
 		--disable-bootstrap \
