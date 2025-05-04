@@ -25,7 +25,7 @@ OBGGCC can also be useful if you just want to test whether your program builds o
 
 ## Supported targets
 
-Currently, OBGGCC provides cross-compilers targeting 6 major Ubuntu releases, 9 major Debian releases on 16 system architectures.
+Currently, OBGGCC provides cross-compilers targeting 6 major Ubuntu releases and 9 major Debian releases on 16 system architectures.
 
 ### Distributions
 
