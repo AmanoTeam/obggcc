@@ -38,6 +38,9 @@ declare -r gdb_directory='/tmp/gdb'
 declare -r nz_tarball='/tmp/nz.tar.xz'
 declare nz_directory=""
 
+declare -r zstd_tarball='/tmp/zstd.tar.gz'
+declare -r zstd_directory='/tmp/zstd-dev'
+
 declare -r nativeflags='-march=native'
 declare -r pieflags='-fPIE'
 declare optflags='-w -O2 -Xlinker --allow-multiple-definition'
@@ -270,6 +273,23 @@ if ! [ -f "${binutils_tarball}" ]; then
 	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Disable-annoying-linker-warnings.patch"
 fi
 
+if ! [ -f "${zstd_tarball}" ]; then
+	curl \
+		--url 'https://github.com/facebook/zstd/archive/refs/heads/dev.tar.gz' \
+		--retry '30' \
+		--retry-all-errors \
+		--retry-delay '0' \
+		--retry-max-time '0' \
+		--location \
+		--silent \
+		--output "${zstd_tarball}"
+	
+	tar \
+		--directory="$(dirname "${zstd_directory}")" \
+		--extract \
+		--file="${zstd_tarball}"
+fi
+
 if ! [ -f "${gcc_tarball}" ]; then
 	curl \
 		--url 'https://github.com/gcc-mirror/gcc/archive/refs/heads/releases/gcc-15.tar.gz' \
@@ -365,6 +385,24 @@ rm --force --recursive ./*
 make all --jobs
 make install
 
+[ -d "${zstd_directory}/.build" ] || mkdir "${zstd_directory}/.build"
+
+cd "${zstd_directory}/.build"
+rm --force --recursive ./*
+
+cmake \
+	-S "${zstd_directory}/build/cmake" \
+	-B "${PWD}" \
+	-DCMAKE_C_FLAGS="-DZDICT_QSORT=ZDICT_QSORT_MIN ${optflags}" \
+	-DCMAKE_INSTALL_PREFIX="${toolchain_directory}" \
+	-DBUILD_SHARED_LIBS=ON \
+	-DZSTD_BUILD_PROGRAMS=OFF \
+	-DZSTD_BUILD_TESTS=OFF \
+	-DZSTD_BUILD_STATIC=OFF
+
+cmake --build "${PWD}"
+cmake --install "${PWD}" --strip
+
 for target in "${targets[@]}"; do
 	source "${workdir}/${target}.sh"
 	
@@ -410,11 +448,12 @@ for target in "${targets[@]}"; do
 		--enable-gold \
 		--enable-ld \
 		--enable-lto \
+		--enable-plugins \
 		--disable-gprofng \
 		--program-prefix="${triplet}-" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
-		--enable-plugins \
 		--without-static-standard-libraries \
+		--with-zstd="${toolchain_directory}" \
 		CFLAGS="${pieflags} ${optflags}" \
 		CXXFLAGS="${pieflags} ${optflags}" \
 		LDFLAGS="${linkflags}"
@@ -436,6 +475,7 @@ for target in "${targets[@]}"; do
 		--with-mpc="${toolchain_directory}" \
 		--with-mpfr="${toolchain_directory}" \
 		--with-isl="${toolchain_directory}" \
+		--with-zstd="${toolchain_directory}" \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
 		--with-pkgversion="OBGGCC v2.4-${revision}" \
