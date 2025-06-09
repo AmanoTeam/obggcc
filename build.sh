@@ -470,7 +470,6 @@ for target in "${targets[@]}"; do
 		--enable-cxx-flags="${linkflags} ${extra_cxx_flags}" \
 		--enable-host-pie \
 		--enable-host-shared \
-		--disable-fixincludes \
 		--disable-libsanitizer \
 		--disable-libgomp \
 		--disable-bootstrap \
