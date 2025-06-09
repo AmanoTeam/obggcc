@@ -478,7 +478,7 @@ for target in "${targets[@]}"; do
 		--with-zstd="${toolchain_directory}" \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v2.4-${revision}" \
+		--with-pkgversion="OBGGCC v2.5-${revision}" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--with-native-system-header-dir='/include' \
 		--with-default-libstdcxx-abi='new' \
@@ -536,6 +536,12 @@ for target in "${targets[@]}"; do
 		all \
 		--jobs="${max_jobs}"
 	make install
+	
+	cd "${toolchain_directory}/lib/bfd-plugins"
+	
+	if ! [ -f './liblto_plugin.so' ]; then
+		ln --symbolic "../../libexec/gcc/${triplet}/"*'/liblto_plugin.so' './'
+	fi
 	
 	if ! (( is_native )); then
 		if ! [ "${triplet}" = 'mips64el-unknown-linux-gnuabi64' ]; then
