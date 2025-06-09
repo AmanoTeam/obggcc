@@ -510,6 +510,7 @@ for target in "${targets[@]}"; do
 		--enable-cxx-flags="${linkflags} ${extra_cxx_flags}" \
 		--enable-host-pie \
 		--enable-host-shared \
+		--with-specs='%{!fno-plt:%{!fplt:-fno-plt}}' \
 		--disable-libsanitizer \
 		--disable-libgomp \
 		--disable-bootstrap \
