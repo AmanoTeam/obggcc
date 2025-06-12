@@ -706,9 +706,9 @@ if ! (( is_native )); then
 fi
 
 "${cc}" \
-	"${workdir}/tools/gcc-wrapper/filesystem.c" \
-	"${workdir}/tools/gcc-wrapper/main.c" \
-	"${workdir}/tools/gcc-wrapper/path.c" \
+	"${workdir}/tools/gcc-wrapper/fs/"*".c" \
+	"${workdir}/tools/gcc-wrapper/"*".c" \
+	-I "${workdir}/tools/gcc-wrapper" \
 	${optflags} \
 	${linkflags} \
 	-o "${gcc_wrapper}"

@@ -5,19 +5,19 @@
 
 #include <unistd.h>
 
-#include "filesystem.h"
-#include "path.h"
-#include "pathsep.h"
+#include "fs/getexec.h"
+#include "fs/parentpath.h"
+#include "fs/sep.h"
+#include "fs/basename.h"
 
 static const char GCC_MAJOR_VERSION[] = "15";
 
-static const char INCLUDE_DIR[] = "/include";
-static const char INCLUDE_MISSING_DIR[] = "/include-missing";
-static const char LIBRARY_DIR[] = "/lib";
-static const char GCC_LIBRARY_DIR[] = "/lib/gcc";
+static const char INCLUDE_DIR[] = PATHSEP_M "include";
+static const char INCLUDE_MISSING_DIR[] = PATHSEP_M "include-missing";
+static const char LIBRARY_DIR[] = PATHSEP_M "lib";
+static const char GCC_LIBRARY_DIR[] = PATHSEP_M "lib" PATHSEP_M "gcc";
 
 static const char RT_LIBRARY[] = "rt";
-static const char ATOMIC_LIBRARY[] = "atomic";
 static const char STDCXX_LIBRARY[] = "stdc++";
 
 static const char GCC_OPT_ISYSTEM[] = "-isystem";
@@ -27,8 +27,6 @@ static const char GCC_OPT_LIBDIR[] = "-L";
 static const char GCC_OPT_STATIC_LIBCXX[] = "-static-libstdc++";
 static const char GCC_OPT_L[] = "-l";
 static const char GCC_OPT_V[] = "-v";
-static const char GCC_OPT_I[] = "-I";
-static const char GCC_OPT_C[] = "-c";
 static const char GCC_OPT_L_RT[] = "-lrt";
 static const char GCC_OPT_FSANITIZE[] = "-fsanitize=";
 static const char GCC_OPT_L_STDCXX[] = "-lstdc++";
@@ -40,35 +38,37 @@ static const char LD_OPT_RPATH[] = "-rpath";
 static const char LD_OPT_UNRESOLVED_SYMBOLS[] = "--unresolved-symbols=ignore-in-shared-libs";
 
 static char* SYSTEM_LIBRARY_PATH[] = {
-	"/usr/local/lib64",
-	"/usr/local/lib",
-	"/lib64",
-	"/lib",
-	"/usr/lib64",
-	"/usr/lib",
+	PATHSEP_M "usr" PATHSEP_M "local" PATHSEP_M "lib64",
+	PATHSEP_M "usr" PATHSEP_M "local" PATHSEP_M "lib",
+	PATHSEP_M "lib64",
+	PATHSEP_M "lib",
+	PATHSEP_M "usr" PATHSEP_M "lib64",
+	PATHSEP_M "usr" PATHSEP_M "lib",
 	NULL,
 	NULL
 };
 
-static const char USR_DIRECTORY[] = "/usr";
-static const char LIB_DIRECTORY[] = "/lib";
+static const char USR_DIRECTORY[] = PATHSEP_M "usr";
+static const char LIB_DIRECTORY[] = PATHSEP_M "lib";
 
-static const char NZ_SYSROOT[] = "/lib/nouzen/sysroot";
+static const char NZ_SYSROOT[] = PATHSEP_M "lib" PATHSEP_M "nouzen" PATHSEP_M "sysroot";
 
-static const char SYSTEM_INCLUDE_PATH[] = "/usr/include";
+static const char SYSTEM_INCLUDE_PATH[] = PATHSEP_M "usr" PATHSEP_M "include";
+
+static const char CPLUSPLUS[] = "c++";
+static const char GCC[] = "gcc";
+static const char GPLUSPLUS[] = "g++";
+static const char GM2[] = "gm2";
+static const char GFORTRAN[] = "gfortran";
 
 #define ERR_SUCCESS 0
-#define ERR_MEMORY_ALLOCATE_FAILURE -1
+#define ERR_MEM_ALLOC_FAILURE -1
 #define ERR_UNKNOWN_COMPILER -2
 #define ERR_GET_APP_FILENAME_FAILURE -3
 #define ERR_EXECVE_FAILURE -4
 #define ERR_BAD_TRIPLET -5
 
-#define CPLUSPLUS "c++"
-#define GCC "gcc"
-#define GPLUSPLUS "g++"
-#define GM2 "gm2"
-#define GFORTRAN "gfortran"
+#define GLIBC_VERSION(major, minor) ((major << 16) + minor)
 
 static const char* get_loader(const char* const triplet) {
 	
@@ -164,8 +164,10 @@ int main(int argc, char* argv[], char* envp[]) {
 	size_t offset = 0;
 	size_t index = 0;
 	
-	long int glibc_version_major = 0;
-	long int glibc_version_minor = 0;
+	long int glibc_major = 0;
+	long int glibc_minor = 0;
+	
+	int intercept = 0;
 	
 	int wants_system_libraries = 0;
 	int wants_builtin_loader = 0;
@@ -179,7 +181,6 @@ int main(int argc, char* argv[], char* envp[]) {
 	int require_atomic_library = 0;
 	
 	int have_rt_library = 0;
-	int have_atomic_library = 0;
 	
 	char** args = NULL;
 	char* arg = NULL;
@@ -230,7 +231,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	wants_runtime_rpath = get_env("OBGGCC_RUNTIME_RPATH");
 	wants_nz = get_env("OBGGCC_NZ");
 	
-	for (index = 0; index < argc; index++) {
+	for (index = 0; index < (size_t) argc; index++) {
 		cur = argv[index];
 		
 		if (strncmp(cur, GCC_OPT_FSANITIZE, strlen(GCC_OPT_FSANITIZE)) == 0) {
@@ -241,15 +242,11 @@ int main(int argc, char* argv[], char* envp[]) {
 			wants_libcxx = 1;
 		} else if (strcmp(cur, GCC_OPT_L_RT) == 0) {
 			have_rt_library = 1;
-		} else if (strcmp(cur, GCC_OPT_L_ATOMIC) == 0) {
-			have_atomic_library = 1;
 		} else if (prev != NULL && strcmp(prev, GCC_OPT_L) == 0) {
 			if (strcmp(cur, STDCXX_LIBRARY) == 0) {
 				wants_libcxx = 1;
 			} else if (strcmp(cur, RT_LIBRARY) == 0) {
 				have_rt_library = 1;
-			} else if (strcmp(cur, ATOMIC_LIBRARY) == 0) {
-				have_atomic_library = 1;
 			}
 		}
 		
@@ -268,11 +265,11 @@ int main(int argc, char* argv[], char* envp[]) {
 	parent_directory = malloc(strlen(app_filename) + 1);
 	
 	if (parent_directory == NULL) {
-		err = ERR_MEMORY_ALLOCATE_FAILURE;
+		err = ERR_MEM_ALLOC_FAILURE;
 		goto end;
 	}
 	
-	get_parent_directory(app_filename, parent_directory, 1);
+	get_parent_path(app_filename, parent_directory, 1);
 	
 	ptr = strchr(fname, '\0');
 	
@@ -313,7 +310,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	triplet = malloc(size + 1);
 	
 	if (triplet == NULL) {
-		err = ERR_MEMORY_ALLOCATE_FAILURE;
+		err = ERR_MEM_ALLOC_FAILURE;
 		goto end;
 	}
 	
@@ -326,7 +323,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	non_prefixed_triplet = malloc(strlen(triplet) + 1);
 	
 	if (non_prefixed_triplet == NULL) {
-		err = ERR_MEMORY_ALLOCATE_FAILURE;
+		err = ERR_MEM_ALLOC_FAILURE;
 		goto end;
 	}
 	
@@ -347,27 +344,27 @@ int main(int argc, char* argv[], char* envp[]) {
 	memmove(dst, start, size);
 	
 	if (wants_system_libraries || wants_nz) {
-		primary_library_directory = malloc(strlen(USR_DIRECTORY) + strlen(LIB_DIRECTORY) + strlen(PATHSEP) + strlen(non_prefixed_triplet) + 1);
+		primary_library_directory = malloc(strlen(USR_DIRECTORY) + strlen(LIB_DIRECTORY) + strlen(PATHSEP_S) + strlen(non_prefixed_triplet) + 1);
 		
 		if (primary_library_directory == NULL) {
-			err = ERR_MEMORY_ALLOCATE_FAILURE;
+			err = ERR_MEM_ALLOC_FAILURE;
 			goto end;
 		}
 		
 		strcpy(primary_library_directory, USR_DIRECTORY);
 		strcat(primary_library_directory, LIB_DIRECTORY);
-		strcat(primary_library_directory, PATHSEP);
+		strcat(primary_library_directory, PATHSEP_S);
 		strcat(primary_library_directory, non_prefixed_triplet);
 		
-		secondary_library_directory = malloc(strlen(LIB_DIRECTORY) + strlen(PATHSEP) + strlen(non_prefixed_triplet) + 1);
+		secondary_library_directory = malloc(strlen(LIB_DIRECTORY) + strlen(PATHSEP_S) + strlen(non_prefixed_triplet) + 1);
 		
 		if (secondary_library_directory == NULL) {
-			err = ERR_MEMORY_ALLOCATE_FAILURE;
+			err = ERR_MEM_ALLOC_FAILURE;
 			goto end;
 		}
 		
 		strcpy(secondary_library_directory, LIB_DIRECTORY);
-		strcat(secondary_library_directory, PATHSEP);
+		strcat(secondary_library_directory, PATHSEP_S);
 		strcat(secondary_library_directory, non_prefixed_triplet);
 		
 		SYSTEM_LIBRARY_PATH[6] = primary_library_directory;
@@ -391,50 +388,50 @@ int main(int argc, char* argv[], char* envp[]) {
 	glibc_version = malloc(size + 1);
 	
 	if (glibc_version == NULL) {
-		err = ERR_MEMORY_ALLOCATE_FAILURE;
+		err = ERR_MEM_ALLOC_FAILURE;
 		goto end;
 	}
 	
 	memcpy(glibc_version, start, size);
 	glibc_version[size] = '\0';
 	
-	glibc_version_major = strtol(glibc_version, &ptr, 16);
+	glibc_major = strtol(glibc_version, &ptr, 16);
 	
 	if (*ptr != '-') {
-		glibc_version_minor = strtol(ptr + 1, NULL, 16);
+		glibc_minor = strtol(ptr + 1, NULL, 16);
 	}
 	
 	/* Determine whether we need to implicit link with -lrt */
-	wants_rt_library = wants_libcxx && !have_rt_library && (glibc_version_major == 2 && glibc_version_minor < 17);
+	wants_rt_library = wants_libcxx && !have_rt_library && GLIBC_VERSION(glibc_major, glibc_minor) < GLIBC_VERSION(2, 17);
 	
-	executable = malloc(strlen(parent_directory) + strlen(PATHSEP) + strlen(triplet) + 1 + strlen(cc) + 1);
+	executable = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(triplet) + 1 + strlen(cc) + 1);
 	
 	if (executable == NULL) {
-		err = ERR_MEMORY_ALLOCATE_FAILURE;
+		err = ERR_MEM_ALLOC_FAILURE;
 		goto end;
 	}
 	
 	strcpy(executable, parent_directory);
-	strcat(executable, PATHSEP);
+	strcat(executable, PATHSEP_S);
 	strcat(executable, triplet);
 	strcat(executable, "-");
 	strcat(executable, cc);
 	
-	get_parent_directory(app_filename, parent_directory, 2);
+	get_parent_path(app_filename, parent_directory, 2);
 	
-	sysroot_directory = malloc(strlen(parent_directory) + strlen(PATHSEP) + strlen(triplet) + strlen(glibc_version) + 1);
+	sysroot_directory = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(triplet) + strlen(glibc_version) + 1);
 	
 	if (sysroot_directory == NULL) {
-		err = ERR_MEMORY_ALLOCATE_FAILURE;
+		err = ERR_MEM_ALLOC_FAILURE;
 		goto end;
 	}
 	
 	strcpy(sysroot_directory, parent_directory);
-	strcat(sysroot_directory, PATHSEP);
+	strcat(sysroot_directory, PATHSEP_S);
 	strcat(sysroot_directory, triplet);
 	strcat(sysroot_directory, glibc_version);
 	
-	size = argc + 13 + wants_rt_library;
+	size = (size_t) argc + 13 + (size_t) wants_rt_library;
 	
 	if (wants_system_libraries) {
 		size += (sizeof(SYSTEM_LIBRARY_PATH) / sizeof(*SYSTEM_LIBRARY_PATH)) * 6;
@@ -469,14 +466,14 @@ int main(int argc, char* argv[], char* envp[]) {
 	args = malloc(size * sizeof(char*));
 	
 	if (args == NULL) {
-		err = ERR_MEMORY_ALLOCATE_FAILURE;
+		err = ERR_MEM_ALLOC_FAILURE;
 		goto end;
 	}
 	
 	sysroot_include_directory = malloc(strlen(sysroot_directory) + strlen(INCLUDE_DIR) + 1);
 	
 	if (sysroot_include_directory == NULL) {
-		err = ERR_MEMORY_ALLOCATE_FAILURE;
+		err = ERR_MEM_ALLOC_FAILURE;
 		goto end;
 	}
 	
@@ -487,7 +484,7 @@ int main(int argc, char* argv[], char* envp[]) {
 		sysroot_include_missing_directory = malloc(strlen(sysroot_directory) + strlen(INCLUDE_MISSING_DIR) + 1);
 		
 		if (sysroot_include_missing_directory == NULL) {
-			err = ERR_MEMORY_ALLOCATE_FAILURE;
+			err = ERR_MEM_ALLOC_FAILURE;
 			goto end;
 		}
 		
@@ -498,7 +495,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	sysroot_library_directory = malloc(strlen(sysroot_directory) + strlen(LIBRARY_DIR) + 1);
 	
 	if (sysroot_library_directory == NULL) {
-		err = ERR_MEMORY_ALLOCATE_FAILURE;
+		err = ERR_MEM_ALLOC_FAILURE;
 		goto end;
 	}
 	
@@ -506,79 +503,79 @@ int main(int argc, char* argv[], char* envp[]) {
 	strcat(sysroot_library_directory, LIBRARY_DIR);
 	
 	if (wants_runtime_rpath) {
-		sysroot_runtime_directory = malloc(strlen(sysroot_library_directory) + strlen(PATHSEP) + strlen(GCC) + 1);
+		sysroot_runtime_directory = malloc(strlen(sysroot_library_directory) + strlen(PATHSEP_S) + strlen(GCC) + 1);
 		
 		if (sysroot_runtime_directory == NULL) {
-			err = ERR_MEMORY_ALLOCATE_FAILURE;
+			err = ERR_MEM_ALLOC_FAILURE;
 			goto end;
 		}
 		
 		strcpy(sysroot_runtime_directory, sysroot_library_directory);
-		strcat(sysroot_runtime_directory, PATHSEP);
+		strcat(sysroot_runtime_directory, PATHSEP_S);
 		strcat(sysroot_runtime_directory, GCC);
 	}
 	
 	if (wants_builtin_loader) {
 		opt = get_loader(triplet);
 		
-		sysroot_dynamic_linker = malloc(strlen(sysroot_library_directory) + strlen(PATHSEP) + strlen(opt) + 1);
+		sysroot_dynamic_linker = malloc(strlen(sysroot_library_directory) + strlen(PATHSEP_S) + strlen(opt) + 1);
 		
 		if (sysroot_dynamic_linker == NULL) {
-			err = ERR_MEMORY_ALLOCATE_FAILURE;
+			err = ERR_MEM_ALLOC_FAILURE;
 			goto end;
 		}
 		
 		strcpy(sysroot_dynamic_linker, sysroot_library_directory);
-		strcat(sysroot_dynamic_linker, PATHSEP);
+		strcat(sysroot_dynamic_linker, PATHSEP_S);
 		strcat(sysroot_dynamic_linker, opt);
 	}
 	
-	gcc_include_directory = malloc(strlen(parent_directory) + strlen(GCC_LIBRARY_DIR) + strlen(PATHSEP) + strlen(triplet) + strlen(PATHSEP) + strlen(GCC_MAJOR_VERSION) + strlen(INCLUDE_DIR) + 1);
+	gcc_include_directory = malloc(strlen(parent_directory) + strlen(GCC_LIBRARY_DIR) + strlen(PATHSEP_S) + strlen(triplet) + strlen(PATHSEP_S) + strlen(GCC_MAJOR_VERSION) + strlen(INCLUDE_DIR) + 1);
 	
 	if (gcc_include_directory == NULL) {
-		err = ERR_MEMORY_ALLOCATE_FAILURE;
+		err = ERR_MEM_ALLOC_FAILURE;
 		goto end;
 	}
 	
 	strcpy(gcc_include_directory, parent_directory);
 	strcat(gcc_include_directory, GCC_LIBRARY_DIR);
-	strcat(gcc_include_directory, PATHSEP);
+	strcat(gcc_include_directory, PATHSEP_S);
 	strcat(gcc_include_directory, triplet);
-	strcat(gcc_include_directory, PATHSEP);
+	strcat(gcc_include_directory, PATHSEP_S);
 	strcat(gcc_include_directory, GCC_MAJOR_VERSION);
 	strcat(gcc_include_directory, INCLUDE_DIR);
 	
-	gpp_include_directory = malloc(strlen(parent_directory) + strlen(PATHSEP) + strlen(triplet) + strlen(INCLUDE_DIR) + strlen(PATHSEP) + strlen(CPLUSPLUS) + strlen(PATHSEP) + strlen(GCC_MAJOR_VERSION) + 1);
+	gpp_include_directory = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(triplet) + strlen(INCLUDE_DIR) + strlen(PATHSEP_S) + strlen(CPLUSPLUS) + strlen(PATHSEP_S) + strlen(GCC_MAJOR_VERSION) + 1);
 	
 	if (gpp_include_directory == NULL) {
-		err = ERR_MEMORY_ALLOCATE_FAILURE;
+		err = ERR_MEM_ALLOC_FAILURE;
 		goto end;
 	}
 	
 	strcpy(gpp_include_directory, parent_directory);
-	strcat(gpp_include_directory, PATHSEP);
+	strcat(gpp_include_directory, PATHSEP_S);
 	strcat(gpp_include_directory, triplet);
 	strcat(gpp_include_directory, INCLUDE_DIR);
-	strcat(gpp_include_directory, PATHSEP);
+	strcat(gpp_include_directory, PATHSEP_S);
 	strcat(gpp_include_directory, CPLUSPLUS);
-	strcat(gpp_include_directory, PATHSEP);
+	strcat(gpp_include_directory, PATHSEP_S);
 	strcat(gpp_include_directory, GCC_MAJOR_VERSION);
 	
-	gpp_builtins_include_directory = malloc(strlen(gpp_include_directory) + strlen(PATHSEP) + strlen(triplet) + 1);
+	gpp_builtins_include_directory = malloc(strlen(gpp_include_directory) + strlen(PATHSEP_S) + strlen(triplet) + 1);
 	
 	if (gpp_builtins_include_directory == NULL) {
-		err = ERR_MEMORY_ALLOCATE_FAILURE;
+		err = ERR_MEM_ALLOC_FAILURE;
 		goto end;
 	}
 	
 	strcpy(gpp_builtins_include_directory, gpp_include_directory);
-	strcat(gpp_builtins_include_directory, PATHSEP);
+	strcat(gpp_builtins_include_directory, PATHSEP_S);
 	strcat(gpp_builtins_include_directory, triplet);
 	
 	arg = malloc(strlen(GCC_OPT_SYSROOT) + strlen(sysroot_directory) + 1);
 	
 	if (arg == NULL) {
-		err = ERR_MEMORY_ALLOCATE_FAILURE;
+		err = ERR_MEM_ALLOC_FAILURE;
 		goto end;
 	}
 	
@@ -588,7 +585,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	nz_sysroot_directory = malloc(strlen(sysroot_directory) + strlen(NZ_SYSROOT) + 1);
 	
 	if (nz_sysroot_directory == NULL) {
-		err = ERR_MEMORY_ALLOCATE_FAILURE;
+		err = ERR_MEM_ALLOC_FAILURE;
 		goto end;
 	}
 	
@@ -629,7 +626,7 @@ int main(int argc, char* argv[], char* envp[]) {
 		directory = malloc(strlen(nz_sysroot_directory) + strlen(SYSTEM_INCLUDE_PATH) + 1);
 		
 		if (directory == NULL) {
-			err = ERR_MEMORY_ALLOCATE_FAILURE;
+			err = ERR_MEM_ALLOC_FAILURE;
 			goto end;
 		}
 		
@@ -639,16 +636,16 @@ int main(int argc, char* argv[], char* envp[]) {
 		args[offset++] = (char*) GCC_OPT_ISYSTEM;
 		args[offset++] = directory;
 		
-		directory = malloc(strlen(nz_sysroot_directory) + strlen(SYSTEM_INCLUDE_PATH) + strlen(PATHSEP) + strlen(non_prefixed_triplet) + 1);
+		directory = malloc(strlen(nz_sysroot_directory) + strlen(SYSTEM_INCLUDE_PATH) + strlen(PATHSEP_S) + strlen(non_prefixed_triplet) + 1);
 		
 		if (directory == NULL) {
-			err = ERR_MEMORY_ALLOCATE_FAILURE;
+			err = ERR_MEM_ALLOC_FAILURE;
 			goto end;
 		}
 		
 		strcpy(directory, nz_sysroot_directory);
 		strcat(directory, SYSTEM_INCLUDE_PATH);
-		strcat(directory, PATHSEP);
+		strcat(directory, PATHSEP_S);
 		strcat(directory, non_prefixed_triplet);
 		
 		args[offset++] = (char*) GCC_OPT_ISYSTEM;
@@ -663,7 +660,7 @@ int main(int argc, char* argv[], char* envp[]) {
 			directory = malloc(strlen(nz_sysroot_directory) + strlen(cur) + 1);
 			
 			if (directory == NULL) {
-				err = ERR_MEMORY_ALLOCATE_FAILURE;
+				err = ERR_MEM_ALLOC_FAILURE;
 				goto end;
 			}
 			
@@ -688,15 +685,15 @@ int main(int argc, char* argv[], char* envp[]) {
 		args[offset++] = (char*) GCC_OPT_ISYSTEM;
 		args[offset++] = (char*) SYSTEM_INCLUDE_PATH;
 		
-		directory = malloc(strlen(SYSTEM_INCLUDE_PATH) + strlen(PATHSEP) + strlen(non_prefixed_triplet) + 1);
+		directory = malloc(strlen(SYSTEM_INCLUDE_PATH) + strlen(PATHSEP_S) + strlen(non_prefixed_triplet) + 1);
 		
 		if (directory == NULL) {
-			err = ERR_MEMORY_ALLOCATE_FAILURE;
+			err = ERR_MEM_ALLOC_FAILURE;
 			goto end;
 		}
 		
 		strcpy(directory, SYSTEM_INCLUDE_PATH);
-		strcat(directory, PATHSEP);
+		strcat(directory, PATHSEP_S);
 		strcat(directory, non_prefixed_triplet);
 		
 		args[offset++] = (char*) GCC_OPT_ISYSTEM;
@@ -738,7 +735,7 @@ int main(int argc, char* argv[], char* envp[]) {
 			directory = malloc(strlen(nz_sysroot_directory) + strlen(cur) + 1);
 			
 			if (directory == NULL) {
-				err = ERR_MEMORY_ALLOCATE_FAILURE;
+				err = ERR_MEM_ALLOC_FAILURE;
 				goto end;
 			}
 			
@@ -766,7 +763,7 @@ int main(int argc, char* argv[], char* envp[]) {
 		args[offset++] = (char*) LD_OPT_UNRESOLVED_SYMBOLS;
 	}
 	
-	memcpy(&args[offset], &argv[1], argc * sizeof(*argv));
+	memcpy(&args[offset], &argv[1], (size_t) argc * sizeof(*argv));
 	
 	if (verbose) {
 		printf("%s", "+ ");
@@ -817,7 +814,7 @@ int main(int argc, char* argv[], char* envp[]) {
 		case ERR_SUCCESS:
 			opt = "Success";
 			break;
-		case ERR_MEMORY_ALLOCATE_FAILURE:
+		case ERR_MEM_ALLOC_FAILURE:
 			opt = "Could not allocate memory";
 			break;
 		case ERR_UNKNOWN_COMPILER:
@@ -832,10 +829,13 @@ int main(int argc, char* argv[], char* envp[]) {
 		case ERR_BAD_TRIPLET:
 			opt = "Unknown triplet";
 			break;
+		default:
+			opt = "Unknown error";
+			break;
 	}
 	
 	if (err != ERR_SUCCESS) {
-		fprintf(stderr, "fatal error: %s\n", opt);
+		fprintf(stderr, "obggcc: fatal error: %s\n", opt);
 		return EXIT_FAILURE;
 	}
 	
