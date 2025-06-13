@@ -161,6 +161,24 @@ Also, starting from glibc 2.2 and lower, `libstdc++` fails to build due to the a
 
 So, with that in mind, glibc 2.3 seems to be the minimum version that GCC is able to produce a cross-compiler for without breaking anything.
 
+## Controlling OBGGCC Behavior
+
+OBGGCC allows you to change its behavior in some scenarios with the use of environment variables. Below are all the switches OBGGCC supports and their intended purpose:
+
+- `OBGGCC_SYSTEM_LIBRARIES`
+  - Allows you to compile and link code using libraries and headers from your host's machine system root in conjunction with the cross-compiler's system root. See [Linking with system libraries](#linking-with-system-libraries).
+
+- `OBGGCC_BUILTIN_LOADER`
+  - Allows you to change the dynamic linker of an executable during linkage so that it can be run using OBGGCC's glibc libraries rather than your host machine's glibc libraries. See [Running binaries with a specific glibc](#running-binaries-with-a-specific-glibc).
+
+- `OBGGCC_RUNTIME_RPATH`
+  - Automatically appends the path to the directory containing GCC libraries (e.g., libsanitizer (Address Sanitizer), libatomic, and libstdc++) to your executables' RPATH. This option is enabled by default when using `OBGGCC_BUILTIN_LOADER`.
+
+- `OBGGCC_NZ`
+  - Allows you to use libraries and headers installed using OBGGCC's package manager (nz) during cross-compilation. See [Software availability](#software-availability).
+
+You can enable a switch by setting its value to `1` (e.g: `export OBGGCC_NZ=1`), and disable it by setting its value to `0` (e.g: `export OBGGCC_NZ=0`).
+
 ## Software availability
 
 Note that all the cross-compilers only contain the minimum required to build a working C/C++ program. That is, you won't find any prebuilt binaries of popular projects like OpenSSL or zlib available for use, as you would on an average Linux distribution.
@@ -178,7 +196,8 @@ For example, let's suppose you want to cross-compile curl for Ubuntu 16.04 (glib
 First, fetch curl sources and generate the required build files:
 
 ```bash
-$ git clone https://github.com/curl/curl
+$ git clone -b curl-8_14_1 \
+    https://github.com/curl/curl
 $ cd curl
 $ autoreconf -fi
 ```
@@ -276,7 +295,7 @@ main.c:3:10: fatal error: openssl/sha.h: No such file or directory
 compilation terminated.
 ```
 
-That's expected, as there are no prebuilt OpenSSL binaries inside the cross-compiler's system root.
+That's because there are no prebuilt OpenSSL binaries in the cross-compiler's sysroot.
 
 Now let's try setting the `OBGGCC_SYSTEM_LIBRARIES` environment variable:
 
@@ -304,8 +323,14 @@ Note that, despite explicitly adding directories of the host machine to the comp
 Keep in mind that `OBGGCC_SYSTEM_LIBRARIES` is only useful when you are cross-compiling software to a target that matches the one of your host machine (e.g., your host machine is an `x86_64-linux-gnu` system, and you are cross-compiling software targeting an `x86_64-linux-gnu` system as well), as you can't link binaries with mismatching ABIs:
 
 ```bash
+# My machine is an x86_64 system
 $ gcc -dumpmachine
 x86_64-unknown-linux-gnu
+
+# This will work, as both targets match
+$ x86_64-unknown-linux-gnu2.3-gcc main.c -lcrypto -o main
+
+# But this won't work; mismatching architectures
 $ aarch64-unknown-linux-gnu2.19-gcc main.c -lcrypto -o main
 /home/runner/obggcc/bin/../lib/gcc/aarch64-unknown-linux-gnu/15/../../../../aarch64-unknown-linux-gnu/bin/ld: skipping incompatible /lib64/libcrypto.so when searching for -lcrypto
 /home/runner/obggcc/bin/../lib/gcc/aarch64-unknown-linux-gnu/15/../../../../aarch64-unknown-linux-gnu/bin/ld: skipping incompatible /usr/lib64/libcrypto.so when searching for -lcrypto
@@ -322,6 +347,13 @@ $ dpkg --print-architecture
 amd64
 $ dpkg --print-foreign-architectures
 i386
+
+# This wil work
+$ x86_64-unknown-linux-gnu2.3-gcc main.c -lcrypto -o main
+$ ./main
+It works!
+
+# This will work as well
 $ i386-unknown-linux-gnu2.3-gcc main.c -lcrypto -o main
 $ ./main
 It works!
@@ -339,28 +371,11 @@ For some background, here is my current system:
 $ cat /etc/os-release
 NAME="CentOS Linux"
 VERSION="7 (Core)"
-ID="centos"
-ID_LIKE="rhel fedora"
-VERSION_ID="7"
-PRETTY_NAME="CentOS Linux 7 (Core)"
-ANSI_COLOR="0;31"
-CPE_NAME="cpe:/o:centos:centos:7"
-HOME_URL="https://www.centos.org/"
-BUG_REPORT_URL="https://bugs.centos.org/"
-
-CENTOS_MANTISBT_PROJECT="CentOS-7"
-CENTOS_MANTISBT_PROJECT_VERSION="7"
-REDHAT_SUPPORT_PRODUCT="centos"
-REDHAT_SUPPORT_PRODUCT_VERSION="7"
+...
 
 $ ldd --version
 ldd (GNU libc) 2.17
-Copyright (C) 2012 Free Software Foundation, Inc.
-This is free software; see the source for copying condit
-ions.There is NO
-warranty; not even for MERCHANTABILITY or FITNESS FOR A 
-PARTICULAR PURPOSE.
-Written by Roland McGrath and Ulrich Drepper.
+...
 ```
 
 I'm running CentOS 7 with glibc 2.17. Let's suppose I want to try the new `getrandom()` routine that was introduced in glibc 2.25. I would then write something like this:
