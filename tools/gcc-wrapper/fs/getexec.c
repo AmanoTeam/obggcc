@@ -11,6 +11,7 @@
 #endif
 
 #if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__DragonFly__) || defined(__OpenBSD__)
+	#include <sys/types.h>
 	#include <sys/sysctl.h>
 #endif
 

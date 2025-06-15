@@ -27,6 +27,7 @@ static const char GCC_OPT_LIBDIR[] = "-L";
 static const char GCC_OPT_STATIC_LIBCXX[] = "-static-libstdc++";
 static const char GCC_OPT_L[] = "-l";
 static const char GCC_OPT_V[] = "-v";
+static const char GCC_OPT_D[] = "-D";
 static const char GCC_OPT_L_RT[] = "-lrt";
 static const char GCC_OPT_FSANITIZE[] = "-fsanitize=";
 static const char GCC_OPT_L_STDCXX[] = "-lstdc++";
@@ -36,6 +37,8 @@ static const char LD_OPT_DYNAMIC_LINKER[] = "-dynamic-linker";
 static const char LD_OPT_RPATH_LINK[] = "-rpath-link";
 static const char LD_OPT_RPATH[] = "-rpath";
 static const char LD_OPT_UNRESOLVED_SYMBOLS[] = "--unresolved-symbols=ignore-in-shared-libs";
+
+static const char M_ANDROID_API[] = "__ANDROID_API__=";
 
 static char* SYSTEM_LIBRARY_PATH[] = {
 	PATHSEP_M "usr" PATHSEP_M "local" PATHSEP_M "lib64",
@@ -68,7 +71,7 @@ static const char GFORTRAN[] = "gfortran";
 #define ERR_EXECVE_FAILURE -4
 #define ERR_BAD_TRIPLET -5
 
-#define GLIBC_VERSION(major, minor) ((major << 16) + minor)
+#define LIBC_VERSION(major, minor) ((major << 16) + minor)
 
 static const char* get_loader(const char* const triplet) {
 	
@@ -164,8 +167,8 @@ int main(int argc, char* argv[], char* envp[]) {
 	size_t offset = 0;
 	size_t index = 0;
 	
-	long int glibc_major = 0;
-	long int glibc_minor = 0;
+	long int libc_major = 0;
+	long int libc_minor = 0;
 	
 	int intercept = 0;
 	
@@ -224,12 +227,18 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	char* non_prefixed_triplet = NULL;
 	char* triplet = NULL;
-	char* glibc_version = NULL;
+	char* libc_version = NULL;
 	
-	wants_system_libraries = get_env("OBGGCC_SYSTEM_LIBRARIES");
-	wants_builtin_loader = get_env("OBGGCC_BUILTIN_LOADER");
-	wants_runtime_rpath = get_env("OBGGCC_RUNTIME_RPATH");
-	wants_nz = get_env("OBGGCC_NZ");
+	#if defined(PINO)
+		char* android_api = NULL;
+	#endif
+	
+	#if defined(OBGGCC)
+		wants_system_libraries = get_env("OBGGCC_SYSTEM_LIBRARIES");
+		wants_builtin_loader = get_env("OBGGCC_BUILTIN_LOADER");
+		wants_runtime_rpath = get_env("OBGGCC_RUNTIME_RPATH");
+		wants_nz = get_env("OBGGCC_NZ");
+	#endif
 	
 	for (index = 0; index < (size_t) argc; index++) {
 		cur = argv[index];
@@ -298,9 +307,17 @@ int main(int argc, char* argv[], char* envp[]) {
 		const unsigned char a = *ptr;
 		const unsigned char b = *(ptr + 1);
 		
-		if (a == '2' && (b == '.' || b == '-')) {
-			break;
-		}
+		#if defined(OBGGCC)
+			if (a == '2' && (b == '.' || b == '-')) {
+				break;
+			}
+		#elif defined(PINO)
+			if ((a >= '2' && a <= '3') && (b >= '0' && b <= '9')) {
+				break;
+			}
+		#else
+			#error "I don't know how to handle that"
+		#endif
 		
 		ptr++;
 	}
@@ -385,24 +402,26 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	size = (size_t) (ptr - start);
 	
-	glibc_version = malloc(size + 1);
+	libc_version = malloc(size + 1);
 	
-	if (glibc_version == NULL) {
+	if (libc_version == NULL) {
 		err = ERR_MEM_ALLOC_FAILURE;
 		goto end;
 	}
 	
-	memcpy(glibc_version, start, size);
-	glibc_version[size] = '\0';
+	memcpy(libc_version, start, size);
+	libc_version[size] = '\0';
 	
-	glibc_major = strtol(glibc_version, &ptr, 16);
+	libc_major = strtol(libc_version, &ptr, 16);
 	
 	if (*ptr != '-') {
-		glibc_minor = strtol(ptr + 1, NULL, 16);
+		libc_minor = strtol(ptr + 1, NULL, 16);
 	}
 	
-	/* Determine whether we need to implicit link with -lrt */
-	wants_rt_library = wants_libcxx && !have_rt_library && GLIBC_VERSION(glibc_major, glibc_minor) < GLIBC_VERSION(2, 17);
+	#if defined(OBGGCC)
+		/* Determine whether we need to implicit link with -lrt */
+		wants_rt_library = wants_libcxx && !have_rt_library && LIBC_VERSION(libc_major, libc_minor) < LIBC_VERSION(2, 17);
+	#endif
 	
 	executable = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(triplet) + 1 + strlen(cc) + 1);
 	
@@ -419,7 +438,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	get_parent_path(app_filename, parent_directory, 2);
 	
-	sysroot_directory = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(triplet) + strlen(glibc_version) + 1);
+	sysroot_directory = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(triplet) + strlen(libc_version) + 1);
 	
 	if (sysroot_directory == NULL) {
 		err = ERR_MEM_ALLOC_FAILURE;
@@ -429,7 +448,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	strcpy(sysroot_directory, parent_directory);
 	strcat(sysroot_directory, PATHSEP_S);
 	strcat(sysroot_directory, triplet);
-	strcat(sysroot_directory, glibc_version);
+	strcat(sysroot_directory, libc_version);
 	
 	size = (size_t) argc + 13 + (size_t) wants_rt_library;
 	
@@ -462,6 +481,10 @@ int main(int argc, char* argv[], char* envp[]) {
 	if (require_atomic_library) {
 		size += 1;
 	}
+	
+	#if defined(PINO)
+		size += 2; /* -D __ANDROID_API__=<LEVEL> */
+	#endif
 	
 	args = malloc(size * sizeof(char*));
 	
@@ -763,6 +786,21 @@ int main(int argc, char* argv[], char* envp[]) {
 		args[offset++] = (char*) LD_OPT_UNRESOLVED_SYMBOLS;
 	}
 	
+	#if defined(PINO)
+		android_api = malloc(strlen(M_ANDROID_API) + strlen(libc_version) + 1);
+		
+		if (android_api == NULL) {
+			err = ERR_MEM_ALLOC_FAILURE;
+			goto end;
+		}
+		
+		strcpy(android_api, M_ANDROID_API);
+		strcat(android_api, libc_version);
+		
+		args[offset++] = (char*) GCC_OPT_D;
+		args[offset++] = android_api;
+	#endif
+	
 	memcpy(&args[offset], &argv[1], (size_t) argc * sizeof(*argv));
 	
 	if (verbose) {
@@ -793,7 +831,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	end:;
 	
 	free(triplet);
-	free(glibc_version);
+	free(libc_version);
 	free(executable);
 	free(sysroot_directory);
 	free(app_filename);
@@ -809,6 +847,10 @@ int main(int argc, char* argv[], char* envp[]) {
 	free(secondary_library_directory);
 	free(nz_sysroot_directory);
 	free(non_prefixed_triplet);
+	
+	#if defined(PINO)
+		free(android_api);
+	#endif
 	
 	switch (err) {
 		case ERR_SUCCESS:
@@ -835,7 +877,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	}
 	
 	if (err != ERR_SUCCESS) {
-		fprintf(stderr, "obggcc: fatal error: %s\n", opt);
+		fprintf(stderr, "fatal error: %s\n", opt);
 		return EXIT_FAILURE;
 	}
 	

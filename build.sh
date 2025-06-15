@@ -721,6 +721,7 @@ fi
 	-I "${workdir}/tools/gcc-wrapper" \
 	${optflags} \
 	${linkflags} \
+	-D OBGGCC \
 	-o "${gcc_wrapper}"
 
 while read item; do
