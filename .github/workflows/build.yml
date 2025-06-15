@@ -69,7 +69,16 @@ jobs:
           'x86_64-unknown-linux-gnu',
           'i386-unknown-linux-gnu',
           'arm-unknown-linux-gnueabihf',
-          'aarch64-unknown-linux-gnu'
+          'aarch64-unknown-linux-gnu',
+          
+          # FreeBSD
+          'x86_64-unknown-freebsd',
+          'aarch64-unknown-freebsd',
+          'i386-unknown-freebsd',
+         
+          # NetBSD
+          'i386-unknown-netbsdelf',
+          'x86_64-unknown-netbsd'
         ]
     steps:
     - uses: actions/checkout@main
@@ -115,6 +124,30 @@ jobs:
             export PATH="${OBGGCC_HOME}/bin:${PATH}"
             
             source "${OBGGCC_HOME}/usr/local/share/obggcc/autotools/${{ matrix.target }}.sh"
+        elif [[ '${{ matrix.target }}' == *'-freebsd' ]]; then
+            declare -r LOKI_TAG="$(jq --raw-output '.tag_name' <<< "$(curl  --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://api.github.com/repos/AmanoTeam/Loki/releases/latest')")"
+            declare -r LOKI_TARBALL='/tmp/toolchain.tar.xz'
+            declare -r LOKI_URL="https://github.com/AmanoTeam/Loki/releases/download/${LOKI_TAG}/x86_64-unknown-linux-gnu.tar.xz"
+            
+            curl --silent --connect-timeout '10' --retry '15' --retry-all-errors --fail --location --url "${LOKI_URL}" --output "${LOKI_TARBALL}"
+            tar --directory="$(dirname "${LOKI_TARBALL}")" --extract --file="${LOKI_TARBALL}"
+            
+            export LOKI_HOME='/tmp/loki'
+            export PATH="${LOKI_HOME}/bin:${PATH}"
+            
+            source "${LOKI_HOME}/usr/local/share/loki/autotools/${{ matrix.target }}.sh"
+        elif [[ '${{ matrix.target }}' == *'-netbsd'* ]]; then
+            declare -r DAKINI_TAG="$(jq --raw-output '.tag_name' <<< "$(curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://api.github.com/repos/AmanoTeam/Dakini/releases/latest')")"
+            declare -r DAKINI_TARBALL='/tmp/toolchain.tar.xz'
+            declare -r DAKINI_URL="https://github.com/AmanoTeam/Dakini/releases/download/${DAKINI_TAG}/x86_64-unknown-linux-gnu.tar.xz"
+            
+            curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --location --url "${DAKINI_URL}" --output "${DAKINI_TARBALL}"
+            tar --directory="$(dirname "${DAKINI_TARBALL}")" --extract --file="${DAKINI_TARBALL}"
+            
+            export DAKINI_HOME='/tmp/dakini'
+            export PATH="${DAKINI_HOME}/bin:${PATH}"
+            
+            source "${DAKINI_HOME}/usr/local/share/dakini/autotools/${{ matrix.target }}.sh"
         fi
         
         bash './build.sh' '${{ matrix.target }}'
