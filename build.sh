@@ -9,6 +9,8 @@ declare -r workdir="${PWD}"
 declare -r toolchain_directory='/tmp/obggcc'
 declare -r share_directory="${toolchain_directory}/usr/local/share/obggcc"
 
+declare -r environment="LD_LIBRARY_PATH=${toolchain_directory}/lib PATH=${PATH}:${toolchain_directory}/bin"
+
 declare -r autotools_directory="${share_directory}/autotools"
 
 declare -r gmp_tarball='/tmp/gmp.tar.xz'
@@ -167,15 +169,17 @@ fi
 
 declare is_native='0'
 
-if [ "${build_type}" == 'native' ]; then
+if [ "${build_type}" = 'native' ]; then
 	is_native='1'
 fi
 
-declare CROSS_COMPILE_TRIPLET=''
+set +u
 
-if ! (( is_native )); then
-	source "./toolchains/${build_type}.sh"
+if [ -z "${CROSS_COMPILE_TRIPLET}" ]; then
+	declare CROSS_COMPILE_TRIPLET=''
 fi
+
+set -u
 
 declare -r \
 	build_type \
@@ -528,7 +532,13 @@ for target in "${targets[@]}"; do
 	cflags_for_target="${optflags/${nativeflags}/} ${linkflags}"
 	cxxflags_for_target="${cflags_for_target}"
 	
-	LD_LIBRARY_PATH="${toolchain_directory}/lib" PATH="${PATH}:${toolchain_directory}/bin" make \
+	declare args=''
+	
+	if (( is_native )); then
+		args+="${environment}"
+	fi
+	
+	env ${args} make \
 		CFLAGS_FOR_TARGET="${cflags_for_target}" \
 		CXXFLAGS_FOR_TARGET="${cxxflags_for_target}" \
 		LDFLAGS_FOR_TARGET="${linkflags}" \

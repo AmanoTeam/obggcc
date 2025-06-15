@@ -58,22 +58,18 @@ jobs:
     strategy:
       matrix:
         target: [
-          # 'ia64-unknown-linux-gnu',
-          # 'alpha-unknown-linux-gnu',
+          # Linux (musl)
+          'aarch64-unknown-linux-musl',
+          'x86_64-unknown-linux-musl',
+          'arm-unknown-linux-musleabihf',
+          'i386-unknown-linux-musl',
+          'armv7l-unknown-linux-musleabihf',
+          
+          # Linux (glibc)
           'x86_64-unknown-linux-gnu',
           'i386-unknown-linux-gnu',
-          # 'arm-unknown-linux-gnueabi',
           'arm-unknown-linux-gnueabihf',
-          # 'hppa-unknown-linux-gnu',
-          'aarch64-unknown-linux-gnu',
-          # 'mips-unknown-linux-gnu',
-          # 'mipsel-unknown-linux-gnu',
-          # 'powerpc-unknown-linux-gnu',
-          # 's390-unknown-linux-gnu',
-          # 's390x-unknown-linux-gnu',
-          # 'sparc-unknown-linux-gnu',
-          # 'powerpc64le-unknown-linux-gnu',
-          # 'mips64el-unknown-linux-gnuabi64'
+          'aarch64-unknown-linux-gnu'
         ]
     steps:
     - uses: actions/checkout@main
@@ -91,9 +87,36 @@ jobs:
       run: |
         tar --directory='/tmp' --extract --file='/tmp/x86_64-linux-gnu.tar.xz'
         mv '/tmp/obggcc' '/tmp/obggcc-toolchain'
-    - name: Build OBGGCC with OBGGCC
+    - name: Cross-compile OBGGCC to ${{ matrix.target }}
       run: |
         source './tools/setup_toolchain.sh'
+        
+        if [[ '${{ matrix.target }}' == *'-linux-musl'* ]]; then
+            declare -r RAIDEN_TAG="$(jq --raw-output '.tag_name' <<< "$(curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://api.github.com/repos/AmanoTeam/Raiden/releases/latest')")"
+            declare -r RAIDEN_TARBALL='/tmp/toolchain.tar.xz'
+            declare -r RAIDEN_URL="https://github.com/AmanoTeam/Raiden/releases/download/${RAIDEN_TAG}/x86_64-unknown-linux-gnu.tar.xz"
+            
+            curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --location --url "${RAIDEN_URL}" --output "${RAIDEN_TARBALL}"
+            tar --directory="$(dirname "${RAIDEN_TARBALL}")" --extract --file="${RAIDEN_TARBALL}"
+            
+            export RAIDEN_HOME='/tmp/raiden'
+            export PATH="${RAIDEN_HOME}/bin:${PATH}"
+            
+            source "${RAIDEN_HOME}/usr/local/share/raiden/autotools/${{ matrix.target }}.sh"
+        elif [[ '${{ matrix.target }}' == *'-linux-gnu'* ]]; then
+            # declare -r OBGGCC_TAG="$(jq --raw-output '.tag_name' <<< "$(curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://api.github.com/repos/AmanoTeam/obggcc/releases/latest')")"
+            # declare -r OBGGCC_TARBALL='/tmp/toolchain.tar.xz'
+            # declare -r OBGGCC_URL="https://github.com/AmanoTeam/obggcc/releases/download/${OBGGCC_TAG}/x86_64-unknown-linux-gnu.tar.xz"
+            
+            # curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --location --url "${OBGGCC_URL}" --output "${OBGGCC_TARBALL}"
+            # tar --directory="$(dirname "${OBGGCC_TARBALL}")" --extract --file="${OBGGCC_TARBALL}"
+            
+            export OBGGCC_HOME='/tmp/obggcc-toolchain'
+            export PATH="${OBGGCC_HOME}/bin:${PATH}"
+            
+            source "${OBGGCC_HOME}/usr/local/share/obggcc/autotools/${{ matrix.target }}.sh"
+        fi
+        
         bash './build.sh' '${{ matrix.target }}'
     - name: Generate tarball
       run: |
