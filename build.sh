@@ -865,7 +865,9 @@ while read item; do
 		
 		echo "- Symlinking '${source}' to '${destination}'"
 		
-		ln --symbolic "${source}" "${destination}" 
+		ln --symbolic "${source}" "${destination}"
+		
+		patchelf --set-rpath '$ORIGIN/../lib' "${source}"
 	done
 	
 	cd "${toolchain_directory}/${triplet}/bin"
