@@ -143,22 +143,22 @@ declare -ra bits=(
 declare -r languages='c,c++'
 
 declare -ra targets=(
-	'ia64-unknown-linux-gnu'
-	'mips-unknown-linux-gnu'
-	'mips64el-unknown-linux-gnuabi64'
-	'mipsel-unknown-linux-gnu'
-	'powerpc-unknown-linux-gnu'
-	'powerpc64le-unknown-linux-gnu'
-	's390-unknown-linux-gnu'
-	's390x-unknown-linux-gnu'
-	'sparc-unknown-linux-gnu'
+	# 'ia64-unknown-linux-gnu'
+	# 'mips-unknown-linux-gnu'
+	# 'mips64el-unknown-linux-gnuabi64'
+	# 'mipsel-unknown-linux-gnu'
+	# 'powerpc-unknown-linux-gnu'
+	# 'powerpc64le-unknown-linux-gnu'
+	# 's390-unknown-linux-gnu'
+	# 's390x-unknown-linux-gnu'
+	# 'sparc-unknown-linux-gnu'
 	'x86_64-unknown-linux-gnu'
-	'alpha-unknown-linux-gnu'
-	'aarch64-unknown-linux-gnu'
-	'arm-unknown-linux-gnueabi'
-	'arm-unknown-linux-gnueabihf'
-	'hppa-unknown-linux-gnu'
-	'i386-unknown-linux-gnu'
+	# 'alpha-unknown-linux-gnu'
+	# 'aarch64-unknown-linux-gnu'
+	# 'arm-unknown-linux-gnueabi'
+	# 'arm-unknown-linux-gnueabihf'
+	# 'hppa-unknown-linux-gnu'
+	# 'i386-unknown-linux-gnu'
 )
 
 declare build_type="${1}"
@@ -406,6 +406,28 @@ cmake \
 
 cmake --build "${PWD}"
 cmake --install "${PWD}" --strip
+
+# mpfr, mpc, and isl hardcode the install prefix as RPATH during installation.
+if ! (( is_native )); then
+	patchelf \
+		--remove-rpath \
+		"${toolchain_directory}/lib/libmpfr.so" \
+		"${toolchain_directory}/lib/libmpc.so" \
+		"${toolchain_directory}/lib/libisl.so"
+fi
+
+# Always use symlinks unconditionally to ensure compatibility with filesystems
+# that don't support hard links.
+if ! (( is_native )); then
+	echo -e '#!/bin/bash\n\n/usr/bin/ln --symbolic --relative ${@}\n' > '/tmp/ln'
+	chmod +x '/tmp/ln'
+	export PATH="/tmp:${PATH}"
+fi
+
+# The gold linker incorrectly detects ffsll() as unsupported.
+if [[ "${CROSS_COMPILE_TRIPLET}" == *'-android'* ]]; then
+	export ac_cv_func_ffsll=yes
+fi
 
 for target in "${targets[@]}"; do
 	source "${workdir}/${target}.sh"
