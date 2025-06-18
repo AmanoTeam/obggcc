@@ -6,8 +6,12 @@
 #include <unistd.h>
 
 #include "fs/getexec.h"
+#include "fs/ext.h"
+#include "fs/dirname.h"
 #include "fs/parentpath.h"
 #include "fs/sep.h"
+#include "fs/cp.h"
+#include "fs/exists.h"
 #include "fs/basename.h"
 
 static const char GCC_MAJOR_VERSION[] = "15";
@@ -19,26 +23,83 @@ static const char GCC_LIBRARY_DIR[] = PATHSEP_M "lib" PATHSEP_M "gcc";
 
 static const char RT_LIBRARY[] = "rt";
 static const char STDCXX_LIBRARY[] = "stdc++";
+static const char ATOMIC_LIBRARY[] = "atomic";
+static const char GOMP_LIBRARY[] = "gomp";
+static const char ITM_LIBRARY[] = "itm";
+
+static const char LIBATOMIC_SHARED[] = "libatomic.so";
+static const char LIBSTDCXX_SHARED[] = "libstdcxx.so";
+static const char LIBGCC_SHARED[] = "libgnuc.so";
+static const char LIBGOMP_SHARED[] = "libgomp.so";
+static const char LIBITM_SHARED[] = "libitm.so";
+static const char LIBSSP_SHARED[] = "libssp.so";
+
+static const char LIBASAN_SHARED[] = "libasan.so";
+static const char LIBHWASAN_SHARED[] = "libhwasan.so";
+static const char LIBLSAN_SHARED[] = "liblsan.so";
+static const char LIBTSAN_SHARED[] = "libtsan.so";
+static const char LIBUBSAN_SHARED[] = "libubsan.so";
 
 static const char GCC_OPT_ISYSTEM[] = "-isystem";
 static const char GCC_OPT_SYSROOT[] = "--sysroot=";
 static const char GCC_OPT_NOSTDINC[] = "--no-standard-includes";
 static const char GCC_OPT_LIBDIR[] = "-L";
 static const char GCC_OPT_STATIC_LIBCXX[] = "-static-libstdc++";
+static const char GCC_OPT_STATIC_LIBGCC[] = "-static-libgcc";
 static const char GCC_OPT_L[] = "-l";
 static const char GCC_OPT_V[] = "-v";
 static const char GCC_OPT_D[] = "-D";
+static const char GCC_OPT_O[] = "-o";
+static const char GCC_OPT_OS[] = "-Os";
 static const char GCC_OPT_L_RT[] = "-lrt";
 static const char GCC_OPT_FSANITIZE[] = "-fsanitize=";
 static const char GCC_OPT_L_STDCXX[] = "-lstdc++";
 static const char GCC_OPT_L_ATOMIC[] = "-latomic";
+static const char GCC_OPT_L_GOMP[] = "-lgomp";
+static const char GCC_OPT_L_ITM[] = "-litm";
 static const char GCC_OPT_XLINKER[] = "-Xlinker";
+static const char GCC_OPT_WL[] = "-Wl,";
+static const char GCC_OPT_F_FAT_LTO_OBJECTS[] = "-ffat-lto-objects";
+static const char GCC_OPT_F_NO_FAT_LTO_OBJECTS[] = "-fno-fat-lto-objects";
+static const char GCC_OPT_F_LTO[] = "-flto";
+static const char GCC_OPT_DFORTIFY_SOURCE[] = "-D_FORTIFY_SOURCE=";
+static const char GCC_OPT_U_GNUC[] = "-U__GNUC__";
+
+static const char GCC_OPT_D_CLANG[] = "-D__clang__=1";
+static const char GCC_OPT_D_CLANG_MAJOR[] = "-D__clang_major__=20";
+static const char GCC_OPT_D_CLANG_MINOR[] = "-D__clang_minor__=0";
+static const char GCC_OPT_D_CLANG_PATCHLEVEL[] = "-D__clang_patchlevel__=0";
+
+static const char GCC_OPT_F_STACK_PROTECTOR[] = "-fstack-protector";
+
+static const char CLANG_OPT_OZ[] = "-Oz";
+static const char CLANG_OPT_ICF[] = "--icf=";
+static const char CLANG_OPT_TARGET[] = "--target=";
+static const char CLANG_OPT_QUNUSED_ARGUMENTS[] = "-Qunused-arguments";
+
 static const char LD_OPT_DYNAMIC_LINKER[] = "-dynamic-linker";
 static const char LD_OPT_RPATH_LINK[] = "-rpath-link";
 static const char LD_OPT_RPATH[] = "-rpath";
 static const char LD_OPT_UNRESOLVED_SYMBOLS[] = "--unresolved-symbols=ignore-in-shared-libs";
 
 static const char M_ANDROID_API[] = "__ANDROID_API__=";
+
+static const char CMAKE_C_COMPILER_ID[] = "CMakeCCompilerId.c";
+static const char CMAKE_CXX_COMPILER_ID[] = "CMakeCXXCompilerId.cpp";
+
+static const char CMAKE_C_COMPILER_TEST[] = "testCCompiler.c";
+static const char CMAKE_CXX_COMPILER_TEST[] = "testCXXCompiler.cxx";
+
+static const char CMAKE_FILES_DIRECTORY[] = "CMakeFiles";
+
+static const char DEFAULT_TARGET[] = 
+#if defined(OBGGCC)
+	 "x86_64-unknown-linux-gnu2.3";
+#elif defined(PINO)
+	"x86_64-unknown-linux-android21";
+#else
+	#error "I don't know how to handle that"
+#endif
 
 static char* SYSTEM_LIBRARY_PATH[] = {
 	PATHSEP_M "usr" PATHSEP_M "local" PATHSEP_M "lib64",
@@ -58,11 +119,20 @@ static const char NZ_SYSROOT[] = PATHSEP_M "lib" PATHSEP_M "nouzen" PATHSEP_M "s
 
 static const char SYSTEM_INCLUDE_PATH[] = PATHSEP_M "usr" PATHSEP_M "include";
 
-static const char CPLUSPLUS[] = "c++";
+static const char CPP[] = "c++";
+
 static const char GCC[] = "gcc";
-static const char GPLUSPLUS[] = "g++";
+static const char GPP[] = "g++";
+
+static const char CLANG[] = "clang";
+static const char CLANGPP[] = "clang++";
+
 static const char GM2[] = "gm2";
+
 static const char GFORTRAN[] = "gfortran";
+
+static const char VENDOR_NONE[] = "-none-";
+static const char VENDOR_UNKNOWN[] = "-unknown-";
 
 #define ERR_SUCCESS 0
 #define ERR_MEM_ALLOC_FAILURE -1
@@ -70,6 +140,10 @@ static const char GFORTRAN[] = "gfortran";
 #define ERR_GET_APP_FILENAME_FAILURE -3
 #define ERR_EXECVE_FAILURE -4
 #define ERR_BAD_TRIPLET -5
+#define ERR_GETEXT_FAILURE -6
+#define ERR_DIRNAME_FAILURE -7
+#define ERR_COPY_FILE_FAILURE -8
+#define ERR_UNKNOWN_SYSTEM_VERSION -9
 
 #define LIBC_VERSION(major, minor) ((major << 16) + minor)
 
@@ -159,6 +233,181 @@ static int get_env(const char* const key) {
 	
 }
 
+static int known_clang(const char* const cc) {
+	
+	const int status = (
+		strcmp(cc, CLANG) == 0 ||
+		strcmp(cc, CLANGPP) == 0
+	);
+	
+	return status;
+	
+}
+
+static int known_gcc(const char* const cc) {
+	
+	const int status = (
+		strcmp(cc, GCC) == 0 ||
+		strcmp(cc, GPP) == 0 ||
+		strcmp(cc, CPP) == 0 ||
+		strcmp(cc, GM2) == 0 ||
+		strcmp(cc, GFORTRAN) == 0
+	);
+	
+	return status;
+	
+}
+
+static int known_compiler(const char* const cc) {
+	
+	return (known_clang(cc) || known_gcc(cc));
+	
+}
+
+static int clang_specific_remove(const char* const prev, const char* const cur) {
+	/*
+	Remove Clang-specific options that have no GCC equivalents.
+	*/
+	
+	int status = 1;
+	
+	const char* previous = prev;
+	const char* current = cur;
+	
+	if (strncmp(current, GCC_OPT_WL, strlen(GCC_OPT_WL)) == 0) {
+		current += strlen(GCC_OPT_WL);
+	}
+	
+	if (strcmp(current, CLANG_OPT_QUNUSED_ARGUMENTS) == 0) {
+		goto end;
+	}
+	
+	if (strncmp(current, CLANG_OPT_ICF, strlen(CLANG_OPT_ICF)) == 0) {
+		goto end;
+	}
+	
+	status = 0;
+	
+	end:;
+	
+	return status;
+	
+}
+
+static int clang_specific_replace(
+	const char* const cur,
+	size_t* const kargc,
+	char** kargv
+) {
+	/*
+	Replace Clang-specific options with GCC equivalents, if any.
+	*/
+	
+	int status = 0;
+	
+	size_t index = *kargc;
+	const char* current = cur;
+	
+	if (strncmp(current, GCC_OPT_F_LTO, strlen(GCC_OPT_F_LTO)) == 0) {
+		current += strlen(GCC_OPT_F_LTO);
+		
+		if (*current != '=') {
+			status = 0;
+			goto end;
+		}
+		
+		current += 1;
+		
+		if (*current == '\0') {
+			status = 0;
+			goto end;
+		}
+		
+		kargv[index++] = (char*) GCC_OPT_F_LTO;
+		
+		if (strcmp(current, "auto") == 0 || strcmp(current, "full") == 0) {
+			kargv[index++] = (char*) GCC_OPT_F_FAT_LTO_OBJECTS;
+		} else {
+			kargv[index++] = (char*) GCC_OPT_F_NO_FAT_LTO_OBJECTS;
+		}
+		
+		status = 1;
+		goto end;
+	} else if (strcmp(current, CLANG_OPT_OZ) == 0) {
+		kargv[index++] = (char*) GCC_OPT_OS;
+		
+		status = 1;
+		goto end;
+	}
+	
+	end:;
+	
+	*kargc = index;
+	
+	return status;
+	
+}
+
+#if defined(PINO)
+int copy_shared_library(
+	const char* const source_directory,
+	const char* const destination_directory,
+	const char* const source_file,
+	const char* const destination_file
+) {
+	
+	int err = ERR_SUCCESS;
+	
+	char* source = NULL;
+	char* destination = NULL;
+	
+	source = malloc(strlen(source_directory) + strlen(PATHSEP_S) + strlen(source_file) + 1);
+	
+	if (source == NULL) {
+		err = ERR_MEM_ALLOC_FAILURE;
+		goto end;
+	}
+	
+	strcpy(source, source_directory);
+	strcat(source, PATHSEP_S);
+	strcat(source, source_file);
+	
+	destination = malloc(strlen(destination_directory) + strlen(PATHSEP_S) + strlen(destination_file) + 1);
+	
+	if (destination == NULL) {
+		err = ERR_MEM_ALLOC_FAILURE;
+		goto end;
+	}
+	
+	destination[0] = '\0';
+	
+	/* If empty, assume the path is relative to the current directory */
+	if (*destination_directory != '\0') {
+		strcat(destination, destination_directory);
+		strcat(destination, PATHSEP_S);
+	}
+	
+	strcat(destination, destination_file);
+	
+	if (!file_exists(destination)) {
+		fprintf(stderr, "warning: copying shared library from '%s' to '%s'\n", source, destination);
+		
+		 if (copy_file(source, destination) != 0) {
+			err = ERR_COPY_FILE_FAILURE;
+			goto end;
+		}
+	}
+	
+	end:;
+	
+	free(source);
+	free(destination);
+	
+	return err;
+	
+}
+#endif
+
 int main(int argc, char* argv[], char* envp[]) {
 	
 	int err = ERR_SUCCESS;
@@ -178,10 +427,20 @@ int main(int argc, char* argv[], char* envp[]) {
 	int wants_nz = 0;
 	
 	int address_sanitizer = 0;
+	int stack_protector = 0;
 	int verbose = 0;
 	int wants_libcxx = 0;
-	int wants_rt_library = 0;
+	int wants_static_libcxx = 0;
+	int wants_static_libgcc = 0;
+	int wants_libatomic = 0;
+	int wants_libgomp = 0;
+	int wants_libgcc = 0;
+	int wants_libitm = 0;
+	int wants_librt = 0;
+	int wants_libssp = 0;
 	int require_atomic_library = 0;
+	
+	int cmake_init = 0;
 	
 	int have_rt_library = 0;
 	
@@ -189,6 +448,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	char* arg = NULL;
 	
 	const char* cc = NULL;
+	const char* override_cc = NULL;
 	char* start = NULL;
 	char* ptr = NULL;
 	char* dst = NULL;
@@ -222,16 +482,27 @@ int main(int argc, char* argv[], char* envp[]) {
 	char* sysroot_directory = NULL;
 	char* parent_directory = NULL;
 	
-	char* fname = NULL;
 	char* app_filename = NULL;
 	
 	char* non_prefixed_triplet = NULL;
 	char* triplet = NULL;
+	char* override_triplet = NULL;
+	
 	char* libc_version = NULL;
+	
+	char* file_name = NULL;
+	char* file_extension = NULL;
+	char* output_directory = NULL;
+	
+	char* source = NULL;
+	char* destination = NULL;
 	
 	#if defined(PINO)
 		char* android_api = NULL;
 	#endif
+	
+	size_t kargc = 0;
+	char** kargv = NULL;
 	
 	#if defined(OBGGCC)
 		wants_system_libraries = get_env("OBGGCC_SYSTEM_LIBRARIES");
@@ -240,15 +511,55 @@ int main(int argc, char* argv[], char* envp[]) {
 		wants_nz = get_env("OBGGCC_NZ");
 	#endif
 	
+	kargv = malloc(
+		sizeof(*argv) * (
+			argc + 
+			1 + /* -U__GNUC__ */
+			1 + /* -D__clang__ */
+			1 + /* -D__clang_major__ */
+			1 + /* -D__clang_minor__ */
+			1 + /* -D__clang_patchlevel__ */
+			1 + /* -ffat-lto-objects / -fno-fat-lto-objects */
+			1 /* NULL */
+		)
+	);
+	
+	if (kargv == NULL) {
+		err = ERR_MEM_ALLOC_FAILURE;
+		goto end;
+	}
+	
 	for (index = 0; index < (size_t) argc; index++) {
 		cur = argv[index];
 		
 		if (strncmp(cur, GCC_OPT_FSANITIZE, strlen(GCC_OPT_FSANITIZE)) == 0) {
 			address_sanitizer = 1;
+		} else if (strncmp(cur, GCC_OPT_F_STACK_PROTECTOR, strlen(GCC_OPT_F_STACK_PROTECTOR)) == 0) {
+			stack_protector = 1;
 		} else if (strcmp(cur, GCC_OPT_V) == 0) {
 			verbose = 1;
-		} else if (strcmp(cur, GCC_OPT_STATIC_LIBCXX) == 0 || strcmp(cur, GCC_OPT_L_STDCXX) == 0) {
+		} else if (strcmp(cur, GCC_OPT_L_STDCXX) == 0) {
 			wants_libcxx = 1;
+		} else if (strcmp(cur, GCC_OPT_STATIC_LIBCXX) == 0) {
+			wants_libcxx = 1;
+			wants_static_libcxx = 1;
+			
+			#if defined(PINO)
+				continue;
+			#endif
+		} else if (strcmp(cur, GCC_OPT_STATIC_LIBGCC) == 0) {
+			wants_libgcc = 1;
+			wants_static_libgcc = 1;
+			
+			#if defined(PINO)
+				continue;
+			#endif
+		} else if (strcmp(cur, GCC_OPT_L_ATOMIC) == 0) {
+			wants_libatomic = 1;
+		} else if (strcmp(cur, GCC_OPT_L_GOMP) == 0) {
+			wants_libgomp = 1;
+		} else if (strcmp(cur, GCC_OPT_L_ITM) == 0) {
+			wants_libitm = 1;
 		} else if (strcmp(cur, GCC_OPT_L_RT) == 0) {
 			have_rt_library = 1;
 		} else if (prev != NULL && strcmp(prev, GCC_OPT_L) == 0) {
@@ -256,10 +567,103 @@ int main(int argc, char* argv[], char* envp[]) {
 				wants_libcxx = 1;
 			} else if (strcmp(cur, RT_LIBRARY) == 0) {
 				have_rt_library = 1;
+			} else if (strcmp(cur, ATOMIC_LIBRARY) == 0) {
+				wants_libatomic = 1;
+			} else if (strcmp(cur, GOMP_LIBRARY) == 0) {
+				wants_libgomp = 1;
+			} else if (strcmp(cur, ITM_LIBRARY) == 0) {
+				wants_libitm = 1;
 			}
+		} else if (strcmp(cur, CMAKE_C_COMPILER_ID) == 0 || strcmp(cur, CMAKE_CXX_COMPILER_ID) == 0) {
+			cmake_init = 1;
+		} else if (strstr(cur, CMAKE_FILES_DIRECTORY) != NULL) {
+			file_name = basename(cur);
+			
+			if (file_name != NULL) {
+				cmake_init += (strncmp(file_name, CMAKE_C_COMPILER_TEST, strlen(CMAKE_C_COMPILER_TEST)) == 0 || strncmp(file_name, CMAKE_CXX_COMPILER_TEST, strlen(CMAKE_CXX_COMPILER_TEST)) == 0);
+			}
+		} else if (prev != NULL && strcmp(prev, GCC_OPT_O) == 0 && output_directory == NULL) {
+			file_extension = getext(cur);
+			
+			if (file_extension != NULL && strcmp(file_extension, "so") == 0) {
+				output_directory = dirname(cur);
+				
+				if (output_directory == NULL) {
+					err = ERR_DIRNAME_FAILURE;
+					goto end;
+				}
+			}
+		} else if (strncmp(cur, CLANG_OPT_TARGET, strlen(CLANG_OPT_TARGET)) == 0) {
+			cur += strlen(CLANG_OPT_TARGET);
+			size = strlen(cur);
+			
+			if (size == 0) {
+				continue;
+			}
+			
+			override_triplet = malloc(size + strlen(VENDOR_UNKNOWN) + 1);
+			
+			if (override_triplet == NULL) {
+				err = ERR_MEM_ALLOC_FAILURE;
+				goto end;
+			}
+			
+			/* The Android NDK defaults to "none" as the vendor, but we use "unknown" instead */
+			ptr = strstr(cur, VENDOR_NONE);
+			
+			if (ptr != NULL) {
+				/* Architecture */
+				size = (size_t) (ptr - cur);
+				strncpy(override_triplet, cur, size);
+				override_triplet[size] = '\0';
+				
+				if (strcmp(override_triplet, "armv7") == 0) {
+					strcpy(override_triplet, "arm");
+				}
+				
+				/* Vendor */
+				strcat(override_triplet, VENDOR_UNKNOWN);
+				
+				/* System */
+				ptr += strlen(VENDOR_NONE);
+				strcat(override_triplet, ptr);
+			} else {
+				strcpy(override_triplet, cur);
+			}
+			
+			continue;
+		} else if (strncmp(cur, GCC_OPT_SYSROOT, strlen(GCC_OPT_SYSROOT)) == 0) {
+			/* Don't override our system root; we are already doing that. */
+			continue;
+		} else if (clang_specific_remove(prev, cur)) {
+			if (prev != NULL && strcmp(prev, GCC_OPT_XLINKER) == 0) {
+				prev = NULL;
+				kargv[--kargc] = (char*) prev;
+			}
+			
+			continue;
 		}
 		
 		prev = cur;
+		
+		if (clang_specific_replace(cur, &kargc, kargv)) {
+			continue;
+		}
+		
+		kargv[kargc++] = (char*) cur;
+	}
+	
+	if (address_sanitizer) {
+		wants_libcxx = 1;
+		wants_libgcc = 1;
+	}
+	
+	if (wants_libcxx || wants_libitm || wants_libgomp) {
+		wants_libgcc = 1;
+	}
+	
+	if (stack_protector) {
+		wants_libssp = 1;
 	}
 	
 	app_filename = get_app_filename();
@@ -269,7 +673,7 @@ int main(int argc, char* argv[], char* envp[]) {
 		goto end;
 	}
 	
-	fname = basename(app_filename);
+	file_name = basename(app_filename);
 	
 	parent_directory = malloc(strlen(app_filename) + 1);
 	
@@ -280,38 +684,108 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	get_parent_path(app_filename, parent_directory, 1);
 	
-	ptr = strchr(fname, '\0');
-	
-	while (ptr != fname) {
-		const unsigned char ch = *ptr;
+	/*
+	Check if we are dealing with a non-triplet-prefixed executable name.
+	*/
+	if (known_compiler(file_name)) {
+		override_cc = file_name;
 		
-		if (ch == '-') {
-			break;
+		/*
+		If we are acting as a wrapper for Clang and are inside CMake, trick CMake into thinking we are Clang.
+		
+		This is required because otherwise CMake won't pass the --target flag to the
+		C/C++ compiler invocation during cross-compilation since it's a Clang-specific thing.
+		This flag is the only way for us to know which cross-compilation platform we are targeting.
+		
+		This spoofing is only applied during the initial C/C++ compiler detection.
+		*/
+		if (known_clang(override_cc) && cmake_init) {
+			kargv[kargc++] = (char*) GCC_OPT_U_GNUC;
+			kargv[kargc++] = (char*) GCC_OPT_D_CLANG;
+			kargv[kargc++] = (char*) GCC_OPT_D_CLANG_MAJOR;
+			kargv[kargc++] = (char*) GCC_OPT_D_CLANG_MINOR;
+			kargv[kargc++] = (char*) GCC_OPT_D_CLANG_PATCHLEVEL;
+		}
+	}
+	
+	cc = override_cc;
+	
+	/*
+	Check if we are dealing with a triplet-prefixed executable name (<triplet><libc_version>-<cc>),
+	and if so, let's extract the compiler name from it.
+	*/
+	if (cc == NULL) {
+		ptr = strchr(file_name, '\0');
+		
+		while (1) {
+			const unsigned char ch = *ptr;
+			
+			/* We have traversed the entire string but could not find the compiler name. */
+			if (ptr == file_name) {
+				err = ERR_UNKNOWN_COMPILER;
+				goto end;
+			}
+			
+			if (ch == '-') {
+				break;
+			}
+			
+			ptr--;
 		}
 		
-		ptr--;
+		cc = (ptr + 1);
+		
+		if (!known_compiler(cc)) {
+			err = ERR_UNKNOWN_COMPILER;
+			goto end;
+		}
 	}
 	
-	cc = (ptr + 1);
+	wants_libcxx += (strcmp(cc, GPP) == 0 || strcmp(cc, CPP) == 0 || strcmp(cc, GM2) == 0 || strcmp(cc, CLANGPP) == 0);
 	
-	if (!(strcmp(cc, GCC) == 0 || strcmp(cc, GPLUSPLUS) == 0 || strcmp(cc, CPLUSPLUS) == 0 || strcmp(cc, GM2) == 0 || strcmp(cc, GFORTRAN) == 0)) {
-		err = ERR_UNKNOWN_COMPILER;
-		goto end;
+	if (wants_libcxx) {
+		wants_libgcc = 1;
 	}
 	
-	wants_libcxx += (strcmp(cc, GPLUSPLUS) == 0 || strcmp(cc, CPLUSPLUS) == 0 || strcmp(cc, GM2) == 0);
+	/*
+	Check if the user is calling the wrapper without a properly triplet-prefixed executable name.
+	If so, it's expected that the user provide the triplet through the --target=<value> flag instead.
+	*/
+	if (known_compiler(file_name) && override_triplet == NULL) {
+		if (!(override_cc != NULL && known_clang(override_cc) && cmake_init)) {
+			err = ERR_BAD_TRIPLET;
+			goto end;
+		}
+		
+		/*
+		CMake won't pass the --target flag to the C/C++ compiler invocation during the initial compiler
+		testing/detection, so for now we must pick a random supported target.
+		*/
+		override_triplet = (char*) DEFAULT_TARGET;
+	}
 	
-	ptr = fname;
+	if (override_triplet != NULL) {
+		file_name = override_triplet;
+	}
 	
+	ptr = file_name;
+	
+	/* Attempt to extract the system/libc version from the target triplet. */
 	while (1) {
 		const unsigned char a = *ptr;
 		const unsigned char b = *(ptr + 1);
 		
-		#if defined(OBGGCC)
-			if (a == '2' && (b == '.' || b == '-')) {
+		/* We reached the end of the string without finding it. */
+		if (a == '\0') {
+			err = ERR_UNKNOWN_SYSTEM_VERSION;
+			goto end;
+		}
+		
+		#if defined(OBGGCC) /* Linux glibc (e.g., 2.17) */
+			if (a == '2' && (b == '.' || b == '-' || b == '\0')) {
 				break;
 			}
-		#elif defined(PINO)
+		#elif defined(PINO) /* Android API level (e.g., 21) */
 			if ((a >= '2' && a <= '3') && (b >= '0' && b <= '9')) {
 				break;
 			}
@@ -322,7 +796,7 @@ int main(int argc, char* argv[], char* envp[]) {
 		ptr++;
 	}
 	
-	size = (size_t) (ptr - fname);
+	size = (size_t) (ptr - file_name);
 	
 	triplet = malloc(size + 1);
 	
@@ -331,7 +805,7 @@ int main(int argc, char* argv[], char* envp[]) {
 		goto end;
 	}
 	
-	memcpy(triplet, fname, size);
+	memcpy(triplet, file_name, size);
 	triplet[size] = '\0';
 	
 	/* Atomics are not natively supported on SPARC, so we need to rely on -latomic. */
@@ -393,7 +867,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	while (1) {
 		const unsigned char a = *ptr;
 		
-		if (a == '-') {
+		if (a == '-' || a == '\0') {
 			break;
 		}
 		
@@ -414,13 +888,13 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	libc_major = strtol(libc_version, &ptr, 16);
 	
-	if (*ptr != '-') {
+	if (!(*ptr == '-' || *ptr == '\0')) {
 		libc_minor = strtol(ptr + 1, NULL, 16);
 	}
 	
 	#if defined(OBGGCC)
 		/* Determine whether we need to implicit link with -lrt */
-		wants_rt_library = wants_libcxx && !have_rt_library && LIBC_VERSION(libc_major, libc_minor) < LIBC_VERSION(2, 17);
+		wants_librt = wants_libcxx && !have_rt_library && LIBC_VERSION(libc_major, libc_minor) < LIBC_VERSION(2, 17);
 	#endif
 	
 	executable = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(triplet) + 1 + strlen(cc) + 1);
@@ -434,7 +908,14 @@ int main(int argc, char* argv[], char* envp[]) {
 	strcat(executable, PATHSEP_S);
 	strcat(executable, triplet);
 	strcat(executable, "-");
-	strcat(executable, cc);
+	
+	if (strcmp(cc, CLANG) == 0) {
+		strcat(executable, GCC);
+	} else if (strcmp(cc, CLANGPP) == 0) {
+		strcat(executable, GPP);
+	} else {
+		strcat(executable, cc);
+	}
 	
 	get_parent_path(app_filename, parent_directory, 2);
 	
@@ -450,7 +931,9 @@ int main(int argc, char* argv[], char* envp[]) {
 	strcat(sysroot_directory, triplet);
 	strcat(sysroot_directory, libc_version);
 	
-	size = (size_t) argc + 13 + (size_t) wants_rt_library;
+	kargv[kargc++] = NULL;
+	
+	size = kargc + 13 + (size_t) wants_librt;
 	
 	if (wants_system_libraries) {
 		size += (sizeof(SYSTEM_LIBRARY_PATH) / sizeof(*SYSTEM_LIBRARY_PATH)) * 6;
@@ -568,7 +1051,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	strcat(gcc_include_directory, GCC_MAJOR_VERSION);
 	strcat(gcc_include_directory, INCLUDE_DIR);
 	
-	gpp_include_directory = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(triplet) + strlen(INCLUDE_DIR) + strlen(PATHSEP_S) + strlen(CPLUSPLUS) + strlen(PATHSEP_S) + strlen(GCC_MAJOR_VERSION) + 1);
+	gpp_include_directory = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(triplet) + strlen(INCLUDE_DIR) + strlen(PATHSEP_S) + strlen(CPP) + strlen(PATHSEP_S) + strlen(GCC_MAJOR_VERSION) + 1);
 	
 	if (gpp_include_directory == NULL) {
 		err = ERR_MEM_ALLOC_FAILURE;
@@ -580,7 +1063,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	strcat(gpp_include_directory, triplet);
 	strcat(gpp_include_directory, INCLUDE_DIR);
 	strcat(gpp_include_directory, PATHSEP_S);
-	strcat(gpp_include_directory, CPLUSPLUS);
+	strcat(gpp_include_directory, CPP);
 	strcat(gpp_include_directory, PATHSEP_S);
 	strcat(gpp_include_directory, GCC_MAJOR_VERSION);
 	
@@ -619,7 +1102,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	args[offset++] = arg;
 	args[offset++] = (char*) GCC_OPT_NOSTDINC;
 	
-	if (strcmp(cc, GPLUSPLUS) == 0 || strcmp(cc, CPLUSPLUS) == 0) {
+	if (strcmp(cc, GPP) == 0 || strcmp(cc, CPP) == 0 || strcmp(cc, CLANGPP) == 0) {
 		args[offset++] = (char*) GCC_OPT_ISYSTEM;
 		args[offset++] = gpp_include_directory;
 		
@@ -634,7 +1117,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	args[offset++] = (char*) GCC_OPT_LIBDIR;
 	args[offset++] = sysroot_library_directory;
 	
-	if (wants_rt_library) {
+	if (wants_librt) {
 		args[offset++] = (char*) GCC_OPT_L_RT;
 	}
 	
@@ -801,10 +1284,10 @@ int main(int argc, char* argv[], char* envp[]) {
 		args[offset++] = android_api;
 	#endif
 	
-	memcpy(&args[offset], &argv[1], (size_t) argc * sizeof(*argv));
+	memcpy(&args[offset], &kargv[1], kargc * sizeof(*kargv));
 	
 	if (verbose) {
-		printf("%s", "+ ");
+		fprintf(stderr, "%s", "+ ");
 		
 		for (index = 0; 1; index++) {
 			cur = args[index];
@@ -814,14 +1297,103 @@ int main(int argc, char* argv[], char* envp[]) {
 			}
 			
 			if (index != 0) {
-				printf("%s", " ");
+				fprintf(stderr, "%s", " ");
 			}
 			
-			printf("%s", cur);
+			fprintf(stderr, "%s", cur);
 		}
 		
-		printf("%s", "\n");
+		fprintf(stderr, "%s", "\n");
 	}
+	
+	#if defined(PINO)
+		if (known_clang(cc) && output_directory != NULL) {
+			/* libatomic */
+			err = copy_shared_library(sysroot_library_directory, output_directory, LIBATOMIC_SHARED, LIBATOMIC_SHARED);
+			
+			if (err != ERR_SUCCESS) {
+				goto end;
+			}
+			
+			/* libstdc++ */
+			if (wants_libcxx) {
+				err = copy_shared_library(sysroot_library_directory, output_directory, LIBSTDCXX_SHARED, LIBSTDCXX_SHARED);
+				
+				if (err != ERR_SUCCESS) {
+					goto end;
+				}
+			}
+			
+			/* libgcc */
+			if (wants_libgcc) {
+				err = copy_shared_library(sysroot_library_directory, output_directory, LIBGCC_SHARED, LIBGCC_SHARED);
+				
+				if (err != ERR_SUCCESS) {
+					goto end;
+				}
+			}
+			
+			/* asan/hwasan */
+			if (address_sanitizer) {
+				err = copy_shared_library(sysroot_library_directory, output_directory, LIBASAN_SHARED, LIBASAN_SHARED);
+				
+				if (err != ERR_SUCCESS) {
+					goto end;
+				}
+				
+				err = copy_shared_library(sysroot_library_directory, output_directory, LIBHWASAN_SHARED, LIBHWASAN_SHARED);
+				
+				if (err != ERR_SUCCESS) {
+					goto end;
+				}
+				
+				err = copy_shared_library(sysroot_library_directory, output_directory, LIBLSAN_SHARED, LIBLSAN_SHARED);
+				
+				if (err != ERR_SUCCESS) {
+					goto end;
+				}
+				
+				err = copy_shared_library(sysroot_library_directory, output_directory, LIBTSAN_SHARED, LIBTSAN_SHARED);
+				
+				if (err != ERR_SUCCESS) {
+					goto end;
+				}
+				
+				err = copy_shared_library(sysroot_library_directory, output_directory, LIBUBSAN_SHARED, LIBUBSAN_SHARED);
+				
+				if (err != ERR_SUCCESS) {
+					goto end;
+				}
+			}
+			
+			/* libgomp */
+			if (wants_libgomp) {
+				err = copy_shared_library(sysroot_library_directory, output_directory, LIBGOMP_SHARED, LIBGOMP_SHARED);
+				
+				if (err != ERR_SUCCESS) {
+					goto end;
+				}
+			}
+			
+			/* libitm */
+			if (wants_libitm) {
+				err = copy_shared_library(sysroot_library_directory, output_directory, LIBITM_SHARED, LIBITM_SHARED);
+				
+				if (err != ERR_SUCCESS) {
+					goto end;
+				}
+			}
+			
+			/* libssp */
+			if (wants_libssp) {
+				err = copy_shared_library(sysroot_library_directory, output_directory, LIBSSP_SHARED, LIBSSP_SHARED);
+				
+				if (err != ERR_SUCCESS) {
+					goto end;
+				}
+			}
+		}
+	#endif
 	
 	if (execve(executable, args, envp) == -1) {
 		err = ERR_EXECVE_FAILURE;
@@ -835,7 +1407,9 @@ int main(int argc, char* argv[], char* envp[]) {
 	free(executable);
 	free(sysroot_directory);
 	free(app_filename);
+	free(output_directory);
 	free(args);
+	free(kargv);
 	free(arg);
 	free(sysroot_include_directory);
 	free(sysroot_include_missing_directory);
@@ -860,7 +1434,7 @@ int main(int argc, char* argv[], char* envp[]) {
 			opt = "Could not allocate memory";
 			break;
 		case ERR_UNKNOWN_COMPILER:
-			opt = "Unknown GCC compiler";
+			opt = "Unknown C/C++ compiler";
 			break;
 		case ERR_GET_APP_FILENAME_FAILURE:
 			opt = "Could not get app filename";
@@ -869,7 +1443,16 @@ int main(int argc, char* argv[], char* envp[]) {
 			opt = "Call to execve failed";
 			break;
 		case ERR_BAD_TRIPLET:
-			opt = "Unknown triplet";
+			opt = "The target triplet is invalid or was not recognized";
+			break;
+		case ERR_GETEXT_FAILURE:
+			opt = "Could not get file extension of object file";
+			break;
+		case ERR_COPY_FILE_FAILURE:
+			opt = "Could not copy file";
+			break;
+		case ERR_UNKNOWN_SYSTEM_VERSION:
+			opt = "The system or libc version provided through the target triplet is invalid or was not recognized";
 			break;
 		default:
 			opt = "Unknown error";
