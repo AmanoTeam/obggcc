@@ -169,6 +169,24 @@ jobs:
         fi
         
         bash './build.sh' '${{ matrix.target }}'
+    - name: Create logs
+      if: always()
+      run: |
+        declare logs=''
+        
+        while read file; do
+            logs+="${file} "
+        done <<< $(find "/tmp/"*"/build" -wholename '*.log' -o -wholename '*.yaml')
+        
+        tar --create --file=- ${logs} | xz --threads='0' --compress -9 > '/tmp/logs.tar.xz'
+    - name: Upload logs
+      if:  always()
+      uses: actions/upload-artifact@main
+      with:
+        name: ${{ matrix.target }}-logs
+        if-no-files-found: error
+        path: |
+            /tmp/logs.tar.xz
     - name: Generate tarball
       run: |
         declare tarball_filename='/tmp/${{ matrix.target }}.tar.xz'

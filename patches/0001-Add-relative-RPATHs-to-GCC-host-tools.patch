@@ -1,0 +1,244 @@
+From 2ae0f6c25bc53ba88d2963d67633136c059a44bc Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sat, 21 Jun 2025 11:51:31 -0300
+Subject: [PATCH] Add relative RPATHs to GCC host tools
+
+This change adds relative RPATHs to the host tools built as part of GCC.
+
+With this change, we can use the --without-static-standard-libraries configure option and place all runtime dependencies inside <toolchain_directory>/lib.
+This eliminates the need to statically link any libraries and also saves disk space by producing smaller executables.
+---
+ c++tools/Makefile.in     |  2 +-
+ gcc/Makefile.in          | 20 ++++++++++----------
+ gcc/c/Make-lang.in       |  2 +-
+ gcc/cp/Make-lang.in      |  4 ++--
+ gcc/fortran/Make-lang.in |  2 +-
+ gcc/lto/Make-lang.in     |  4 ++--
+ gcc/m2/Make-lang.in      |  6 +++---
+ gcc/objc/Make-lang.in    |  2 +-
+ gcc/objcp/Make-lang.in   |  2 +-
+ 9 files changed, 22 insertions(+), 22 deletions(-)
+
+diff --git a/c++tools/Makefile.in b/c++tools/Makefile.in
+index 5acc6d681..9b875d0b9 100644
+--- a/c++tools/Makefile.in
++++ b/c++tools/Makefile.in
+@@ -98,7 +98,7 @@ MAPPER.O := server.o resolver.o
+ CODYLIB = ../libcody/libcody.a
+ CXXINC += -I$(srcdir)/../libcody -I$(srcdir)/../include -I$(srcdir)/../gcc -I. -I../gcc
+ g++-mapper-server$(exeext): $(MAPPER.O) $(CODYLIB)
+-	+$(CXX) $(LDFLAGS) $(PICFLAG) $(LD_PICFLAG) -o $@ $^ $(LIBIBERTY)
++	+$(CXX) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) $(PICFLAG) $(LD_PICFLAG) -o $@ $^ $(LIBIBERTY)
+ 
+ # copy to gcc dir so tests there can run
+ all::../gcc/g++-mapper-server$(exeext)
+diff --git a/gcc/Makefile.in b/gcc/Makefile.in
+index 56fa5ac25..ae3f1aac1 100644
+--- a/gcc/Makefile.in
++++ b/gcc/Makefile.in
+@@ -2301,7 +2301,7 @@ libcommon.a: $(OBJS-libcommon)
+ # and CC is `gcc'.  It is renamed to `gcc' when it is installed.
+ xgcc$(exeext): $(GCC_OBJS) c/gccspec.o libcommon-target.a $(LIBDEPS) \
+ 	$(EXTRA_GCC_OBJS)
+-	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) -o $@ $(GCC_OBJS) \
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) -o $@ $(GCC_OBJS) \
+ 	  c/gccspec.o $(EXTRA_GCC_OBJS) libcommon-target.a \
+ 	  $(EXTRA_GCC_LIBS) $(LIBS)
+ 
+@@ -2310,7 +2310,7 @@ xgcc$(exeext): $(GCC_OBJS) c/gccspec.o libcommon-target.a $(LIBDEPS) \
+ # and only contain c-family extensions (see known_suffixes).
+ cpp$(exeext): $(GCC_OBJS) c-family/cppspec.o libcommon-target.a $(LIBDEPS) \
+ 	$(EXTRA_GCC_OBJS)
+-	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) -o $@ $(GCC_OBJS) \
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) -o $@ $(GCC_OBJS) \
+ 	  c-family/cppspec.o $(EXTRA_GCC_OBJS) libcommon-target.a \
+ 	  $(EXTRA_GCC_LIBS) $(LIBS)
+ 
+@@ -2520,15 +2520,15 @@ AR_OBJS = file-find.o
+ AR_LIBS = @COLLECT2_LIBS@
+ 
+ gcc-ar$(exeext): gcc-ar.o $(AR_OBJS) $(LIBDEPS)
+-	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) gcc-ar.o -o $@ \
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) gcc-ar.o -o $@ \
+ 		$(AR_OBJS) $(LIBS) $(AR_LIBS)
+ 
+ gcc-nm$(exeext): gcc-nm.o $(AR_OBJS) $(LIBDEPS)
+-	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) gcc-nm.o -o $@ \
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) gcc-nm.o -o $@ \
+ 		$(AR_OBJS) $(LIBS) $(AR_LIBS)
+ 
+ gcc-ranlib$(exeext): gcc-ranlib.o $(AR_OBJS) $(LIBDEPS)
+-	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) gcc-ranlib.o -o $@ \
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) gcc-ranlib.o -o $@ \
+ 		$(AR_OBJS) $(LIBS) $(AR_LIBS)
+ 
+ CFLAGS-gcc-ar.o += $(DRIVER_DEFINES) \
+@@ -2556,7 +2556,7 @@ COLLECT2_OBJS = collect2.o collect2-aix.o vec.o ggc-none.o \
+ COLLECT2_LIBS = @COLLECT2_LIBS@
+ collect2$(exeext): $(COLLECT2_OBJS) $(LIBDEPS)
+ # Don't try modifying collect2 (aka ld) in place--it might be linking this.
+-	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) -o T$@ \
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) -o T$@ \
+ 		$(COLLECT2_OBJS) $(LIBS) $(COLLECT2_LIBS)
+ 	mv -f T$@ $@
+ 
+@@ -2567,7 +2567,7 @@ LTO_WRAPPER_OBJS = lto-wrapper.o collect-utils.o ggc-none.o lockfile.o \
+   lto-ltrans-cache.o
+ 
+ lto-wrapper$(exeext): $(LTO_WRAPPER_OBJS) libcommon-target.a $(LIBDEPS)
+-	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) -o T$@ \
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) -o T$@ \
+ 	   $(LTO_WRAPPER_OBJS) libcommon-target.a $(LIBS)
+ 	mv -f T$@ $@
+ 
+@@ -3448,11 +3448,11 @@ CFLAGS-gcov.o += $(ZLIBINC)
+ 
+ GCOV_OBJS = gcov.o json.o graphds.o prime-paths.o bitmap.o
+ gcov$(exeext): $(GCOV_OBJS) $(LIBDEPS)
+-	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) $(GCOV_OBJS) \
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) $(GCOV_OBJS) \
+ 		hash-table.o ggc-none.o $(LIBS) $(ZLIB) -o $@
+ GCOV_DUMP_OBJS = gcov-dump.o
+ gcov-dump$(exeext): $(GCOV_DUMP_OBJS) $(LIBDEPS)
+-	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) $(GCOV_DUMP_OBJS) \
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) $(GCOV_DUMP_OBJS) \
+ 		hash-table.o ggc-none.o\
+ 		$(LIBS) -o $@
+ 
+@@ -3470,7 +3470,7 @@ libgcov-merge-tool.o: $(srcdir)/../libgcc/libgcov-merge.c $(GCOV_TOOL_DEP_FILES)
+ 	  -DIN_GCOV_TOOL=1 -o $@ $<
+ GCOV_TOOL_OBJS = gcov-tool.o libgcov-util.o libgcov-driver-tool.o libgcov-merge-tool.o
+ gcov-tool$(exeext): $(GCOV_TOOL_OBJS) $(LIBDEPS)
+-	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) $(GCOV_TOOL_OBJS) $(LIBS) -o $@
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) $(GCOV_TOOL_OBJS) $(LIBS) -o $@
+ #
+ # Build the include directories.  The stamp files are stmp-* rather than
+ # s-* so that mostlyclean does not force the include directory to
+diff --git a/gcc/c/Make-lang.in b/gcc/c/Make-lang.in
+index 2517b6443..7b65f0a81 100644
+--- a/gcc/c/Make-lang.in
++++ b/gcc/c/Make-lang.in
+@@ -84,7 +84,7 @@ cc1-checksum.cc : build/genchecksum$(build_exeext) checksum-options \
+ 
+ cc1$(exeext): $(C_OBJS) cc1-checksum.o $(BACKEND) $(LIBDEPS)
+ 	@$(call LINK_PROGRESS,$(INDEX.c),start)
+-	+$(LLINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) -o $@ $(C_OBJS) \
++	+$(LLINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) -o $@ $(C_OBJS) \
+ 	  cc1-checksum.o $(BACKEND) $(LIBS) $(BACKENDLIBS)
+ 	@$(call LINK_PROGRESS,$(INDEX.c),end)
+ 
+diff --git a/gcc/cp/Make-lang.in b/gcc/cp/Make-lang.in
+index dae3c6846..6be70300e 100644
+--- a/gcc/cp/Make-lang.in
++++ b/gcc/cp/Make-lang.in
+@@ -79,7 +79,7 @@ endif
+ # Create the compiler driver for g++.
+ GXX_OBJS = $(GCC_OBJS) cp/g++spec.o
+ xg++$(exeext): $(GXX_OBJS) $(EXTRA_GCC_OBJS) libcommon-target.a $(LIBDEPS)
+-	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) -o $@ \
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) -o $@ \
+ 	  $(GXX_OBJS) $(EXTRA_GCC_OBJS) libcommon-target.a \
+ 	  $(EXTRA_GCC_LIBS) $(LIBS)
+ 
+@@ -142,7 +142,7 @@ cc1plus-checksum.cc : build/genchecksum$(build_exeext) checksum-options \
+ 
+ cc1plus$(exeext): $(CXX_OBJS) cc1plus-checksum.o $(BACKEND) $(CODYLIB) $(LIBDEPS) $(c++.prev)
+ 	@$(call LINK_PROGRESS,$(INDEX.c++),start)
+-	+$(LLINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) -o $@ \
++	+$(LLINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) -o $@ \
+ 	      $(CXX_OBJS) cc1plus-checksum.o $(BACKEND) $(CODYLIB) \
+ 		$(LIBS) $(BACKENDLIBS)
+ 	@$(call LINK_PROGRESS,$(INDEX.c++),end)
+diff --git a/gcc/fortran/Make-lang.in b/gcc/fortran/Make-lang.in
+index 5b2f921bf..28c313750 100644
+--- a/gcc/fortran/Make-lang.in
++++ b/gcc/fortran/Make-lang.in
+@@ -95,7 +95,7 @@ gfortran-cross$(exeext): gfortran$(exeext)
+ # The compiler itself is called f951.
+ f951$(exeext): $(F95_OBJS) $(BACKEND) $(LIBDEPS) attribs.o $(fortran.prev)
+ 	@$(call LINK_PROGRESS,$(INDEX.fortran),start)
+-	+$(LLINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) -o $@ \
++	+$(LLINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) -o $@ \
+ 		$(F95_OBJS) $(BACKEND) $(ZLIB) $(LIBS) attribs.o \
+ 		$(BACKENDLIBS)
+ 	@$(call LINK_PROGRESS,$(INDEX.fortran),end)
+diff --git a/gcc/lto/Make-lang.in b/gcc/lto/Make-lang.in
+index 553e6ddd0..05a7c24c9 100644
+--- a/gcc/lto/Make-lang.in
++++ b/gcc/lto/Make-lang.in
+@@ -93,13 +93,13 @@ lto-warn = $(STRICT_WARN)
+ 
+ $(LTO_EXE): $(LTO_OBJS) $(BACKEND) $(LIBDEPS) $(lto1.prev)
+ 	@$(call LINK_PROGRESS,$(INDEX.lto1),start)
+-	+$(LLINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) -o $@ \
++	+$(LLINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) -o $@ \
+ 		$(LTO_OBJS) $(BACKEND) $(BACKENDLIBS) $(LIBS)
+ 	@$(call LINK_PROGRESS,$(INDEX.lto1),end)
+ 
+ $(LTO_DUMP_EXE): $(LTO_DUMP_OBJS) $(BACKEND) $(LIBDEPS) $(lto2.prev)
+ 	@$(call LINK_PROGRESS,$(INDEX.lto2),start)
+-	+$(LLINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) -o $@ \
++	+$(LLINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) -o $@ \
+ 		$(LTO_DUMP_OBJS) $(BACKEND) $(BACKENDLIBS) $(LIBS)
+ 	@$(call LINK_PROGRESS,$(INDEX.lto2),end)
+ 
+diff --git a/gcc/m2/Make-lang.in b/gcc/m2/Make-lang.in
+index 470825ca2..115226716 100644
+--- a/gcc/m2/Make-lang.in
++++ b/gcc/m2/Make-lang.in
+@@ -126,7 +126,7 @@ GM2_OBJS = $(GCC_OBJS) prefix.o intl.o m2/gm2spec.o
+ # Create the compiler driver for gm2.
+ gm2$(exeext): $(GM2_OBJS) $(EXTRA_GCC_OBJS) libcommon-target.a $(LIBDEPS) \
+     m2/gm2config.h
+-	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) -o $@ \
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) -o $@ \
+ 	  $(GM2_OBJS) $(EXTRA_GCC_OBJS) libcommon-target.a \
+ 	  $(EXTRA_GCC_LIBS) $(LIBS)
+ 
+@@ -590,7 +590,7 @@ m2/stage2/cc1gm2$(exeext): m2/stage1/cc1gm2$(exeext) m2/gm2-compiler/m2flex.o \
+                             m2/gm2-gcc/rtegraph.o $(M2RTE_PLUGIN_SO)
+ 	-test -d $(@D) || $(mkinstalldirs) $(@D)
+ 	@$(call LINK_PROGRESS,$(INDEX.m2),start)
+-	+$(LLINKER) $(ALL_CFLAGS) $(LDFLAGS) -o $@ $(GM2_C_OBJS) m2/gm2-compiler/m2flex.o \
++	+$(LLINKER) $(ALL_CFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) -o $@ $(GM2_C_OBJS) m2/gm2-compiler/m2flex.o \
+                             attribs.o \
+                               $(GM2_LIBS) \
+                               $(BACKEND) $(LIBS) m2/gm2-gcc/rtegraph.o \
+@@ -604,7 +604,7 @@ m2/stage1/cc1gm2$(exeext): gm2$(exeext) m2/gm2-compiler-boot/m2flex.o \
+                             $(m2.prev)
+ 	-test -d $(@D) || $(mkinstalldirs) $(@D)
+ 	@$(call LINK_PROGRESS,$(INDEX.m2),start)
+-	+$(LLINKER) $(ALL_CFLAGS) $(LDFLAGS) -o $@ $(GM2_C_OBJS) m2/gm2-compiler-boot/m2flex.o \
++	+$(LLINKER) $(ALL_CFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) -o $@ $(GM2_C_OBJS) m2/gm2-compiler-boot/m2flex.o \
+                             attribs.o \
+                              $(GM2_LIBS_BOOT) $(MC_LIBS) \
+                              m2/gm2-gcc/rtegraph.o \
+diff --git a/gcc/objc/Make-lang.in b/gcc/objc/Make-lang.in
+index f7a8f5bc3..0389bf929 100644
+--- a/gcc/objc/Make-lang.in
++++ b/gcc/objc/Make-lang.in
+@@ -75,7 +75,7 @@ cc1obj-checksum.cc : build/genchecksum$(build_exeext) checksum-options \
+ cc1obj$(exeext): $(OBJC_OBJS) $(C_AND_OBJC_OBJS) cc1obj-checksum.o $(BACKEND) \
+ 		 $(LIBDEPS) $(objc.prev)
+ 	@$(call LINK_PROGRESS,$(INDEX.objc),start)
+-	+$(LLINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) -o $@ \
++	+$(LLINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) -o $@ \
+ 	      $(OBJC_OBJS) $(C_AND_OBJC_OBJS) cc1obj-checksum.o \
+ 	      $(BACKEND) $(LIBS) $(BACKENDLIBS)
+ 	@$(call LINK_PROGRESS,$(INDEX.objc),end)
+diff --git a/gcc/objcp/Make-lang.in b/gcc/objcp/Make-lang.in
+index 94bb51207..6167cc5ce 100644
+--- a/gcc/objcp/Make-lang.in
++++ b/gcc/objcp/Make-lang.in
+@@ -78,7 +78,7 @@ cc1objplus-checksum.cc : build/genchecksum$(build_exeext) checksum-options \
+ cc1objplus$(exeext): $(OBJCXX_OBJS) cc1objplus-checksum.o $(BACKEND) \
+ 		     $(CODYLIB) $(LIBDEPS) $(obj-c++.prev)
+ 	@$(call LINK_PROGRESS,$(INDEX.obj-c++),start)
+-	+$(LLINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) -o $@ \
++	+$(LLINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) -o $@ \
+ 		$(OBJCXX_OBJS) cc1objplus-checksum.o $(BACKEND) \
+ 		  $(CODYLIB) $(LIBS) $(BACKENDLIBS)
+ 	@$(call LINK_PROGRESS,$(INDEX.obj-c++),end)
+-- 
+2.49.0
+

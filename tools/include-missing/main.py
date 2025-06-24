@@ -3,6 +3,7 @@ import sys
 import os
 
 GLIBC_VERSIONS = (
+	"2.39",
 	"2.31",
 	"2.28",
 	"2.24",
@@ -76,4 +77,4 @@ for version in GLIBC_VERSIONS:
 			os.makedirs(name = path, exist_ok = True)
 		
 		with open(file = broken_header, mode = "w") as file:
-			file.write("#error This header is not available in GLIBC %s\n\n" % (version))
+			file.write("#error \"This header is not available in glibc %s\"\n\n" % (version))

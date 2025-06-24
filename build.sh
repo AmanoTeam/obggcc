@@ -43,10 +43,12 @@ declare nz_directory=""
 declare -r zstd_tarball='/tmp/zstd.tar.gz'
 declare -r zstd_directory='/tmp/zstd-dev'
 
-declare -r nativeflags='-march=native'
 declare -r pieflags='-fPIE'
-declare optflags='-w -O2 -Xlinker --allow-multiple-definition'
+declare -r ccflags='-w -O2 -Xlinker --allow-multiple-definition'
 declare -r linkflags='-Xlinker -s'
+
+declare hccflags="-I${toolchain_directory}/include -L${toolchain_directory}/lib"
+declare hlinkflags="-Xlinker -rpath-link -Xlinker ${toolchain_directory}/lib ${linkflags}"
 
 declare -r max_jobs='40'
 
@@ -103,17 +105,6 @@ declare -ra symlink_tools=(
 	'strip'
 )
 
-declare -ra libstdcxx_depends=(
-	'dwp'
-	'ld.gold'
-	'g++'
-	'gcc'
-	'gcc-15'
-	'gcc-ar'
-	'gcc-nm'
-	'gcc-ranlib'
-)
-
 declare -ra libraries=(
 	'libstdc++'
 	'libatomic'
@@ -147,12 +138,12 @@ declare -ra targets=(
 	# 'mips-unknown-linux-gnu'
 	# 'mips64el-unknown-linux-gnuabi64'
 	# 'mipsel-unknown-linux-gnu'
-	# 'powerpc-unknown-linux-gnu'
+	'powerpc-unknown-linux-gnu'
 	# 'powerpc64le-unknown-linux-gnu'
 	# 's390-unknown-linux-gnu'
 	# 's390x-unknown-linux-gnu'
 	# 'sparc-unknown-linux-gnu'
-	'x86_64-unknown-linux-gnu'
+	# 'x86_64-unknown-linux-gnu'
 	# 'alpha-unknown-linux-gnu'
 	# 'aarch64-unknown-linux-gnu'
 	# 'arm-unknown-linux-gnueabi'
@@ -184,10 +175,6 @@ set -u
 declare -r \
 	build_type \
 	is_native
-
-if (( is_native )); then
-	optflags+=' -march=native'
-fi
 
 if ! [ -f "${gmp_tarball}" ]; then
 	curl \
@@ -275,6 +262,8 @@ if ! [ -f "${binutils_tarball}" ]; then
 	
 	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Revert-gold-Use-char16_t-char32_t-instead-of-uint16_.patch"
 	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Disable-annoying-linker-warnings.patch"
+	
+	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Add-relative-RPATHs-to-binutils-host-tools.patch"
 fi
 
 if ! [ -f "${zstd_tarball}" ]; then
@@ -316,6 +305,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Turn-Wimplicit-int-back-into-an-warning.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Turn-Wint-conversion-back-into-an-warning.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Fix-libgcc-build-on-arm.patch"
+	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Add-relative-RPATHs-to-GCC-host-tools.patch"
 fi
 
 [ -d "${gmp_directory}/build" ] || mkdir "${gmp_directory}/build"
@@ -328,9 +318,9 @@ rm --force --recursive ./*
 	--prefix="${toolchain_directory}" \
 	--enable-shared \
 	--disable-static \
-	CFLAGS="${optflags}" \
-	CXXFLAGS="${optflags}" \
-	LDFLAGS="${linkflags}"
+	CFLAGS="${ccflags} ${hccflags}" \
+	CXXFLAGS="${ccflags} ${hccflags}" \
+	LDFLAGS="${linkflags} ${hlinkflags}"
 
 make all --jobs
 make install
@@ -343,12 +333,11 @@ rm --force --recursive ./*
 ../configure \
 	--host="${CROSS_COMPILE_TRIPLET}" \
 	--prefix="${toolchain_directory}" \
-	--with-gmp="${toolchain_directory}" \
 	--enable-shared \
 	--disable-static \
-	CFLAGS="${optflags}" \
-	CXXFLAGS="${optflags}" \
-	LDFLAGS="${linkflags}"
+	CFLAGS="${ccflags} ${hccflags}" \
+	CXXFLAGS="${ccflags} ${hccflags}" \
+	LDFLAGS="${linkflags} ${hlinkflags}"
 
 make all --jobs
 make install
@@ -361,12 +350,11 @@ rm --force --recursive ./*
 ../configure \
 	--host="${CROSS_COMPILE_TRIPLET}" \
 	--prefix="${toolchain_directory}" \
-	--with-gmp="${toolchain_directory}" \
 	--enable-shared \
 	--disable-static \
-	CFLAGS="${optflags}" \
-	CXXFLAGS="${optflags}" \
-	LDFLAGS="${linkflags}"
+	CFLAGS="${ccflags} ${hccflags}" \
+	CXXFLAGS="${ccflags} ${hccflags}" \
+	LDFLAGS="${linkflags} ${hlinkflags}"
 
 make all --jobs
 make install
@@ -382,9 +370,9 @@ rm --force --recursive ./*
 	--with-gmp-prefix="${toolchain_directory}" \
 	--enable-shared \
 	--disable-static \
-	CFLAGS="${pieflags} ${optflags}" \
-	CXXFLAGS="${pieflags} ${optflags}" \
-	LDFLAGS="-Xlinker -rpath-link -Xlinker ${toolchain_directory}/lib ${linkflags}"
+	CFLAGS="${pieflags} ${ccflags} ${hccflags}" \
+	CXXFLAGS="${pieflags} ${ccflags} ${hccflags}" \
+	LDFLAGS="${linkflags} ${hlinkflags}"
 
 make all --jobs
 make install
@@ -397,7 +385,7 @@ rm --force --recursive ./*
 cmake \
 	-S "${zstd_directory}/build/cmake" \
 	-B "${PWD}" \
-	-DCMAKE_C_FLAGS="-DZDICT_QSORT=ZDICT_QSORT_MIN ${optflags}" \
+	-DCMAKE_C_FLAGS="-DZDICT_QSORT=ZDICT_QSORT_MIN ${ccflags}" \
 	-DCMAKE_INSTALL_PREFIX="${toolchain_directory}" \
 	-DBUILD_SHARED_LIBS=ON \
 	-DZSTD_BUILD_PROGRAMS=OFF \
@@ -407,22 +395,13 @@ cmake \
 cmake --build "${PWD}"
 cmake --install "${PWD}" --strip
 
-# mpfr, mpc, and isl hardcode the install prefix as RPATH during installation.
+# Always use symlinks unconditionally to ensure compatibility
+# with filesystems that don't support hard links.
 if ! (( is_native )); then
-	patchelf \
-		--remove-rpath \
-		"${toolchain_directory}/lib/libmpfr.so" \
-		"${toolchain_directory}/lib/libmpc.so" \
-		"${toolchain_directory}/lib/libisl.so"
+	cp "${workdir}/tools/ln.sh" '/tmp/ln'
 fi
 
-# Always use symlinks unconditionally to ensure compatibility with filesystems
-# that don't support hard links.
-if ! (( is_native )); then
-	echo -e '#!/bin/bash\n\n/usr/bin/ln --symbolic --relative ${@}\n' > '/tmp/ln'
-	chmod +x '/tmp/ln'
-	export PATH="/tmp:${PATH}"
-fi
+export PATH="/tmp:${PATH}"
 
 # The gold linker incorrectly detects ffsll() as unsupported.
 if [[ "${CROSS_COMPILE_TRIPLET}" == *'-android'* ]]; then
@@ -480,9 +459,9 @@ for target in "${targets[@]}"; do
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--without-static-standard-libraries \
 		--with-zstd="${toolchain_directory}" \
-		CFLAGS="${pieflags} ${optflags}" \
-		CXXFLAGS="${pieflags} ${optflags}" \
-		LDFLAGS="${linkflags}"
+		CFLAGS="${ccflags} ${hccflags}" \
+		CXXFLAGS="${ccflags} ${hccflags}" \
+		LDFLAGS="${linkflags} ${hlinkflags}"
 	
 	make all --jobs
 	make install
@@ -547,12 +526,13 @@ for target in "${targets[@]}"; do
 		--without-headers \
 		--without-static-standard-libraries \
 		${extra_configure_flags} \
-		CFLAGS="${optflags}" \
-		CXXFLAGS="${optflags}" \
-		LDFLAGS="${linkflags}"
+		CFLAGS="${ccflags} ${hccflags}" \
+		CXXFLAGS="${ccflags} ${hccflags}" \
+		LDFLAGS="${linkflags} ${hlinkflags}"
 	
-	cflags_for_target="${optflags/${nativeflags}/} ${linkflags}"
-	cxxflags_for_target="${cflags_for_target}"
+	cflags_for_target="${ccflags} ${linkflags}"
+	cxxflags_for_target="${ccflags} ${linkflags}"
+	ldflags_for_target="${linkflags}"
 	
 	declare args=''
 	
@@ -563,7 +543,7 @@ for target in "${targets[@]}"; do
 	env ${args} make \
 		CFLAGS_FOR_TARGET="${cflags_for_target}" \
 		CXXFLAGS_FOR_TARGET="${cxxflags_for_target}" \
-		LDFLAGS_FOR_TARGET="${linkflags}" \
+		LDFLAGS_FOR_TARGET="${ldflags_for_target}" \
 		gcc_cv_objdump="${CROSS_COMPILE_TRIPLET}-objdump" \
 		all \
 		--jobs="${max_jobs}"
@@ -580,33 +560,6 @@ for target in "${targets[@]}"; do
 			rm "${toolchain_directory}/${triplet}/lib/"*.o
 		fi
 	fi
-	
-	patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/cc1'
-	patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/cc1plus'
-	patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/lto1'
-	patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/collect2'
-	patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/lto-wrapper'
-	patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/g++-mapper-server'
-	
-	if [[ "${languages}" = *'m2'* ]]; then
-		patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/cc1gm2'
-	fi
-	
-	if [[ "${languages}" = *'objc'* ]]; then
-		patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/cc1obj'
-	fi
-	
-	if [[ "${languages}" = *'obj-c++'* ]]; then
-		patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/cc1objplus'
-	fi
-	
-	if [[ "${languages}" = *'fortran'* ]]; then
-		patchelf --set-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*'/f951'
-	fi
-	
-	for library in "${plugin_libraries[@]}"; do
-		patchelf --set-rpath "\$ORIGIN/../../../../../${triplet}/lib64:\$ORIGIN/../../../../../${triplet}/lib:\$ORIGIN/../../../../../lib64:\$ORIGIN/../../../../../lib" "${toolchain_directory}/lib/gcc/${triplet}/"*"/plugin/${library}.so"
-	done
 	
 	for name in "${native_tools[@]}"; do
 		declare file="${toolchain_directory}/bin/${name}"
@@ -635,6 +588,8 @@ for target in "${targets[@]}"; do
 		done
 	fi
 done
+
+rm --force --recursive "${toolchain_directory}/share"
 
 while read triplet; do
 	if ! [ -d "${toolchain_directory}/${triplet}" ]; then
@@ -741,7 +696,7 @@ fi
 	"${workdir}/tools/gcc-wrapper/fs/"*".c" \
 	"${workdir}/tools/gcc-wrapper/"*".c" \
 	-I "${workdir}/tools/gcc-wrapper" \
-	${optflags} \
+	${ccflags} \
 	${linkflags} \
 	-D OBGGCC \
 	-o "${gcc_wrapper}"
@@ -845,16 +800,6 @@ while read item; do
 	ln --symbolic "../${triplet}${glibc_version}/bin/apt" "./${triplet}${glibc_version}-apt"
 	ln --symbolic "../${triplet}${glibc_version}/bin/apt-get" "./${triplet}${glibc_version}-apt-get"
 	
-	for name in "${libstdcxx_depends[@]}"; do
-		source="./${triplet}-${name}"
-		
-		if ! [ -f "${source}" ]; then
-			continue
-		fi
-		
-		patchelf --set-rpath '$ORIGIN/../lib' "${source}"
-	done
-	
 	for name in "${symlink_tools[@]}"; do
 		source="./${triplet}-${name}"
 		destination="./${triplet}${glibc_version}-${name}"
@@ -866,15 +811,7 @@ while read item; do
 		echo "- Symlinking '${source}' to '${destination}'"
 		
 		ln --symbolic "${source}" "${destination}"
-		
-		patchelf --set-rpath '$ORIGIN/../lib' "${source}"
 	done
-	
-	cd "${toolchain_directory}/${triplet}/bin"
-	
-	if [ -f './ld.gold' ]; then
-		patchelf --set-rpath '$ORIGIN/../../lib' './ld.gold'
-	fi
 done <<< "$(jq --compact-output '.[]' "${workdir}/submodules/debian-sysroot/dist.json")"
 
 for triplet in "${targets[@]}"; do
