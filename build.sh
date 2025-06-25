@@ -28,8 +28,10 @@ declare -r isl_directory='/tmp/isl-0.27'
 declare -r binutils_tarball='/tmp/binutils.tar.xz'
 declare -r binutils_directory='/tmp/binutils-with-gold-2.44'
 
+declare -r gcc_major='15'
+
 declare -r gcc_tarball='/tmp/gcc.tar.xz'
-declare -r gcc_directory='/tmp/gcc-releases-gcc-15'
+declare -r gcc_directory="/tmp/gcc-releases-gcc-${gcc_major}"
 
 declare -r libsanitizer_tarball='/tmp/libsanitizer.tar.xz'
 declare -r libsanitizer_directory='/tmp/libsanitizer'
@@ -138,11 +140,11 @@ declare -ra targets=(
 	# 'mips-unknown-linux-gnu'
 	# 'mips64el-unknown-linux-gnuabi64'
 	# 'mipsel-unknown-linux-gnu'
-	'powerpc-unknown-linux-gnu'
+	# 'powerpc-unknown-linux-gnu'
 	# 'powerpc64le-unknown-linux-gnu'
 	# 's390-unknown-linux-gnu'
 	# 's390x-unknown-linux-gnu'
-	# 'sparc-unknown-linux-gnu'
+	'sparc-unknown-linux-gnu'
 	# 'x86_64-unknown-linux-gnu'
 	# 'alpha-unknown-linux-gnu'
 	# 'aarch64-unknown-linux-gnu'
@@ -549,10 +551,17 @@ for target in "${targets[@]}"; do
 		--jobs="${max_jobs}"
 	make install
 	
+	if [[ "${triplet}" = 'sparc-'* ]] || [[ "${triplet}" = 's390-'* ]] || [[ "${triplet}" = 'powerpc-'* ]] || [[ "${triplet}" = 'hppa-'* ]] || [[ "${triplet}" = 'alpha-'* ]]; then
+		patch \
+			--directory="${toolchain_directory}/${triplet}/include/c++/${gcc_major}/${triplet}" \
+			--strip='1' \
+			--input="${workdir}/patches/0001-Fix-C99-math-functions-availability.patch"
+	fi
+	
 	cd "${toolchain_directory}/lib/bfd-plugins"
 	
 	if ! [ -f './liblto_plugin.so' ]; then
-		ln --symbolic "../../libexec/gcc/${triplet}/"*'/liblto_plugin.so' './'
+		ln --symbolic "../../libexec/gcc/${triplet}/${gcc_major}/liblto_plugin.so" './'
 	fi
 	
 	if ! (( is_native )); then
