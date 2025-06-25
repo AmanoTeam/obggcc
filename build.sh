@@ -411,6 +411,8 @@ if [[ "${CROSS_COMPILE_TRIPLET}" == *'-android'* ]]; then
 fi
 
 for target in "${targets[@]}"; do
+	declare specs='-Xlinker --disable-new-dtags'
+	
 	source "${workdir}/${target}.sh"
 	
 	cd "$(mktemp --directory)"
@@ -468,6 +470,10 @@ for target in "${targets[@]}"; do
 	make all --jobs
 	make install
 	
+	if [[ "${triplet}" != 'powerpc64'* ]]; then
+		specs+=' %{!fno-plt:%{!fplt:-fno-plt}}'
+	fi
+	
 	[ -d "${gcc_directory}/build" ] || mkdir "${gcc_directory}/build"
 	
 	cd "${gcc_directory}/build"
@@ -517,7 +523,7 @@ for target in "${targets[@]}"; do
 		--enable-cxx-flags="${linkflags} ${extra_cxx_flags}" \
 		--enable-host-pie \
 		--enable-host-shared \
-		--with-specs='%{!fno-plt:%{!fplt:-fno-plt}}' \
+		--with-specs="${specs}" \
 		--disable-libsanitizer \
 		--disable-libgomp \
 		--disable-bootstrap \
