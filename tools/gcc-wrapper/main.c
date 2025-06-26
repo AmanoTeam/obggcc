@@ -62,6 +62,7 @@ static const char GCC_OPT_WL[] = "-Wl,";
 static const char GCC_OPT_F_FAT_LTO_OBJECTS[] = "-ffat-lto-objects";
 static const char GCC_OPT_F_NO_FAT_LTO_OBJECTS[] = "-fno-fat-lto-objects";
 static const char GCC_OPT_F_LTO[] = "-flto";
+static const char GCC_OPT_F_USE_LD[] = "-fuse-ld=";
 static const char GCC_OPT_DFORTIFY_SOURCE[] = "-D_FORTIFY_SOURCE=";
 static const char GCC_OPT_U_GNUC[] = "-U__GNUC__";
 
@@ -101,6 +102,8 @@ static const char DEFAULT_TARGET[] =
 	#error "I don't know how to handle that"
 #endif
 
+static const char HYPHEN[] = "-";
+
 static char* SYSTEM_LIBRARY_PATH[] = {
 	PATHSEP_M "usr" PATHSEP_M "local" PATHSEP_M "lib64",
 	PATHSEP_M "usr" PATHSEP_M "local" PATHSEP_M "lib",
@@ -133,6 +136,14 @@ static const char GFORTRAN[] = "gfortran";
 
 static const char VENDOR_NONE[] = "-none-";
 static const char VENDOR_UNKNOWN[] = "-unknown-";
+
+static const char LD_PREFIX[] = "ld.";
+
+static const char* const FASTER_LINKERS[] = {
+	"mold",
+	"lld",
+	"gold"
+};
 
 #define ERR_SUCCESS 0
 #define ERR_MEM_ALLOC_FAILURE -1
@@ -348,6 +359,75 @@ static int clang_specific_replace(
 	
 }
 
+static const char* get_fast_linker(
+	const char* const directory,
+	const char* const triplet
+) {
+	/*
+	Pick a faster linker if available in the current bin directory.
+	*/
+	
+	size_t index = 0;
+	
+	char* executable = NULL;
+	char* end = NULL;
+	
+	const char* linker = NULL;
+	
+	for (index = 0; index < sizeof(FASTER_LINKERS) / sizeof(*FASTER_LINKERS); index++) {
+		linker = FASTER_LINKERS[index];
+		
+		executable = malloc(
+			strlen(directory) +
+			strlen(PATHSEP_S) +
+			strlen(triplet) + 
+			strlen(HYPHEN) +
+			strlen(LD_PREFIX) +
+			strlen(linker) +
+			1
+		);
+		
+		if (executable == NULL) {
+			goto end;
+		}
+		
+		strcpy(executable, directory);
+		strcat(executable, PATHSEP_S);
+		
+		end = strchr(executable, '\0');
+		
+		/* Try the triplet-prefixed executable (<triplet>-<ld.<linker>) */
+		strcat(executable, triplet);
+		strcat(executable, HYPHEN);
+		strcat(executable, LD_PREFIX);
+		strcat(executable, linker);
+		
+		if (file_exists(executable)) {
+			goto end;
+		}
+		
+		/* Try the non-triplet-prefixed executable (<ld.<linker>) */
+		strcpy(end, LD_PREFIX);
+		strcat(end, linker);
+		
+		if (file_exists(executable)) {
+			goto end;
+		}
+		
+		free(executable);
+		executable = NULL;
+		
+		linker = NULL;
+	}
+	
+	end:;
+	
+	free(executable);
+	
+	return linker;
+	
+}
+
 #if defined(PINO)
 int copy_shared_library(
 	const char* const source_directory,
@@ -439,6 +519,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	int wants_librt = 0;
 	int wants_libssp = 0;
 	int require_atomic_library = 0;
+	int override_linker = 0;
 	
 	int cmake_init = 0;
 	
@@ -504,6 +585,8 @@ int main(int argc, char* argv[], char* envp[]) {
 	size_t kargc = 0;
 	char** kargv = NULL;
 	
+	char* linker = NULL;
+	
 	#if defined(OBGGCC)
 		wants_system_libraries = get_env("OBGGCC_SYSTEM_LIBRARIES");
 		wants_builtin_loader = get_env("OBGGCC_BUILTIN_LOADER");
@@ -520,6 +603,7 @@ int main(int argc, char* argv[], char* envp[]) {
 			1 + /* -D__clang_minor__ */
 			1 + /* -D__clang_patchlevel__ */
 			1 + /* -ffat-lto-objects / -fno-fat-lto-objects */
+			1 + /* -fuse-ld=<linker> */
 			1 /* NULL */
 		)
 	);
@@ -534,6 +618,8 @@ int main(int argc, char* argv[], char* envp[]) {
 		
 		if (strncmp(cur, GCC_OPT_FSANITIZE, strlen(GCC_OPT_FSANITIZE)) == 0) {
 			address_sanitizer = 1;
+		} else if (strncmp(cur, GCC_OPT_F_USE_LD, strlen(GCC_OPT_F_USE_LD)) == 0) {
+			override_linker = 1;
 		} else if (strncmp(cur, GCC_OPT_F_STACK_PROTECTOR, strlen(GCC_OPT_F_STACK_PROTECTOR)) == 0) {
 			stack_protector = 1;
 		} else if (strcmp(cur, GCC_OPT_V) == 0) {
@@ -682,6 +768,7 @@ int main(int argc, char* argv[], char* envp[]) {
 		goto end;
 	}
 	
+	/* Get the directory where our executable is (i.e., <prefix>/bin) */
 	get_parent_path(app_filename, parent_directory, 1);
 	
 	/*
@@ -712,7 +799,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	/*
 	Check if we are dealing with a triplet-prefixed executable name (<triplet><libc_version>-<cc>),
-	and if so, let's extract the compiler name from it.
+	and if so, try to extract the compiler name from it.
 	*/
 	if (cc == NULL) {
 		ptr = strchr(file_name, '\0');
@@ -808,8 +895,25 @@ int main(int argc, char* argv[], char* envp[]) {
 	memcpy(triplet, file_name, size);
 	triplet[size] = '\0';
 	
-	/* Atomics are not natively supported on SPARC, so we need to rely on -latomic. */
-	require_atomic_library = strcmp(triplet, "sparc-unknown-linux-gnu") == 0;
+	/* Pick a fast linker if available. */
+	if (!override_linker && (cur = get_fast_linker(parent_directory, triplet)) != NULL) {
+		linker = malloc(strlen(GCC_OPT_F_USE_LD) + strlen(cur) + 1);
+		
+		if (linker == NULL) {
+			err = ERR_MEM_ALLOC_FAILURE;
+			goto end;
+		}
+		
+		strcpy(linker, GCC_OPT_F_USE_LD);
+		strcat(linker, cur);
+		
+		kargv[kargc++] = linker;
+	}
+	
+	#if defined(OBGGCC)
+		/* Atomics are not natively supported on SPARC, so we need to rely on -latomic. */
+		require_atomic_library = strcmp(triplet, "sparc-unknown-linux-gnu") == 0;
+	#endif
 	
 	non_prefixed_triplet = malloc(strlen(triplet) + 1);
 	
@@ -1411,6 +1515,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	free(args);
 	free(kargv);
 	free(arg);
+	free(linker);
 	free(sysroot_include_directory);
 	free(sysroot_include_missing_directory);
 	free(sysroot_library_directory);
