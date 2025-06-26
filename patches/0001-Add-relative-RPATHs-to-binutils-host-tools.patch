@@ -1,4 +1,4 @@
-From 07a91cb9f7613f4e1bd0d854f30643a6e647e9cc Mon Sep 17 00:00:00 2001
+From 717804b6da3e762cabcf6a37a12eaf2fa284c5eb Mon Sep 17 00:00:00 2001
 From: Kartatz <105828205+Kartatz@users.noreply.github.com>
 Date: Sat, 21 Jun 2025 12:04:13 -0300
 Subject: [PATCH] Add relative RPATHs to binutils host tools
@@ -11,10 +11,10 @@ This eliminates the need to statically link any libraries and also saves disk sp
  bfd/Makefile.in      | 2 +-
  binutils/Makefile.in | 2 +-
  gas/Makefile.in      | 2 +-
- gold/Makefile.in     | 6 +++---
+ gold/Makefile.in     | 8 ++++----
  gprof/Makefile.in    | 2 +-
  ld/Makefile.in       | 2 +-
- 6 files changed, 8 insertions(+), 8 deletions(-)
+ 6 files changed, 9 insertions(+), 9 deletions(-)
 
 diff --git a/bfd/Makefile.in b/bfd/Makefile.in
 index ee674a36..3358f987 100644
@@ -56,9 +56,18 @@ index 1f24d4a5..47d294e2 100644
  am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
  am__v_CCLD_0 = @echo "  CCLD    " $@;
 diff --git a/gold/Makefile.in b/gold/Makefile.in
-index 02df5383..8f8596cd 100644
+index 02df5383..84abad9f 100644
 --- a/gold/Makefile.in
 +++ b/gold/Makefile.in
+@@ -193,7 +193,7 @@ PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS)
+ am_dwp_OBJECTS = dwp.$(OBJEXT)
+ dwp_OBJECTS = $(am_dwp_OBJECTS)
+ am__DEPENDENCIES_1 =
+-dwp_LINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(dwp_LDFLAGS) \
++dwp_LINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(dwp_LDFLAGS) \
+ 	$(LDFLAGS) -o $@
+ am_incremental_dump_OBJECTS = incremental-dump.$(OBJEXT)
+ incremental_dump_OBJECTS = $(am_incremental_dump_OBJECTS)
 @@ -242,7 +242,7 @@ am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
  am__v_CC_0 = @echo "  CC      " $@;
  am__v_CC_1 = 
