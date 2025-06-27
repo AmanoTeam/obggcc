@@ -57,6 +57,9 @@ declare -r max_jobs='40'
 declare -r sysroot_tarball='/tmp/sysroot.tar.xz'
 declare -r gcc_wrapper='/tmp/gcc-wrapper'
 
+declare gdb='1'
+declare nz='1'
+
 declare -ra plugin_libraries=(
 	'libcc1plugin'
 	'libcp1plugin'
@@ -264,7 +267,6 @@ if ! [ -f "${binutils_tarball}" ]; then
 	
 	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Revert-gold-Use-char16_t-char32_t-instead-of-uint16_.patch"
 	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Disable-annoying-linker-warnings.patch"
-	
 	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Add-relative-RPATHs-to-binutils-host-tools.patch"
 fi
 
@@ -397,17 +399,25 @@ cmake \
 cmake --build "${PWD}"
 cmake --install "${PWD}" --strip
 
-# Always use symlinks unconditionally to ensure compatibility
-# with filesystems that don't support hard links.
+# We prefer symbolic links over hard links.
 if ! (( is_native )); then
 	cp "${workdir}/tools/ln.sh" '/tmp/ln'
 fi
 
 export PATH="/tmp:${PATH}"
 
-# The gold linker incorrectly detects ffsll() as unsupported.
+# The gold linker build incorrectly detects ffsll() as unsupported.
 if [[ "${CROSS_COMPILE_TRIPLET}" == *'-android'* ]]; then
 	export ac_cv_func_ffsll=yes
+fi
+
+# mpfr, mpc, and isl hardcode the install prefix as RPATH during installation.
+if ! (( is_native )); then
+	patchelf \
+		--remove-rpath \
+		"${toolchain_directory}/lib/libmpfr.so" \
+		"${toolchain_directory}/lib/libmpc.so" \
+		"${toolchain_directory}/lib/libisl.so"
 fi
 
 for target in "${targets[@]}"; do
@@ -654,9 +664,9 @@ if ! (( is_native )); then
 	tar \
 		--directory="$(dirname "${gdb_directory}")" \
 		--extract \
-		--file="${gdb_tarball}" 2>/dev/null || true
+		--file="${gdb_tarball}" 2>/dev/null || gdb='0'
 	
-	if [ -d "${gdb_directory}" ]; then
+	if (( gdb )); then
 		cp --recursive "${gdb_directory}/bin" "${toolchain_directory}"
 		rm --recursive "${gdb_directory}"
 	fi
@@ -681,7 +691,7 @@ if ! (( is_native )); then
 	tar \
 		--directory="$(dirname "${nz_directory}")" \
 		--extract \
-		--file="${nz_tarball}" 2>/dev/null || true
+		--file="${nz_tarball}" 2>/dev/null || nz='0'
 fi
 
 declare cc='gcc'
@@ -765,13 +775,17 @@ while read item; do
 		--file="${sysroot_tarball}"
 	
 	cd "${toolchain_directory}/${triplet}${glibc_version}/lib"
-	mkdir 'gcc' 'nouzen'
+	mkdir 'gcc'
 	
-	if [ -d "${nz_directory}" ]; then
-		cp --recursive "${nz_directory}/"* './nouzen'
-		mkdir --parent './nouzen/etc/nouzen/sources.list'
+	if (( nz )); then
+		mkdir 'nouzen'
 		
-		echo -e "repository = ${repository}\nrelease = ${release}\nresource = ${resource}\narchitecture = ${architecture}" > './nouzen/etc/nouzen/sources.list/obggcc.conf'
+		if [ -d "${nz_directory}" ]; then
+			cp --recursive "${nz_directory}/"* './nouzen'
+			mkdir --parent './nouzen/etc/nouzen/sources.list'
+			
+			echo -e "repository = ${repository}\nrelease = ${release}\nresource = ${resource}\narchitecture = ${architecture}" > './nouzen/etc/nouzen/sources.list/obggcc.conf'
+		fi
 	fi
 	
 	for library in "${libraries[@]}"; do
@@ -804,16 +818,20 @@ while read item; do
 	
 	cd '../'
 	
-	mkdir 'bin'
-	cd 'bin'
-	
-	ln --symbolic '../lib/nouzen/bin/'* .
+	if (( nz )); then
+		mkdir 'bin'
+		cd 'bin'
+		
+		ln --symbolic '../lib/nouzen/bin/'* .
+	fi
 	
 	cd "${toolchain_directory}/bin"
 	
-	ln --symbolic "../${triplet}${glibc_version}/bin/nz" "./${triplet}${glibc_version}-nz"
-	ln --symbolic "../${triplet}${glibc_version}/bin/apt" "./${triplet}${glibc_version}-apt"
-	ln --symbolic "../${triplet}${glibc_version}/bin/apt-get" "./${triplet}${glibc_version}-apt-get"
+	if (( nz )); then
+		ln --symbolic "../${triplet}${glibc_version}/bin/nz" "./${triplet}${glibc_version}-nz"
+		ln --symbolic "../${triplet}${glibc_version}/bin/apt" "./${triplet}${glibc_version}-apt"
+		ln --symbolic "../${triplet}${glibc_version}/bin/apt-get" "./${triplet}${glibc_version}-apt-get"
+	fi
 	
 	for name in "${symlink_tools[@]}"; do
 		source="./${triplet}-${name}"
