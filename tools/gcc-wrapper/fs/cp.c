@@ -97,8 +97,8 @@ int copy_file(const char* const source, const char* const destination) {
 		}
 	#else
 		/* Fallback implementation which works for any platform */
-		struct FStream* input = fstream_open(source, FSTREAM_READ);
-		struct FStream* output = NULL;
+		fstream_t* input = fstream_open(source, FSTREAM_READ);
+		fstream_t* output = NULL;
 		
 		ssize_t size = 0;
 		

@@ -65,22 +65,6 @@ declare -ra plugin_libraries=(
 	'libcp1plugin'
 )
 
-declare -ra native_tools=(
-	'c++'
-	'cpp'
-	'g++'
-	'gcc'
-	'gcc-ar'
-	'gcc-nm'
-	'gcc-ranlib'
-	'gcov'
-	'gcov-dump'
-	'gcov-tool'
-	'lto-dump'
-	'gfortran'
-	'gm2'
-)
-
 declare -ra symlink_tools=(
 	'addr2line'
 	'ar'
@@ -501,7 +485,7 @@ for target in "${targets[@]}"; do
 		--with-zstd="${toolchain_directory}" \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v2.6-${revision}" \
+		--with-pkgversion="OBGGCC v2.7-${revision}" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--with-native-system-header-dir='/include' \
 		--with-default-libstdcxx-abi='new' \
@@ -585,11 +569,6 @@ for target in "${targets[@]}"; do
 			rm "${toolchain_directory}/${triplet}/lib/"*.o
 		fi
 	fi
-	
-	for name in "${native_tools[@]}"; do
-		declare file="${toolchain_directory}/bin/${name}"
-		[ -f "${file}" ] && unlink "${file}"
-	done
 	
 	if [ "${CROSS_COMPILE_TRIPLET}" = "${triplet}" ]; then
 		cd "${toolchain_directory}/${triplet}/lib"

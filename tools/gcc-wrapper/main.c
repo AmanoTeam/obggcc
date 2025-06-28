@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <errno.h>
 
 #include <unistd.h>
 
@@ -1637,7 +1638,21 @@ int main(int argc, char* argv[], char* envp[]) {
 	}
 	
 	if (err != ERR_SUCCESS) {
-		fprintf(stderr, "fatal error: %s\n", opt);
+		cur = strerror(errno);
+		
+		fprintf(stderr, "fatal error: %s", opt);
+		
+		switch (err) {
+			case ERR_EXECVE_FAILURE:
+			case ERR_COPY_FILE_FAILURE:
+			case ERR_GET_APP_FILENAME_FAILURE:
+			case ERR_MEM_ALLOC_FAILURE:
+				fprintf(stderr, ": %s", cur);
+				break;
+		}
+		
+		fprintf(stderr, "\n");
+		
 		return EXIT_FAILURE;
 	}
 	
