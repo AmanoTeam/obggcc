@@ -41,7 +41,7 @@ static const char LIBTSAN_SHARED[] = "libtsan.so";
 static const char LIBUBSAN_SHARED[] = "libubsan.so";
 
 static const char GCC_OPT_ISYSTEM[] = "-isystem";
-static const char GCC_OPT_SYSROOT[] = "--sysroot=";
+static const char GCC_OPT_SYSROOT[] = "--sysroot";
 static const char GCC_OPT_NOSTDINC[] = "--no-standard-includes";
 static const char GCC_OPT_LIBDIR[] = "-L";
 static const char GCC_OPT_STATIC_LIBCXX[] = "-static-libstdc++";
@@ -67,7 +67,7 @@ static const char GCC_OPT_DFORTIFY_SOURCE[] = "-D_FORTIFY_SOURCE=";
 static const char GCC_OPT_U_GNUC[] = "-U__GNUC__";
 
 static const char GCC_OPT_D_CLANG[] = "-D__clang__=1";
-static const char GCC_OPT_D_CLANG_MAJOR[] = "-D__clang_major__=20";
+static const char GCC_OPT_D_CLANG_MAJOR[] = "-D__clang_major__=21";
 static const char GCC_OPT_D_CLANG_MINOR[] = "-D__clang_minor__=0";
 static const char GCC_OPT_D_CLANG_PATCHLEVEL[] = "-D__clang_patchlevel__=0";
 
@@ -75,8 +75,12 @@ static const char GCC_OPT_F_STACK_PROTECTOR[] = "-fstack-protector";
 
 static const char CLANG_OPT_OZ[] = "-Oz";
 static const char CLANG_OPT_ICF[] = "--icf=";
-static const char CLANG_OPT_TARGET[] = "--target=";
-static const char CLANG_OPT_QUNUSED_ARGUMENTS[] = "-Qunused-arguments";
+static const char CLANG_OPT_TARGET[] = "--target";
+static const char CLANG_OPT_Q_UNUSED_ARGUMENTS[] = "-Qunused-arguments";
+static const char CLANG_OPT_W_NO_UNUSED_COMMAND_LINE_ARGUMENT[] = "-Wno-unused-command-line-argument";
+static const char CLANG_OPT_W_NO_INVALID_COMMAND_LINE_ARGUMENT[] = "-Wno-invalid-command-line-argument";
+static const char CLANG_OPT_PRINT_RESOURCE_DIR[] = "-print-resource-dir";
+static const char CLANG_OPT_F_NO_LIMIT_DEBUG_INFO[] = "-fno-limit-debug-info";
 
 static const char LD_OPT_DYNAMIC_LINKER[] = "-dynamic-linker";
 static const char LD_OPT_RPATH_LINK[] = "-rpath-link";
@@ -138,6 +142,9 @@ static const char VENDOR_NONE[] = "-none-";
 static const char VENDOR_UNKNOWN[] = "-unknown-";
 
 static const char LD_PREFIX[] = "ld.";
+
+static const char EQUAL = '=';
+static const char EQUAL_S[] = "=";
 
 static const char* const FASTER_LINKERS[] = {
 	"mold",
@@ -289,11 +296,23 @@ static int clang_specific_remove(const char* const prev, const char* const cur) 
 		current += strlen(GCC_OPT_WL);
 	}
 	
-	if (strcmp(current, CLANG_OPT_QUNUSED_ARGUMENTS) == 0) {
+	if (strcmp(current, CLANG_OPT_Q_UNUSED_ARGUMENTS) == 0) {
+		goto end;
+	}
+	
+	if (strcmp(current, CLANG_OPT_W_NO_UNUSED_COMMAND_LINE_ARGUMENT) == 0) {
+		goto end;
+	}
+	
+	if (strcmp(current, CLANG_OPT_W_NO_INVALID_COMMAND_LINE_ARGUMENT) == 0) {
 		goto end;
 	}
 	
 	if (strncmp(current, CLANG_OPT_ICF, strlen(CLANG_OPT_ICF)) == 0) {
+		goto end;
+	}
+	
+	if (strcmp(current, CLANG_OPT_F_NO_LIMIT_DEBUG_INFO) == 0) {
 		goto end;
 	}
 	
@@ -322,7 +341,7 @@ static int clang_specific_replace(
 	if (strncmp(current, GCC_OPT_F_LTO, strlen(GCC_OPT_F_LTO)) == 0) {
 		current += strlen(GCC_OPT_F_LTO);
 		
-		if (*current != '=') {
+		if (*current != EQUAL) {
 			status = 0;
 			goto end;
 		}
@@ -470,7 +489,7 @@ int copy_shared_library(
 	strcat(destination, destination_file);
 	
 	if (!file_exists(destination)) {
-		fprintf(stderr, "warning: copying shared library from '%s' to '%s'\n", source, destination);
+		/* fprintf(stderr, "warning: copying shared library from '%s' to '%s'\n", source, destination); */
 		
 		 if (copy_file(source, destination) != 0) {
 			err = ERR_COPY_FILE_FAILURE;
@@ -587,6 +606,8 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	char* linker = NULL;
 	
+	unsigned char ch = 0;
+	
 	#if defined(OBGGCC)
 		wants_system_libraries = get_env("OBGGCC_SYSTEM_LIBRARIES");
 		wants_builtin_loader = get_env("OBGGCC_BUILTIN_LOADER");
@@ -679,8 +700,32 @@ int main(int argc, char* argv[], char* envp[]) {
 					goto end;
 				}
 			}
-		} else if (strncmp(cur, CLANG_OPT_TARGET, strlen(CLANG_OPT_TARGET)) == 0) {
+		} else if (strncmp(cur, CLANG_OPT_TARGET, strlen(CLANG_OPT_TARGET)) == 0 || strncmp(cur, CLANG_OPT_TARGET + 1, strlen(CLANG_OPT_TARGET + 1)) == 0) {
 			cur += strlen(CLANG_OPT_TARGET);
+			
+			/* Clang has two variants of this flag: one with double hyphens, and one with a single hyphen. */
+			if (strncmp(cur, CLANG_OPT_TARGET + 1, strlen(CLANG_OPT_TARGET + 1)) == 0) {
+				cur -= 1;
+			}
+			
+			ch = *cur;
+			
+			if (!(ch == EQUAL || ch == '\0')) {
+				goto next;
+			}
+			
+			if (ch == EQUAL) {
+				cur++;
+			} else {
+				index++;
+				
+				if (index > (size_t) argc) {
+					continue;
+				}
+				
+				cur = argv[index];
+			}
+			
 			size = strlen(cur);
 			
 			if (size == 0) {
@@ -719,9 +764,35 @@ int main(int argc, char* argv[], char* envp[]) {
 			
 			continue;
 		} else if (strncmp(cur, GCC_OPT_SYSROOT, strlen(GCC_OPT_SYSROOT)) == 0) {
-			/* Don't override our system root; we are already doing that. */
+			/* Don't override the system root, Clang. That's our job. */
+			cur += strlen(GCC_OPT_SYSROOT);
+			ch = *cur;
+			
+			if (!(ch == EQUAL || ch == '\0')) {
+				goto next;
+			}
+			
+			if (ch == '\0') {
+				index++;
+			}
+			
 			continue;
-		} else if (clang_specific_remove(prev, cur)) {
+		} else if (strcmp(cur, CLANG_OPT_PRINT_RESOURCE_DIR) == 0) {
+			/*
+			The ndk-build's Makefile calls Clang with this flag every time a cross-compilation for a specific architecture is about to begin.
+			It's unclear what the intended purpose of this is, because even after looking in the ndk-build's Makefile, it seems that the return
+			value of this command is stored in a variable and then never reused anywhere in the code.
+			
+			+ https://android.googlesource.com/platform/ndk/+/3cb267487b9a7c1b5956f4239ddd15095630041a/build/core/setup-toolchain.mk#107
+			
+			Since that seems to be a completely useless call and has nothing to do with the compilation step, we will just ignore it.
+			*/
+			goto end;
+		}
+		
+		next:;
+		
+		 if (clang_specific_remove(prev, cur)) {
 			if (prev != NULL && strcmp(prev, GCC_OPT_XLINKER) == 0) {
 				prev = NULL;
 				kargv[--kargc] = (char*) prev;
@@ -1182,7 +1253,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	strcat(gpp_builtins_include_directory, PATHSEP_S);
 	strcat(gpp_builtins_include_directory, triplet);
 	
-	arg = malloc(strlen(GCC_OPT_SYSROOT) + strlen(sysroot_directory) + 1);
+	arg = malloc(strlen(GCC_OPT_SYSROOT) + strlen(EQUAL_S) + strlen(sysroot_directory) + 1);
 	
 	if (arg == NULL) {
 		err = ERR_MEM_ALLOC_FAILURE;
@@ -1190,6 +1261,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	}
 	
 	strcpy(arg, GCC_OPT_SYSROOT);
+	strcat(arg, EQUAL_S);
 	strcat(arg, sysroot_directory);
 	
 	nz_sysroot_directory = malloc(strlen(sysroot_directory) + strlen(NZ_SYSROOT) + 1);
