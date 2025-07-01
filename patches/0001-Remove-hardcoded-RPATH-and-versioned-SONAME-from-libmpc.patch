@@ -1,0 +1,34 @@
+From d146df3863b189a0b112202594f58a59d85c828a Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Tue, 1 Jul 2025 03:43:49 -0300
+Subject: [PATCH] Remove hardcoded RPATH and versioned SONAME from libmpc
+
+---
+ src/Makefile.in | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/Makefile.in b/src/Makefile.in
+index afe014d..f72a857 100644
+--- a/src/Makefile.in
++++ b/src/Makefile.in
+@@ -386,7 +386,7 @@ top_build_prefix = @top_build_prefix@
+ top_builddir = @top_builddir@
+ top_srcdir = @top_srcdir@
+ lib_LTLIBRARIES = libmpc.la
+-libmpc_la_LDFLAGS = $(MPC_LDFLAGS) -version-info 6:1:3
++libmpc_la_LDFLAGS = $(MPC_LDFLAGS) -avoid-version
+ libmpc_la_SOURCES = mpc-impl.h abs.c acos.c acosh.c add.c add_fr.c         \
+   add_si.c add_ui.c agm.c arg.c asin.c asinh.c atan.c atanh.c clear.c      \
+   cmp.c cmp_abs.c cmp_si_si.c conj.c cos.c cosh.c                          \
+@@ -473,7 +473,7 @@ clean-libLTLIBRARIES:
+ 	}
+ 
+ libmpc.la: $(libmpc_la_OBJECTS) $(libmpc_la_DEPENDENCIES) $(EXTRA_libmpc_la_DEPENDENCIES) 
+-	$(AM_V_CCLD)$(libmpc_la_LINK) -rpath $(libdir) $(libmpc_la_OBJECTS) $(libmpc_la_LIBADD) $(LIBS)
++	$(AM_V_CCLD)$(libmpc_la_LINK) -L$(libdir) -rpath $(libdir) $(libmpc_la_OBJECTS) $(libmpc_la_LIBADD) $(LIBS)
+ 
+ mostlyclean-compile:
+ 	-rm -f *.$(OBJEXT)
+-- 
+2.49.0
+

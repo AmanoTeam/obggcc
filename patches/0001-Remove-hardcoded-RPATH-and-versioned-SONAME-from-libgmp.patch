@@ -1,0 +1,43 @@
+From 42fa09e7be29b4c9983dee28083bbd0b78aeb956 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Tue, 1 Jul 2025 03:19:07 -0300
+Subject: [PATCH] Remove hardcoded RPATH and versioned SONAME from libgmp
+
+---
+ Makefile.in | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/Makefile.in b/Makefile.in
+index 3653994..8963807 100644
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -771,7 +771,7 @@ libgmp_la_DEPENDENCIES = @TAL_OBJECT@		\
+ 
+ libgmp_la_LIBADD = $(libgmp_la_DEPENDENCIES)
+ libgmp_la_LDFLAGS = $(GMP_LDFLAGS) $(LIBGMP_LDFLAGS) \
+-  -version-info $(LIBGMP_LT_CURRENT):$(LIBGMP_LT_REVISION):$(LIBGMP_LT_AGE)
++  -avoid-version
+ 
+ 
+ # We need at least one .cc file in $(libgmpxx_la_SOURCES) so automake will
+@@ -782,7 +782,7 @@ libgmpxx_la_SOURCES = cxx/dummy.cc
+ libgmpxx_la_DEPENDENCIES = $(CXX_OBJECTS) libgmp.la
+ libgmpxx_la_LIBADD = $(libgmpxx_la_DEPENDENCIES)
+ libgmpxx_la_LDFLAGS = $(GMP_LDFLAGS) $(LIBGMPXX_LDFLAGS) \
+-  -version-info $(LIBGMPXX_LT_CURRENT):$(LIBGMPXX_LT_REVISION):$(LIBGMPXX_LT_AGE)
++  -avoid-version
+ 
+ all: $(BUILT_SOURCES) config.h
+ 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
+@@ -880,7 +880,7 @@ clean-libLTLIBRARIES:
+ 	}
+ 
+ libgmp.la: $(libgmp_la_OBJECTS) $(libgmp_la_DEPENDENCIES) $(EXTRA_libgmp_la_DEPENDENCIES) 
+-	$(AM_V_CCLD)$(libgmp_la_LINK) -rpath $(libdir) $(libgmp_la_OBJECTS) $(libgmp_la_LIBADD) $(LIBS)
++	$(AM_V_CCLD)$(libgmp_la_LINK) -L$(libdir) -rpath $(libdir) $(libgmp_la_OBJECTS) $(libgmp_la_LIBADD) $(LIBS)
+ cxx/$(am__dirstamp):
+ 	@$(MKDIR_P) cxx
+ 	@: > cxx/$(am__dirstamp)
+-- 
+2.49.0
+

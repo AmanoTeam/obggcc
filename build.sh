@@ -180,6 +180,8 @@ if ! [ -f "${gmp_tarball}" ]; then
 		--directory="$(dirname "${gmp_directory}")" \
 		--extract \
 		--file="${gmp_tarball}"
+	
+	patch --directory="${gmp_directory}" --strip='1' --input="${workdir}/patches/0001-Remove-hardcoded-RPATH-and-versioned-SONAME-from-libgmp.patch"
 fi
 
 if ! [ -f "${mpfr_tarball}" ]; then
@@ -197,6 +199,8 @@ if ! [ -f "${mpfr_tarball}" ]; then
 		--directory="$(dirname "${mpfr_directory}")" \
 		--extract \
 		--file="${mpfr_tarball}"
+	
+	patch --directory="${mpfr_directory}" --strip='1' --input="${workdir}/patches/0001-Remove-hardcoded-RPATH-and-versioned-SONAME-from-libmpfr.patch"
 fi
 
 if ! [ -f "${mpc_tarball}" ]; then
@@ -214,6 +218,8 @@ if ! [ -f "${mpc_tarball}" ]; then
 		--directory="$(dirname "${mpc_directory}")" \
 		--extract \
 		--file="${mpc_tarball}"
+	
+	patch --directory="${mpfr_directory}" --strip='1' --input="${workdir}/patches/0001-Remove-hardcoded-RPATH-and-versioned-SONAME-from-libmpc.patch"
 fi
 
 if ! [ -f "${isl_tarball}" ]; then
@@ -231,6 +237,8 @@ if ! [ -f "${isl_tarball}" ]; then
 		--directory="$(dirname "${isl_directory}")" \
 		--extract \
 		--file="${isl_tarball}"
+	
+	patch --directory="${isl_directory}" --strip='1' --input="${workdir}/patches/0001-Remove-hardcoded-RPATH-and-versioned-SONAME-from-libisl.patch"
 fi
 
 if ! [ -f "${binutils_tarball}" ]; then
@@ -378,7 +386,8 @@ cmake \
 	-DBUILD_SHARED_LIBS=ON \
 	-DZSTD_BUILD_PROGRAMS=OFF \
 	-DZSTD_BUILD_TESTS=OFF \
-	-DZSTD_BUILD_STATIC=OFF
+	-DZSTD_BUILD_STATIC=OFF \
+	-DCMAKE_PLATFORM_NO_VERSIONED_SONAME=ON
 
 cmake --build "${PWD}"
 cmake --install "${PWD}" --strip
@@ -393,15 +402,6 @@ export PATH="/tmp:${PATH}"
 # The gold linker build incorrectly detects ffsll() as unsupported.
 if [[ "${CROSS_COMPILE_TRIPLET}" == *'-android'* ]]; then
 	export ac_cv_func_ffsll=yes
-fi
-
-# mpfr, mpc, and isl hardcode the install prefix as RPATH during installation.
-if ! (( is_native )); then
-	patchelf \
-		--remove-rpath \
-		"${toolchain_directory}/lib/libmpfr.so" \
-		"${toolchain_directory}/lib/libmpc.so" \
-		"${toolchain_directory}/lib/libisl.so"
 fi
 
 for target in "${targets[@]}"; do

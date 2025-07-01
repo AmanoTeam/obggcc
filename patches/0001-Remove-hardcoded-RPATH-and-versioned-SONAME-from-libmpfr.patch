@@ -1,0 +1,34 @@
+From 0e1958a3f5b37b2137eb499bda16eb1456f734b7 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Tue, 1 Jul 2025 03:28:10 -0300
+Subject: [PATCH] Remove hardcoded RPATH and versioned SONAME from libmpfr
+
+---
+ src/Makefile.in | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/Makefile.in b/src/Makefile.in
+index 83cf42a..79620fa 100644
+--- a/src/Makefile.in
++++ b/src/Makefile.in
+@@ -620,7 +620,7 @@ libmpfr_la_LIBADD = @LIBOBJS@ $(am__append_2)
+ #        4.0.x    6:x:0
+ #        4.1.x    7:x:1
+ #        4.2.x    8:x:2
+-libmpfr_la_LDFLAGS = $(MPFR_LDFLAGS) $(LIBMPFR_LDFLAGS) -version-info 8:2:2
++libmpfr_la_LDFLAGS = $(MPFR_LDFLAGS) $(LIBMPFR_LDFLAGS) -avoid-version
+ GET_PATCHES_SH = $(top_srcdir)/tools/get_patches.sh
+ PATCHES = $(top_srcdir)/PATCHES
+ 
+@@ -723,7 +723,7 @@ libminigmp.la: $(libminigmp_la_OBJECTS) $(libminigmp_la_DEPENDENCIES) $(EXTRA_li
+ 	$(AM_V_CCLD)$(LINK) $(am_libminigmp_la_rpath) $(libminigmp_la_OBJECTS) $(libminigmp_la_LIBADD) $(LIBS)
+ 
+ libmpfr.la: $(libmpfr_la_OBJECTS) $(libmpfr_la_DEPENDENCIES) $(EXTRA_libmpfr_la_DEPENDENCIES) 
+-	$(AM_V_CCLD)$(libmpfr_la_LINK) -rpath $(libdir) $(libmpfr_la_OBJECTS) $(libmpfr_la_LIBADD) $(LIBS)
++	$(AM_V_CCLD)$(libmpfr_la_LINK) -L$(libdir) -rpath $(libdir) $(libmpfr_la_OBJECTS) $(libmpfr_la_LIBADD) $(LIBS)
+ 
+ mostlyclean-compile:
+ 	-rm -f *.$(OBJEXT)
+-- 
+2.49.0
+
