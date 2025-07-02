@@ -219,7 +219,7 @@ if ! [ -f "${mpc_tarball}" ]; then
 		--extract \
 		--file="${mpc_tarball}"
 	
-	patch --directory="${mpfr_directory}" --strip='1' --input="${workdir}/patches/0001-Remove-hardcoded-RPATH-and-versioned-SONAME-from-libmpc.patch"
+	patch --directory="${mpc_directory}" --strip='1' --input="${workdir}/patches/0001-Remove-hardcoded-RPATH-and-versioned-SONAME-from-libmpc.patch"
 fi
 
 if ! [ -f "${isl_tarball}" ]; then
