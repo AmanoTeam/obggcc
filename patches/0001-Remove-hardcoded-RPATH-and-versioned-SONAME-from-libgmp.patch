@@ -29,15 +29,6 @@ index 3653994..8963807 100644
  
  all: $(BUILT_SOURCES) config.h
  	$(MAKE) $(AM_MAKEFLAGS) all-recursive
-@@ -880,7 +880,7 @@ clean-libLTLIBRARIES:
- 	}
- 
- libgmp.la: $(libgmp_la_OBJECTS) $(libgmp_la_DEPENDENCIES) $(EXTRA_libgmp_la_DEPENDENCIES) 
--	$(AM_V_CCLD)$(libgmp_la_LINK) -rpath $(libdir) $(libgmp_la_OBJECTS) $(libgmp_la_LIBADD) $(LIBS)
-+	$(AM_V_CCLD)$(libgmp_la_LINK) -L$(libdir) -rpath $(libdir) $(libgmp_la_OBJECTS) $(libgmp_la_LIBADD) $(LIBS)
- cxx/$(am__dirstamp):
- 	@$(MKDIR_P) cxx
- 	@: > cxx/$(am__dirstamp)
 -- 
 2.49.0
 

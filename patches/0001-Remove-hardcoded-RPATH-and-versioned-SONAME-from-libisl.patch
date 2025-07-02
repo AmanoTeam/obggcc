@@ -20,15 +20,6 @@ index d652fa5..8503afe 100644
  	@MP_LDFLAGS@
  
  isl_test_LDFLAGS = @MP_LDFLAGS@
-@@ -1757,7 +1757,7 @@ imath_wrap/imrat.lo: imath_wrap/$(am__dirstamp) \
- 	imath_wrap/$(DEPDIR)/$(am__dirstamp)
- 
- libisl.la: $(libisl_la_OBJECTS) $(libisl_la_DEPENDENCIES) $(EXTRA_libisl_la_DEPENDENCIES) 
--	$(AM_V_CCLD)$(libisl_la_LINK) -rpath $(libdir) $(libisl_la_OBJECTS) $(libisl_la_LIBADD) $(LIBS)
-+	$(AM_V_CCLD)$(libisl_la_LINK) -L$(libdir) -rpath $(libdir) $(libisl_la_OBJECTS) $(libisl_la_LIBADD) $(LIBS)
- 
- isl_bound$(EXEEXT): $(isl_bound_OBJECTS) $(isl_bound_DEPENDENCIES) $(EXTRA_isl_bound_DEPENDENCIES) 
- 	@rm -f isl_bound$(EXEEXT)
 -- 
 2.49.0
 

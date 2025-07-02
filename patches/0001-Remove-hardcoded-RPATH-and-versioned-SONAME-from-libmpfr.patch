@@ -20,15 +20,6 @@ index 83cf42a..79620fa 100644
  GET_PATCHES_SH = $(top_srcdir)/tools/get_patches.sh
  PATCHES = $(top_srcdir)/PATCHES
  
-@@ -723,7 +723,7 @@ libminigmp.la: $(libminigmp_la_OBJECTS) $(libminigmp_la_DEPENDENCIES) $(EXTRA_li
- 	$(AM_V_CCLD)$(LINK) $(am_libminigmp_la_rpath) $(libminigmp_la_OBJECTS) $(libminigmp_la_LIBADD) $(LIBS)
- 
- libmpfr.la: $(libmpfr_la_OBJECTS) $(libmpfr_la_DEPENDENCIES) $(EXTRA_libmpfr_la_DEPENDENCIES) 
--	$(AM_V_CCLD)$(libmpfr_la_LINK) -rpath $(libdir) $(libmpfr_la_OBJECTS) $(libmpfr_la_LIBADD) $(LIBS)
-+	$(AM_V_CCLD)$(libmpfr_la_LINK) -L$(libdir) -rpath $(libdir) $(libmpfr_la_OBJECTS) $(libmpfr_la_LIBADD) $(LIBS)
- 
- mostlyclean-compile:
- 	-rm -f *.$(OBJEXT)
 -- 
 2.49.0
 

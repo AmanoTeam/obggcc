@@ -304,6 +304,18 @@ if ! [ -f "${gcc_tarball}" ]; then
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Add-relative-RPATHs-to-GCC-host-tools.patch"
 fi
 
+# Follow Debian's approach for removing hardcoded RPATH from binaries
+# https://wiki.debian.org/RpathIssue
+sed \
+	--in-place \
+	--regexp-extended \
+	's/(hardcode_into_libs)=.*$/\1=no/' \
+	"${isl_directory}/configure" \
+	"${mpc_directory}/configure" \
+	"${mpfr_directory}/configure" \
+	"${gmp_directory}/configure" \
+	"${gcc_directory}/libsanitizer/configure"
+
 [ -d "${gmp_directory}/build" ] || mkdir "${gmp_directory}/build"
 
 cd "${gmp_directory}/build"
