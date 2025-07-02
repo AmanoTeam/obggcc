@@ -15,6 +15,10 @@
 #include "fs/exists.h"
 #include "fs/basename.h"
 
+#if !(defined(OBGGCC) || defined(PINO))
+	#error "Please define the cross-compiler flavor for which we will be a wrapper"
+#endif
+
 static const char GCC_MAJOR_VERSION[] = "15";
 
 static const char INCLUDE_DIR[] = PATHSEP_M "include";
@@ -104,7 +108,15 @@ static const char DEFAULT_TARGET[] =
 #elif defined(PINO)
 	"x86_64-unknown-linux-android21";
 #else
-	#error "I don't know how to handle that"
+	#error "I don't know how to handle this"
+#endif
+
+#if defined(OBGGCC)
+	#define WRAPPER_FLAVOR_NAME "OBGGCC"
+#elif defined(PINO)
+	#define WRAPPER_FLAVOR_NAME "PINO"
+#else
+	#error "I don't know how to handle this"
 #endif
 
 static const char HYPHEN[] = "-";
@@ -357,14 +369,17 @@ static int clang_specific_replace(
 		kargv[index++] = (char*) GCC_OPT_F_LTO;
 		
 		if (strcmp(current, "auto") == 0 || strcmp(current, "full") == 0) {
+			/* Replace -flto={full,auto} with -flto -ffat-lto-objects. */
 			kargv[index++] = (char*) GCC_OPT_F_FAT_LTO_OBJECTS;
 		} else {
+			/* Replace -flto=thin with -flto -fno-fat-lto-objects. */
 			kargv[index++] = (char*) GCC_OPT_F_NO_FAT_LTO_OBJECTS;
 		}
 		
 		status = 1;
 		goto end;
 	} else if (strcmp(current, CLANG_OPT_OZ) == 0) {
+		/* Replace -Oz with -Os. */
 		kargv[index++] = (char*) GCC_OPT_OS;
 		
 		status = 1;
@@ -610,11 +625,13 @@ int main(int argc, char* argv[], char* envp[]) {
 	unsigned char ch = 0;
 	
 	#if defined(OBGGCC)
-		wants_system_libraries = get_env("OBGGCC_SYSTEM_LIBRARIES");
-		wants_builtin_loader = get_env("OBGGCC_BUILTIN_LOADER");
-		wants_runtime_rpath = get_env("OBGGCC_RUNTIME_RPATH");
-		wants_nz = get_env("OBGGCC_NZ");
+		wants_system_libraries = get_env(WRAPPER_FLAVOR_NAME "_SYSTEM_LIBRARIES");
+		wants_builtin_loader = get_env(WRAPPER_FLAVOR_NAME "_BUILTIN_LOADER");
+		wants_nz = get_env(WRAPPER_FLAVOR_NAME "_NZ");
 	#endif
+	
+	wants_runtime_rpath = get_env(WRAPPER_FLAVOR_NAME "_RUNTIME_RPATH");
+	verbose = get_env(WRAPPER_FLAVOR_NAME "_VERBOSE");
 	
 	kargv = malloc(
 		sizeof(*argv) * (
@@ -949,7 +966,7 @@ int main(int argc, char* argv[], char* envp[]) {
 				break;
 			}
 		#else
-			#error "I don't know how to handle that"
+			#error "I don't know how to handle this"
 		#endif
 		
 		ptr++;
@@ -1484,6 +1501,18 @@ int main(int argc, char* argv[], char* envp[]) {
 	}
 	
 	#if defined(PINO)
+		/*
+		In the context of CMake and ndk-build in Android, the NDK provides only a single static library for most components.
+		Anything other than the Bionic and OpenGL libraries (i.e., Clang runtime libraries) is statically linked by default, with no option
+		to use the shared variant. The only time you're allowed to choose between static and shared is when linking with the libc++ library.
+		In that case, the Android Gradle plugin is the one in charge of copying the libc++ library to the APK when you choose the shared library
+		over the static one.
+		
+		In the context of Pino, we provide shared versions of all libraries, and we prefer to link to them over using the static variants when possible.
+		Since the Gradle plugin is unaware of our preferences, we cannot rely on it to copy the libraries to the APK, so we do it ourselves.
+		
+		FIXME: Figure out a way to detect when we are not being invoked by Gradle and avoid copying the libraries when we are not building APKs.
+		*/
 		if (known_clang(cc) && output_directory != NULL) {
 			/* libatomic */
 			err = copy_shared_library(sysroot_library_directory, output_directory, LIBATOMIC_SHARED, LIBATOMIC_SHARED);
