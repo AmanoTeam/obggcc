@@ -28,13 +28,12 @@
 	#include <limits.h>
 #endif
 
-#if defined(_WIN32) || defined(__OpenBSD__)
-	#include "path.h"
-#endif
-
 #if defined(__OpenBSD__)
 	#include "fs/sep.h"
 	#include "fs/exists.h"
+	#include "fs/absoluteness.h"
+	#include "fs/realpath.h"
+	#include "os/find_exe.h"
 #endif
 
 #include "fs/getexec.h"
@@ -143,26 +142,11 @@ char* get_app_filename(void) {
 			KERN_PROC_ARGV
 		};
 		
-		const char* path = NULL;
 		const char* name = NULL;
-		const char* start = NULL;
 		
 		char** argv = NULL;
-		char* cwd = NULL;
-		char* tmp = NULL;
 		
-		int status = 0;
-		size_t index = 0;
 		size_t size = 0;
-		
-		app_filename = malloc(PATH_MAX);
-		
-		if (app_filename == NULL) {
-			err = -1;
-			goto end;
-		}
-		
-		app_filename[0] = '\0';
 		
 		if (sysctl(call, sizeof(call) / sizeof(*call), NULL, &size, NULL, 0) == -1) {
 			err = -1;
@@ -183,102 +167,12 @@ char* get_app_filename(void) {
 		
 		name = argv[0];
 		
-		if (isabsolute(name)) {
-			realpath(name, app_filename);
+		if (isabsolute(name) || strchr(name, PATHSEP) != NULL) {
+			app_filename = expand_filename(name);
 			goto end;
 		}
 		
-		/*
-		Not an absolute path, check if it's relative to the current
-		working directory.
-		*/
-		for (index = 1; index < strlen(name); index++) {
-			const char unsigned ch = name[index];
-			
-			status = (ch == PATHSEP);
-			
-			if (status) {
-				break;
-			}
-		}
-		
-		if (status) {
-			cwd = malloc(PATH_MAX);
-			
-			if (cwd == NULL) {
-				err = -1;
-				goto end;
-			}
-			
-			if (getcwd(cwd, PATH_MAX) == NULL) {
-				err = -1;
-				goto end;
-			}
-			
-			tmp = malloc(strlen(cwd) + strlen(PATHSEP_S) + strlen(name) + 1);
-			
-			if (tmp == NULL) {
-				err = -1;
-				goto end;
-			}
-			
-			strcpy(tmp, cwd);
-			strcat(tmp, PATHSEP_S);
-			strcat(tmp, name);
-			
-			realpath(tmp, app_filename);
-			
-			goto end;
-		}
-		
-		path = getenv("PATH");
-		
-		if (path == NULL) {
-			err = -1;
-			goto end;
-		}
-		
-		start = path;
-		
-		for (index = 0; index < strlen(path) + 1; index++) {
-			const char* const pos = &path[index];
-			const unsigned char ch = *pos;
-			
-			if (!(ch == ':' || ch == '\0')) {
-				continue;
-			}
-			
-			size = (size_t) (pos - start);
-			
-			tmp = malloc(size + strlen(PATHSEP_S) + strlen(name) + 1);
-			
-			if (tmp == NULL) {
-				goto end;
-			}
-			
-			memcpy(tmp, start, size);
-			tmp[size] = '\0';
-			
-			strcat(tmp, PATHSEP_S);
-			strcat(tmp, name);
-			
-			status = file_exists(tmp);
-			
-			if (status) {
-				realpath(tmp, app_filename);
-				goto end;
-			}
-			
-			if (status == -1) {
-				err = -1;
-				goto end;
-			}
-			
-			free(tmp);
-			tmp = NULL;
-			
-			start = (pos + 1);
-		}
+		app_filename = find_exe(name);
 	#elif defined(__APPLE__)
 		uint32_t paths = PATH_MAX;
 		char* path = malloc((size_t) paths);
@@ -344,8 +238,6 @@ char* get_app_filename(void) {
 	
 	#if defined(__OpenBSD__)
 		free(argv);
-		free(cwd);
-		free(tmp);
 	#endif
 	
 	#if defined(__APPLE__)

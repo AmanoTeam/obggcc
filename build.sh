@@ -393,9 +393,7 @@ cmake --build "${PWD}"
 cmake --install "${PWD}" --strip
 
 # We prefer symbolic links over hard links.
-if ! (( is_native )); then
-	cp "${workdir}/tools/ln.sh" '/tmp/ln'
-fi
+cp "${workdir}/tools/ln.sh" '/tmp/ln'
 
 export PATH="/tmp:${PATH}"
 
@@ -403,6 +401,23 @@ export PATH="/tmp:${PATH}"
 if [[ "${CROSS_COMPILE_TRIPLET}" == *'-android'* ]]; then
 	export ac_cv_func_ffsll=yes
 fi
+
+declare cc='gcc'
+declare readelf='readelf'
+
+if ! (( is_native )); then
+	cc="${CC}"
+	readelf="${READELF}"
+fi
+
+"${cc}" \
+	"${workdir}/tools/gcc-wrapper/"*'/'*'.c' \
+	"${workdir}/tools/gcc-wrapper/"*".c" \
+	-I "${workdir}/tools/gcc-wrapper" \
+	${ccflags} \
+	${linkflags} \
+	-D OBGGCC \
+	-o "${gcc_wrapper}"
 
 for target in "${targets[@]}"; do
 	declare specs='-Xlinker --disable-new-dtags'
@@ -673,14 +688,6 @@ if ! (( is_native )); then
 		--file="${nz_tarball}" 2>/dev/null || nz='0'
 fi
 
-declare cc='gcc'
-declare readelf='readelf'
-
-if ! (( is_native )); then
-	cc="${CC}"
-	readelf="${READELF}"
-fi
-
 # Bundle both libstdc++ and libgcc within host tools
 if ! (( is_native )); then
 	[ -d "${toolchain_directory}/lib" ] || mkdir "${toolchain_directory}/lib"
@@ -695,15 +702,6 @@ if ! (( is_native )); then
 	
 	cp "${name}" "${toolchain_directory}/lib/${soname}"
 fi
-
-"${cc}" \
-	"${workdir}/tools/gcc-wrapper/fs/"*".c" \
-	"${workdir}/tools/gcc-wrapper/"*".c" \
-	-I "${workdir}/tools/gcc-wrapper" \
-	${ccflags} \
-	${linkflags} \
-	-D OBGGCC \
-	-o "${gcc_wrapper}"
 
 while read item; do
 	declare glibc_version="$(jq '.glibc_version' <<< "${item}")"
