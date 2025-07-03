@@ -620,7 +620,14 @@ for target in "${targets[@]}"; do
 	fi
 done
 
+# Delete libtool files and other unnecessary files GCC installs
 rm --force --recursive "${toolchain_directory}/share"
+
+find \
+	"${toolchain_directory}" \
+	-name '*.la' -delete -o \
+	-name '*.py' -delete -o \
+	-name '*.json' -delete
 
 while read triplet; do
 	if ! [ -d "${toolchain_directory}/${triplet}" ]; then
