@@ -99,6 +99,13 @@ jobs:
     - uses: actions/checkout@main
       with:
         submodules: true
+    - name: Free up some space
+      run: |
+        curl 'https://raw.githubusercontent.com/AmanoTeam/gha-free-space/refs/heads/master/main.sh' -sSf | bash 
+    - name: Install required dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install build-essential || true
     - name: Restore from cache
       uses: actions/cache@main
       with:
