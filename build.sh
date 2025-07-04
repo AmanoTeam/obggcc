@@ -316,6 +316,15 @@ sed \
 	"${gmp_directory}/configure" \
 	"${gcc_directory}/libsanitizer/configure"
 
+# Fix Autotools mistakenly detecting shared libraries as not supported on OpenBSD
+while read file; do
+	sed \
+		--in-place \
+		--regexp-extended \
+		's|test -f /usr/libexec/ld.so|true|g' \
+		"${file}"
+done <<< "$(find '/tmp' -type 'f' -name 'configure')"
+
 [ -d "${gmp_directory}/build" ] || mkdir "${gmp_directory}/build"
 
 cd "${gmp_directory}/build"
@@ -433,6 +442,11 @@ fi
 
 for target in "${targets[@]}"; do
 	declare specs='-Xlinker --disable-new-dtags'
+	declare extra_host_gxx_flags=''
+	
+	if [[ "${CROSS_COMPILE_TRIPLET}" == *'-openbsd'* ]]; then
+		extra_host_gxx_flags+='-include stdint.h'
+	fi
 	
 	source "${workdir}/${target}.sh"
 	
@@ -556,7 +570,7 @@ for target in "${targets[@]}"; do
 		--without-static-standard-libraries \
 		${extra_configure_flags} \
 		CFLAGS="${ccflags} ${hccflags}" \
-		CXXFLAGS="${ccflags} ${hccflags}" \
+		CXXFLAGS="${ccflags} ${hccflags} ${extra_host_gxx_flags}" \
 		LDFLAGS="${linkflags} ${hlinkflags}"
 	
 	cflags_for_target="${ccflags} ${linkflags}"
@@ -716,10 +730,13 @@ if ! (( is_native )); then
 	
 	cp "${name}" "${toolchain_directory}/lib/${soname}"
 	
-	declare name=$(realpath $("${cc}" --print-file-name='libgcc_s.so.1'))
-	declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
-	
-	cp "${name}" "${toolchain_directory}/lib/${soname}"
+	# OpenBSD does not have a libgcc_s library
+	if [[ "${CROSS_COMPILE_TRIPLET}" != *'-openbsd'* ]]; then
+		declare name=$(realpath $("${cc}" --print-file-name='libgcc_s.so.1'))
+		declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
+		
+		cp "${name}" "${toolchain_directory}/lib/${soname}"
+	fi
 fi
 
 while read item; do
