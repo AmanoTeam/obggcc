@@ -99,7 +99,7 @@ char* find_exe(const char* const name) {
 		strcat(executable, name);
 		strcat(executable, executable_extension);
 		
-		if (file_exists(executable)) {
+		if (file_exists(executable) == 1) {
 			goto end;
 		}
 		

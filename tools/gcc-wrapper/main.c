@@ -437,7 +437,7 @@ static const char* get_fast_linker(
 		strcat(executable, LD_PREFIX);
 		strcat(executable, linker);
 		
-		if (file_exists(executable)) {
+		if (file_exists(executable) == 1) {
 			goto end;
 		}
 		
@@ -445,7 +445,7 @@ static const char* get_fast_linker(
 		strcpy(end, LD_PREFIX);
 		strcat(end, linker);
 		
-		if (file_exists(executable)) {
+		if (file_exists(executable) == 1) {
 			goto end;
 		}
 		
@@ -504,7 +504,7 @@ int copy_shared_library(
 	
 	strcat(destination, destination_file);
 	
-	if (!file_exists(destination)) {
+	if (file_exists(destination) != 1) {
 		/* fprintf(stderr, "warning: copying shared library from '%s' to '%s'\n", source, destination); */
 		
 		 if (copy_file(source, destination) != 0) {
@@ -627,9 +627,9 @@ int main(int argc, char* argv[], char* envp[]) {
 	#if defined(OBGGCC)
 		wants_system_libraries = get_env(WRAPPER_FLAVOR_NAME "_SYSTEM_LIBRARIES");
 		wants_builtin_loader = get_env(WRAPPER_FLAVOR_NAME "_BUILTIN_LOADER");
-		wants_nz = get_env(WRAPPER_FLAVOR_NAME "_NZ");
 	#endif
 	
+	wants_nz = get_env(WRAPPER_FLAVOR_NAME "_NZ");
 	wants_runtime_rpath = get_env(WRAPPER_FLAVOR_NAME "_RUNTIME_RPATH");
 	verbose = get_env(WRAPPER_FLAVOR_NAME "_VERBOSE");
 	
