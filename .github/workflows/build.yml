@@ -86,6 +86,9 @@ jobs:
           'aarch64-unknown-openbsd',
           'arm-unknown-openbsd',
           
+          # DragonFly BSD
+          'x86_64-unknown-dragonfly',
+          
           # Android
           'x86_64-unknown-linux-android',
           'i686-unknown-linux-android',
@@ -172,6 +175,18 @@ jobs:
             export PATH="${ATAR_HOME}/bin:${PATH}"
             
             source "${ATAR_HOME}/usr/local/share/atar/autotools/${{ matrix.target }}.sh"
+        elif [[ '${{ matrix.target }}' == *'-dragonfly' ]]; then
+            declare -r VENTI_TAG="$(jq --raw-output '.tag_name' <<< "$(curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://api.github.com/repos/AmanoTeam/Venti/releases/latest')")"
+            declare -r VENTI_TARBALL='/tmp/toolchain.tar.xz'
+            declare -r VENTI_URL="https://github.com/AmanoTeam/Venti/releases/download/${VENTI_TAG}/x86_64-unknown-linux-gnu.tar.xz"
+            
+            curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --location --url "${VENTI_URL}" --output "${VENTI_TARBALL}"
+            tar --directory="$(dirname "${VENTI_TARBALL}")" --extract --file="${VENTI_TARBALL}"
+            
+            export VENTI_HOME='/tmp/venti'
+            export PATH="${VENTI_HOME}/bin:${PATH}"
+            
+            source "${VENTI_HOME}/usr/local/share/venti/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' == *'-android'* ]]; then
             declare -r PINO_TAG="$(jq --raw-output '.tag_name' <<< "$(curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://api.github.com/repos/AmanoTeam/Pino/releases/latest')")"
             declare -r PINO_TARBALL='/tmp/toolchain.tar.xz'
