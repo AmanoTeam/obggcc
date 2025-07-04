@@ -302,6 +302,10 @@ if ! [ -f "${gcc_tarball}" ]; then
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Turn-Wint-conversion-back-into-an-warning.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Fix-libgcc-build-on-arm.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Add-relative-RPATHs-to-GCC-host-tools.patch"
+	
+	if [[ "${CROSS_COMPILE_TRIPLET}" == *'-openbsd'* ]]; then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Fix-missing-stdint.h-include-when-compiling-host-tools-on-OpenBSD.patch"
+	fi
 fi
 
 # Follow Debian's approach for removing hardcoded RPATH from binaries
@@ -442,11 +446,6 @@ fi
 
 for target in "${targets[@]}"; do
 	declare specs='-Xlinker --disable-new-dtags'
-	declare extra_host_gxx_flags=''
-	
-	if [[ "${CROSS_COMPILE_TRIPLET}" == *'-openbsd'* ]]; then
-		extra_host_gxx_flags+='-include stdint.h'
-	fi
 	
 	source "${workdir}/${target}.sh"
 	
@@ -570,7 +569,7 @@ for target in "${targets[@]}"; do
 		--without-static-standard-libraries \
 		${extra_configure_flags} \
 		CFLAGS="${ccflags} ${hccflags}" \
-		CXXFLAGS="${ccflags} ${hccflags} ${extra_host_gxx_flags}" \
+		CXXFLAGS="${ccflags} ${hccflags}" \
 		LDFLAGS="${linkflags} ${hlinkflags}"
 	
 	cflags_for_target="${ccflags} ${linkflags}"

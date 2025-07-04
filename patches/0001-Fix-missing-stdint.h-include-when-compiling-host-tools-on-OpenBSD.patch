@@ -1,0 +1,26 @@
+From 85080eefbdbd314ca2117e28f8d46b68c8861875 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Fri, 4 Jul 2025 16:20:05 -0300
+Subject: [PATCH] Fix missing stdint.h include when compiling host tools on
+ OpenBSD
+
+---
+ gcc/Makefile.in | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/gcc/Makefile.in b/gcc/Makefile.in
+index 55b4cd7db..4a11827cc 100644
+--- a/gcc/Makefile.in
++++ b/gcc/Makefile.in
+@@ -3244,7 +3244,7 @@ GENGTYPE_OBJS = gengtype.o gengtype-parse.o gengtype-state.o \
+   gengtype-lex.o errors.o
+ 
+ gengtype-lex.o build/gengtype-lex.o : gengtype-lex.cc gengtype.h $(SYSTEM_H)
+-CFLAGS-gengtype-lex.o += -DHOST_GENERATOR_FILE
++CFLAGS-gengtype-lex.o += -DHOST_GENERATOR_FILE -include stdint.h
+ build/gengtype-lex.o: $(BCONFIG_H)
+ 
+ gengtype-parse.o build/gengtype-parse.o : gengtype-parse.cc gengtype.h \
+-- 
+2.49.0
+
