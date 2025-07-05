@@ -508,6 +508,35 @@ obggcc/bin/x86_64-unknown-linux-gnu-gdb
 
 Note that we don't provide prebuilt binaries of the gdb-server. If you want to use GDB for cross-debugging, you should build it yourself.
 
+## Bugs
+
+### Native mode vs cross-compilation mode in Autotools
+
+Autotools behaves differently depending on whether you are compiling code in native mode or cross-compilation mode. Native mode is assumed by default when the value of the `--build` argument matches that of the `--host` argument. Conversely, if the values of `--build` and `--host` do not match, Autotools assumes cross-compilation mode.
+
+The value of `--build`, when not manually specified, is automatically guessed by Autotools based on the system you are currently running. So, when running Autotools on an x86_64 GNU/Linux system, the `--build` argument will automatically assume the value `x86_64-unknown-linux-gnu`. Note that OBGGCC uses that same target name for the x86_64 GNU/Linux cross-compiler. Therefore, in a scenario where you are compiling code from an x86_64 GNU/Linux system to an x86_64 GNU/Linux system, both values of `--build` and `--host` will match, causing Autotools to assume native mode.
+
+Running Autotools in native mode despite being in a cross-compilation context is undesirable. Autotools automatically enables or disables certain features depending on the compilation mode, and one such feature enabled in native mode is [runtime checks](https://gnu.org/software/autoconf/manual/html_node/Runtime.html), which compile and run small test programs on the machine to determine the presence or absence of specific features that the software expects to rely on.
+
+Performing runtime checks in a cross-compilation context can cause Autotools to produce incorrect results when detecting system features. This happens because the system information gathered during the runtime checks reflects the build machine, not the target system, which may have different capabilities. This may cause the build to fail or generate broken binaries.
+
+Unfortunately, Autotools offers no way to disable this behavior, but you can manually patch the `configure` script to force it to always assume cross-compilation mode:
+
+```bash
+sed -ri 's/(cross_compiling)=.*$/\1=yes/' ./configure
+```
+
+If you are building software that has many components organized into subdirectories, you may need to apply the patch recursively:
+
+```bash
+while read file; do
+	sed -ri 's/(cross_compiling)=.*$/\1=yes/' "${file}"
+done <<< "$(find '.' -type 'f' -name 'configure')"
+```
+
+> [!NOTE]  
+> If you have already run the `./configure` script before applying the patch, make sure to run `make distclean` before re-running it, so that the changes take effect.
+
 ## Behavior changes
 
 Usually, we attempt to keep the default GCC behavior unchanged. Sometimes we patch GCC here and there to make it work with older glibc versions or fix breakages after a toolchain/dependency update, but most of these changes don't affect the default behavior of GCC in any way. However, currently, there are some specific changes in place that modify the default behavior in some scenarios.
