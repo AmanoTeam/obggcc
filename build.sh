@@ -123,22 +123,22 @@ declare -ra bits=(
 declare -r languages='c,c++'
 
 declare -ra targets=(
-	'ia64-unknown-linux-gnu'
-	'mips-unknown-linux-gnu'
-	'mips64el-unknown-linux-gnuabi64'
-	'mipsel-unknown-linux-gnu'
-	'powerpc-unknown-linux-gnu'
-	'powerpc64le-unknown-linux-gnu'
-	's390-unknown-linux-gnu'
-	's390x-unknown-linux-gnu'
-	'sparc-unknown-linux-gnu'
+	# 'ia64-unknown-linux-gnu'
+	# 'mips-unknown-linux-gnu'
+	# 'mips64el-unknown-linux-gnuabi64'
+	# 'mipsel-unknown-linux-gnu'
+	# 'powerpc-unknown-linux-gnu'
+	# 'powerpc64le-unknown-linux-gnu'
+	# 's390-unknown-linux-gnu'
+	# 's390x-unknown-linux-gnu'
+	# 'sparc-unknown-linux-gnu'
 	'x86_64-unknown-linux-gnu'
-	'alpha-unknown-linux-gnu'
-	'aarch64-unknown-linux-gnu'
-	'arm-unknown-linux-gnueabi'
-	'arm-unknown-linux-gnueabihf'
-	'hppa-unknown-linux-gnu'
-	'i386-unknown-linux-gnu'
+	# 'alpha-unknown-linux-gnu'
+	# 'aarch64-unknown-linux-gnu'
+	# 'arm-unknown-linux-gnueabi'
+	# 'arm-unknown-linux-gnueabihf'
+	# 'hppa-unknown-linux-gnu'
+	# 'i386-unknown-linux-gnu'
 )
 
 declare build_type="${1}"
@@ -329,6 +329,13 @@ while read file; do
 		"${file}"
 done <<< "$(find '/tmp' -type 'f' -name 'configure')"
 
+# Force GCC and binutils to prefix host tools with the target triplet even in native builds
+sed \
+	--in-place \
+	's/test "$host_noncanonical" = "$target_noncanonical"/false/' \
+	"${gcc_directory}/configure" \
+	"${binutils_directory}/configure"
+
 [ -d "${gmp_directory}/build" ] || mkdir "${gmp_directory}/build"
 
 cd "${gmp_directory}/build"
@@ -493,7 +500,6 @@ for target in "${targets[@]}"; do
 		--enable-lto \
 		--enable-plugins \
 		--disable-gprofng \
-		--program-prefix="${triplet}-" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--without-static-standard-libraries \
 		--with-zstd="${toolchain_directory}" \
@@ -590,6 +596,8 @@ for target in "${targets[@]}"; do
 		all \
 		--jobs="${max_jobs}"
 	make install
+	
+	rm "${toolchain_directory}/bin/${triplet}-${triplet}-"* || true
 	
 	if [[ "${triplet}" = 'sparc-'* ]] || [[ "${triplet}" = 's390-'* ]] || [[ "${triplet}" = 'powerpc-'* ]] || [[ "${triplet}" = 'hppa-'* ]] || [[ "${triplet}" = 'alpha-'* ]]; then
 		patch \
