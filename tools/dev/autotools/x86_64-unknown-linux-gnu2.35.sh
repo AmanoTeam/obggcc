@@ -27,6 +27,7 @@ RANLIB="${OBGGCC_HOME}/bin/${CROSS_COMPILE_TRIPLET}-ranlib"
 STRIP="${OBGGCC_HOME}/bin/${CROSS_COMPILE_TRIPLET}-strip"
 OBJCOPY="${OBGGCC_HOME}/bin/${CROSS_COMPILE_TRIPLET}-objcopy"
 READELF="${OBGGCC_HOME}/bin/${CROSS_COMPILE_TRIPLET}-readelf"
+PKG_CONFIG="${OBGGCC_HOME}/bin/${CROSS_COMPILE_TRIPLET}-pkg-config"
 
 export \
 	CROSS_COMPILE_TRIPLET \
@@ -43,7 +44,8 @@ export \
 	RANLIB \
 	STRIP \
 	OBJCOPY \
-	READELF
+	READELF \
+	PKG_CONFIG
 
 [[ "${kopt}" = *e*  ]] || set +e
 [[ "${kopt}" = *u*  ]] || set +u

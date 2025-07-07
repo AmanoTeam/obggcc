@@ -597,6 +597,8 @@ for target in "${targets[@]}"; do
 		--jobs="${max_jobs}"
 	make install
 	
+	cp "${workdir}/tools/pkg-config.sh" "${toolchain_directory}/bin/${triplet}-pkg-config"
+	
 	rm "${toolchain_directory}/bin/${triplet}-${triplet}-"* || true
 	
 	if [[ "${triplet}" = 'sparc-'* ]] || [[ "${triplet}" = 's390-'* ]] || [[ "${triplet}" = 'powerpc-'* ]] || [[ "${triplet}" = 'hppa-'* ]] || [[ "${triplet}" = 'alpha-'* ]]; then
