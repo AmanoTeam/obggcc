@@ -126,6 +126,8 @@ $ ./configure --host="${CROSS_COMPILE_TRIPLET}"
 $ make
 ```
 
+See [Autotools bugs](#native-mode-vs-cross-compilation-mode-in-autotools) for a list of bugs related to Autotools and their workarounds.
+
 ## Portability with C++ programs
 
 Unlike C programs, you cannot easily distribute C++ binaries in a portable way without also shipping the libstdc++ library (and sometimes, libgcc too) along with your release binary. Usually, shipping the libstdc++ library with your release binary doesn't offer much benefit in terms of libc version portability, as your program would still depend on the same libc version that libstdc++ was linked against (in this case, the one installed on your system).
