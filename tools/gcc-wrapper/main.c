@@ -14,6 +14,7 @@
 #include "fs/cp.h"
 #include "fs/exists.h"
 #include "fs/basename.h"
+#include "biggestint.h"
 
 #if !(defined(OBGGCC) || defined(PINO))
 	#error "Please define the cross-compiler flavor for which we will be a wrapper"
@@ -33,8 +34,15 @@ static const char GOMP_LIBRARY[] = "gomp";
 static const char ITM_LIBRARY[] = "itm";
 
 static const char LIBATOMIC_SHARED[] = "libatomic.so";
-static const char LIBSTDCXX_SHARED[] = "libstdcxx.so";
-static const char LIBGCC_SHARED[] = "libgnuc.so";
+
+#if defined(PINO)
+	static const char LIBSTDCXX_SHARED[] = "libestdc++.so";
+	static const char LIBGCC_SHARED[] = "libegcc.so";
+#else
+	static const char LIBSTDCXX_SHARED[] = "libstdc++.so";
+	static const char LIBGCC_SHARED[] = "libgcc_s.so";
+#endif
+
 static const char LIBGOMP_SHARED[] = "libgomp.so";
 static const char LIBITM_SHARED[] = "libitm.so";
 static const char LIBSSP_SHARED[] = "libssp.so";
@@ -351,6 +359,8 @@ static int clang_specific_replace(
 	size_t index = *kargc;
 	const char* current = cur;
 	
+	const biguint_t gcc_version = strtobui(GCC_MAJOR_VERSION, NULL, 10);
+	
 	if (strncmp(current, GCC_OPT_F_LTO, strlen(GCC_OPT_F_LTO)) == 0) {
 		current += strlen(GCC_OPT_F_LTO);
 		
@@ -378,7 +388,7 @@ static int clang_specific_replace(
 		
 		status = 1;
 		goto end;
-	} else if (strcmp(current, CLANG_OPT_OZ) == 0) {
+	} else if (strcmp(current, CLANG_OPT_OZ) == 0 && gcc_version < 12) {
 		/* Replace -Oz with -Os. */
 		kargv[index++] = (char*) GCC_OPT_OS;
 		
