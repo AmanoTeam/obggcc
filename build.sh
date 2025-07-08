@@ -224,7 +224,7 @@ fi
 
 if ! [ -f "${isl_tarball}" ]; then
 	curl \
-		--url 'https://libisl.sourceforge.io/isl-0.27.tar.xz' \
+		--url 'https://sourceforge.net/projects/libisl/files/isl-0.27.tar.xz' \
 		--retry '30' \
 		--retry-all-errors \
 		--retry-delay '0' \
@@ -531,7 +531,7 @@ for target in "${targets[@]}"; do
 		--with-zstd="${toolchain_directory}" \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v2.7-${revision}" \
+		--with-pkgversion="OBGGCC v2.8-${revision}" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--with-native-system-header-dir='/include' \
 		--with-default-libstdcxx-abi='new' \
@@ -735,14 +735,28 @@ fi
 if ! (( is_native )); then
 	[ -d "${toolchain_directory}/lib" ] || mkdir "${toolchain_directory}/lib"
 	
+	# libstdc++
 	declare name=$(realpath $("${cc}" --print-file-name='libstdc++.so'))
+	
+	# libestdc++
+	if ! [ -f "${name}" ]; then
+		declare name=$(realpath $("${cc}" --print-file-name='libestdc++.so'))
+	fi
+	
 	declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
 	
 	cp "${name}" "${toolchain_directory}/lib/${soname}"
 	
-	# OpenBSD does not have a libgcc_s library
+	# OpenBSD does not have a libgcc library
 	if [[ "${CROSS_COMPILE_TRIPLET}" != *'-openbsd'* ]]; then
+		# libgcc_s
 		declare name=$(realpath $("${cc}" --print-file-name='libgcc_s.so.1'))
+		
+		# libegcc
+		if ! [ -f "${name}" ]; then
+			declare name=$(realpath $("${cc}" --print-file-name='libegcc.so'))
+		fi
+		
 		declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
 		
 		cp "${name}" "${toolchain_directory}/lib/${soname}"
