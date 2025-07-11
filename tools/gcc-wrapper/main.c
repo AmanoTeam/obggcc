@@ -551,6 +551,10 @@ int main(int argc, char* argv[], char* envp[]) {
 	int wants_runtime_rpath = 0;
 	int wants_nz = 0;
 	
+	#if defined(PINO)
+		int wants_disable_shlib = 0;
+	#endif
+	
 	int address_sanitizer = 0;
 	int stack_protector = 0;
 	int verbose = 0;
@@ -563,7 +567,11 @@ int main(int argc, char* argv[], char* envp[]) {
 	int wants_libitm = 0;
 	int wants_librt = 0;
 	int wants_libssp = 0;
-	int require_atomic_library = 0;
+	
+	#if defined(OBGGCC)
+		int require_atomic_library = 0;
+	#endif
+	
 	int override_linker = 0;
 	
 	int cmake_init = 0;
@@ -639,6 +647,10 @@ int main(int argc, char* argv[], char* envp[]) {
 		wants_builtin_loader = get_env(WRAPPER_FLAVOR_NAME "_BUILTIN_LOADER");
 	#endif
 	
+	#if defined(PINO)
+		wants_disable_shlib = get_env(WRAPPER_FLAVOR_NAME "_DISABLE_SHLIB");
+	#endif
+	
 	wants_nz = get_env(WRAPPER_FLAVOR_NAME "_NZ");
 	wants_runtime_rpath = get_env(WRAPPER_FLAVOR_NAME "_RUNTIME_RPATH");
 	verbose = get_env(WRAPPER_FLAVOR_NAME "_VERBOSE");
@@ -680,14 +692,18 @@ int main(int argc, char* argv[], char* envp[]) {
 			wants_static_libcxx = 1;
 			
 			#if defined(PINO)
-				continue;
+				if (!wants_disable_shlib) {
+					continue;
+				}
 			#endif
 		} else if (strcmp(cur, GCC_OPT_STATIC_LIBGCC) == 0) {
 			wants_libgcc = 1;
 			wants_static_libgcc = 1;
 			
 			#if defined(PINO)
-				continue;
+				if (!wants_disable_shlib) {
+					continue;
+				}
 			#endif
 		} else if (strcmp(cur, GCC_OPT_L_ATOMIC) == 0) {
 			wants_libatomic = 1;
@@ -1164,9 +1180,11 @@ int main(int argc, char* argv[], char* envp[]) {
 		size += 2;
 	}
 	
-	if (require_atomic_library) {
-		size += 1;
-	}
+	#if defined(OBGGCC)
+		if (require_atomic_library) {
+			size += 1;
+		}
+	#endif
 	
 	#if defined(PINO)
 		size += 2; /* -D __ANDROID_API__=<LEVEL> */
@@ -1325,9 +1343,11 @@ int main(int argc, char* argv[], char* envp[]) {
 		args[offset++] = (char*) GCC_OPT_L_RT;
 	}
 	
-	if (require_atomic_library) {
-		args[offset++] = (char*) GCC_OPT_L_ATOMIC;
-	}
+	#if defined(OBGGCC)
+		if (require_atomic_library) {
+			args[offset++] = (char*) GCC_OPT_L_ATOMIC;
+		}
+	#endif
 	
 	if (wants_nz) {
 		args[offset++] = (char*) GCC_OPT_ISYSTEM;
@@ -1523,7 +1543,7 @@ int main(int argc, char* argv[], char* envp[]) {
 		
 		FIXME: Figure out a way to detect when we are not being invoked by Gradle and avoid copying the libraries when we are not building APKs.
 		*/
-		if (known_clang(cc) && output_directory != NULL) {
+		if (!wants_disable_shlib && known_clang(cc) && output_directory != NULL) {
 			/* libatomic */
 			err = copy_shared_library(sysroot_library_directory, output_directory, LIBATOMIC_SHARED, LIBATOMIC_SHARED);
 			
