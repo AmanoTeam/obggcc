@@ -318,10 +318,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Fix-libgcc-build-on-arm.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Add-relative-RPATHs-to-GCC-host-tools.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Add-ARM-and-ARM64-drivers-to-OpenBSD-host-tools.patch"
-	
-	if [[ "${CROSS_COMPILE_TRIPLET}" == *'-openbsd'* ]]; then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Fix-missing-stdint.h-include-when-compiling-host-tools-on-OpenBSD.patch"
-	fi
+	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Fix-missing-stdint.h-include-when-compiling-host-tools-on-OpenBSD.patch"
 fi
 
 # Follow Debian's approach for removing hardcoded RPATH from binaries
@@ -514,8 +511,13 @@ for target in "${targets[@]}"; do
 		--enable-gold \
 		--enable-ld \
 		--enable-lto \
-		--enable-plugins \
+		--enable-separate-code \
+		--enable-rosegment \
+		--enable-relro \
+		--enable-compressed-debug-sections='all' \
+		--enable-default-compressed-debug-sections-algorithm='zstd' \
 		--disable-gprofng \
+		--disable-default-execstack \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--without-static-standard-libraries \
 		--with-zstd="${toolchain_directory}" \
