@@ -494,11 +494,6 @@ for target in "${targets[@]}"; do
 	
 	rm --force --recursive ./*
 	
-	if [ "${CROSS_COMPILE_TRIPLET}" = "${triplet}" ]; then
-		cd "${toolchain_directory}/${triplet}/include"
-		ln --symbolic '../../include/c++' './c++'
-	fi
-	
 	[ -d "${binutils_directory}/build" ] || mkdir "${binutils_directory}/build"
 	
 	cd "${binutils_directory}/build"
@@ -532,6 +527,11 @@ for target in "${targets[@]}"; do
 		specs+=' %{!fno-plt:%{!fplt:-fno-plt}}'
 	fi
 	
+	if ! (( is_native )); then
+		extra_configure_flags+=" --with-cross-host=${CROSS_COMPILE_TRIPLET}"
+		extra_configure_flags+=" --with-toolexeclibdir=${toolchain_directory}/${triplet}/lib/"
+	fi
+	
 	[ -d "${gcc_directory}/build" ] || mkdir "${gcc_directory}/build"
 	
 	cd "${gcc_directory}/build"
@@ -549,7 +549,7 @@ for target in "${targets[@]}"; do
 		--with-zstd="${toolchain_directory}" \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v2.8-${revision}" \
+		--with-pkgversion="OBGGCC v2.9-${revision}" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--with-native-system-header-dir='/include' \
 		--with-default-libstdcxx-abi='new' \
@@ -574,8 +574,6 @@ for target in "${targets[@]}"; do
 		--enable-libstdcxx-threads \
 		--enable-libssp \
 		--enable-languages="${languages}" \
-		--enable-ld \
-		--enable-gold \
 		--enable-plugin \
 		--enable-libstdcxx-time='rt' \
 		--enable-cxx-flags="${linkflags} ${extra_cxx_flags}" \
@@ -616,6 +614,10 @@ for target in "${targets[@]}"; do
 		--jobs="${max_jobs}"
 	make install
 	
+	cd "${toolchain_directory}/${triplet}/lib64" 2>/dev/null || cd "${toolchain_directory}/${triplet}/lib"
+	
+	[ -f './libiberty.a' ] && unlink './libiberty.a'
+	
 	cp "${workdir}/tools/pkg-config.sh" "${toolchain_directory}/bin/${triplet}-pkg-config"
 	
 	rm "${toolchain_directory}/bin/${triplet}-${triplet}-"* || true
@@ -637,28 +639,6 @@ for target in "${targets[@]}"; do
 		if ! [ "${triplet}" = 'mips64el-unknown-linux-gnuabi64' ]; then
 			rm "${toolchain_directory}/${triplet}/lib/"*.o
 		fi
-	fi
-	
-	if [ "${CROSS_COMPILE_TRIPLET}" = "${triplet}" ]; then
-		cd "${toolchain_directory}/${triplet}/lib"
-			
-		for library in "${libraries[@]}"; do
-			for bit in "${bits[@]}"; do
-				for file in "../../lib${bit}/${library}"*; do
-					if [[ "${file}" == *'*' ]]; then
-						continue
-					fi
-					
-					if ! ( [[ "${file}" == *'.so'* ]] || [[ "${file}" == *'.a' ]] ); then
-						continue
-					fi
-					
-					echo "- Symlinking '${file}' to '${PWD}'"
-					
-					ln --symbolic "${file}" './'
-				done
-			done
-		done
 	fi
 done
 
