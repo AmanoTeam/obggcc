@@ -374,6 +374,7 @@ rm --force --recursive ./*
 ../configure \
 	--host="${CROSS_COMPILE_TRIPLET}" \
 	--prefix="${toolchain_directory}" \
+	--with-gmp="${toolchain_directory}" \
 	--enable-shared \
 	--disable-static \
 	CFLAGS="${ccflags}" \
@@ -391,6 +392,7 @@ rm --force --recursive ./*
 ../configure \
 	--host="${CROSS_COMPILE_TRIPLET}" \
 	--prefix="${toolchain_directory}" \
+	--with-gmp="${toolchain_directory}" \
 	--enable-shared \
 	--disable-static \
 	CFLAGS="${ccflags}" \
@@ -413,7 +415,7 @@ rm --force --recursive ./*
 	--disable-static \
 	CFLAGS="${pieflags} ${ccflags}" \
 	CXXFLAGS="${pieflags} ${ccflags}" \
-	LDFLAGS="${linkflags}"
+	LDFLAGS="-Xlinker -rpath-link -Xlinker ${toolchain_directory}/lib ${linkflags}"
 
 make all --jobs
 make install
