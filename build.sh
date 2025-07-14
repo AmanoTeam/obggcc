@@ -46,11 +46,8 @@ declare -r zstd_tarball='/tmp/zstd.tar.gz'
 declare -r zstd_directory='/tmp/zstd-dev'
 
 declare -r pieflags='-fPIE'
-declare -r ccflags='-w -O2 -Xlinker --allow-multiple-definition'
+declare -r ccflags='-w -O2'
 declare -r linkflags='-Xlinker -s'
-
-declare hccflags="-I${toolchain_directory}/include -L${toolchain_directory}/lib"
-declare hlinkflags="-Xlinker -rpath-link -Xlinker ${toolchain_directory}/lib ${linkflags}"
 
 declare -r max_jobs='40'
 
@@ -140,6 +137,24 @@ declare -ra targets=(
 	'hppa-unknown-linux-gnu'
 	'i386-unknown-linux-gnu'
 )
+
+declare -r PKG_CONFIG_PATH="${toolchain_directory}/lib/pkgconfig"
+declare -r PKG_CONFIG_LIBDIR="${PKG_CONFIG_PATH}"
+declare -r PKG_CONFIG_SYSROOT_DIR="${toolchain_directory}"
+
+declare -r pkg_cv_ZSTD_CFLAGS="-I${toolchain_directory}/include"
+declare -r pkg_cv_ZSTD_LIBS="-L${toolchain_directory}/lib -lzstd"
+declare -r ZSTD_CFLAGS="-I${toolchain_directory}/include"
+declare -r ZSTD_LIBS="-L${toolchain_directory}/lib -lzstd"
+
+export \
+	PKG_CONFIG_PATH \
+	PKG_CONFIG_LIBDIR \
+	PKG_CONFIG_SYSROOT_DIR \
+	pkg_cv_ZSTD_CFLAGS \
+	pkg_cv_ZSTD_LIBS \
+	ZSTD_CFLAGS \
+	ZSTD_LIBS
 
 declare build_type="${1}"
 
@@ -347,9 +362,9 @@ rm --force --recursive ./*
 	--prefix="${toolchain_directory}" \
 	--enable-shared \
 	--disable-static \
-	CFLAGS="${ccflags} ${hccflags}" \
-	CXXFLAGS="${ccflags} ${hccflags}" \
-	LDFLAGS="${linkflags} ${hlinkflags}"
+	CFLAGS="${ccflags}" \
+	CXXFLAGS="${ccflags}" \
+	LDFLAGS="${linkflags}"
 
 make all --jobs
 make install
@@ -364,9 +379,9 @@ rm --force --recursive ./*
 	--prefix="${toolchain_directory}" \
 	--enable-shared \
 	--disable-static \
-	CFLAGS="${ccflags} ${hccflags}" \
-	CXXFLAGS="${ccflags} ${hccflags}" \
-	LDFLAGS="${linkflags} ${hlinkflags}"
+	CFLAGS="${ccflags}" \
+	CXXFLAGS="${ccflags}" \
+	LDFLAGS="${linkflags}"
 
 make all --jobs
 make install
@@ -381,9 +396,9 @@ rm --force --recursive ./*
 	--prefix="${toolchain_directory}" \
 	--enable-shared \
 	--disable-static \
-	CFLAGS="${ccflags} ${hccflags}" \
-	CXXFLAGS="${ccflags} ${hccflags}" \
-	LDFLAGS="${linkflags} ${hlinkflags}"
+	CFLAGS="${ccflags}" \
+	CXXFLAGS="${ccflags}" \
+	LDFLAGS="${linkflags}"
 
 make all --jobs
 make install
@@ -399,9 +414,9 @@ rm --force --recursive ./*
 	--with-gmp-prefix="${toolchain_directory}" \
 	--enable-shared \
 	--disable-static \
-	CFLAGS="${pieflags} ${ccflags} ${hccflags}" \
-	CXXFLAGS="${pieflags} ${ccflags} ${hccflags}" \
-	LDFLAGS="${linkflags} ${hlinkflags}"
+	CFLAGS="${pieflags} ${ccflags}" \
+	CXXFLAGS="${pieflags} ${ccflags}" \
+	LDFLAGS="${linkflags}"
 
 make all --jobs
 make install
@@ -504,9 +519,9 @@ for target in "${targets[@]}"; do
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--without-static-standard-libraries \
 		--with-zstd="${toolchain_directory}" \
-		CFLAGS="${ccflags} ${hccflags}" \
-		CXXFLAGS="${ccflags} ${hccflags}" \
-		LDFLAGS="${linkflags} ${hlinkflags}"
+		CFLAGS="${ccflags}" \
+		CXXFLAGS="${ccflags}" \
+		LDFLAGS="${linkflags}"
 	
 	make all --jobs
 	make install
@@ -576,9 +591,9 @@ for target in "${targets[@]}"; do
 		--without-headers \
 		--without-static-standard-libraries \
 		${extra_configure_flags} \
-		CFLAGS="${ccflags} ${hccflags}" \
-		CXXFLAGS="${ccflags} ${hccflags}" \
-		LDFLAGS="${linkflags} ${hlinkflags}"
+		CFLAGS="${ccflags}" \
+		CXXFLAGS="${ccflags}" \
+		LDFLAGS="${linkflags}"
 	
 	cflags_for_target="${ccflags} ${linkflags}"
 	cxxflags_for_target="${ccflags} ${linkflags}"
