@@ -987,8 +987,8 @@ int main(int argc, char* argv[], char* envp[]) {
 			if (a == '2' && (b == '.' || b == '-' || b == '\0')) {
 				break;
 			}
-		#elif defined(PINO) /* Android API level (e.g., 21) */
-			if ((a >= '2' && a <= '3') && (b >= '0' && b <= '9')) {
+		#elif defined(PINO) /* Android API level (e.g., 14) */
+			if ((a >= '1' && a <= '3') && (b >= '0' && b <= '9')) {
 				break;
 			}
 		#else
