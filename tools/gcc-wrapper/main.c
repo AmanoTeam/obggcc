@@ -99,6 +99,7 @@ static const char LD_OPT_DYNAMIC_LINKER[] = "-dynamic-linker";
 static const char LD_OPT_RPATH_LINK[] = "-rpath-link";
 static const char LD_OPT_RPATH[] = "-rpath";
 static const char LD_OPT_UNRESOLVED_SYMBOLS[] = "--unresolved-symbols=ignore-in-shared-libs";
+static const char LD_OPT_NO_ROSEGMENT[] = "--no-rosegment";
 
 static const char M_ANDROID_API[] = "__ANDROID_API__=";
 
@@ -665,6 +666,7 @@ int main(int argc, char* argv[], char* envp[]) {
 			1 + /* -D__clang_patchlevel__ */
 			1 + /* -ffat-lto-objects / -fno-fat-lto-objects */
 			1 + /* -fuse-ld=<linker> */
+			2 + /* -Xlinker --no-rosegment (Android) */
 			1 /* NULL */
 		)
 	);
@@ -1110,6 +1112,19 @@ int main(int argc, char* argv[], char* envp[]) {
 	if (!(*ptr == '-' || *ptr == '\0')) {
 		libc_minor = strtol(ptr + 1, NULL, 16);
 	}
+	
+	#if defined(PINO)
+		/*
+		Disable emitting a single read-only, non-code segment (--rosegment) on
+		Android versions below 10 (API 29), as it's not supported there.
+		
+		- https://github.com/llvm/llvm-project/commit/fae16fc
+		*/
+		if (LIBC_VERSION(libc_major, libc_minor) < LIBC_VERSION(29, 0)) {
+			kargv[kargc++] = (char*) GCC_OPT_XLINKER;
+			kargv[kargc++] = (char*) LD_OPT_NO_ROSEGMENT;
+		}
+	#endif
 	
 	#if defined(OBGGCC)
 		/* Determine whether we need to implicit link with -lrt */
