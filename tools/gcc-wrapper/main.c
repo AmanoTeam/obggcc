@@ -25,6 +25,7 @@ static const char GCC_MAJOR_VERSION[] = "15";
 static const char INCLUDE_DIR[] = PATHSEP_M "include";
 static const char INCLUDE_MISSING_DIR[] = PATHSEP_M "include-missing";
 static const char LIBRARY_DIR[] = PATHSEP_M "lib";
+static const char STATIC_LIBRARY_DIR[] = PATHSEP_M "lib" PATHSEP_M "static";
 static const char GCC_LIBRARY_DIR[] = PATHSEP_M "lib" PATHSEP_M "gcc";
 
 static const char RT_LIBRARY[] = "rt";
@@ -76,6 +77,10 @@ static const char GCC_OPT_F_FAT_LTO_OBJECTS[] = "-ffat-lto-objects";
 static const char GCC_OPT_F_NO_FAT_LTO_OBJECTS[] = "-fno-fat-lto-objects";
 static const char GCC_OPT_F_LTO[] = "-flto";
 static const char GCC_OPT_F_USE_LD[] = "-fuse-ld=";
+static const char GCC_OPT_F_GNU_TM[] = "-fgnu-tm";
+static const char GCC_OPT_F_OPENMP[] = "-fopenmp";
+static const char GCC_OPT_F_OPENACC[] = "-fopenacc";
+
 static const char GCC_OPT_DFORTIFY_SOURCE[] = "-D_FORTIFY_SOURCE=";
 static const char GCC_OPT_U_GNUC[] = "-U__GNUC__";
 
@@ -266,7 +271,7 @@ static int get_env(const char* const key) {
 	const char* const value = getenv(key);
 	
 	if (value == NULL) {
-		return 0;
+		return -1;
 	}
 	
 	return (strcmp(value, "1") == 0);
@@ -536,6 +541,7 @@ int copy_shared_library(
 
 int main(int argc, char* argv[], char* envp[]) {
 	
+	int status = 0;
 	int err = ERR_SUCCESS;
 	
 	size_t size = 0;
@@ -552,10 +558,6 @@ int main(int argc, char* argv[], char* envp[]) {
 	int wants_runtime_rpath = 0;
 	int wants_nz = 0;
 	
-	#if defined(PINO)
-		int wants_disable_shlib = 0;
-	#endif
-	
 	int address_sanitizer = 0;
 	int stack_protector = 0;
 	int verbose = 0;
@@ -568,6 +570,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	int wants_libitm = 0;
 	int wants_librt = 0;
 	int wants_libssp = 0;
+	int wants_force_static = 0;
 	
 	#if defined(OBGGCC)
 		int require_atomic_library = 0;
@@ -644,17 +647,23 @@ int main(int argc, char* argv[], char* envp[]) {
 	unsigned char ch = 0;
 	
 	#if defined(OBGGCC)
-		wants_system_libraries = get_env(WRAPPER_FLAVOR_NAME "_SYSTEM_LIBRARIES");
-		wants_builtin_loader = get_env(WRAPPER_FLAVOR_NAME "_BUILTIN_LOADER");
+		wants_system_libraries = get_env(WRAPPER_FLAVOR_NAME "_SYSTEM_LIBRARIES") == 1;
+		wants_builtin_loader = get_env(WRAPPER_FLAVOR_NAME "_BUILTIN_LOADER") == 1;
 	#endif
 	
 	#if defined(PINO)
-		wants_disable_shlib = get_env(WRAPPER_FLAVOR_NAME "_DISABLE_SHLIB");
+		wants_force_static = 1;
 	#endif
 	
-	wants_nz = get_env(WRAPPER_FLAVOR_NAME "_NZ");
-	wants_runtime_rpath = get_env(WRAPPER_FLAVOR_NAME "_RUNTIME_RPATH");
-	verbose = get_env(WRAPPER_FLAVOR_NAME "_VERBOSE");
+	status = get_env(WRAPPER_FLAVOR_NAME "_FORCE_STATIC");
+	
+	if (status != -1) {
+		wants_force_static = (status == 1);
+	}
+		
+	wants_nz = get_env(WRAPPER_FLAVOR_NAME "_NZ") == 1;
+	wants_runtime_rpath = get_env(WRAPPER_FLAVOR_NAME "_RUNTIME_RPATH") == 1;
+	verbose = get_env(WRAPPER_FLAVOR_NAME "_VERBOSE") == 1;
 	
 	kargv = malloc(
 		sizeof(*argv) * (
@@ -666,7 +675,8 @@ int main(int argc, char* argv[], char* envp[]) {
 			1 + /* -D__clang_patchlevel__ */
 			1 + /* -ffat-lto-objects / -fno-fat-lto-objects */
 			1 + /* -fuse-ld=<linker> */
-			2 + /* -Xlinker --no-rosegment (Android) */
+			2 + /* -Xlinker --no-rosegment (Android 9 and bellow) */
+			1 + /* -static-libgcc */
 			1 /* NULL */
 		)
 	);
@@ -692,26 +702,14 @@ int main(int argc, char* argv[], char* envp[]) {
 		} else if (strcmp(cur, GCC_OPT_STATIC_LIBCXX) == 0) {
 			wants_libcxx = 1;
 			wants_static_libcxx = 1;
-			
-			#if defined(PINO)
-				if (!wants_disable_shlib) {
-					continue;
-				}
-			#endif
 		} else if (strcmp(cur, GCC_OPT_STATIC_LIBGCC) == 0) {
 			wants_libgcc = 1;
 			wants_static_libgcc = 1;
-			
-			#if defined(PINO)
-				if (!wants_disable_shlib) {
-					continue;
-				}
-			#endif
 		} else if (strcmp(cur, GCC_OPT_L_ATOMIC) == 0) {
 			wants_libatomic = 1;
-		} else if (strcmp(cur, GCC_OPT_L_GOMP) == 0) {
+		} else if (strcmp(cur, GCC_OPT_L_GOMP) == 0 || strcmp(cur, GCC_OPT_F_OPENMP) == 0 || strcmp(cur, GCC_OPT_F_OPENACC) == 0) {
 			wants_libgomp = 1;
-		} else if (strcmp(cur, GCC_OPT_L_ITM) == 0) {
+		} else if (strcmp(cur, GCC_OPT_L_ITM) == 0 || strcmp(cur, GCC_OPT_F_GNU_TM) == 0) {
 			wants_libitm = 1;
 		} else if (strcmp(cur, GCC_OPT_L_RT) == 0) {
 			have_rt_library = 1;
@@ -794,10 +792,6 @@ int main(int argc, char* argv[], char* envp[]) {
 				strncpy(override_triplet, cur, size);
 				override_triplet[size] = '\0';
 				
-				if (strcmp(override_triplet, "armv7") == 0) {
-					strcpy(override_triplet, "arm");
-				}
-				
 				/* Vendor */
 				strcat(override_triplet, VENDOR_UNKNOWN);
 				
@@ -810,7 +804,7 @@ int main(int argc, char* argv[], char* envp[]) {
 			
 			continue;
 		} else if (strncmp(cur, GCC_OPT_SYSROOT, strlen(GCC_OPT_SYSROOT)) == 0) {
-			/* Don't override the system root, Clang. That's our job. */
+			/* Don't let Clang override the system root. */
 			cur += strlen(GCC_OPT_SYSROOT);
 			ch = *cur;
 			
@@ -949,6 +943,14 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	if (wants_libcxx) {
 		wants_libgcc = 1;
+	}
+	
+	/*
+	These libraries rely on libgcc. If we are going to statically link with them,
+	we should statically link with libgcc as well.
+	*/
+	if (wants_force_static && (wants_libcxx || wants_libitm || wants_libgomp) && !wants_static_libgcc) {
+		kargv[kargc++] = (char*) GCC_OPT_STATIC_LIBGCC;
 	}
 	
 	/*
@@ -1234,7 +1236,7 @@ int main(int argc, char* argv[], char* envp[]) {
 		strcat(sysroot_include_missing_directory, INCLUDE_MISSING_DIR);
 	}
 	
-	sysroot_library_directory = malloc(strlen(sysroot_directory) + strlen(LIBRARY_DIR) + 1);
+	sysroot_library_directory = malloc(strlen(sysroot_directory) + strlen(STATIC_LIBRARY_DIR) + 1);
 	
 	if (sysroot_library_directory == NULL) {
 		err = ERR_MEM_ALLOC_FAILURE;
@@ -1242,7 +1244,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	}
 	
 	strcpy(sysroot_library_directory, sysroot_directory);
-	strcat(sysroot_library_directory, LIBRARY_DIR);
+	strcat(sysroot_library_directory, ((wants_force_static) ? STATIC_LIBRARY_DIR : LIBRARY_DIR));
 	
 	if (wants_runtime_rpath) {
 		sysroot_runtime_directory = malloc(strlen(sysroot_library_directory) + strlen(PATHSEP_S) + strlen(GCC) + 1);
@@ -1558,7 +1560,7 @@ int main(int argc, char* argv[], char* envp[]) {
 		
 		FIXME: Figure out a way to detect when we are not being invoked by Gradle and avoid copying the libraries when we are not building APKs.
 		*/
-		if (!wants_disable_shlib && known_clang(cc) && output_directory != NULL) {
+		if (!wants_force_static && known_clang(cc) && output_directory != NULL) {
 			/* libatomic */
 			err = copy_shared_library(sysroot_library_directory, output_directory, LIBATOMIC_SHARED, LIBATOMIC_SHARED);
 			
