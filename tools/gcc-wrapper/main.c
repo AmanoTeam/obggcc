@@ -80,6 +80,7 @@ static const char GCC_OPT_F_USE_LD[] = "-fuse-ld=";
 static const char GCC_OPT_F_GNU_TM[] = "-fgnu-tm";
 static const char GCC_OPT_F_OPENMP[] = "-fopenmp";
 static const char GCC_OPT_F_OPENACC[] = "-fopenacc";
+static const char GCC_OPT_NO_PIE[] = "-no-pie";
 
 static const char GCC_OPT_DFORTIFY_SOURCE[] = "-D_FORTIFY_SOURCE=";
 static const char GCC_OPT_U_GNUC[] = "-U__GNUC__";
@@ -675,7 +676,8 @@ int main(int argc, char* argv[], char* envp[]) {
 			1 + /* -D__clang_patchlevel__ */
 			1 + /* -ffat-lto-objects / -fno-fat-lto-objects */
 			1 + /* -fuse-ld=<linker> */
-			2 + /* -Xlinker --no-rosegment (Android 9 and bellow) */
+			2 + /* -Xlinker --no-rosegment (Android 9 and below) */
+			1 + /* -no-pie (Android 4 and below) */
 			1 + /* -static-libgcc */
 			1 /* NULL */
 		)
@@ -1125,6 +1127,16 @@ int main(int argc, char* argv[], char* envp[]) {
 		if (LIBC_VERSION(libc_major, libc_minor) < LIBC_VERSION(29, 0)) {
 			kargv[kargc++] = (char*) GCC_OPT_XLINKER;
 			kargv[kargc++] = (char*) LD_OPT_NO_ROSEGMENT;
+		}
+		
+		/*
+		Disable Position Independent Executable (PIE) on Android 4.0.4 (API 15) and below.
+		PIEs are only supported on Android 4.1+.
+		
+		- https://web.archive.org/web/0/https://source.android.com/security/enhancements/enhancements41
+		*/
+		if (LIBC_VERSION(libc_major, libc_minor) < LIBC_VERSION(16, 0)) {
+			kargv[kargc++] = (char*) GCC_OPT_NO_PIE;
 		}
 	#endif
 	
