@@ -5,6 +5,7 @@
 
 #if defined(_WIN32)
 	#include <windows.h>
+	#include <io.h>
 #endif
 
 #if !defined(_WIN32)
@@ -19,7 +20,8 @@
 enum FStreamMode {
 	FSTREAM_WRITE,
 	FSTREAM_READ,
-	FSTREAM_APPEND
+	FSTREAM_APPEND,
+	FSTREAM_TRUNCATE
 };
 
 typedef enum FStreamMode fstream_mode_t;
@@ -44,11 +46,14 @@ struct FStream {
 typedef struct FStream fstream_t;
 
 fstream_t* fstream_open(const char* const filename, const fstream_mode_t mode);
+fstream_t* fstream_fdopen(const int fd, const fstream_mode_t mode);
 int fstream_lock(fstream_t* const stream);
 ssize_t fstream_read(fstream_t* const stream, char* const buffer, const size_t size);
 int fstream_write(fstream_t* const stream, const char* const buffer, const size_t size);
 int fstream_seek(fstream_t* const stream, const long int offset, const fstream_seek_t method);
+int fsream_truncate(fstream_t* const stream, const long int offset);
 long int fstream_tell(fstream_t* const stream);
+long int fsream_size(fstream_t* const stream);
 int fstream_close(fstream_t* const stream);
 
 #endif

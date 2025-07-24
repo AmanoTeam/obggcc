@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #if defined(_WIN32)
 	#include <windows.h>
@@ -8,6 +9,7 @@
 
 #if !defined(_WIN32)
 	#include <stdio.h>
+	#include <unistd.h>
 	#include <sys/file.h>
 #endif
 
@@ -16,6 +18,55 @@
 #if defined(_WIN32) && defined(_UNICODE)
 	#include "fs/absoluteness.h"
 	#include "fs/sep.h"
+#endif
+
+#if defined(_WIN32)
+	static DWORD* fstream_getmode(const fstream_mode_t mode, DWORD flags[2]) {
+		
+		DWORD* access = &flags[0];
+		DWORD* disposition = &flags[1];
+		
+		switch (mode) {
+			case FSTREAM_WRITE:
+				(*access) |= GENERIC_WRITE;
+				(*disposition) |= CREATE_ALWAYS;
+				break;
+			case FSTREAM_READ:
+				(*access) |= GENERIC_READ;
+				(*disposition) |= OPEN_EXISTING;
+				break;
+			case FSTREAM_APPEND:
+			case FSTREAM_TRUNCATE:
+				(*access) |= FILE_APPEND_DATA;
+				(*disposition) |= OPEN_EXISTING;
+				break;
+		}
+		
+		return flags;
+	}
+#else
+	static const char* fstream_getmode(const fstream_mode_t mode) {
+		
+		const char* flags = NULL;
+		
+		switch (mode) {
+			case FSTREAM_WRITE:
+				flags = "wb";
+				break;
+			case FSTREAM_READ:
+				flags = "rb";
+				break;
+			case FSTREAM_APPEND:
+				flags = "a";
+				break;
+			case FSTREAM_TRUNCATE:
+				flags = "r+";
+				break;
+		}
+		
+		return flags;
+		
+	}
 #endif
 
 fstream_t* fstream_open(const char* const filename, const fstream_mode_t mode) {
@@ -34,26 +85,18 @@ fstream_t* fstream_open(const char* const filename, const fstream_mode_t mode) {
 			int wfilenames = 0;
 		#endif
 		
+		DWORD values[2] = {0, 0};
+		
 		DWORD access = 0;
 		DWORD disposition = 0;
 		const DWORD flags = FILE_ATTRIBUTE_NORMAL;
 		
 		HANDLE handle = 0;
 		
-		switch (mode) {
-			case FSTREAM_WRITE:
-				access |= GENERIC_WRITE;
-				disposition |= CREATE_ALWAYS;
-				break;
-			case FSTREAM_READ:
-				access |= GENERIC_READ;
-				disposition |= OPEN_EXISTING;
-				break;
-			case FSTREAM_APPEND:
-				access |= FILE_APPEND_DATA;
-				disposition |= OPEN_EXISTING;
-				break;
-		}
+		fstream_getmode(mode, values);
+		
+		access = values[0];
+		disposition = values[1];
 		
 		#if defined(_UNICODE)
 			/* This prefix is required to support long paths in Windows 10+ */
@@ -94,20 +137,8 @@ fstream_t* fstream_open(const char* const filename, const fstream_mode_t mode) {
 			}
 		}
 	#else
-		const char* flags = NULL;
 		FILE* file = NULL;
-		
-		switch (mode) {
-			case FSTREAM_WRITE:
-				flags = "wb";
-				break;
-			case FSTREAM_READ:
-				flags = "rb";
-				break;
-			case FSTREAM_APPEND:
-				flags = "a";
-				break;
-		}
+		const char* flags = fstream_getmode(mode);
 		
 		file = fopen(filename, flags);
 		
@@ -127,6 +158,54 @@ fstream_t* fstream_open(const char* const filename, const fstream_mode_t mode) {
 		
 		return NULL;
 	}
+	
+	#if defined(_WIN32)
+		stream->stream = handle;
+	#else
+		stream->stream = file;
+	#endif
+	
+	stream->mode = mode;
+	
+	return stream;
+	
+}
+
+fstream_t* fstream_fdopen(const int fd, const fstream_mode_t mode) {
+	/*
+	Opens a file descriptor.
+	
+	Returns a null pointer on error.
+	*/
+	
+	fstream_t* stream = NULL;
+	
+	stream = malloc(sizeof(*stream));
+	
+	if (stream == NULL) {
+		return NULL;
+	}
+	
+	#if defined(_WIN32)
+		HANDLE handle = 0;
+		
+		(void) mode;
+		
+		handle = (HANDLE) _get_osfhandle(fd);
+		
+		if (handle == INVALID_HANDLE_VALUE) {
+			return NULL;
+		}
+	#else
+		FILE* file = NULL;
+		const char* flags = fstream_getmode(mode);
+		
+		file = fdopen(fd, flags);
+		
+		if (file == NULL) {
+			return NULL;
+		}
+	#endif
 	
 	#if defined(_WIN32)
 		stream->stream = handle;
@@ -330,6 +409,120 @@ long int fstream_tell(fstream_t* const stream) {
 	#endif
 	
 	return (long int) value;
+	
+}
+
+long int fsream_size(fstream_t* const stream) {
+	/*
+	Returns the current file size.
+	
+	Returns (>=0) on success, (-1) on error.
+	*/
+	
+	const long int pos = fstream_tell(stream);
+	
+	long int file_size = 0;
+	
+	int status = 0;
+	
+	status = fstream_seek(stream, 0, FSTREAM_SEEK_END);
+	
+	if (status == -1) {
+		return FSTREAM_ERROR;
+	}
+	
+	file_size = fstream_tell(stream);
+	
+	if (file_size == FSTREAM_ERROR || file_size == FSTREAM_EOF) {
+		return FSTREAM_ERROR;
+	}
+	
+	status = fstream_seek(stream, pos, FSTREAM_SEEK_BEGIN);
+	
+	if (status == FSTREAM_ERROR) {
+		return FSTREAM_ERROR;
+	}
+	
+	return file_size;
+	
+}
+
+int fsream_truncate(fstream_t* const stream, const long int offset) {
+	/*
+	Truncates the file.
+	
+	Returns (0) on success, (-1) on error.
+	*/
+	
+	char zeros[1024];
+	
+	int status = 0;
+	const long int file_size = fsream_size(stream);
+	
+	long int diff = 0;
+	size_t write = 0;
+	
+	#if !defined(_WIN32)
+		int fd = 0;
+	#endif
+	
+	if (offset == file_size) {
+		return FSTREAM_SUCCESS;
+	}
+	
+	memset(zeros, 0, sizeof(zeros));
+	
+	if (offset < file_size) {
+		fstream_seek(stream, offset, FSTREAM_SEEK_BEGIN);
+	} else {
+		fstream_seek(stream, 0, FSTREAM_SEEK_END);
+	}
+	
+	diff = labs(offset - file_size);
+	
+	while (diff != 0) {
+		write = (diff > sizeof(zeros)) ? sizeof(zeros) : diff;
+		
+		status = fstream_write(stream, zeros, write);
+		
+		if (status != FSTREAM_SUCCESS) {
+			return FSTREAM_ERROR;
+		}
+		
+		diff -= write;
+	}
+	
+	if (offset < file_size) {
+		#if defined(_WIN32)
+			status = fstream_seek(stream, offset, FSTREAM_SEEK_BEGIN);
+			
+			if (status != FSTREAM_SUCCESS) {
+				return FSTREAM_ERROR;
+			}
+			
+			if (!SetEndOfFile(stream->stream)) {
+				return FSTREAM_ERROR;
+			}
+		#else
+			status = fstream_seek(stream, 0, FSTREAM_SEEK_BEGIN);
+			
+			if (status != FSTREAM_SUCCESS) {
+				return FSTREAM_ERROR;
+			}
+			
+			fd = fileno(stream->stream);
+			
+			if (fd == -1) {
+				return FSTREAM_ERROR;
+			}
+			
+			if (ftruncate(fd, offset) == -1) {
+				return FSTREAM_ERROR;
+			}
+		#endif
+	}
+	
+	return FSTREAM_SUCCESS;
 	
 }
 
