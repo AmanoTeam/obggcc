@@ -468,6 +468,7 @@ fi
 
 for target in "${targets[@]}"; do
 	declare specs='-Xlinker --disable-new-dtags'
+	declare hash_style='both'
 	
 	source "${workdir}/${target}.sh"
 	
@@ -529,6 +530,10 @@ for target in "${targets[@]}"; do
 		specs+=' %{!fno-plt:%{!fplt:-fno-plt}}'
 	fi
 	
+	if [[ "${triplet}" = 'mips'* ]]; then
+		hash_style='sysv'
+	fi
+	
 	if ! (( is_native )); then
 		extra_configure_flags+=" --with-cross-host=${CROSS_COMPILE_TRIPLET}"
 		extra_configure_flags+=" --with-toolexeclibdir=${toolchain_directory}/${triplet}/lib/"
@@ -543,7 +548,7 @@ for target in "${targets[@]}"; do
 		--host="${CROSS_COMPILE_TRIPLET}" \
 		--target="${triplet}" \
 		--prefix="${toolchain_directory}" \
-		--with-linker-hash-style='both' \
+		--with-linker-hash-style="${hash_style}" \
 		--with-gmp="${toolchain_directory}" \
 		--with-mpc="${toolchain_directory}" \
 		--with-mpfr="${toolchain_directory}" \
