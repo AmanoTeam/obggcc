@@ -33,6 +33,7 @@ static const char STDCXX_LIBRARY[] = "stdc++";
 static const char ATOMIC_LIBRARY[] = "atomic";
 static const char GOMP_LIBRARY[] = "gomp";
 static const char ITM_LIBRARY[] = "itm";
+static const char QUADMATH_LIBRARY[] = "quadmath";
 
 static const char LIBATOMIC_SHARED[] = "libatomic.so";
 
@@ -47,6 +48,7 @@ static const char LIBATOMIC_SHARED[] = "libatomic.so";
 static const char LIBGOMP_SHARED[] = "libgomp.so";
 static const char LIBITM_SHARED[] = "libitm.so";
 static const char LIBSSP_SHARED[] = "libssp.so";
+static const char LIBQUADMATH_SHARED[] = "libquadmath.so";
 
 static const char LIBASAN_SHARED[] = "libasan.so";
 static const char LIBHWASAN_SHARED[] = "libhwasan.so";
@@ -71,6 +73,7 @@ static const char GCC_OPT_L_STDCXX[] = "-lstdc++";
 static const char GCC_OPT_L_ATOMIC[] = "-latomic";
 static const char GCC_OPT_L_GOMP[] = "-lgomp";
 static const char GCC_OPT_L_ITM[] = "-litm";
+static const char GCC_OPT_L_QUADMATH[] = "-lquadmath";
 static const char GCC_OPT_XLINKER[] = "-Xlinker";
 static const char GCC_OPT_WL[] = "-Wl,";
 static const char GCC_OPT_F_FAT_LTO_OBJECTS[] = "-ffat-lto-objects";
@@ -569,6 +572,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	int wants_libgomp = 0;
 	int wants_libgcc = 0;
 	int wants_libitm = 0;
+	int wants_libquadmath = 0;
 	int wants_librt = 0;
 	int wants_libssp = 0;
 	int wants_force_static = 0;
@@ -713,6 +717,8 @@ int main(int argc, char* argv[], char* envp[]) {
 			wants_libgomp = 1;
 		} else if (strcmp(cur, GCC_OPT_L_ITM) == 0 || strcmp(cur, GCC_OPT_F_GNU_TM) == 0) {
 			wants_libitm = 1;
+		} else if (strcmp(cur, GCC_OPT_L_QUADMATH) == 0) {
+			wants_libquadmath = 1;
 		} else if (strcmp(cur, GCC_OPT_L_RT) == 0) {
 			have_rt_library = 1;
 		} else if (prev != NULL && strcmp(prev, GCC_OPT_L) == 0) {
@@ -726,6 +732,8 @@ int main(int argc, char* argv[], char* envp[]) {
 				wants_libgomp = 1;
 			} else if (strcmp(cur, ITM_LIBRARY) == 0) {
 				wants_libitm = 1;
+			} else if (strcmp(cur, QUADMATH_LIBRARY) == 0) {
+				wants_libquadmath = 1;
 			}
 		} else if (strcmp(cur, CMAKE_C_COMPILER_ID) == 0 || strcmp(cur, CMAKE_CXX_COMPILER_ID) == 0) {
 			cmake_init = 1;
@@ -1643,6 +1651,15 @@ int main(int argc, char* argv[], char* envp[]) {
 			/* libitm */
 			if (wants_libitm) {
 				err = copy_shared_library(sysroot_library_directory, output_directory, LIBITM_SHARED, LIBITM_SHARED);
+				
+				if (err != ERR_SUCCESS) {
+					goto end;
+				}
+			}
+			
+			/* libquadmath */
+			if (wants_libquadmath) {
+				err = copy_shared_library(sysroot_library_directory, output_directory, LIBQUADMATH_SHARED, LIBQUADMATH_SHARED);
 				
 				if (err != ERR_SUCCESS) {
 					goto end;
