@@ -120,22 +120,22 @@ declare -ra bits=(
 declare -r languages='c,c++'
 
 declare -ra targets=(
-	'ia64-unknown-linux-gnu'
-	'mips-unknown-linux-gnu'
-	'mips64el-unknown-linux-gnuabi64'
-	'mipsel-unknown-linux-gnu'
-	'powerpc-unknown-linux-gnu'
-	'powerpc64le-unknown-linux-gnu'
-	's390-unknown-linux-gnu'
-	's390x-unknown-linux-gnu'
-	'sparc-unknown-linux-gnu'
+	# 'ia64-unknown-linux-gnu'
+	# 'mips-unknown-linux-gnu'
+	# 'mips64el-unknown-linux-gnuabi64'
+	# 'mipsel-unknown-linux-gnu'
+	# 'powerpc-unknown-linux-gnu'
+	# 'powerpc64le-unknown-linux-gnu'
+	# 's390-unknown-linux-gnu'
+	# 's390x-unknown-linux-gnu'
+	# 'sparc-unknown-linux-gnu'
 	'x86_64-unknown-linux-gnu'
-	'alpha-unknown-linux-gnu'
-	'aarch64-unknown-linux-gnu'
-	'arm-unknown-linux-gnueabi'
-	'arm-unknown-linux-gnueabihf'
-	'hppa-unknown-linux-gnu'
-	'i386-unknown-linux-gnu'
+	# 'alpha-unknown-linux-gnu'
+	# 'aarch64-unknown-linux-gnu'
+	# 'arm-unknown-linux-gnueabi'
+	# 'arm-unknown-linux-gnueabihf'
+	# 'hppa-unknown-linux-gnu'
+	# 'i386-unknown-linux-gnu'
 )
 
 declare -r PKG_CONFIG_PATH="${toolchain_directory}/lib/pkgconfig"
@@ -556,7 +556,7 @@ for target in "${targets[@]}"; do
 		--with-zstd="${toolchain_directory}" \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v2.9-${revision}" \
+		--with-pkgversion="OBGGCC v3.0-${revision}" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--with-native-system-header-dir='/include' \
 		--with-default-libstdcxx-abi='new' \
@@ -588,6 +588,7 @@ for target in "${targets[@]}"; do
 		--enable-host-shared \
 		--enable-host-bind-now \
 		--with-specs="${specs}" \
+		--with-pic \
 		--disable-libsanitizer \
 		--disable-libgomp \
 		--disable-bootstrap \
@@ -817,7 +818,9 @@ while read item; do
 		--file="${sysroot_tarball}"
 	
 	cd "${toolchain_directory}/${triplet}${glibc_version}/lib"
-	mkdir 'gcc'
+	mkdir 'gcc' 'static'
+	
+	ln --symbolic './lib'*.{so,a}* './static'
 	
 	if (( nz )); then
 		mkdir 'nouzen'
@@ -845,15 +848,15 @@ while read item; do
 				
 				ln --symbolic "${file}" './'
 				
-				cd './gcc'
+				echo "- Symlinking '${file}' to '${PWD}/gcc'"
 				
-				file="../$(basename "${file}")"
+				ln --symbolic --relative "${file}" './gcc'
 				
-				echo "- Symlinking '${file}' to '${PWD}'"
-				
-				ln --symbolic "${file}" './'
-				
-				cd '../'
+				if [[ "${file}" == *'.a' ]]; then
+					echo "- Symlinking '${file}' to '${PWD}/static'"
+					
+					ln --symbolic --relative "${file}" './static'
+				fi
 			done
 		done
 	done
