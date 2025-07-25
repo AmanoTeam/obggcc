@@ -656,7 +656,7 @@ int main(int argc, char* argv[], char* envp[]) {
 		wants_force_static = 1;
 	#endif
 	
-	status = get_env(WRAPPER_FLAVOR_NAME "_FORCE_STATIC");
+	status = get_env(WRAPPER_FLAVOR_NAME "_STATIC");
 	
 	if (status != -1) {
 		wants_force_static = (status == 1);
