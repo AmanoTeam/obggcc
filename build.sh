@@ -110,6 +110,7 @@ declare -ra libraries=(
 	'liblsan'
 	'libtsan'
 	'libubsan'
+	'libquadmath'
 )
 
 declare -ra bits=(
@@ -587,10 +588,10 @@ for target in "${targets[@]}"; do
 		--enable-host-pie \
 		--enable-host-shared \
 		--enable-host-bind-now \
+		--enable-libgomp \
 		--with-specs="${specs}" \
 		--with-pic \
 		--disable-libsanitizer \
-		--disable-libgomp \
 		--disable-bootstrap \
 		--disable-libstdcxx-pch \
 		--disable-werror \
