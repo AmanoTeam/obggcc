@@ -196,6 +196,32 @@ static const char* const FASTER_LINKERS[] = {
 
 #define LIBC_VERSION(major, minor) ((major << 16) + minor)
 
+static int arch_is_mips(const char* const name) {
+	
+	if (strcmp(name, "mips64el-unknown-linux-gnuabi64") == 0) {
+		return 1;
+	}
+	
+	if (strcmp(name, "mipsel-unknown-linux-gnu") == 0) {
+		return 1;
+	}
+	
+	if (strcmp(name, "mips-unknown-linux-gnu") == 0) {
+		return 1;
+	}
+	
+	if (strcmp(name, "mipsel-unknown-linux-android") == 0) {
+		return 1;
+	}
+	
+	if (strcmp(name, "mips64el-unknown-linux-android") == 0) {
+		return 1;
+	}
+	
+	return 0;
+	
+}
+
 static const char* get_loader(const char* const triplet) {
 	
 	if (strcmp(triplet, "aarch64-unknown-linux-gnu") == 0) {
@@ -428,6 +454,10 @@ static const char* get_fast_linker(
 	char* end = NULL;
 	
 	const char* linker = NULL;
+	
+	if (arch_is_mips(triplet)) {
+		return linker;
+	}
 	
 	for (index = 0; index < sizeof(FASTER_LINKERS) / sizeof(*FASTER_LINKERS); index++) {
 		linker = FASTER_LINKERS[index];

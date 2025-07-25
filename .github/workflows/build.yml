@@ -206,6 +206,8 @@ jobs:
             export PINO_HOME='/tmp/pino'
             export PATH="${PINO_HOME}/bin:${PATH}"
             
+            export PINO_STATIC='0'
+            
             source "${PINO_HOME}/usr/local/share/pino/autotools/${{ matrix.target }}.sh"
         fi
         
