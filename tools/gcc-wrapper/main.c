@@ -1149,10 +1149,10 @@ int main(int argc, char* argv[], char* envp[]) {
 	memcpy(libc_version, start, size);
 	libc_version[size] = '\0';
 	
-	libc_major = strtol(libc_version, &ptr, 16);
+	libc_major = strtol(libc_version, &ptr, 10);
 	
 	if (!(*ptr == '-' || *ptr == '\0')) {
-		libc_minor = strtol(ptr + 1, NULL, 16);
+		libc_minor = strtol(ptr + 1, NULL, 10);
 	}
 	
 	#if defined(PINO)
