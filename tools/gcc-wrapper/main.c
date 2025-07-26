@@ -66,6 +66,14 @@ static const char GCC_OPT_L[] = "-l";
 static const char GCC_OPT_V[] = "-v";
 static const char GCC_OPT_D[] = "-D";
 static const char GCC_OPT_O[] = "-o";
+static const char GCC_OPT_C[] = "-c";
+static const char GCC_OPT_R[] = "-r";
+static const char GCC_OPT_S[] = "-S";
+static const char GCC_OPT_E[] = "-E";
+static const char GCC_OPT_M[] = "-M";
+static const char GCC_OPT_MM[] = "-MM";
+static const char GCC_OPT_SHARED[] = "-shared";
+static const char GCC_OPT_F_SYNTAX_ONLY[] = "-fsyntax-only";
 static const char GCC_OPT_OS[] = "-Os";
 static const char GCC_OPT_L_RT[] = "-lrt";
 static const char GCC_OPT_FSANITIZE[] = "-fsanitize=";
@@ -617,6 +625,9 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	int have_rt_library = 0;
 	
+	int linking = 1;
+	int linking_shared = 0;
+	
 	char** args = NULL;
 	char* arg = NULL;
 	
@@ -725,7 +736,11 @@ int main(int argc, char* argv[], char* envp[]) {
 	for (index = 0; index < (size_t) argc; index++) {
 		cur = argv[index];
 		
-		if (strncmp(cur, GCC_OPT_FSANITIZE, strlen(GCC_OPT_FSANITIZE)) == 0) {
+		if (strcmp(cur, GCC_OPT_C) == 0 || strcmp(cur, GCC_OPT_R) == 0 || strcmp(cur, GCC_OPT_S) == 0 || strcmp(cur, GCC_OPT_E) == 0 || strcmp(cur, GCC_OPT_M) == 0 || strcmp(cur, GCC_OPT_MM) == 0 || strcmp(cur, GCC_OPT_F_SYNTAX_ONLY) == 0) {
+			linking = 0;
+		} else if (strcmp(cur, GCC_OPT_SHARED) == 0) {
+			linking_shared = 1;
+		} else if (strncmp(cur, GCC_OPT_FSANITIZE, strlen(GCC_OPT_FSANITIZE)) == 0) {
 			address_sanitizer = 1;
 		} else if (strncmp(cur, GCC_OPT_F_USE_LD, strlen(GCC_OPT_F_USE_LD)) == 0) {
 			override_linker = 1;
@@ -989,7 +1004,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	These libraries rely on libgcc. If we are going to statically link with them,
 	we should statically link with libgcc as well.
 	*/
-	if (wants_force_static && (wants_libcxx || wants_libitm || wants_libgomp) && !wants_static_libgcc) {
+	if ((linking && wants_force_static) && (wants_libcxx || wants_libitm || wants_libgomp) && !wants_static_libgcc) {
 		kargv[kargc++] = (char*) GCC_OPT_STATIC_LIBGCC;
 	}
 	
@@ -1173,7 +1188,7 @@ int main(int argc, char* argv[], char* envp[]) {
 		
 		- https://web.archive.org/web/0/https://source.android.com/security/enhancements/enhancements41
 		*/
-		if (LIBC_VERSION(libc_major, libc_minor) < LIBC_VERSION(16, 0)) {
+		if ((linking && !linking_shared) && LIBC_VERSION(libc_major, libc_minor) < LIBC_VERSION(16, 0)) {
 			kargv[kargc++] = (char*) GCC_OPT_NO_PIE;
 		}
 	#endif
@@ -1610,7 +1625,7 @@ int main(int argc, char* argv[], char* envp[]) {
 		
 		FIXME: Figure out a way to detect when we are not being invoked by Gradle and avoid copying the libraries when we are not building APKs.
 		*/
-		if (!wants_force_static && known_clang(cc) && output_directory != NULL) {
+		if (linking && !wants_force_static && known_clang(cc) && output_directory != NULL) {
 			/* libatomic */
 			err = copy_shared_library(sysroot_library_directory, output_directory, LIBATOMIC_SHARED, LIBATOMIC_SHARED);
 			
