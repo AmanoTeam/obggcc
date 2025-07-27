@@ -62,6 +62,12 @@ static const char GCC_OPT_NOSTDINC[] = "--no-standard-includes";
 static const char GCC_OPT_LIBDIR[] = "-L";
 static const char GCC_OPT_STATIC_LIBCXX[] = "-static-libstdc++";
 static const char GCC_OPT_STATIC_LIBGCC[] = "-static-libgcc";
+static const char GCC_OPT_STATIC_LIBASAN[] = "-static-libasan";
+static const char GCC_OPT_STATIC_LIBTSAN[] = "-static-libtsan";
+static const char GCC_OPT_STATIC_LIBLSAN[] = "-static-liblsan";
+static const char GCC_OPT_STATIC_LIBUBSAN[] = "-static-libubsan";
+static const char GCC_OPT_STATIC_LIBHWASAN[] = "-static-libhwasan";
+
 static const char GCC_OPT_L[] = "-l";
 static const char GCC_OPT_V[] = "-v";
 static const char GCC_OPT_D[] = "-D";
@@ -724,6 +730,11 @@ int main(int argc, char* argv[], char* envp[]) {
 			2 + /* -Xlinker --no-rosegment (Android 9 and below) */
 			1 + /* -no-pie (Android 4 and below) */
 			1 + /* -static-libgcc */
+			1 + /* -static-libasan */
+			1 + /* -static-libtsan */
+			1 + /* -static-liblsan */
+			1 + /* -static-libubsan */
+			1 + /* -static-libhwasan */
 			1 /* NULL */
 		)
 	);
@@ -1000,12 +1011,31 @@ int main(int argc, char* argv[], char* envp[]) {
 		wants_libgcc = 1;
 	}
 	
-	/*
-	These libraries rely on libgcc. If we are going to statically link with them,
-	we should statically link with libgcc as well.
-	*/
-	if ((linking && wants_force_static) && (wants_libcxx || wants_libitm || wants_libgomp) && !wants_static_libgcc) {
-		kargv[kargc++] = (char*) GCC_OPT_STATIC_LIBGCC;
+	if (linking && wants_force_static) {
+		/*
+		These libraries rely on libgcc. If we are going to statically link with them,
+		we should statically link with libgcc as well.
+		*/
+		if ((wants_libcxx || wants_libitm || wants_libgomp) && !wants_static_libgcc) {
+			kargv[kargc++] = (char*) GCC_OPT_STATIC_LIBGCC;
+		}
+		
+		/*
+		GCC has some issues with statically linking these libraries implicitly
+		(it leads to undefined references to libm functions), so we need to pass those
+		"-static-<library>" flags explicitly to it:
+		
+		$ aarch64-unknown-linux-android21-gcc ... -fsanitize=address
+		/lib/static/libasan.a(asan_interceptors.o):asan_interceptors.cpp:function ___interceptor_lgamma.part.0:(.text+0xfcfc): error: undefined reference to 'signgam'
+		...
+		*/
+		if (address_sanitizer) {
+			kargv[kargc++] = (char*) GCC_OPT_STATIC_LIBASAN;
+			kargv[kargc++] = (char*) GCC_OPT_STATIC_LIBTSAN;
+			kargv[kargc++] = (char*) GCC_OPT_STATIC_LIBLSAN;
+			kargv[kargc++] = (char*) GCC_OPT_STATIC_LIBUBSAN;
+			kargv[kargc++] = (char*) GCC_OPT_STATIC_LIBHWASAN;
+		}
 	}
 	
 	/*
@@ -1570,10 +1600,12 @@ int main(int argc, char* argv[], char* envp[]) {
 		args[offset++] = sysroot_runtime_directory;
 	}
 	
-	if (address_sanitizer) {
-		args[offset++] = (char*) GCC_OPT_XLINKER;
-		args[offset++] = (char*) LD_OPT_UNRESOLVED_SYMBOLS;
-	}
+	#if defined(OBGGCC)
+		if (address_sanitizer) {
+			args[offset++] = (char*) GCC_OPT_XLINKER;
+			args[offset++] = (char*) LD_OPT_UNRESOLVED_SYMBOLS;
+		}
+	#endif
 	
 	#if defined(PINO)
 		android_api = malloc(strlen(M_ANDROID_API) + strlen(libc_version) + 1);
