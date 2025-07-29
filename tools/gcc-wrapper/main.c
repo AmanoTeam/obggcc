@@ -15,6 +15,7 @@
 #include "fs/exists.h"
 #include "fs/basename.h"
 #include "biggestint.h"
+#include "clang_option.h"
 
 #if !(defined(OBGGCC) || defined(PINO))
 	#error "Please define the cross-compiler flavor for which we will be a wrapper"
@@ -68,6 +69,7 @@ static const char GCC_OPT_STATIC_LIBLSAN[] = "-static-liblsan";
 static const char GCC_OPT_STATIC_LIBUBSAN[] = "-static-libubsan";
 static const char GCC_OPT_STATIC_LIBHWASAN[] = "-static-libhwasan";
 
+static const char GCC_OPT_VERSION[] = "--version";
 static const char GCC_OPT_L[] = "-l";
 static const char GCC_OPT_V[] = "-v";
 static const char GCC_OPT_D[] = "-D";
@@ -110,13 +112,17 @@ static const char GCC_OPT_D_CLANG_PATCHLEVEL[] = "-D__clang_patchlevel__=0";
 static const char GCC_OPT_F_STACK_PROTECTOR[] = "-fstack-protector";
 
 static const char CLANG_OPT_OZ[] = "-Oz";
-static const char CLANG_OPT_ICF[] = "--icf=";
+static const char CLANG_OPT_ICF[] = "--icf";
 static const char CLANG_OPT_TARGET[] = "--target";
 static const char CLANG_OPT_Q_UNUSED_ARGUMENTS[] = "-Qunused-arguments";
 static const char CLANG_OPT_W_NO_UNUSED_COMMAND_LINE_ARGUMENT[] = "-Wno-unused-command-line-argument";
 static const char CLANG_OPT_W_NO_INVALID_COMMAND_LINE_ARGUMENT[] = "-Wno-invalid-command-line-argument";
+static const char CLANG_OPT_W_NEWLINE_EOF[] = "-Wnewline-eof";
 static const char CLANG_OPT_PRINT_RESOURCE_DIR[] = "-print-resource-dir";
 static const char CLANG_OPT_F_NO_LIMIT_DEBUG_INFO[] = "-fno-limit-debug-info";
+static const char CLANG_OPT_GCC_TOOLCHAIN[] = "--gcc-toolchain";
+static const char CLANG_OPT_F_COLOR_DIAGNOSTICS[] = "-fcolor-diagnostics";
+static const char CLANG_OPT_F_NO_INTEGRATED_AS[] = "-fno-integrated-as";
 
 static const char LD_OPT_DYNAMIC_LINKER[] = "-dynamic-linker";
 static const char LD_OPT_RPATH_LINK[] = "-rpath-link";
@@ -188,7 +194,9 @@ static const char VENDOR_UNKNOWN[] = "-unknown-";
 
 static const char LD_PREFIX[] = "ld.";
 
+static const char DASH = '-';
 static const char EQUAL = '=';
+static const char ZERO = '\0';
 static const char EQUAL_S[] = "=";
 
 static const char* const FASTER_LINKERS[] = {
@@ -196,6 +204,55 @@ static const char* const FASTER_LINKERS[] = {
 	"lld",
 	"gold"
 };
+
+static const char CLANG_VERSION_TEMPLATE[] = 
+	"clang version 21.0.0\n"
+	"Target: %s\n"
+	"Thread model: posix\n"
+	"InstalledDir: %s\n";
+
+static clang_option_t CLANG_SPECIFIC_REMOVE[] = {
+	{
+		.name = CLANG_OPT_Q_UNUSED_ARGUMENTS,
+		.value = 0
+	},
+	{
+		.name = CLANG_OPT_W_NO_UNUSED_COMMAND_LINE_ARGUMENT,
+		.value = 0
+	},
+	{
+		.name = CLANG_OPT_W_NO_INVALID_COMMAND_LINE_ARGUMENT,
+		.value = 0
+	},
+	{
+		.name = CLANG_OPT_ICF,
+		.value = 1
+	},
+	{
+		.name = CLANG_OPT_F_NO_LIMIT_DEBUG_INFO,
+		.value = 0
+	},
+	{
+		.name = CLANG_OPT_GCC_TOOLCHAIN,
+		.value = 1
+	},
+	{
+		.name = CLANG_OPT_W_NEWLINE_EOF,
+		.value = 0
+	},
+	{
+		.name = CLANG_OPT_F_COLOR_DIAGNOSTICS,
+		.value = 0
+	},
+	{
+		.name = CLANG_OPT_F_NO_INTEGRATED_AS,
+		.value = 0
+	},
+};
+
+#define CLANG_SPECIFIC_REMOVE_NON 0
+#define CLANG_SPECIFIC_REMOVE_CUR 1
+#define CLANG_SPECIFIC_REMOVE_NXT 2
 
 #define ERR_SUCCESS 0
 #define ERR_MEM_ALLOC_FAILURE -1
@@ -358,36 +415,59 @@ static int clang_specific_remove(const char* const prev, const char* const cur) 
 	Remove Clang-specific options that have no GCC equivalents.
 	*/
 	
-	int status = 1;
+	int status = CLANG_SPECIFIC_REMOVE_CUR;
+	size_t index = 0;
+	
+	size_t size = 0;
 	
 	const char* previous = prev;
 	const char* current = cur;
+	
+	const char* name = cur;
+	int value = 0;
+	const clang_option_t* option = NULL;
+	
+	unsigned char ch = 0;
 	
 	if (strncmp(current, GCC_OPT_WL, strlen(GCC_OPT_WL)) == 0) {
 		current += strlen(GCC_OPT_WL);
 	}
 	
-	if (strcmp(current, CLANG_OPT_Q_UNUSED_ARGUMENTS) == 0) {
+	if (*current != DASH || *current == ZERO) {
+		status = CLANG_SPECIFIC_REMOVE_NON;
 		goto end;
 	}
 	
-	if (strcmp(current, CLANG_OPT_W_NO_UNUSED_COMMAND_LINE_ARGUMENT) == 0) {
+	while (*(++current) == DASH) {};
+	
+	for (index = 0; index < sizeof(CLANG_SPECIFIC_REMOVE) / sizeof(*CLANG_SPECIFIC_REMOVE); index++) {
+		option = &CLANG_SPECIFIC_REMOVE[index];
+		
+		name = option->name;
+		value = option->value;
+		
+		while (*(++name) == DASH) {};
+		
+		size = strlen(name);
+		
+		if (strncmp(current, name, size) != 0) {
+			continue;
+		}
+		
+		ch = current[size];
+		
+		if (!(ch == EQUAL || ch == ZERO)) {
+			continue;
+		}
+		
+		if (value && ch == ZERO) {
+			status = CLANG_SPECIFIC_REMOVE_NXT;
+		}
+		
 		goto end;
 	}
 	
-	if (strcmp(current, CLANG_OPT_W_NO_INVALID_COMMAND_LINE_ARGUMENT) == 0) {
-		goto end;
-	}
-	
-	if (strncmp(current, CLANG_OPT_ICF, strlen(CLANG_OPT_ICF)) == 0) {
-		goto end;
-	}
-	
-	if (strcmp(current, CLANG_OPT_F_NO_LIMIT_DEBUG_INFO) == 0) {
-		goto end;
-	}
-	
-	status = 0;
+	status = CLANG_SPECIFIC_REMOVE_NON;
 	
 	end:;
 	
@@ -608,6 +688,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	int address_sanitizer = 0;
 	int stack_protector = 0;
+	int version = 0;
 	int verbose = 0;
 	int wants_libcxx = 0;
 	int wants_static_libcxx = 0;
@@ -757,6 +838,8 @@ int main(int argc, char* argv[], char* envp[]) {
 			override_linker = 1;
 		} else if (strncmp(cur, GCC_OPT_F_STACK_PROTECTOR, strlen(GCC_OPT_F_STACK_PROTECTOR)) == 0) {
 			stack_protector = 1;
+		} else if (strcmp(cur, GCC_OPT_VERSION) == 0) {
+			version = 1;
 		} else if (strcmp(cur, GCC_OPT_V) == 0) {
 			verbose = 1;
 		} else if (strcmp(cur, GCC_OPT_L_STDCXX) == 0) {
@@ -811,16 +894,18 @@ int main(int argc, char* argv[], char* envp[]) {
 				}
 			}
 		} else if (strncmp(cur, CLANG_OPT_TARGET, strlen(CLANG_OPT_TARGET)) == 0 || strncmp(cur, CLANG_OPT_TARGET + 1, strlen(CLANG_OPT_TARGET + 1)) == 0) {
-			cur += strlen(CLANG_OPT_TARGET);
+			size = strlen(CLANG_OPT_TARGET);
 			
 			/* Clang has two variants of this flag: one with double hyphens, and one with a single hyphen. */
 			if (strncmp(cur, CLANG_OPT_TARGET + 1, strlen(CLANG_OPT_TARGET + 1)) == 0) {
-				cur -= 1;
+				size--;
 			}
+			
+			cur += size;
 			
 			ch = *cur;
 			
-			if (!(ch == EQUAL || ch == '\0')) {
+			if (!(ch == EQUAL || ch == ZERO)) {
 				goto next;
 			}
 			
@@ -898,10 +983,20 @@ int main(int argc, char* argv[], char* envp[]) {
 		
 		next:;
 		
-		 if (clang_specific_remove(prev, cur)) {
+		status = clang_specific_remove(prev, cur);
+		
+		 if (status != CLANG_SPECIFIC_REMOVE_NON) {
+			if (status == CLANG_SPECIFIC_REMOVE_NXT) {
+				index++;
+			}
+			
 			if (prev != NULL && strcmp(prev, GCC_OPT_XLINKER) == 0) {
 				prev = NULL;
 				kargv[--kargc] = (char*) prev;
+				
+				if (status == CLANG_SPECIFIC_REMOVE_NXT) {
+					index++;
+				}
 			}
 			
 			continue;
@@ -1003,6 +1098,11 @@ int main(int argc, char* argv[], char* envp[]) {
 			err = ERR_UNKNOWN_COMPILER;
 			goto end;
 		}
+	}
+	
+	if (version && known_clang(cc)) {
+		printf(CLANG_VERSION_TEMPLATE, DEFAULT_TARGET, parent_directory);
+		goto end;
 	}
 	
 	wants_libcxx += (strcmp(cc, GPP) == 0 || strcmp(cc, CPP) == 0 || strcmp(cc, GM2) == 0 || strcmp(cc, CLANGPP) == 0);
