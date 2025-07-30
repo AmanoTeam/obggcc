@@ -131,6 +131,7 @@ static const char LD_OPT_UNRESOLVED_SYMBOLS[] = "--unresolved-symbols=ignore-in-
 static const char LD_OPT_NO_ROSEGMENT[] = "--no-rosegment";
 
 static const char M_ANDROID_API[] = "__ANDROID_API__=";
+static const char M_ANDROID_MIN_SDK_VERSION[] = "__ANDROID_MIN_SDK_VERSION__=";
 
 static const char CMAKE_C_COMPILER_ID[] = "CMakeCCompilerId.c";
 static const char CMAKE_CXX_COMPILER_ID[] = "CMakeCXXCompilerId.cpp";
@@ -770,6 +771,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	#if defined(PINO)
 		char* android_api = NULL;
+		char* android_min_sdk_version = NULL;
 	#endif
 	
 	size_t kargc = 0;
@@ -1400,6 +1402,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	#if defined(PINO)
 		size += 2; /* -D __ANDROID_API__=<LEVEL> */
+		size += 2; /* -D __ANDROID_MIN_SDK_VERSION__=<LEVEL> */
 	#endif
 	
 	args = malloc(size * sizeof(char*));
@@ -1708,6 +1711,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	#endif
 	
 	#if defined(PINO)
+		/* __ANDROID_API__ */
 		android_api = malloc(strlen(M_ANDROID_API) + strlen(libc_version) + 1);
 		
 		if (android_api == NULL) {
@@ -1720,6 +1724,20 @@ int main(int argc, char* argv[], char* envp[]) {
 		
 		args[offset++] = (char*) GCC_OPT_D;
 		args[offset++] = android_api;
+		
+		/* __ANDROID_MIN_SDK_VERSION__ */
+		android_min_sdk_version = malloc(strlen(M_ANDROID_MIN_SDK_VERSION) + strlen(libc_version) + 1);
+		
+		if (android_min_sdk_version == NULL) {
+			err = ERR_MEM_ALLOC_FAILURE;
+			goto end;
+		}
+		
+		strcpy(android_min_sdk_version, M_ANDROID_MIN_SDK_VERSION);
+		strcat(android_min_sdk_version, libc_version);
+		
+		args[offset++] = (char*) GCC_OPT_D;
+		args[offset++] = android_min_sdk_version;
 	#endif
 	
 	memcpy(&args[offset], &kargv[1], kargc * sizeof(*kargv));
@@ -1884,6 +1902,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	#if defined(PINO)
 		free(android_api);
+		free(android_min_sdk_version);
 	#endif
 	
 	switch (err) {
