@@ -100,6 +100,7 @@ static const char GCC_OPT_F_GNU_TM[] = "-fgnu-tm";
 static const char GCC_OPT_F_OPENMP[] = "-fopenmp";
 static const char GCC_OPT_F_OPENACC[] = "-fopenacc";
 static const char GCC_OPT_NO_PIE[] = "-no-pie";
+static const char GCC_OPT_M_FPU[] = "-mfpu=";
 
 static const char GCC_OPT_DFORTIFY_SOURCE[] = "-D_FORTIFY_SOURCE=";
 static const char GCC_OPT_U_GNUC[] = "-U__GNUC__";
@@ -132,6 +133,8 @@ static const char LD_OPT_NO_ROSEGMENT[] = "--no-rosegment";
 
 static const char M_ANDROID_API[] = "__ANDROID_API__=";
 static const char M_ANDROID_MIN_SDK_VERSION[] = "__ANDROID_MIN_SDK_VERSION__=";
+
+static const char GCC_FPU_NEON[] = "neon-vfpv3";
 
 static const char CMAKE_C_COMPILER_ID[] = "CMakeCCompilerId.c";
 static const char CMAKE_CXX_COMPILER_ID[] = "CMakeCXXCompilerId.cpp";
@@ -287,6 +290,20 @@ static int arch_is_mips(const char* const name) {
 	}
 	
 	if (strcmp(name, "mips64el-unknown-linux-android") == 0) {
+		return 1;
+	}
+	
+	return 0;
+	
+}
+
+static int target_supports_neon(const char* const name) {
+	
+	if (strcmp(name, "arm-unknown-linux-gnueabi") == 0) {
+		return 1;
+	}
+	
+	if (strcmp(name, "armv7-unknown-linux-androideabi") == 0) {
 		return 1;
 	}
 	
@@ -686,6 +703,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	int wants_builtin_loader = 0;
 	int wants_runtime_rpath = 0;
 	int wants_nz = 0;
+	int wants_neon = 0;
 	
 	int address_sanitizer = 0;
 	int stack_protector = 0;
@@ -778,6 +796,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	char** kargv = NULL;
 	
 	char* linker = NULL;
+	char* floating_point_unit = NULL;
 	
 	unsigned char ch = 0;
 	
@@ -799,6 +818,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	wants_nz = get_env(WRAPPER_FLAVOR_NAME "_NZ") == 1;
 	wants_runtime_rpath = get_env(WRAPPER_FLAVOR_NAME "_RUNTIME_RPATH") == 1;
 	verbose = get_env(WRAPPER_FLAVOR_NAME "_VERBOSE") == 1;
+	wants_neon = get_env(WRAPPER_FLAVOR_NAME "_NEON") == 1;
 	
 	kargv = malloc(
 		sizeof(*argv) * (
@@ -818,6 +838,7 @@ int main(int argc, char* argv[], char* envp[]) {
 			1 + /* -static-liblsan */
 			1 + /* -static-libubsan */
 			1 + /* -static-libhwasan */
+			1 + /* -mfpu=<value> */
 			1 /* NULL */
 		)
 	);
@@ -1200,6 +1221,20 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	memcpy(triplet, file_name, size);
 	triplet[size] = '\0';
+	
+	if (wants_neon && target_supports_neon(triplet)) {
+		floating_point_unit = malloc(strlen(GCC_OPT_M_FPU) + strlen(GCC_FPU_NEON) + 1);
+		
+		if (floating_point_unit == NULL) {
+			err = ERR_MEM_ALLOC_FAILURE;
+			goto end;
+		}
+		
+		strcpy(floating_point_unit, GCC_OPT_M_FPU);
+		strcat(floating_point_unit, GCC_FPU_NEON);
+		
+		kargv[kargc++] = floating_point_unit;
+	}
 	
 	/* Pick a fast linker if available. */
 	if (!override_linker && (cur = get_fast_linker(parent_directory, triplet)) != NULL) {
@@ -1889,6 +1924,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	free(kargv);
 	free(arg);
 	free(linker);
+	free(floating_point_unit);
 	free(sysroot_include_directory);
 	free(sysroot_include_missing_directory);
 	free(sysroot_library_directory);
