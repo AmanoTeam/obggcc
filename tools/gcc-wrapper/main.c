@@ -880,8 +880,6 @@ int main(int argc, char* argv[], char* envp[]) {
 			stack_protector = 1;
 		} else if (strcmp(cur, GCC_OPT_VERSION) == 0) {
 			version = 1;
-		} else if (strcmp(cur, GCC_OPT_V) == 0) {
-			verbose = 1;
 		} else if (strcmp(cur, GCC_OPT_NODEFAULTLIBS) == 0 || strcmp(cur, GCC_OPT_NOSTDLIB) == 0) {
 			nodefaultlibs = 1;
 		} else if (strcmp(cur, GCC_OPT_L_STDCXX) == 0) {
