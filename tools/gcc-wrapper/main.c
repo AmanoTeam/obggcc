@@ -1637,12 +1637,13 @@ int main(int argc, char* argv[], char* envp[]) {
 	args[offset++] = (char*) GCC_OPT_LIBDIR;
 	args[offset++] = sysroot_library_directory;
 	
-	if (wants_librt) {
-		args[offset++] = (char*) GCC_OPT_L_RT;
-	}
-	
 	#if defined(OBGGCC)
-		if (require_atomic_library) {
+		if (wants_librt && !nodefaultlibs) {
+			args[offset++] = (char*) GCC_OPT_L_RT;
+		}
+		
+		/* TODO: apply this patch instead: https://gitlab.alpinelinux.org/alpine/aports/-/blob/4d8f399a49555dae872efd56251c066d21f428a0/main/gcc/0029-configure-Add-enable-autolink-libatomic-use-in-LINK_.patch */
+		if (require_atomic_library && !nodefaultlibs) {
 			args[offset++] = (char*) GCC_OPT_L_ATOMIC;
 		}
 	#endif
