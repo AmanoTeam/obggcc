@@ -120,6 +120,9 @@ static const char GCC_OPT_D_CLANG_PATCHLEVEL[] = "-D__clang_patchlevel__=0";
 
 static const char GCC_OPT_F_STACK_PROTECTOR[] = "-fstack-protector";
 
+static const char GCC_OPT_NODEFAULTLIBS[] = "-nodefaultlibs";
+static const char GCC_OPT_NOSTDLIB[] = "-nostdlib";
+
 static const char CLANG_OPT_OZ[] = "-Oz";
 static const char CLANG_OPT_ICF[] = "--icf";
 static const char CLANG_OPT_TARGET[] = "--target";
@@ -713,6 +716,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	int wants_nz = 0;
 	int wants_neon = 0;
 	
+	int nodefaultlibs = 0;
 	int address_sanitizer = 0;
 	int stack_protector = 0;
 	int version = 0;
@@ -878,6 +882,8 @@ int main(int argc, char* argv[], char* envp[]) {
 			version = 1;
 		} else if (strcmp(cur, GCC_OPT_V) == 0) {
 			verbose = 1;
+		} else if (strcmp(cur, GCC_OPT_NODEFAULTLIBS) == 0 || strcmp(cur, GCC_OPT_NOSTDLIB) == 0) {
+			nodefaultlibs = 1;
 		} else if (strcmp(cur, GCC_OPT_L_STDCXX) == 0) {
 			wants_libcxx = 1;
 		} else if (strcmp(cur, GCC_OPT_STATIC_LIBCXX) == 0) {
@@ -1159,7 +1165,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	Additionally, we expose these functions in the standard library headers
 	(math.h and complex.h) so that anyone can use them.
 	*/
-	if (wants_libcxx || wants_libm) {
+	if ((wants_libcxx || wants_libm) && !nodefaultlibs) {
 		kargv[kargc++] = (char*) GCC_OPT_L;
 		kargv[kargc++] = (char*) PINO_MATH_LIBRARY;
 	}
@@ -1396,7 +1402,7 @@ int main(int argc, char* argv[], char* envp[]) {
 		The NDK provided a pseudo-implementation for this as an inline, and we moved it to its
 		own external library.
 		*/
-		if (wants_libpino_mman) {
+		if (wants_libpino_mman && !nodefaultlibs) {
 			kargv[kargc++] = (char*) GCC_OPT_L;
 			kargv[kargc++] = (char*) PINO_MMAN_LIBRARY;
 		}
