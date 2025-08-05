@@ -729,6 +729,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	int wants_libssp = 0;
 	int wants_libm = 0;
 	int wants_libpino_math = 0;
+	int wants_libpino_mman = 0;
 	int wants_force_static = 0;
 	
 	#if defined(OBGGCC)
@@ -850,6 +851,7 @@ int main(int argc, char* argv[], char* envp[]) {
 			1 + /* -static-libhwasan */
 			1 + /* -mfpu=<value> */
 			2 + /* -l pino-math */
+			2 + /* -l pino-mman */
 			1 /* NULL */
 		)
 	);
@@ -1385,6 +1387,18 @@ int main(int argc, char* argv[], char* envp[]) {
 		*/
 		if ((linking && !linking_shared) && LIBC_VERSION(libc_major, libc_minor) < LIBC_VERSION(16, 0)) {
 			kargv[kargc++] = (char*) GCC_OPT_NO_PIE;
+		}
+		
+		wants_libpino_mman = LIBC_VERSION(libc_major, libc_minor) < LIBC_VERSION(21, 0);
+		
+		/*
+		Android versions below 5.0 (API level 21) did not have an mmap64() implementation.
+		The NDK provided a pseudo-implementation for this as an inline, and we moved it to its
+		own external library.
+		*/
+		if (wants_libpino_mman) {
+			kargv[kargc++] = (char*) GCC_OPT_L;
+			kargv[kargc++] = (char*) PINO_MMAN_LIBRARY;
 		}
 	#endif
 	
@@ -1933,9 +1947,18 @@ int main(int argc, char* argv[], char* envp[]) {
 				}
 			}
 			
-			/* libm */
+			/* libpino-math */
 			if (wants_libm) {
 				err = copy_shared_library(sysroot_library_directory, output_directory, LIBPINO_MATH_SHARED, LIBPINO_MATH_SHARED);
+				
+				if (err != ERR_SUCCESS) {
+					goto end;
+				}
+			}
+			
+			/* libpino-mman */
+			if (wants_libpino_mman) {
+				err = copy_shared_library(sysroot_library_directory, output_directory, LIBPINO_MMAN_SHARED, LIBPINO_MMAN_SHARED);
 				
 				if (err != ERR_SUCCESS) {
 					goto end;
