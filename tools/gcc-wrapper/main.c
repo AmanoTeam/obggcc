@@ -35,6 +35,10 @@ static const char ATOMIC_LIBRARY[] = "atomic";
 static const char GOMP_LIBRARY[] = "gomp";
 static const char ITM_LIBRARY[] = "itm";
 static const char QUADMATH_LIBRARY[] = "quadmath";
+static const char MATH_LIBRARY[] = "m";
+
+static const char PINO_MMAN_LIBRARY[] = "pino-mman";
+static const char PINO_MATH_LIBRARY[] = "pino-math";
 
 static const char LIBATOMIC_SHARED[] = "libatomic.so";
 
@@ -56,6 +60,9 @@ static const char LIBHWASAN_SHARED[] = "libhwasan.so";
 static const char LIBLSAN_SHARED[] = "liblsan.so";
 static const char LIBTSAN_SHARED[] = "libtsan.so";
 static const char LIBUBSAN_SHARED[] = "libubsan.so";
+
+static const char LIBPINO_MMAN_SHARED[] = "libpino-mman.so";
+static const char LIBPINO_MATH_SHARED[] = "libpino-math.so";
 
 static const char GCC_OPT_ISYSTEM[] = "-isystem";
 static const char GCC_OPT_SYSROOT[] = "--sysroot";
@@ -90,6 +97,7 @@ static const char GCC_OPT_L_ATOMIC[] = "-latomic";
 static const char GCC_OPT_L_GOMP[] = "-lgomp";
 static const char GCC_OPT_L_ITM[] = "-litm";
 static const char GCC_OPT_L_QUADMATH[] = "-lquadmath";
+static const char GCC_OPT_L_MATH[] = "-lmath";
 static const char GCC_OPT_XLINKER[] = "-Xlinker";
 static const char GCC_OPT_WL[] = "-Wl,";
 static const char GCC_OPT_F_FAT_LTO_OBJECTS[] = "-ffat-lto-objects";
@@ -719,6 +727,8 @@ int main(int argc, char* argv[], char* envp[]) {
 	int wants_libquadmath = 0;
 	int wants_librt = 0;
 	int wants_libssp = 0;
+	int wants_libm = 0;
+	int wants_libpino_math = 0;
 	int wants_force_static = 0;
 	
 	#if defined(OBGGCC)
@@ -839,6 +849,7 @@ int main(int argc, char* argv[], char* envp[]) {
 			1 + /* -static-libubsan */
 			1 + /* -static-libhwasan */
 			1 + /* -mfpu=<value> */
+			2 + /* -l pino-math */
 			1 /* NULL */
 		)
 	);
@@ -883,6 +894,8 @@ int main(int argc, char* argv[], char* envp[]) {
 			wants_libquadmath = 1;
 		} else if (strcmp(cur, GCC_OPT_L_RT) == 0) {
 			have_rt_library = 1;
+		} else if (strcmp(cur, GCC_OPT_L_MATH) == 0) {
+			wants_libm = 1;
 		} else if (prev != NULL && strcmp(prev, GCC_OPT_L) == 0) {
 			if (strcmp(cur, STDCXX_LIBRARY) == 0) {
 				wants_libcxx = 1;
@@ -896,6 +909,8 @@ int main(int argc, char* argv[], char* envp[]) {
 				wants_libitm = 1;
 			} else if (strcmp(cur, QUADMATH_LIBRARY) == 0) {
 				wants_libquadmath = 1;
+			} else if (strcmp(cur, MATH_LIBRARY) == 0) {
+				wants_libm = 1;
 			}
 		} else if (strcmp(cur, CMAKE_C_COMPILER_ID) == 0 || strcmp(cur, CMAKE_CXX_COMPILER_ID) == 0) {
 			cmake_init = 1;
@@ -1132,6 +1147,19 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	if (wants_libcxx) {
 		wants_libgcc = 1;
+	}
+	
+	/*
+	libstdc++ requires certain mathematical functions that are not present in older
+	versions of Bionic. We implement these functions in an external library called
+	libpino-math using GCC's builtins.
+	
+	Additionally, we expose these functions in the standard library headers
+	(math.h and complex.h) so that anyone can use them.
+	*/
+	if (wants_libcxx || wants_libm) {
+		kargv[kargc++] = (char*) GCC_OPT_L;
+		kargv[kargc++] = (char*) PINO_MATH_LIBRARY;
 	}
 	
 	if (linking && wants_force_static) {
@@ -1899,6 +1927,15 @@ int main(int argc, char* argv[], char* envp[]) {
 			/* libssp */
 			if (wants_libssp) {
 				err = copy_shared_library(sysroot_library_directory, output_directory, LIBSSP_SHARED, LIBSSP_SHARED);
+				
+				if (err != ERR_SUCCESS) {
+					goto end;
+				}
+			}
+			
+			/* libm */
+			if (wants_libm) {
+				err = copy_shared_library(sysroot_library_directory, output_directory, LIBPINO_MATH_SHARED, LIBPINO_MATH_SHARED);
 				
 				if (err != ERR_SUCCESS) {
 					goto end;
