@@ -109,6 +109,8 @@ static const char GCC_OPT_F_OPENMP[] = "-fopenmp";
 static const char GCC_OPT_F_OPENACC[] = "-fopenacc";
 static const char GCC_OPT_NO_PIE[] = "-no-pie";
 static const char GCC_OPT_M_FPU[] = "-mfpu=";
+static const char GCC_OPT_M_SSE3[] = "-msse3";
+static const char GCC_OPT_M_SSE4_2[] = "-msse4.2";
 
 static const char GCC_OPT_DFORTIFY_SOURCE[] = "-D_FORTIFY_SOURCE=";
 static const char GCC_OPT_U_GNUC[] = "-U__GNUC__";
@@ -319,6 +321,20 @@ static int target_supports_neon(const char* const name) {
 	}
 	
 	return 0;
+	
+}
+
+static const char* get_simd(const char* const name) {
+	
+	if (strcmp(name, "i686-unknown-linux-android") == 0 || strcmp(name, "i386-unknown-linux-gnu") == 0) {
+		return GCC_OPT_M_SSE3;
+	}
+	
+	if (strcmp(name, "x86_64-unknown-linux-android") == 0 || strcmp(name, "x86_64-unknown-linux-gnu") == 0) {
+		return GCC_OPT_M_SSE4_2;
+	}
+	
+	return NULL;
 	
 }
 
@@ -715,6 +731,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	int wants_runtime_rpath = 0;
 	int wants_nz = 0;
 	int wants_neon = 0;
+	int wants_simd = 0;
 	
 	int nodefaultlibs = 0;
 	int address_sanitizer = 0;
@@ -829,11 +846,12 @@ int main(int argc, char* argv[], char* envp[]) {
 	if (status != -1) {
 		wants_force_static = (status == 1);
 	}
-		
+	
 	wants_nz = get_env(WRAPPER_FLAVOR_NAME "_NZ") == 1;
 	wants_runtime_rpath = get_env(WRAPPER_FLAVOR_NAME "_RUNTIME_RPATH") == 1;
 	verbose = get_env(WRAPPER_FLAVOR_NAME "_VERBOSE") == 1;
 	wants_neon = get_env(WRAPPER_FLAVOR_NAME "_NEON") == 1;
+	wants_simd = get_env(WRAPPER_FLAVOR_NAME "_SIMD") == 1;
 	
 	kargv = malloc(
 		sizeof(*argv) * (
@@ -856,6 +874,7 @@ int main(int argc, char* argv[], char* envp[]) {
 			1 + /* -mfpu=<value> */
 			2 + /* -l pino-math */
 			2 + /* -l pino-mman */
+			1 + /* -msse<version> */
 			1 /* NULL */
 		)
 	);
@@ -1268,6 +1287,10 @@ int main(int argc, char* argv[], char* envp[]) {
 		strcat(floating_point_unit, GCC_FPU_NEON);
 		
 		kargv[kargc++] = floating_point_unit;
+	}
+	
+	if (wants_simd && (cur = get_simd(triplet)) != NULL) {
+		kargv[kargc++] = (char*) cur;
 	}
 	
 	/* Pick a fast linker if available. */
