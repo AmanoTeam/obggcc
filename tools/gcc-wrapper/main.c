@@ -1185,18 +1185,20 @@ int main(int argc, char* argv[], char* envp[]) {
 		wants_libgcc = 1;
 	}
 	
-	/*
-	libstdc++ requires certain mathematical functions that are not present in older
-	versions of Bionic. We implement these functions in an external library called
-	libpino-math using GCC's builtins.
-	
-	Additionally, we expose these functions in the standard library headers
-	(math.h and complex.h) so that anyone can use them.
-	*/
-	if ((wants_libcxx || wants_libm) && !nodefaultlibs) {
-		kargv[kargc++] = (char*) GCC_OPT_L;
-		kargv[kargc++] = (char*) PINO_MATH_LIBRARY;
-	}
+	#if defined(PINO)
+		/*
+		libstdc++ requires certain mathematical functions that are not present in older
+		versions of Bionic. We implement these functions in an external library called
+		libpino-math using GCC's builtins.
+		
+		Additionally, we expose these functions in the standard library headers
+		(math.h and complex.h) so that anyone can use them.
+		*/
+		if ((wants_libcxx || wants_libm) && !nodefaultlibs) {
+			kargv[kargc++] = (char*) GCC_OPT_L;
+			kargv[kargc++] = (char*) PINO_MATH_LIBRARY;
+		}
+	#endif
 	
 	if (linking && wants_force_static) {
 		/*
