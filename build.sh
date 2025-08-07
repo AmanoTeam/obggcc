@@ -465,6 +465,7 @@ fi
 	${ccflags} \
 	${linkflags} \
 	-D OBGGCC \
+	-D AUTO_PICK_LINKER=0 \
 	-o "${gcc_wrapper}"
 
 for target in "${targets[@]}"; do
@@ -557,7 +558,7 @@ for target in "${targets[@]}"; do
 		--with-zstd="${toolchain_directory}" \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v3.0-${revision}" \
+		--with-pkgversion="OBGGCC v3.1-${revision}" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--with-native-system-header-dir='/include' \
 		--with-default-libstdcxx-abi='new' \

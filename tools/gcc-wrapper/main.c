@@ -21,6 +21,10 @@
 	#error "Please define the cross-compiler flavor for which we will be a wrapper"
 #endif
 
+#if !defined(AUTO_PICK_LINKER)
+	#define AUTO_PICK_LINKER 1
+#endif
+
 static const char GCC_MAJOR_VERSION[] = "15";
 
 static const char INCLUDE_DIR[] = PATHSEP_M "include";
@@ -216,11 +220,13 @@ static const char EQUAL = '=';
 static const char ZERO = '\0';
 static const char EQUAL_S[] = "=";
 
+#if AUTO_PICK_LINKER
 static const char* const FASTER_LINKERS[] = {
 	"mold",
 	"lld",
 	"gold"
 };
+#endif
 
 static const char CLANG_VERSION_TEMPLATE[] = 
 	"clang version 21.0.0\n"
@@ -579,6 +585,7 @@ static int clang_specific_replace(
 	
 }
 
+#if AUTO_PICK_LINKER
 static const char* get_fast_linker(
 	const char* const directory,
 	const char* const triplet
@@ -651,6 +658,7 @@ static const char* get_fast_linker(
 	return linker;
 	
 }
+#endif
 
 #if defined(PINO)
 int copy_shared_library(
@@ -827,7 +835,10 @@ int main(int argc, char* argv[], char* envp[]) {
 	size_t kargc = 0;
 	char** kargv = NULL;
 	
-	char* linker = NULL;
+	#if AUTO_PICK_LINKER
+		char* linker = NULL;
+	#endif
+	
 	char* floating_point_unit = NULL;
 	
 	unsigned char ch = 0;
@@ -1293,20 +1304,22 @@ int main(int argc, char* argv[], char* envp[]) {
 		kargv[kargc++] = (char*) cur;
 	}
 	
-	/* Pick a fast linker if available. */
-	if (!override_linker && (cur = get_fast_linker(parent_directory, triplet)) != NULL) {
-		linker = malloc(strlen(GCC_OPT_F_USE_LD) + strlen(cur) + 1);
-		
-		if (linker == NULL) {
-			err = ERR_MEM_ALLOC_FAILURE;
-			goto end;
+	#if AUTO_PICK_LINKER
+		/* Pick a fast linker if available. */
+		if (!override_linker && (cur = get_fast_linker(parent_directory, triplet)) != NULL) {
+			linker = malloc(strlen(GCC_OPT_F_USE_LD) + strlen(cur) + 1);
+			
+			if (linker == NULL) {
+				err = ERR_MEM_ALLOC_FAILURE;
+				goto end;
+			}
+			
+			strcpy(linker, GCC_OPT_F_USE_LD);
+			strcat(linker, cur);
+			
+			kargv[kargc++] = linker;
 		}
-		
-		strcpy(linker, GCC_OPT_F_USE_LD);
-		strcat(linker, cur);
-		
-		kargv[kargc++] = linker;
-	}
+	#endif
 	
 	#if defined(OBGGCC)
 		/* Atomics are not natively supported on SPARC, so we need to rely on -latomic. */
@@ -2011,7 +2024,11 @@ int main(int argc, char* argv[], char* envp[]) {
 	free(args);
 	free(kargv);
 	free(arg);
-	free(linker);
+	
+	#if AUTO_PICK_LINKER
+		free(linker);
+	#endif
+	
 	free(floating_point_unit);
 	free(sysroot_include_directory);
 	free(sysroot_include_missing_directory);
