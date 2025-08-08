@@ -626,7 +626,15 @@ for target in "${targets[@]}"; do
 	
 	cd "${toolchain_directory}/${triplet}/lib64" 2>/dev/null || cd "${toolchain_directory}/${triplet}/lib"
 	
+	if [[ "$(basename "${PWD}")" = 'lib64' ]]; then
+		mv './'* '../lib' || true
+		rmdir "${PWD}"
+		cd '../lib'
+	fi
+	
 	[ -f './libiberty.a' ] && unlink './libiberty.a'
+	
+	unlink './libgcc_s.so' && echo 'GROUP ( libgcc_s.so.1 -lgcc )' > './libgcc_s.so'
 	
 	cp "${workdir}/tools/pkg-config.sh" "${toolchain_directory}/bin/${triplet}-pkg-config"
 	
