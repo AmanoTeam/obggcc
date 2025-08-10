@@ -1,0 +1,29 @@
+From 18f85bd95c8cb740ac525f8fca05d3f6f6b497dc Mon Sep 17 00:00:00 2001
+From: Your Name <you@example.com>
+Date: Sun, 10 Aug 2025 23:13:27 +0000
+Subject: [PATCH] static_assert() is a C23 feature
+
+---
+ include/opcode/aarch64.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/opcode/aarch64.h b/include/opcode/aarch64.h
+index 4425dd4..bf4129c 100644
+--- a/include/opcode/aarch64.h
++++ b/include/opcode/aarch64.h
+@@ -361,10 +361,10 @@ typedef uint64_t aarch64_feature_word;
+    not otherwise used).  */
+ #define AA64_REPVAL(ELT, VAL) VAL
+ 
+-/* static_assert requires C11 (or C++11) or later.  Support older
++/* static_assert requires C23 (or C++11) or later.  Support older
+    versions by disabling this check since compilers without this are
+    pretty uncommon these days.  */
+-#if ((defined __STDC_VERSION__ && __STDC_VERSION__ >= 201112L)	\
++#if ((defined __STDC_VERSION__ && __STDC_VERSION__ >= 202311L)	\
+      || (defined __cplusplus && __cplusplus >= 201103L))
+ static_assert ((AA64_REPLICATE (REP_PLUS, AA64_REPVAL,
+ 				AARCH64_BITS_PER_FEATURE_WORD))
+-- 
+2.25.1
+

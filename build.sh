@@ -26,7 +26,7 @@ declare -r isl_tarball='/tmp/isl.tar.xz'
 declare -r isl_directory='/tmp/isl-0.27'
 
 declare -r binutils_tarball='/tmp/binutils.tar.xz'
-declare -r binutils_directory='/tmp/binutils-with-gold-2.44'
+declare -r binutils_directory='/tmp/binutils-2.45'
 
 declare -r gcc_major='15'
 
@@ -262,7 +262,7 @@ fi
 
 if ! [ -f "${binutils_tarball}" ]; then
 	curl \
-		--url 'https://mirrors.kernel.org/gnu/binutils/binutils-with-gold-2.44.tar.xz' \
+		--url 'https://mirrors.kernel.org/gnu/binutils/binutils-2.45.tar.xz' \
 		--retry '30' \
 		--retry-all-errors \
 		--retry-delay '0' \
@@ -276,9 +276,8 @@ if ! [ -f "${binutils_tarball}" ]; then
 		--extract \
 		--file="${binutils_tarball}"
 	
-	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Revert-gold-Use-char16_t-char32_t-instead-of-uint16_.patch"
-	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Disable-annoying-linker-warnings.patch"
 	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Add-relative-RPATHs-to-binutils-host-tools.patch"
+	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-static_assert-is-a-C23-feature.patch"
 fi
 
 if ! [ -f "${zstd_tarball}" ]; then

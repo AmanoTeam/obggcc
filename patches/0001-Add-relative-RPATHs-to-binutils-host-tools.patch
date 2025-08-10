@@ -11,7 +11,6 @@ This eliminates the need to statically link any libraries and also saves disk sp
  bfd/Makefile.in      | 2 +-
  binutils/Makefile.in | 2 +-
  gas/Makefile.in      | 2 +-
- gold/Makefile.in     | 8 ++++----
  gprof/Makefile.in    | 2 +-
  ld/Makefile.in       | 2 +-
  6 files changed, 9 insertions(+), 9 deletions(-)
@@ -55,46 +54,6 @@ index 1f24d4a5..47d294e2 100644
  AM_V_CCLD = $(am__v_CCLD_@AM_V@)
  am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
  am__v_CCLD_0 = @echo "  CCLD    " $@;
-diff --git a/gold/Makefile.in b/gold/Makefile.in
-index 02df5383..84abad9f 100644
---- a/gold/Makefile.in
-+++ b/gold/Makefile.in
-@@ -193,7 +193,7 @@ PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS)
- am_dwp_OBJECTS = dwp.$(OBJEXT)
- dwp_OBJECTS = $(am_dwp_OBJECTS)
- am__DEPENDENCIES_1 =
--dwp_LINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(dwp_LDFLAGS) \
-+dwp_LINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(dwp_LDFLAGS) \
- 	$(LDFLAGS) -o $@
- am_incremental_dump_OBJECTS = incremental-dump.$(OBJEXT)
- incremental_dump_OBJECTS = $(am_incremental_dump_OBJECTS)
-@@ -242,7 +242,7 @@ am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
- am__v_CC_0 = @echo "  CC      " $@;
- am__v_CC_1 = 
- CCLD = $(CC)
--LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-+LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) -o $@
- AM_V_CCLD = $(am__v_CCLD_@AM_V@)
- am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
- am__v_CCLD_0 = @echo "  CCLD    " $@;
-@@ -254,7 +254,7 @@ am__v_CXX_ = $(am__v_CXX_@AM_DEFAULT_V@)
- am__v_CXX_0 = @echo "  CXX     " $@;
- am__v_CXX_1 = 
- CXXLD = $(CXX)
--CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
-+CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) \
- 	-o $@
- AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
- am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
-@@ -1042,7 +1042,7 @@ incremental-dump$(EXEEXT): $(incremental_dump_OBJECTS) $(incremental_dump_DEPEND
- 
- ld-new$(EXEEXT): $(ld_new_OBJECTS) $(ld_new_DEPENDENCIES) $(EXTRA_ld_new_DEPENDENCIES) 
- 	@rm -f ld-new$(EXEEXT)
--	$(AM_V_CXXLD)$(ld_new_LINK) $(ld_new_OBJECTS) $(ld_new_LDADD) $(LIBS)
-+	$(AM_V_CXXLD)$(ld_new_LINK) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(ld_new_OBJECTS) $(ld_new_LDADD) $(LIBS)
- 
- ld1$(EXEEXT): $(ld1_OBJECTS) $(ld1_DEPENDENCIES) $(EXTRA_ld1_DEPENDENCIES) 
- 	@rm -f ld1$(EXEEXT)
 diff --git a/gprof/Makefile.in b/gprof/Makefile.in
 index 93fb3781..9aad7841 100644
 --- a/gprof/Makefile.in
