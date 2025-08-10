@@ -120,7 +120,7 @@ declare -ra bits=(
 
 declare -r languages='c,c++'
 
-declare -ra targets=(
+declare -ra deprecated_targets=(
 	'ia64-unknown-linux-gnu'
 	'mips-unknown-linux-gnu'
 	'mips64el-unknown-linux-gnuabi64'
@@ -130,12 +130,15 @@ declare -ra targets=(
 	's390-unknown-linux-gnu'
 	's390x-unknown-linux-gnu'
 	'sparc-unknown-linux-gnu'
-	'x86_64-unknown-linux-gnu'
 	'alpha-unknown-linux-gnu'
-	'aarch64-unknown-linux-gnu'
-	'arm-unknown-linux-gnueabi'
-	'arm-unknown-linux-gnueabihf'
 	'hppa-unknown-linux-gnu'
+	'arm-unknown-linux-gnueabi'
+)
+
+declare -ra targets=(
+	'x86_64-unknown-linux-gnu'
+	'aarch64-unknown-linux-gnu'
+	'arm-unknown-linux-gnueabihf'
 	'i386-unknown-linux-gnu'
 )
 
@@ -558,7 +561,7 @@ for target in "${targets[@]}"; do
 		--with-zstd="${toolchain_directory}" \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v3.1-${revision}" \
+		--with-pkgversion="OBGGCC v3.2-${revision}" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--with-native-system-header-dir='/include' \
 		--with-default-libstdcxx-abi='new' \
