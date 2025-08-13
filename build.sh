@@ -530,7 +530,7 @@ for target in "${targets[@]}"; do
 	make all --jobs
 	make install
 	
-	if [[ "${triplet}" != 'powerpc64'* ]]; then
+	if [ "${triplet}" = 'x86_64-unknown-linux-gnu' ] || [ "${triplet}" = 'i386-unknown-linux-gnu' ]; then
 		specs+=' %{!fno-plt:%{!fplt:-fno-plt}}'
 	fi
 	
