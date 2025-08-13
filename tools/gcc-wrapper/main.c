@@ -147,6 +147,11 @@ static const char LD_OPT_RPATH_LINK[] = "-rpath-link";
 static const char LD_OPT_RPATH[] = "-rpath";
 static const char LD_OPT_UNRESOLVED_SYMBOLS[] = "--unresolved-symbols=ignore-in-shared-libs";
 static const char LD_OPT_NO_ROSEGMENT[] = "--no-rosegment";
+static const char LD_OPT_Z[] = "-z";
+static const char LD_OPT_PACK_RELATIVE_RELOCS[] = "pack-relative-relocs";
+
+static const char LLD_OPT_USE_ANDROID_RELR_TAGS[] = "--use-android-relr-tags";
+static const char LLD_OPT_PACK_DYN_RELOCS[] = "--pack-dyn-relocs=relr";
 
 static const char M_ANDROID_API[] = "__ANDROID_API__=";
 static const char M_ANDROID_MIN_SDK_VERSION[] = "__ANDROID_MIN_SDK_VERSION__=";
@@ -325,6 +330,79 @@ static int target_supports_neon(const char* const name) {
 	if (strcmp(name, "armv7-unknown-linux-androideabi") == 0) {
 		return 1;
 	}
+	
+	return 0;
+	
+}
+
+static int check_linker_lld(const char* const name) {
+	return name != NULL && strcmp(name, "lld") == 0;
+}
+
+static int check_linker_mold(const char* const name) {
+	return name != NULL && strcmp(name, "mold") == 0;
+}
+
+
+static int target_supports_relr(const char* const name, const char* const linker, const int version) {
+	
+	#if defined(OBGGCC)
+		/* The GNU C Library has supported DT_RELR since the 2.36 release. */
+		if (version < LIBC_VERSION(2, 36)) {
+			return 0;
+		}
+		
+		if (strcmp(name, "x86_64-unknown-linux-gnu") == 0) {
+			return 1;
+		}
+		
+		if (strcmp(name, "i386-unknown-linux-gnu") == 0) {
+			return 1;
+		}
+		
+		if (strcmp(name, "aarch64-unknown-linux-gnu") == 0) {
+			return 1;
+		}
+		
+		if (check_linker_lld(linker) || check_linker_mold(linker)) {
+			if (strcmp(name, "arm-unknown-linux-gnueabihf") == 0) {
+				return 1;
+			}
+		}
+	#elif defined(PINO)
+		/* The Bionic C Library has supported DT_RELR since Android 9 (API level 28). */
+		if (version < LIBC_VERSION(28, 0)) {
+			return 0;
+		}
+		
+		if (strcmp(name, "x86_64-unknown-linux-android") == 0) {
+			return 1;
+		}
+		
+		if (strcmp(name, "i686-unknown-linux-android") == 0) {
+			return 1;
+		}
+		
+		if (strcmp(name, "aarch64-unknown-linux-android") == 0) {
+			return 1;
+		}
+		
+		if (check_linker_lld(linker) || check_linker_mold(linker)) {
+			if (strcmp(name, "armv7-unknown-linux-androideabi") == 0) {
+				return 1;
+			}
+			
+			if (strcmp(name, "armv5-unknown-linux-androideabi") == 0) {
+				return 1;
+			}
+			
+			if (strcmp(name, "riscv64-unknown-linux-android") == 0) {
+				return 1;
+			}
+		}
+	#else
+		#error "I don't know how to handle this"
+	#endif
 	
 	return 0;
 	
@@ -765,7 +843,7 @@ int main(int argc, char* argv[], char* envp[]) {
 		int require_atomic_library = 0;
 	#endif
 	
-	int override_linker = 0;
+	const char* override_linker = NULL;
 	
 	int cmake_init = 0;
 	
@@ -886,6 +964,7 @@ int main(int argc, char* argv[], char* envp[]) {
 			2 + /* -l pino-math */
 			2 + /* -l pino-mman */
 			1 + /* -msse<version> */
+			4 + /* -Xlinker -z -Xlinker pack-relative-relocs */
 			1 /* NULL */
 		)
 	);
@@ -905,7 +984,7 @@ int main(int argc, char* argv[], char* envp[]) {
 		} else if (strncmp(cur, GCC_OPT_FSANITIZE, strlen(GCC_OPT_FSANITIZE)) == 0) {
 			address_sanitizer = 1;
 		} else if (strncmp(cur, GCC_OPT_F_USE_LD, strlen(GCC_OPT_F_USE_LD)) == 0) {
-			override_linker = 1;
+			override_linker = cur + strlen(GCC_OPT_F_USE_LD);
 		} else if (strncmp(cur, GCC_OPT_F_STACK_PROTECTOR, strlen(GCC_OPT_F_STACK_PROTECTOR)) == 0) {
 			stack_protector = 1;
 		} else if (strcmp(cur, GCC_OPT_VERSION) == 0) {
@@ -1443,6 +1522,66 @@ int main(int argc, char* argv[], char* envp[]) {
 			kargv[kargc++] = (char*) PINO_MMAN_LIBRARY;
 		}
 	#endif
+	
+	/*
+	Enable DT_RELR relocations on supported targets.
+	
+	- bfd
+	As of binutils 2.45, this is supported for the following architectures: AArch64, x86, and x86_64.
+	
+	- gold
+	Not supported at all.
+	
+	- LLD
+	LLD always accepts the flag regardless of the target architecture and never outputs an error message.
+	It's unclear whether it truly supports all architectures or if LLD is simply ignoring the flag when it's not supported.
+	
+	- mold
+	Assumed to follow the same behavior as LLD.
+	*/
+	if (linking && target_supports_relr(triplet, override_linker, LIBC_VERSION(libc_major, libc_minor))) {
+		if (override_linker == NULL || strcmp(override_linker, "bfd") == 0) {
+			kargv[kargc++] = (char*) GCC_OPT_XLINKER;
+			kargv[kargc++] = (char*) LD_OPT_Z;
+			kargv[kargc++] = (char*) GCC_OPT_XLINKER;
+			kargv[kargc++] = (char*) LD_OPT_PACK_RELATIVE_RELOCS;
+		} else if (strcmp(override_linker, "mold") == 0 || strcmp(override_linker, "lld") == 0) {
+			#if defined(OBGGCC)
+				/*
+				DT_RELR on glibc requires a dependency on GLIBC_ABI_DT_RELR to be present,
+				but --pack-dyn-relocs does not add that dependency by default, which leads to this error at runtime:
+				
+				$ gcc -fuse-ld=lld -Xlinker --pack-dyn-relocs <...>
+				$ ./main
+				./main: error while loading shared libraries: ./main: DT_RELR without GLIBC_ABI_DT_RELR dependency
+				
+				To work around this, we use -z pack-relative-relocs instead, but this comes with the downside of not being
+				supported on older versions of lld and mold:
+				
+				$ gcc -fuse-ld=lld -Xlinker -z -Xlinker pack-relative-relocs <...>
+				ld.lld: error: unknown -z value: pack-relative-relocs
+				collect2: error: ld returned 1 exit status
+				*/
+				kargv[kargc++] = (char*) GCC_OPT_XLINKER;
+				kargv[kargc++] = (char*) LD_OPT_Z;
+				kargv[kargc++] = (char*) GCC_OPT_XLINKER;
+				kargv[kargc++] = (char*) LD_OPT_PACK_RELATIVE_RELOCS;
+			#else
+				/*
+				Everything else should work with --pack-dyn-relocs.
+				*/
+				#if defined(PINO)
+					if (strcmp(override_linker, "lld") == 0) {
+						kargv[kargc++] = (char*) GCC_OPT_XLINKER;
+						kargv[kargc++] = (char*) LLD_OPT_PACK_DYN_RELOCS;
+					}
+				#endif
+				
+				kargv[kargc++] = (char*) GCC_OPT_XLINKER;
+				kargv[kargc++] = (char*) LLD_OPT_PACK_DYN_RELOCS;
+			#endif
+		}
+	}
 	
 	#if defined(OBGGCC)
 		/* Determine whether we need to implicit link with -lrt */
