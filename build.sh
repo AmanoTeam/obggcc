@@ -49,8 +49,7 @@ declare -r pieflags='-fPIE'
 declare -r ccflags='-w -O2'
 declare -r linkflags='-Xlinker -s'
 
-declare -r ltoflags='-flto -fno-fat-lto-objects -flto-partition=one -flto-compression-level=0 -fdevirtualize-at-ltrans'
-declare -r ltolinkflags='-flto'
+declare lto_partition='one'
 
 declare -r max_jobs='40'
 
@@ -186,6 +185,13 @@ set -u
 declare -r \
 	build_type \
 	is_native
+
+if [[ "${build_type}" = 'arm'* ]]; then
+	lto_partition='balanced'
+fi
+
+declare -r ltoflags="-flto -fno-fat-lto-objects -flto-partition=${lto_partition} -flto-compression-level=0 -fdevirtualize-at-ltrans"
+declare -r ltolinkflags='-flto'
 
 if ! [ -f "${gmp_tarball}" ]; then
 	curl \
