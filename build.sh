@@ -448,7 +448,7 @@ cmake \
 	-DZSTD_BUILD_STATIC=OFF \
 	-DCMAKE_PLATFORM_NO_VERSIONED_SONAME=ON
 
-cmake --build "${PWD}"
+cmake --build "${PWD}" -- --jobs
 cmake --install "${PWD}" --strip
 
 # We prefer symbolic links over hard links.
@@ -509,18 +509,16 @@ for target in "${targets[@]}"; do
 	
 	mv "${sysroot_directory}" "${toolchain_directory}/${triplet}"
 	
-	rm --force --recursive ./*
+	rm --force --recursive "${PWD}" &
 	
 	[ -d "${binutils_directory}/build" ] || mkdir "${binutils_directory}/build"
 	
 	cd "${binutils_directory}/build"
-	rm --force --recursive ./*
 	
 	../configure \
 		--host="${CROSS_COMPILE_TRIPLET}" \
 		--target="${triplet}" \
 		--prefix="${toolchain_directory}" \
-		--enable-gold \
 		--enable-ld \
 		--enable-lto \
 		--enable-separate-code \
@@ -529,6 +527,7 @@ for target in "${targets[@]}"; do
 		--enable-compressed-debug-sections='all' \
 		--enable-default-compressed-debug-sections-algorithm='zstd' \
 		--disable-gprofng \
+		--disable-gold \
 		--disable-default-execstack \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--without-static-standard-libraries \
@@ -539,6 +538,8 @@ for target in "${targets[@]}"; do
 	
 	make all --jobs
 	make install
+	
+	rm --force --recursive "${PWD}" &
 	
 	if [ "${triplet}" = 'x86_64-unknown-linux-gnu' ] || [ "${triplet}" = 'i386-unknown-linux-gnu' ]; then
 		specs+=' %{!fno-plt:%{!fplt:-fno-plt}}'
@@ -556,7 +557,6 @@ for target in "${targets[@]}"; do
 	[ -d "${gcc_directory}/build" ] || mkdir "${gcc_directory}/build"
 	
 	cd "${gcc_directory}/build"
-	rm --force --recursive ./*
 	
 	../configure \
 		--host="${CROSS_COMPILE_TRIPLET}" \
@@ -635,6 +635,8 @@ for target in "${targets[@]}"; do
 		all \
 		--jobs="${max_jobs}"
 	make install
+	
+	rm --force --recursive "${PWD}" &
 	
 	cd "${toolchain_directory}/${triplet}/lib64" 2>/dev/null || cd "${toolchain_directory}/${triplet}/lib"
 	
