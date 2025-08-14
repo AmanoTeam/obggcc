@@ -190,8 +190,13 @@ if [[ "${build_type}" = 'arm'* ]]; then
 	lto_partition='balanced'
 fi
 
-declare -r ltoflags="-flto -fno-fat-lto-objects -flto-partition=${lto_partition} -flto-compression-level=0 -fdevirtualize-at-ltrans -fuse-linker-plugin"
-declare -r ltolinkflags='-flto'
+if [[ "${build_type}" = *'openbsd' ]]; then
+	declare -r ltoflags=''
+	declare -r ltolinkflags=''
+else
+	declare -r ltoflags="-flto -fno-fat-lto-objects -flto-partition=${lto_partition} -flto-compression-level=0 -fdevirtualize-at-ltrans -fuse-linker-plugin"
+	declare -r ltolinkflags='-flto'
+fi
 
 if ! [ -f "${gmp_tarball}" ]; then
 	curl \
