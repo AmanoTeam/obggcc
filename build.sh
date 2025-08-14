@@ -49,6 +49,9 @@ declare -r pieflags='-fPIE'
 declare -r ccflags='-w -O2'
 declare -r linkflags='-Xlinker -s'
 
+declare -r ltoflags='-flto -fno-fat-lto-objects -flto-partition=one -flto-compression-level=0 -fdevirtualize-at-ltrans'
+declare -r ltolinkflags='-flto'
+
 declare -r max_jobs='40'
 
 declare -r sysroot_tarball='/tmp/sysroot.tar.xz'
@@ -362,9 +365,9 @@ rm --force --recursive ./*
 	--prefix="${toolchain_directory}" \
 	--enable-shared \
 	--disable-static \
-	CFLAGS="${ccflags}" \
-	CXXFLAGS="${ccflags}" \
-	LDFLAGS="${linkflags}"
+	CFLAGS="${ccflags} ${ltoflags}" \
+	CXXFLAGS="${ccflags} ${ltoflags}" \
+	LDFLAGS="${linkflags} ${ltolinkflags}"
 
 make all --jobs
 make install
@@ -380,9 +383,9 @@ rm --force --recursive ./*
 	--with-gmp="${toolchain_directory}" \
 	--enable-shared \
 	--disable-static \
-	CFLAGS="${ccflags}" \
-	CXXFLAGS="${ccflags}" \
-	LDFLAGS="${linkflags}"
+	CFLAGS="${ccflags} ${ltoflags}" \
+	CXXFLAGS="${ccflags} ${ltoflags}" \
+	LDFLAGS="${linkflags} ${ltolinkflags}"
 
 make all --jobs
 make install
@@ -398,9 +401,9 @@ rm --force --recursive ./*
 	--with-gmp="${toolchain_directory}" \
 	--enable-shared \
 	--disable-static \
-	CFLAGS="${ccflags}" \
-	CXXFLAGS="${ccflags}" \
-	LDFLAGS="${linkflags}"
+	CFLAGS="${ccflags} ${ltoflags}" \
+	CXXFLAGS="${ccflags} ${ltoflags}" \
+	LDFLAGS="${linkflags} ${ltolinkflags}"
 
 make all --jobs
 make install
@@ -416,9 +419,9 @@ rm --force --recursive ./*
 	--with-gmp-prefix="${toolchain_directory}" \
 	--enable-shared \
 	--disable-static \
-	CFLAGS="${pieflags} ${ccflags}" \
-	CXXFLAGS="${pieflags} ${ccflags}" \
-	LDFLAGS="-Xlinker -rpath-link -Xlinker ${toolchain_directory}/lib ${linkflags}"
+	CFLAGS="${pieflags} ${ccflags} ${ltoflags}" \
+	CXXFLAGS="${pieflags} ${ccflags} ${ltoflags}" \
+	LDFLAGS="-Xlinker -rpath-link -Xlinker ${toolchain_directory}/lib ${linkflags} ${ltolinkflags}"
 
 make all --jobs
 make install
@@ -465,6 +468,7 @@ fi
 	"${workdir}/tools/gcc-wrapper/"*".c" \
 	-I "${workdir}/tools/gcc-wrapper" \
 	${ccflags} \
+	${ltoflags} \
 	${linkflags} \
 	-D OBGGCC \
 	-D AUTO_PICK_LINKER=0 \
@@ -523,9 +527,9 @@ for target in "${targets[@]}"; do
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--without-static-standard-libraries \
 		--with-zstd="${toolchain_directory}" \
-		CFLAGS="${ccflags}" \
-		CXXFLAGS="${ccflags}" \
-		LDFLAGS="${linkflags}"
+		CFLAGS="${ccflags} ${ltoflags}" \
+		CXXFLAGS="${ccflags} ${ltoflags}" \
+		LDFLAGS="${linkflags} ${ltolinkflags}"
 	
 	make all --jobs
 	make install
@@ -560,7 +564,7 @@ for target in "${targets[@]}"; do
 		--with-zstd="${toolchain_directory}" \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v3.2-${revision}" \
+		--with-pkgversion="OBGGCC v3.3-${revision}" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--with-native-system-header-dir='/include' \
 		--with-default-libstdcxx-abi='new' \
@@ -603,9 +607,9 @@ for target in "${targets[@]}"; do
 		--without-headers \
 		--without-static-standard-libraries \
 		${extra_configure_flags} \
-		CFLAGS="${ccflags}" \
-		CXXFLAGS="${ccflags}" \
-		LDFLAGS="${linkflags}"
+		CFLAGS="${ccflags} ${ltoflags}" \
+		CXXFLAGS="${ccflags} ${ltoflags}" \
+		LDFLAGS="${linkflags} ${ltolinkflags}"
 	
 	cflags_for_target="${ccflags} ${linkflags}"
 	cxxflags_for_target="${ccflags} ${linkflags}"

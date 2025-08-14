@@ -17,7 +17,7 @@ jobs:
       id: check-cache
       uses: actions/cache@main
       with:
-        key: gcc-15.2.0
+        key: gcc-15.2.0-1
         lookup-only: true
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
@@ -45,7 +45,7 @@ jobs:
       if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
       uses: actions/cache@main
       with:
-        key: gcc-15.2.0
+        key: gcc-15.2.0-1
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
           /tmp/x86_64-linux-gnu.tar.xz.sha256
@@ -90,11 +90,11 @@ jobs:
           'x86_64-unknown-dragonfly',
           
           # Android
-          'x86_64-unknown-linux-android21',
+          'x86_64-unknown-linux-android',
           'i686-unknown-linux-android21',
           'armv5-unknown-linux-androideabi21',
           'armv7-unknown-linux-androideabi21',
-          'aarch64-unknown-linux-android21',
+          'aarch64-unknown-linux-android',
           'riscv64-unknown-linux-android'
         ]
     steps:
@@ -111,7 +111,7 @@ jobs:
     - name: Restore from cache
       uses: actions/cache@main
       with:
-        key: gcc-15.2.0
+        key: gcc-15.2.0-1
         fail-on-cache-miss: true
         path: |
           /tmp/x86_64-linux-gnu.tar.xz

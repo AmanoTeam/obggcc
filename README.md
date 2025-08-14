@@ -25,7 +25,7 @@ OBGGCC can also be useful if you just want to test whether your program builds o
 
 ## Supported targets
 
-Currently, OBGGCC provides cross-compilers targeting 6 major Ubuntu releases and 9 major Debian releases on 16 system architectures.
+Currently, OBGGCC provides cross-compilers targeting 6 major Ubuntu releases and 9 major Debian releases on 4 system architectures.
 
 ### Distributions
 
@@ -48,22 +48,10 @@ Currently, OBGGCC provides cross-compilers targeting 6 major Ubuntu releases and
 
 ### System architectures
 
-- `alpha-unknown-linux-gnu`
 - `aarch64-unknown-linux-gnu`
-- `arm-unknown-linux-gnueabi`
 - `arm-unknown-linux-gnueabihf`
-- `hppa-unknown-linux-gnu`
 - `i386-unknown-linux-gnu`
-- `mips64el-unknown-linux-gnuabi64`
-- `mips-unknown-linux-gnu`
-- `mipsel-unknown-linux-gnu`
-- `powerpc64le-unknown-linux-gnu`
-- `powerpc-unknown-linux-gnu`
-- `s390-unknown-linux-gnu`
-- `s390x-unknown-linux-gnu`
-- `sparc-unknown-linux-gnu`
 - `x86_64-unknown-linux-gnu`
-- `ia64-unknown-linux-gnu`
 
 ## Cross-compilation
 
