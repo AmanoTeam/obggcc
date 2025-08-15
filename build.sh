@@ -49,7 +49,7 @@ declare -r pieflags='-fPIE'
 declare -r ccflags='-w -O2'
 declare -r linkflags='-Xlinker -s'
 
-declare lto_partition='one'
+declare lto_partition='none'
 
 declare -r max_jobs='40'
 
@@ -194,7 +194,7 @@ if [[ "${build_type}" = *'openbsd' ]]; then
 	declare -r ltoflags=''
 	declare -r ltolinkflags=''
 else
-	declare -r ltoflags="-flto -fno-fat-lto-objects -flto-partition=${lto_partition} -flto-compression-level=0 -fdevirtualize-at-ltrans -fuse-linker-plugin"
+	declare -r ltoflags="-flto=auto -fno-fat-lto-objects -flto-partition=${lto_partition} -flto-compression-level=0 -fdevirtualize-at-ltrans -fuse-linker-plugin"
 	declare -r ltolinkflags='-flto'
 fi
 
