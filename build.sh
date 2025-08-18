@@ -42,17 +42,12 @@ declare -r gdb_directory='/tmp/gdb'
 declare -r nz_tarball='/tmp/nz.tar.xz'
 declare nz_directory=""
 
-declare -r profile_sampling_directory='/tmp/profile-sampling'
-declare -r profile_guided_directory='/tmp/profile-guided'
-
 declare -r zstd_tarball='/tmp/zstd.tar.gz'
 declare -r zstd_directory='/tmp/zstd-dev'
 
 declare -r pieflags='-fPIE'
 declare -r ccflags='-w -O2'
 declare -r linkflags='-Xlinker -s'
-
-declare lto_partition='none'
 
 declare -r max_jobs='40'
 
@@ -137,14 +132,14 @@ declare -ra deprecated_targets=(
 	'sparc-unknown-linux-gnu'
 	'alpha-unknown-linux-gnu'
 	'hppa-unknown-linux-gnu'
-	'arm-unknown-linux-gnueabi'
 )
 
 declare -ra targets=(
 	'x86_64-unknown-linux-gnu'
-	# 'aarch64-unknown-linux-gnu'
-	# 'arm-unknown-linux-gnueabihf'
-	# 'i386-unknown-linux-gnu'
+	'aarch64-unknown-linux-gnu'
+	'arm-unknown-linux-gnueabi'
+	'arm-unknown-linux-gnueabihf'
+	'i386-unknown-linux-gnu'
 )
 
 declare -r PKG_CONFIG_PATH="${toolchain_directory}/lib/pkgconfig"
@@ -188,34 +183,6 @@ set -u
 declare -r \
 	build_type \
 	is_native
-
-declare -r profiling_generate="-fprofile-generate=${profile_sampling_directory} -fprofile-dir=${profile_sampling_directory} -fprofile-update=atomic"
-declare -r profiling_generate_link="-fprofile-generate"
-
-declare -r profiling_use="-fprofile-use=${profile_guided_directory} -fprofile-dir=${profile_guided_directory}"
-
-if (( is_native )); then
-	declare -r profiling_cflags="${profiling_generate}"
-	declare -r profiling_ldflags="${profiling_generate_link}"
-elif [ "${build_type}" = 'x86_64-unknown-linux-gnu' ]; then
-	declare -r profiling_cflags="${profiling_use}"
-	declare -r profiling_ldflags=''
-else
-	declare -r profiling_cflags=''
-	declare -r profiling_ldflags=''
-fi
-
-if [[ "${build_type}" = 'arm'* ]]; then
-	lto_partition='balanced'
-fi
-
-if [[ "${build_type}" = *'openbsd' ]]; then
-	declare -r ltoflags=''
-	declare -r ltolinkflags=''
-else
-	declare -r ltoflags="-flto=auto -fno-fat-lto-objects -flto-partition=${lto_partition} -flto-compression-level=0 -fdevirtualize-at-ltrans -fuse-linker-plugin"
-	declare -r ltolinkflags='-flto'
-fi
 
 if ! [ -f "${gmp_tarball}" ]; then
 	curl \
@@ -395,9 +362,9 @@ rm --force --recursive ./*
 	--prefix="${toolchain_directory}" \
 	--enable-shared \
 	--disable-static \
-	CFLAGS="${ccflags} ${ltoflags}" \
-	CXXFLAGS="${ccflags} ${ltoflags}" \
-	LDFLAGS="${linkflags} ${ltolinkflags}"
+	CFLAGS="${ccflags}" \
+	CXXFLAGS="${ccflags}" \
+	LDFLAGS="${linkflags}"
 
 make all --jobs
 make install
@@ -413,9 +380,9 @@ rm --force --recursive ./*
 	--with-gmp="${toolchain_directory}" \
 	--enable-shared \
 	--disable-static \
-	CFLAGS="${ccflags} ${ltoflags}" \
-	CXXFLAGS="${ccflags} ${ltoflags}" \
-	LDFLAGS="${linkflags} ${ltolinkflags}"
+	CFLAGS="${ccflags}" \
+	CXXFLAGS="${ccflags}" \
+	LDFLAGS="${linkflags}"
 
 make all --jobs
 make install
@@ -431,9 +398,9 @@ rm --force --recursive ./*
 	--with-gmp="${toolchain_directory}" \
 	--enable-shared \
 	--disable-static \
-	CFLAGS="${ccflags} ${ltoflags}" \
-	CXXFLAGS="${ccflags} ${ltoflags}" \
-	LDFLAGS="${linkflags} ${ltolinkflags}"
+	CFLAGS="${ccflags}" \
+	CXXFLAGS="${ccflags}" \
+	LDFLAGS="${linkflags}"
 
 make all --jobs
 make install
@@ -449,9 +416,9 @@ rm --force --recursive ./*
 	--with-gmp-prefix="${toolchain_directory}" \
 	--enable-shared \
 	--disable-static \
-	CFLAGS="${pieflags} ${ccflags} ${ltoflags}" \
-	CXXFLAGS="${pieflags} ${ccflags} ${ltoflags}" \
-	LDFLAGS="-Xlinker -rpath-link -Xlinker ${toolchain_directory}/lib ${linkflags} ${ltolinkflags}"
+	CFLAGS="${pieflags} ${ccflags}" \
+	CXXFLAGS="${pieflags} ${ccflags}" \
+	LDFLAGS="-Xlinker -rpath-link -Xlinker ${toolchain_directory}/lib ${linkflags}"
 
 make all --jobs
 make install
@@ -498,7 +465,6 @@ fi
 	"${workdir}/tools/gcc-wrapper/"*".c" \
 	-I "${workdir}/tools/gcc-wrapper" \
 	${ccflags} \
-	${ltoflags} \
 	${linkflags} \
 	-D OBGGCC \
 	-D AUTO_PICK_LINKER=0 \
@@ -556,9 +522,9 @@ for target in "${targets[@]}"; do
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--without-static-standard-libraries \
 		--with-zstd="${toolchain_directory}" \
-		CFLAGS="${ccflags} ${ltoflags}" \
-		CXXFLAGS="${ccflags} ${ltoflags}" \
-		LDFLAGS="${linkflags} ${ltolinkflags}"
+		CFLAGS="${ccflags}" \
+		CXXFLAGS="${ccflags}" \
+		LDFLAGS="${linkflags}"
 	
 	make all --jobs
 	make install
@@ -594,7 +560,7 @@ for target in "${targets[@]}"; do
 		--with-zstd="${toolchain_directory}" \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v3.3-${revision}" \
+		--with-pkgversion="OBGGCC v3.4-${revision}" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--with-native-system-header-dir='/include' \
 		--with-default-libstdcxx-abi='new' \
@@ -637,9 +603,9 @@ for target in "${targets[@]}"; do
 		--without-headers \
 		--without-static-standard-libraries \
 		${extra_configure_flags} \
-		CFLAGS="${ccflags} ${ltoflags} ${profiling_cflags}" \
-		CXXFLAGS="${ccflags} ${ltoflags} ${profiling_cflags}" \
-		LDFLAGS="${linkflags} ${ltolinkflags} ${profiling_ldflags}"
+		CFLAGS="${ccflags}" \
+		CXXFLAGS="${ccflags}" \
+		LDFLAGS="${linkflags}"
 	
 	cflags_for_target="${ccflags} ${linkflags}"
 	cxxflags_for_target="${ccflags} ${linkflags}"
@@ -947,3 +913,11 @@ done
 mkdir --parent "${share_directory}"
 
 cp --recursive "${workdir}/tools/dev/"* "${share_directory}"
+
+[ -d "${toolchain_directory}/build" ] || mkdir "${toolchain_directory}/build"
+
+ln \
+	--symbolic \
+	--relative \
+	"${share_directory}/"* \
+	"${toolchain_directory}/build"

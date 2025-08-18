@@ -17,7 +17,7 @@ jobs:
       id: check-cache
       uses: actions/cache@main
       with:
-        key: gcc-15.2.0-2
+        key: gcc-15.2.0-3
         lookup-only: true
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
@@ -26,34 +26,20 @@ jobs:
       if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
       run: |
         bash './build.sh' 'native'
-    - name: Package profiling data
-      run: |
-        tar --directory='/tmp' --create --file=- 'profile-guided' | xz --threads='0' --compress -9 > '/tmp/profiling.tar.xz'
     - name: Generate tarball
       if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
       run: |
         declare tarball_filename='/tmp/x86_64-linux-gnu.tar.xz'
         tar --directory='/tmp' --create --file=- 'obggcc' | xz --threads='0' --extreme --memlimit-compress='100%' --compress -9 > "${tarball_filename}"
         sha256sum "${tarball_filename}" | sed 's|/tmp/||' > "${tarball_filename}.sha256"
-    - name: Upload artifact
-      if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
-      uses: actions/upload-artifact@main
-      with:
-        name: native-toolchain
-        if-no-files-found: error
-        path: |
-          /tmp/x86_64-linux-gnu.tar.xz
-          /tmp/x86_64-linux-gnu.tar.xz.sha256
-          /tmp/profiling.tar.xz
     - name: Cache artifact
       if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
       uses: actions/cache@main
       with:
-        key: gcc-15.2.0-2
+        key: gcc-15.2.0-3
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
           /tmp/x86_64-linux-gnu.tar.xz.sha256
-          /tmp/profiling.tar.xz
   
   cross-build:
     name: 'Cross build'
@@ -116,19 +102,15 @@ jobs:
     - name: Restore from cache
       uses: actions/cache@main
       with:
-        key: gcc-15.2.0-2
+        key: gcc-15.2.0-3
         fail-on-cache-miss: true
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
           /tmp/x86_64-linux-gnu.tar.xz.sha256
-          /tmp/profiling.tar.xz
     - name: Setup toolchain
       run: |
         tar --directory='/tmp' --extract --file='/tmp/x86_64-linux-gnu.tar.xz'
         mv '/tmp/obggcc' '/tmp/obggcc-toolchain'
-    - name: Setup profiling data
-      run: |
-        tar --directory='/tmp' --extract --file='/tmp/profiling.tar.xz'
     - name: Cross-compile OBGGCC to ${{ matrix.target }}
       run: |
         source './tools/setup_toolchain.sh'
