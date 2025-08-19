@@ -921,3 +921,8 @@ ln \
 	--relative \
 	"${share_directory}/"* \
 	"${toolchain_directory}/build"
+
+for target in "${deprecated_targets[@]}"; do
+	rm --force "${toolchain_directory}/bin/${target}"*
+	rm --force "${share_directory}/"*"/${target}"*
+done

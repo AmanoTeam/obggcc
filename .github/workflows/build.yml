@@ -59,6 +59,7 @@ jobs:
           # Linux (glibc)
           'x86_64-unknown-linux-gnu',
           'i386-unknown-linux-gnu',
+          'arm-unknown-linux-gnueabi',
           'arm-unknown-linux-gnueabihf',
           'aarch64-unknown-linux-gnu',
           

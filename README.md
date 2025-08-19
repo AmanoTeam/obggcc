@@ -49,6 +49,7 @@ Currently, OBGGCC provides cross-compilers targeting 6 major Ubuntu releases and
 ### System architectures
 
 - `aarch64-unknown-linux-gnu`
+- `arm-unknown-linux-gnueabi`
 - `arm-unknown-linux-gnueabihf`
 - `i386-unknown-linux-gnu`
 - `x86_64-unknown-linux-gnu`
