@@ -106,6 +106,8 @@ static const char GCC_OPT_XLINKER[] = "-Xlinker";
 static const char GCC_OPT_WL[] = "-Wl,";
 static const char GCC_OPT_F_FAT_LTO_OBJECTS[] = "-ffat-lto-objects";
 static const char GCC_OPT_F_NO_FAT_LTO_OBJECTS[] = "-fno-fat-lto-objects";
+static const char GCC_OPT_F_LTO_PARTITION_NONE[] = "-flto-partition=none";
+static const char GCC_OPT_F_LTO_PARTITION_BALANCED[] = "-flto-partition=balanced";
 static const char GCC_OPT_F_LTO[] = "-flto";
 static const char GCC_OPT_F_USE_LD[] = "-fuse-ld=";
 static const char GCC_OPT_F_GNU_TM[] = "-fgnu-tm";
@@ -638,11 +640,11 @@ static int clang_specific_replace(
 		kargv[index++] = (char*) GCC_OPT_F_LTO;
 		
 		if (strcmp(current, "auto") == 0 || strcmp(current, "full") == 0) {
-			/* Replace -flto={full,auto} with -flto -ffat-lto-objects. */
-			kargv[index++] = (char*) GCC_OPT_F_FAT_LTO_OBJECTS;
+			/* Replace -flto={full,auto} with -flto -flto-partition=none. */
+			kargv[index++] = (char*) GCC_OPT_F_LTO_PARTITION_NONE;
 		} else {
-			/* Replace -flto=thin with -flto -fno-fat-lto-objects. */
-			kargv[index++] = (char*) GCC_OPT_F_NO_FAT_LTO_OBJECTS;
+			/* Replace -flto=thin with -flto -flto-partition=balanced. */
+			kargv[index++] = (char*) GCC_OPT_F_LTO_PARTITION_BALANCED;
 		}
 		
 		status = 1;
@@ -950,7 +952,7 @@ int main(int argc, char* argv[], char* envp[]) {
 			1 + /* -D__clang_major__ */
 			1 + /* -D__clang_minor__ */
 			1 + /* -D__clang_patchlevel__ */
-			1 + /* -ffat-lto-objects / -fno-fat-lto-objects */
+			1 + /* -flto-partition=<...> */
 			1 + /* -fuse-ld=<linker> */
 			2 + /* -Xlinker --no-rosegment (Android 9 and below) */
 			1 + /* -no-pie (Android 4 and below) */
