@@ -91,6 +91,7 @@ static const char GCC_OPT_S[] = "-S";
 static const char GCC_OPT_E[] = "-E";
 static const char GCC_OPT_M[] = "-M";
 static const char GCC_OPT_MM[] = "-MM";
+static const char GCC_OPT_B[] = "-B";
 static const char GCC_OPT_SHARED[] = "-shared";
 static const char GCC_OPT_F_SYNTAX_ONLY[] = "-fsyntax-only";
 static const char GCC_OPT_OS[] = "-Os";
@@ -1628,6 +1629,8 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	size = kargc + 13 + (size_t) wants_librt;
 	
+	size += 2; /* -B <directory> */
+	
 	if (wants_system_libraries) {
 		size += (sizeof(SYSTEM_LIBRARY_PATH) / sizeof(*SYSTEM_LIBRARY_PATH)) * 6;
 		size += 8;
@@ -1812,6 +1815,8 @@ int main(int argc, char* argv[], char* envp[]) {
 	args[offset++] = (char*) GCC_OPT_ISYSTEM;
 	args[offset++] = sysroot_include_directory;
 	args[offset++] = (char*) GCC_OPT_LIBDIR;
+	args[offset++] = sysroot_library_directory;
+	args[offset++] = (char*) GCC_OPT_B;
 	args[offset++] = sysroot_library_directory;
 	
 	#if defined(OBGGCC)
@@ -2182,6 +2187,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	free(primary_library_directory);
 	free(secondary_library_directory);
 	free(nz_sysroot_directory);
+	free(parent_directory);
 	free(non_prefixed_triplet);
 	
 	#if defined(PINO)

@@ -656,12 +656,6 @@ for target in "${targets[@]}"; do
 	if ! [ -f './liblto_plugin.so' ]; then
 		ln --symbolic "../../libexec/gcc/${triplet}/${gcc_major}/liblto_plugin.so" './'
 	fi
-	
-	if ! (( is_native )); then
-		if ! [ "${triplet}" = 'mips64el-unknown-linux-gnuabi64' ]; then
-			rm "${toolchain_directory}/${triplet}/lib/"*.o
-		fi
-	fi
 done
 
 # Delete libtool files and other unnecessary files GCC installs
@@ -835,6 +829,7 @@ while read item; do
 	mkdir 'gcc' 'static'
 	
 	ln --symbolic './lib'*.{so,a}* './static'
+	ln --symbolic './crt'*'.o' './static'
 	
 	if (( nz )); then
 		mkdir 'nouzen'
