@@ -1,0 +1,43 @@
+From a4e41100101edf40f16d275a34a5a01dbfb176e6 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Fri, 22 Aug 2025 18:48:55 +0000
+Subject: [PATCH] Don't warn about local symbols within the globals
+
+This specific code logic warns about a DSO having a local symbol within the globals.
+However, this is only problematic if that specific DSO is part of a static link. Since we use
+dynamic linking most of the time, this warning is meaningless.
+
+---
+ bfd/elflink.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/bfd/elflink.c b/bfd/elflink.c
+index c4f57cf..e13b14f 100644
+--- a/bfd/elflink.c
++++ b/bfd/elflink.c
+@@ -5007,6 +5007,11 @@ elf_link_add_object_symbols (bfd *abfd, struct bfd_link_info *info)
+ 	  if (elf_bad_symtab (abfd))
+ 	    continue;
+ 
++	  /* Dynamic object relocations are not processed by ld, so
++	     ld won't run into the problem mentioned below.  */
++	  if (dynamic)
++	    continue;
++
+ 	  /* If we aren't prepared to handle locals within the globals
+ 	     then we'll likely segfault on a NULL symbol hash if the
+ 	     symbol is ever referenced in relocations.  */
+@@ -5017,10 +5022,6 @@ elf_link_add_object_symbols (bfd *abfd, struct bfd_link_info *info)
+ 			      abfd, name, (long) (isym - isymbuf + extsymoff),
+ 			      (long) extsymoff);
+ 
+-	  /* Dynamic object relocations are not processed by ld, so
+-	     ld won't run into the problem mentioned above.  */
+-	  if (dynamic)
+-	    continue;
+ 	  bfd_set_error (bfd_error_bad_value);
+ 	  goto error_free_vers;
+ 
+-- 
+2.25.1
+

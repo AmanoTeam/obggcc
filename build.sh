@@ -277,7 +277,7 @@ if ! [ -f "${binutils_tarball}" ]; then
 		--file="${binutils_tarball}"
 	
 	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Add-relative-RPATHs-to-binutils-host-tools.patch"
-	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-static_assert-is-a-C23-feature.patch"
+	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Don-t-warn-about-local-symbols-within-the-globals.patch"
 fi
 
 if ! [ -f "${zstd_tarball}" ]; then
