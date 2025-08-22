@@ -298,6 +298,24 @@ static clang_option_t CLANG_SPECIFIC_REMOVE[] = {
 
 #define LIBC_VERSION(major, minor) ((major << 16) + minor)
 
+static int libcv_matches(const char a, const char b) {
+	
+	#if defined(OBGGCC) /* Linux glibc (e.g., 2.17) */
+		if (a == '2' && (b == '.' || b == '-' || b == '\0')) {
+			return 1;
+		}
+	#elif defined(PINO) /* Android API level (e.g., 14) */
+		if ((a >= '1' && a <= '3') && (b >= '0' && b <= '9')) {
+			return 1;
+		}
+	#else
+		#error "I don't know how to handle this"
+	#endif
+	
+	return 0;
+	
+}
+
 static int arch_is_mips(const char* const name) {
 	
 	if (strcmp(name, "mips64el-unknown-linux-gnuabi64") == 0) {
@@ -813,6 +831,9 @@ int main(int argc, char* argv[], char* envp[]) {
 	long int libc_major = 0;
 	long int libc_minor = 0;
 	
+	unsigned char a = 0;
+	unsigned char b = 0;
+	
 	int intercept = 0;
 	
 	int wants_system_libraries = 0;
@@ -860,6 +881,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	const char* cc = NULL;
 	const char* override_cc = NULL;
+	const char* override_libcv = NULL;
 	char* start = NULL;
 	char* ptr = NULL;
 	char* dst = NULL;
@@ -980,7 +1002,54 @@ int main(int argc, char* argv[], char* envp[]) {
 	for (index = 0; index < (size_t) argc; index++) {
 		cur = argv[index];
 		
-		if (strcmp(cur, GCC_OPT_C) == 0 || strcmp(cur, GCC_OPT_R) == 0 || strcmp(cur, GCC_OPT_S) == 0 || strcmp(cur, GCC_OPT_E) == 0 || strcmp(cur, GCC_OPT_M) == 0 || strcmp(cur, GCC_OPT_MM) == 0 || strcmp(cur, GCC_OPT_F_SYNTAX_ONLY) == 0) {
+		if (strncmp(cur, GCC_OPT_D, strlen(GCC_OPT_D)) == 0) {
+			size = strlen(GCC_OPT_D);
+			offset = 0;
+			
+			cur += size;
+			
+			ch = *cur;
+			
+			if (ch == ZERO) {
+				offset++;
+				
+				if ((index + offset) > (size_t) argc) {
+					goto next;
+				}
+				
+				
+				cur = argv[index + offset];
+			}
+			
+			if (strncmp(cur, M_ANDROID_API, strlen(M_ANDROID_API)) == 0) {
+				cur += strlen(M_ANDROID_API);
+			} else if (strncmp(cur, M_ANDROID_MIN_SDK_VERSION, strlen(M_ANDROID_MIN_SDK_VERSION)) == 0) {
+				cur += strlen(M_ANDROID_MIN_SDK_VERSION);
+			} else {
+				goto next;
+			}
+			
+			ch = *cur;
+			
+			if (ch == ZERO || strlen(cur) != 2) {
+				goto next;
+			}
+			
+			a = cur[0];
+			b = cur[1];
+			
+			if (!libcv_matches(a, b)) {
+				goto next;
+			}
+			
+			override_libcv = cur;
+			
+			offset++;
+			
+			index += offset;
+			
+			continue;
+		} else if (strcmp(cur, GCC_OPT_C) == 0 || strcmp(cur, GCC_OPT_R) == 0 || strcmp(cur, GCC_OPT_S) == 0 || strcmp(cur, GCC_OPT_E) == 0 || strcmp(cur, GCC_OPT_M) == 0 || strcmp(cur, GCC_OPT_MM) == 0 || strcmp(cur, GCC_OPT_F_SYNTAX_ONLY) == 0) {
 			linking = 0;
 		} else if (strcmp(cur, GCC_OPT_SHARED) == 0) {
 			linking_shared = 1;
@@ -1138,6 +1207,8 @@ int main(int argc, char* argv[], char* envp[]) {
 		}
 		
 		next:;
+		
+		cur = argv[index];
 		
 		status = clang_specific_remove(prev, cur);
 		
@@ -1334,26 +1405,27 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	/* Attempt to extract the system/libc version from the target triplet. */
 	while (1) {
-		const unsigned char a = *ptr;
-		const unsigned char b = *(ptr + 1);
+		a = *ptr;
 		
 		/* We reached the end of the string without finding it. */
 		if (a == '\0') {
+			if (override_libcv != NULL) {
+				/*
+				 It's okay if we could not extract the libc version from the target triplet;
+				 the caller provided it through other means.
+				 */
+				break;
+			}
+			
 			err = ERR_UNKNOWN_SYSTEM_VERSION;
 			goto end;
 		}
 		
-		#if defined(OBGGCC) /* Linux glibc (e.g., 2.17) */
-			if (a == '2' && (b == '.' || b == '-' || b == '\0')) {
-				break;
-			}
-		#elif defined(PINO) /* Android API level (e.g., 14) */
-			if ((a >= '1' && a <= '3') && (b >= '0' && b <= '9')) {
-				break;
-			}
-		#else
-			#error "I don't know how to handle this"
-		#endif
+		b = *(ptr + 1);
+		
+		if (libcv_matches(a, b)) {
+			break;
+		}
 		
 		ptr++;
 	}
@@ -1461,10 +1533,16 @@ int main(int argc, char* argv[], char* envp[]) {
 		SYSTEM_LIBRARY_PATH[7] = secondary_library_directory;
 	}
 	
+	ch = *ptr;
+	
+	if (ch == ZERO && override_libcv != NULL) {
+		ptr = override_libcv;
+	}
+	
 	start = ptr;
 	
 	while (1) {
-		const unsigned char a = *ptr;
+		a = *ptr;
 		
 		if (a == '-' || a == '\0') {
 			break;
@@ -1797,7 +1875,9 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	strcpy(nz_sysroot_directory, sysroot_directory);
 	strcat(nz_sysroot_directory, NZ_SYSROOT);
-		
+	
+	offset = 0;
+	
 	args[offset++] = executable;
 	args[offset++] = arg;
 	args[offset++] = (char*) GCC_OPT_NOSTDINC;
