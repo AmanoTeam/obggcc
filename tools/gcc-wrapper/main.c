@@ -199,6 +199,10 @@ static char* SYSTEM_LIBRARY_PATH[] = {
 	NULL
 };
 
+static const char NDK_CXX_STL_DIRECTORY[] = PATHSEP_M "sources" PATHSEP_M "cxx-stl";
+static const char NDK_SYSROOT_INCLUDE_DIRECTORY[] = PATHSEP_M "sysroot" PATHSEP_M "usr" PATHSEP_M "include";
+static const char NDK_SYSROOT_LIBRARY_DIRECTORY[] = PATHSEP_M "prebuilt" PATHSEP_M "linux-x86_64" PATHSEP_M "lib" PATHSEP_M "gcc";
+
 static const char USR_DIRECTORY[] = PATHSEP_M "usr";
 static const char LIB_DIRECTORY[] = PATHSEP_M "lib";
 
@@ -1002,21 +1006,55 @@ int main(int argc, char* argv[], char* envp[]) {
 	for (index = 0; index < (size_t) argc; index++) {
 		cur = argv[index];
 		
-		if (strncmp(cur, GCC_OPT_D, strlen(GCC_OPT_D)) == 0) {
+		if (strncmp(cur, GCC_OPT_ISYSTEM, strlen(GCC_OPT_ISYSTEM)) == 0 || strncmp(cur, GCC_OPT_LIBDIR, strlen(GCC_OPT_LIBDIR)) == 0) {
+			pattern = GCC_OPT_ISYSTEM;
+			
+			if (strncmp(cur, GCC_OPT_LIBDIR, strlen(GCC_OPT_LIBDIR)) == 0) {
+				pattern = GCC_OPT_LIBDIR;
+			}
+			
+			size = strlen(pattern);
+			offset = 0;
+			
+			cur += size;
+			ch = *cur;
+			
+			if (ch == ZERO) {
+				if ((index + ++offset) > (size_t) argc) {
+					goto next;
+				}
+				
+				cur = argv[index + offset];
+			}
+			
+			/*
+			In older versions of the NDK, the CMake/ndk-build scripts used to manually pass 
+			the library/include directories of the C/C++ standard libraries to the compiler command.
+			
+			Pino does not use this approach, and instead relies on its own logic for locating 
+			the C/C++ standard library directories.
+			
+			Since this is irrelevant to us—and may even cause conflicts with our own implementation—
+			strip these arguments out and avoid passing them down to the compiler.
+			*/
+			if (strstr(cur, NDK_CXX_STL_DIRECTORY) == NULL && strstr(cur, NDK_SYSROOT_INCLUDE_DIRECTORY) == NULL && strstr(cur, NDK_SYSROOT_LIBRARY_DIRECTORY) == NULL) {
+				goto next;
+			}
+			
+			index += offset;
+			
+			continue;
+		} else if (strncmp(cur, GCC_OPT_D, strlen(GCC_OPT_D)) == 0) {
 			size = strlen(GCC_OPT_D);
 			offset = 0;
 			
 			cur += size;
-			
 			ch = *cur;
 			
 			if (ch == ZERO) {
-				offset++;
-				
-				if ((index + offset) > (size_t) argc) {
+				if ((index + ++offset) > (size_t) argc) {
 					goto next;
 				}
-				
 				
 				cur = argv[index + offset];
 			}
@@ -1043,8 +1081,6 @@ int main(int argc, char* argv[], char* envp[]) {
 			}
 			
 			override_libcv = cur;
-			
-			offset++;
 			
 			index += offset;
 			
@@ -1167,6 +1203,10 @@ int main(int argc, char* argv[], char* envp[]) {
 				size = (size_t) (ptr - cur);
 				strncpy(override_triplet, cur, size);
 				override_triplet[size] = '\0';
+				
+				if (strcmp(override_triplet, "armv5te") == 0) {
+					strcpy(override_triplet, "armv5");
+				}
 				
 				/* Vendor */
 				strcat(override_triplet, VENDOR_UNKNOWN);
@@ -2269,6 +2309,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	free(nz_sysroot_directory);
 	free(parent_directory);
 	free(non_prefixed_triplet);
+	free(override_triplet);
 	
 	#if defined(PINO)
 		free(android_api);
