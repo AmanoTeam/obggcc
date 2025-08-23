@@ -45,6 +45,9 @@ declare nz_directory=""
 declare -r zstd_tarball='/tmp/zstd.tar.gz'
 declare -r zstd_directory='/tmp/zstd-dev'
 
+declare -r zlib_tarball='/tmp/zlib.tar.gz'
+declare -r zlib_directory='/tmp/zlib-develop'
+
 declare -r pieflags='-fPIE'
 declare -r ccflags='-w -O2'
 declare -r linkflags='-Xlinker -s'
@@ -136,15 +139,18 @@ declare -ra deprecated_targets=(
 
 declare -ra targets=(
 	'x86_64-unknown-linux-gnu'
-	'aarch64-unknown-linux-gnu'
-	'arm-unknown-linux-gnueabi'
-	'arm-unknown-linux-gnueabihf'
-	'i386-unknown-linux-gnu'
+	# 'aarch64-unknown-linux-gnu'
+	# 'arm-unknown-linux-gnueabi'
+	# 'arm-unknown-linux-gnueabihf'
+	# 'i386-unknown-linux-gnu'
 )
 
 declare -r PKG_CONFIG_PATH="${toolchain_directory}/lib/pkgconfig"
 declare -r PKG_CONFIG_LIBDIR="${PKG_CONFIG_PATH}"
 declare -r PKG_CONFIG_SYSROOT_DIR="${toolchain_directory}"
+
+declare -r zlibdir="-I${toolchain_directory}/include"
+declare -r zlibinc="-L${toolchain_directory}/lib"
 
 declare -r pkg_cv_ZSTD_CFLAGS="-I${toolchain_directory}/include"
 declare -r pkg_cv_ZSTD_LIBS="-L${toolchain_directory}/lib -lzstd"
@@ -158,7 +164,9 @@ export \
 	pkg_cv_ZSTD_CFLAGS \
 	pkg_cv_ZSTD_LIBS \
 	ZSTD_CFLAGS \
-	ZSTD_LIBS
+	ZSTD_LIBS \
+	zlibdir \
+	zlibinc
 
 declare build_type="${1}"
 
@@ -278,6 +286,25 @@ if ! [ -f "${binutils_tarball}" ]; then
 	
 	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Add-relative-RPATHs-to-binutils-host-tools.patch"
 	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Don-t-warn-about-local-symbols-within-the-globals.patch"
+fi
+
+if ! [ -f "${zlib_tarball}" ]; then
+	curl \
+		--url 'https://github.com/madler/zlib/archive/refs/heads/develop.tar.gz' \
+		--retry '30' \
+		--retry-all-errors \
+		--retry-delay '0' \
+		--retry-max-time '0' \
+		--location \
+		--silent \
+		--output "${zlib_tarball}"
+	
+	tar \
+		--directory="$(dirname "${zlib_directory}")" \
+		--extract \
+		--file="${zlib_tarball}"
+	
+	patch --directory="${zlib_directory}" --strip='1' --input="${workdir}/patches/0001-Remove-versioned-SONAME-from-libz.patch"
 fi
 
 if ! [ -f "${zstd_tarball}" ]; then
@@ -423,6 +450,23 @@ rm --force --recursive ./*
 make all --jobs
 make install
 
+[ -d "${zlib_directory}/build" ] || mkdir "${zlib_directory}/build"
+
+cd "${zlib_directory}/build"
+rm --force --recursive ./*
+
+../configure \
+	--host="${CROSS_COMPILE_TRIPLET}" \
+	--prefix="${toolchain_directory}" \
+	CFLAGS="${ccflags}" \
+	CXXFLAGS="${ccflags}" \
+	LDFLAGS="${linkflags}"
+
+make all --jobs
+make install
+
+unlink "${toolchain_directory}/lib/libz.a"
+
 [ -d "${zstd_directory}/.build" ] || mkdir "${zstd_directory}/.build"
 
 cd "${zstd_directory}/.build"
@@ -522,9 +566,10 @@ for target in "${targets[@]}"; do
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--without-static-standard-libraries \
 		--with-zstd="${toolchain_directory}" \
-		CFLAGS="${ccflags}" \
-		CXXFLAGS="${ccflags}" \
-		LDFLAGS="${linkflags}"
+		--with-system-zlib \
+		CFLAGS="-I${toolchain_directory}/include ${ccflags}" \
+		CXXFLAGS="-I${toolchain_directory}/include ${ccflags}" \
+		LDFLAGS="-L${toolchain_directory}/lib ${linkflags}"
 	
 	make all --jobs
 	make install
@@ -558,6 +603,7 @@ for target in "${targets[@]}"; do
 		--with-mpfr="${toolchain_directory}" \
 		--with-isl="${toolchain_directory}" \
 		--with-zstd="${toolchain_directory}" \
+		--with-system-zlib \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
 		--with-pkgversion="OBGGCC v3.5-${revision}" \
@@ -605,7 +651,7 @@ for target in "${targets[@]}"; do
 		${extra_configure_flags} \
 		CFLAGS="${ccflags}" \
 		CXXFLAGS="${ccflags}" \
-		LDFLAGS="${linkflags}"
+		LDFLAGS="-L${toolchain_directory}/lib ${linkflags}"
 	
 	cflags_for_target="${ccflags} ${linkflags}"
 	cxxflags_for_target="${ccflags} ${linkflags}"

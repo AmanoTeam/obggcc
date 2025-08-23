@@ -1,0 +1,82 @@
+From 8a752e79b399219fc50392b39b785b81b2729c33 Mon Sep 17 00:00:00 2001
+From: Your Name <you@example.com>
+Date: Sat, 23 Aug 2025 22:20:55 +0000
+Subject: [PATCH] Remove versioned SONAME from libz
+
+---
+ Makefile.in |  6 ------
+ configure   | 15 ++++++++-------
+ 2 files changed, 8 insertions(+), 13 deletions(-)
+
+diff --git a/Makefile.in b/Makefile.in
+index 7010b25..bf8efd2 100644
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -282,9 +282,6 @@ gzwrite.lo: $(SRCDIR)gzwrite.c
+ 
+ placebo $(SHAREDLIBV): $(PIC_OBJS) libz.a
+ 	$(LDSHARED) $(SFLAGS) -o $@ $(PIC_OBJS) $(LDSHAREDLIBC) $(LDFLAGS)
+-	rm -f $(SHAREDLIB) $(SHAREDLIBM)
+-	ln -s $@ $(SHAREDLIB)
+-	ln -s $@ $(SHAREDLIBM)
+ 	-@rmdir objs
+ 
+ example$(EXE): example.o $(STATICLIB)
+@@ -321,9 +318,6 @@ install-libs: $(LIBS)
+ 	  echo "cp $(SHAREDLIBV) $(DESTDIR)$(sharedlibdir)"; \
+ 	  chmod 755 $(DESTDIR)$(sharedlibdir)/$(SHAREDLIBV); \
+ 	  echo "chmod 755 $(DESTDIR)$(sharedlibdir)/$(SHAREDLIBV)"; \
+-	  rm -f $(DESTDIR)$(sharedlibdir)/$(SHAREDLIB) $(DESTDIR)$(sharedlibdir)/$(SHAREDLIBM); \
+-	  ln -s $(SHAREDLIBV) $(DESTDIR)$(sharedlibdir)/$(SHAREDLIB); \
+-	  ln -s $(SHAREDLIBV) $(DESTDIR)$(sharedlibdir)/$(SHAREDLIBM); \
+ 	  ($(LDCONFIG) || true)  >/dev/null 2>&1; \
+ 	fi
+ 	rm -f $(DESTDIR)$(man3dir)/zlib.3
+diff --git a/configure b/configure
+index 1834659..3c52977 100755
+--- a/configure
++++ b/configure
+@@ -267,9 +267,9 @@ if test "$gcc" -eq 1 && ($cc -c $test.c) >> configure.log 2>&1; then
+         *sparc*)
+             LDFLAGS="${LDFLAGS} -Wl,--no-warn-rwx-segments" ;;
+         esac
+-        LDSHARED=${LDSHARED-"$cc -shared -Wl,-soname,libz.so.1,--version-script,${SRCDIR}zlib.map"} ;;
++        LDSHARED=${LDSHARED-"$cc -shared -Wl,-soname,libz.so"} ;;
+   *BSD | *bsd* | DragonFly)
+-        LDSHARED=${LDSHARED-"$cc -shared -Wl,-soname,libz.so.1,--version-script,${SRCDIR}zlib.map"}
++        LDSHARED=${LDSHARED-"$cc -shared -Wl,-soname,libz.so"}
+         LDCONFIG="ldconfig -m" ;;
+   CYGWIN* | Cygwin* | cygwin* | *-cygwin* | OS/2*)
+         EXE='.exe' ;;
+@@ -298,9 +298,9 @@ if test "$gcc" -eq 1 && ($cc -c $test.c) >> configure.log 2>&1; then
+   Darwin* | darwin* | *-darwin*)
+         shared_ext='.dylib'
+         SHAREDLIB=libz$shared_ext
+-        SHAREDLIBV=libz.$VER$shared_ext
+-        SHAREDLIBM=libz.$VER1$shared_ext
+-        LDSHARED=${LDSHARED-"$cc -dynamiclib -install_name $libdir/$SHAREDLIBM -compatibility_version $VER1 -current_version $VER3"}
++        SHAREDLIBV=libz.$shared_ext
++        SHAREDLIBM=libz.$shared_ext
++        LDSHARED=${LDSHARED-"$cc -dynamiclib -install_name $libdir/$SHAREDLIBM"}
+         if "${CROSS_PREFIX}libtool" -V 2>&1 | grep Apple > /dev/null; then
+             AR="${CROSS_PREFIX}libtool"
+         elif libtool -V 2>&1 | grep Apple > /dev/null; then
+@@ -409,8 +409,8 @@ fi
+ 
+ # destination names for shared library if not defined above
+ SHAREDLIB=${SHAREDLIB-"libz$shared_ext"}
+-SHAREDLIBV=${SHAREDLIBV-"libz$shared_ext.$VER"}
+-SHAREDLIBM=${SHAREDLIBM-"libz$shared_ext.$VER1"}
++SHAREDLIBV=${SHAREDLIBV-"libz$shared_ext"}
++SHAREDLIBM=${SHAREDLIBM-"libz$shared_ext"}
+ 
+ echo >> configure.log
+ 
+@@ -964,3 +964,4 @@ s/\@VERSION\@/$VER/g;
+ 
+ # done
+ leave 0
++
+-- 
+2.25.1
+
