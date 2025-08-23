@@ -144,6 +144,7 @@ static const char CLANG_OPT_F_NO_LIMIT_DEBUG_INFO[] = "-fno-limit-debug-info";
 static const char CLANG_OPT_GCC_TOOLCHAIN[] = "--gcc-toolchain";
 static const char CLANG_OPT_F_COLOR_DIAGNOSTICS[] = "-fcolor-diagnostics";
 static const char CLANG_OPT_F_NO_INTEGRATED_AS[] = "-fno-integrated-as";
+static const char CLANG_OPT_F_INTEGRATED_AS[] = "-fintegrated-as";
 
 static const char LD_OPT_DYNAMIC_LINKER[] = "-dynamic-linker";
 static const char LD_OPT_RPATH_LINK[] = "-rpath-link";
@@ -283,6 +284,10 @@ static clang_option_t CLANG_SPECIFIC_REMOVE[] = {
 		.name = CLANG_OPT_F_NO_INTEGRATED_AS,
 		.value = 0
 	},
+	{
+		.name = CLANG_OPT_F_INTEGRATED_AS,
+		.value = 0
+	}
 };
 
 #define CLANG_SPECIFIC_REMOVE_NON 0
