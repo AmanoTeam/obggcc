@@ -65,9 +65,6 @@ static const char LIBLSAN_SHARED[] = "liblsan.so";
 static const char LIBTSAN_SHARED[] = "libtsan.so";
 static const char LIBUBSAN_SHARED[] = "libubsan.so";
 
-static const char LIBPINO_MMAN_SHARED[] = "libpino-mman.so";
-static const char LIBPINO_MATH_SHARED[] = "libpino-math.so";
-
 static const char GCC_OPT_ISYSTEM[] = "-isystem";
 static const char GCC_OPT_SYSROOT[] = "--sysroot";
 static const char GCC_OPT_NOSTDINC[] = "--no-standard-includes";
@@ -2255,24 +2252,6 @@ int main(int argc, char* argv[], char* envp[]) {
 			/* libssp */
 			if (wants_libssp) {
 				err = copy_shared_library(sysroot_library_directory, output_directory, LIBSSP_SHARED, LIBSSP_SHARED);
-				
-				if (err != ERR_SUCCESS) {
-					goto end;
-				}
-			}
-			
-			/* libpino-math */
-			if (wants_libm) {
-				err = copy_shared_library(sysroot_library_directory, output_directory, LIBPINO_MATH_SHARED, LIBPINO_MATH_SHARED);
-				
-				if (err != ERR_SUCCESS) {
-					goto end;
-				}
-			}
-			
-			/* libpino-mman */
-			if (wants_libpino_mman) {
-				err = copy_shared_library(sysroot_library_directory, output_directory, LIBPINO_MMAN_SHARED, LIBPINO_MMAN_SHARED);
 				
 				if (err != ERR_SUCCESS) {
 					goto end;
