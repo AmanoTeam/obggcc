@@ -139,18 +139,15 @@ declare -ra deprecated_targets=(
 
 declare -ra targets=(
 	'x86_64-unknown-linux-gnu'
-	# 'aarch64-unknown-linux-gnu'
-	# 'arm-unknown-linux-gnueabi'
-	# 'arm-unknown-linux-gnueabihf'
-	# 'i386-unknown-linux-gnu'
+	'aarch64-unknown-linux-gnu'
+	'arm-unknown-linux-gnueabi'
+	'arm-unknown-linux-gnueabihf'
+	'i386-unknown-linux-gnu'
 )
 
 declare -r PKG_CONFIG_PATH="${toolchain_directory}/lib/pkgconfig"
 declare -r PKG_CONFIG_LIBDIR="${PKG_CONFIG_PATH}"
 declare -r PKG_CONFIG_SYSROOT_DIR="${toolchain_directory}"
-
-declare -r zlibdir="-I${toolchain_directory}/include"
-declare -r zlibinc="-L${toolchain_directory}/lib"
 
 declare -r pkg_cv_ZSTD_CFLAGS="-I${toolchain_directory}/include"
 declare -r pkg_cv_ZSTD_LIBS="-L${toolchain_directory}/lib -lzstd"
@@ -164,9 +161,7 @@ export \
 	pkg_cv_ZSTD_CFLAGS \
 	pkg_cv_ZSTD_LIBS \
 	ZSTD_CFLAGS \
-	ZSTD_LIBS \
-	zlibdir \
-	zlibinc
+	ZSTD_LIBS
 
 declare build_type="${1}"
 
@@ -789,6 +784,10 @@ if ! (( is_native )); then
 		--directory="$(dirname "${nz_directory}")" \
 		--extract \
 		--file="${nz_tarball}" 2>/dev/null || nz='0'
+	
+	if (( nz )); then
+		mv "${nz_directory}/lib" "${toolchain_directory}/lib/nouzen"
+	fi
 fi
 
 # Bundle both libstdc++ and libgcc within host tools
@@ -882,6 +881,13 @@ while read item; do
 		
 		if [ -d "${nz_directory}" ]; then
 			cp --recursive "${nz_directory}/"* './nouzen'
+			
+			ln \
+				--symbolic \
+				--relative \
+				"${toolchain_directory}/lib/nouzen" \
+				"${PWD}/nouzen/lib"
+			
 			mkdir --parent './nouzen/etc/nouzen/sources.list'
 			
 			echo -e "repository = ${repository}\nrelease = ${release}\nresource = ${resource}\narchitecture = ${architecture}" > './nouzen/etc/nouzen/sources.list/obggcc.conf'
