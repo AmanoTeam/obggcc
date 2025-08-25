@@ -106,7 +106,11 @@ static const char GCC_OPT_F_FAT_LTO_OBJECTS[] = "-ffat-lto-objects";
 static const char GCC_OPT_F_NO_FAT_LTO_OBJECTS[] = "-fno-fat-lto-objects";
 static const char GCC_OPT_F_LTO_PARTITION_NONE[] = "-flto-partition=none";
 static const char GCC_OPT_F_LTO_PARTITION_BALANCED[] = "-flto-partition=balanced";
+static const char GCC_OPT_F_DEVIRTUALIZE_AT_LTRANS[] = "-fdevirtualize-at-ltrans";
+static const char GCC_OPT_F_LTO_COMPRESSION_LEVEL_ZERO[] = "-flto-compression-level=0";
+
 static const char GCC_OPT_F_LTO[] = "-flto";
+static const char GCC_OPT_F_LTO_AUTO[] = "-flto=auto";
 static const char GCC_OPT_F_USE_LD[] = "-fuse-ld=";
 static const char GCC_OPT_F_GNU_TM[] = "-fgnu-tm";
 static const char GCC_OPT_F_OPENMP[] = "-fopenmp";
@@ -142,6 +146,9 @@ static const char CLANG_OPT_GCC_TOOLCHAIN[] = "--gcc-toolchain";
 static const char CLANG_OPT_F_COLOR_DIAGNOSTICS[] = "-fcolor-diagnostics";
 static const char CLANG_OPT_F_NO_INTEGRATED_AS[] = "-fno-integrated-as";
 static const char CLANG_OPT_F_INTEGRATED_AS[] = "-fintegrated-as";
+
+#define LTO_FULL 0x01
+#define LTO_THIN 0x02
 
 static const char LD_OPT_DYNAMIC_LINKER[] = "-dynamic-linker";
 static const char LD_OPT_RPATH_LINK[] = "-rpath-link";
@@ -535,6 +542,20 @@ static int get_env(const char* const key) {
 	
 }
 
+static bigint_t get_env_int(const char* const key) {
+	
+	const char* const value = getenv(key);
+	
+	if (value == NULL) {
+		return -1;
+	}
+	
+	const bigint_t integer = strtobi(value, NULL, 10);
+	
+	return integer;
+	
+}
+
 static int known_clang(const char* const cc) {
 	
 	const int status = (
@@ -662,13 +683,13 @@ static int clang_specific_replace(
 			goto end;
 		}
 		
-		kargv[index++] = (char*) GCC_OPT_F_LTO;
+		kargv[index++] = (char*) GCC_OPT_F_LTO_AUTO;
 		
 		if (strcmp(current, "auto") == 0 || strcmp(current, "full") == 0) {
-			/* Replace -flto={full,auto} with -flto -flto-partition=none. */
+			/* Replace -flto={full,auto} with -flto=auto -flto-partition=none. */
 			kargv[index++] = (char*) GCC_OPT_F_LTO_PARTITION_NONE;
 		} else {
-			/* Replace -flto=thin with -flto -flto-partition=balanced. */
+			/* Replace -flto=thin with -flto=auto -flto-partition=balanced. */
 			kargv[index++] = (char*) GCC_OPT_F_LTO_PARTITION_BALANCED;
 		}
 		
@@ -848,6 +869,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	int wants_nz = 0;
 	int wants_neon = 0;
 	int wants_simd = 0;
+	bigint_t wants_lto = 0;
 	
 	int nodefaultlibs = 0;
 	int address_sanitizer = 0;
@@ -972,6 +994,11 @@ int main(int argc, char* argv[], char* envp[]) {
 	verbose = get_env(WRAPPER_FLAVOR_NAME "_VERBOSE") == 1;
 	wants_neon = get_env(WRAPPER_FLAVOR_NAME "_NEON") == 1;
 	wants_simd = get_env(WRAPPER_FLAVOR_NAME "_SIMD") == 1;
+	wants_lto = get_env_int(WRAPPER_FLAVOR_NAME "_LTO");
+	
+	if (!(wants_lto == LTO_FULL || wants_lto == LTO_THIN)) {
+		wants_lto = -1;
+	}
 	
 	kargv = malloc(
 		sizeof(*argv) * (
@@ -996,6 +1023,7 @@ int main(int argc, char* argv[], char* envp[]) {
 			2 + /* -l pino-mman */
 			1 + /* -msse<version> */
 			4 + /* -Xlinker -z -Xlinker pack-relative-relocs */
+			5 + /* -flto=auto -flto-compression-level=0 -flto-partition={none,balanced} -fno-fat-lto-objects -fdevirtualize-at-ltrans */
 			1 /* NULL */
 		)
 	);
@@ -1703,6 +1731,24 @@ int main(int argc, char* argv[], char* envp[]) {
 				kargv[kargc++] = (char*) GCC_OPT_XLINKER;
 				kargv[kargc++] = (char*) LLD_OPT_PACK_DYN_RELOCS;
 			#endif
+		}
+	}
+	
+	if (wants_lto != -1) {
+		kargv[kargc++] = (char*) GCC_OPT_F_LTO_AUTO;
+		kargv[kargc++] = (char*) GCC_OPT_F_NO_FAT_LTO_OBJECTS;
+		kargv[kargc++] = (char*) GCC_OPT_F_LTO_COMPRESSION_LEVEL_ZERO;
+	}
+	
+	switch (wants_lto) {
+		case LTO_FULL: {
+			kargv[kargc++] = (char*) GCC_OPT_F_LTO_PARTITION_NONE;
+			kargv[kargc++] = (char*) GCC_OPT_F_DEVIRTUALIZE_AT_LTRANS;
+			break;
+		}
+		case LTO_THIN: {
+			kargv[kargc++] = (char*) GCC_OPT_F_LTO_PARTITION_BALANCED;
+			break;
 		}
 	}
 	
