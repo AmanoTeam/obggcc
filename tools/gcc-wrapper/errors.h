@@ -1,0 +1,18 @@
+#if !defined(ERRORS_H)
+#define ERRORS_H
+
+#define ERR_SUCCESS 0
+#define ERR_MEM_ALLOC_FAILURE -1
+#define ERR_UNKNOWN_COMPILER -2
+#define ERR_GET_APP_FILENAME_FAILURE -3
+#define ERR_EXECVE_FAILURE -4
+#define ERR_BAD_TRIPLET -5
+#define ERR_GETEXT_FAILURE -6
+#define ERR_DIRNAME_FAILURE -7
+#define ERR_COPY_FILE_FAILURE -8
+#define ERR_UNKNOWN_SYSTEM_VERSION -9
+#define ERR_BINFMT_GUESS_FAILURE -10
+
+const char* obggcc_strerror(const int err);
+
+#endif

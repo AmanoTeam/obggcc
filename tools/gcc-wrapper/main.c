@@ -16,10 +16,9 @@
 #include "fs/basename.h"
 #include "biggestint.h"
 #include "clang_option.h"
-
-#if !(defined(OBGGCC) || defined(PINO))
-	#error "Please define the cross-compiler flavor for which we will be a wrapper"
-#endif
+#include "errors.h"
+#include "obggcc.h"
+#include "query.h"
 
 #if !defined(AUTO_PICK_LINKER)
 	#define AUTO_PICK_LINKER 1
@@ -147,6 +146,7 @@ static const char CLANG_OPT_F_COLOR_DIAGNOSTICS[] = "-fcolor-diagnostics";
 static const char CLANG_OPT_F_NO_INTEGRATED_AS[] = "-fno-integrated-as";
 static const char CLANG_OPT_F_INTEGRATED_AS[] = "-fintegrated-as";
 
+#define LTO_NONE 0x00
 #define LTO_FULL 0x01
 #define LTO_THIN 0x02
 
@@ -179,14 +179,6 @@ static const char DEFAULT_TARGET[] =
 	 "x86_64-unknown-linux-gnu2.3";
 #elif defined(PINO)
 	"x86_64-unknown-linux-android21";
-#else
-	#error "I don't know how to handle this"
-#endif
-
-#if defined(OBGGCC)
-	#define WRAPPER_FLAVOR_NAME "OBGGCC"
-#elif defined(PINO)
-	#define WRAPPER_FLAVOR_NAME "PINO"
 #else
 	#error "I don't know how to handle this"
 #endif
@@ -236,6 +228,8 @@ static const char DASH = '-';
 static const char EQUAL = '=';
 static const char ZERO = '\0';
 static const char EQUAL_S[] = "=";
+
+extern char** environ;
 
 #if AUTO_PICK_LINKER
 static const char* const FASTER_LINKERS[] = {
@@ -298,23 +292,12 @@ static clang_option_t CLANG_SPECIFIC_REMOVE[] = {
 #define CLANG_SPECIFIC_REMOVE_CUR 1
 #define CLANG_SPECIFIC_REMOVE_NXT 2
 
-#define ERR_SUCCESS 0
-#define ERR_MEM_ALLOC_FAILURE -1
-#define ERR_UNKNOWN_COMPILER -2
-#define ERR_GET_APP_FILENAME_FAILURE -3
-#define ERR_EXECVE_FAILURE -4
-#define ERR_BAD_TRIPLET -5
-#define ERR_GETEXT_FAILURE -6
-#define ERR_DIRNAME_FAILURE -7
-#define ERR_COPY_FILE_FAILURE -8
-#define ERR_UNKNOWN_SYSTEM_VERSION -9
-
 #define LIBC_VERSION(major, minor) ((major << 16) + minor)
 
 static int libcv_matches(const char a, const char b) {
 	
 	#if defined(OBGGCC) /* Linux glibc (e.g., 2.17) */
-		if (a == '2' && (b == '.' || b == '-' || b == '\0')) {
+		if (a == '2' && (b == '.' || b == '-' || b == ZERO)) {
 			return 1;
 		}
 	#elif defined(PINO) /* Android API level (e.g., 14) */
@@ -530,32 +513,6 @@ static const char* get_loader(const char* const triplet) {
 	
 }
 
-static int get_env(const char* const key) {
-	
-	const char* const value = getenv(key);
-	
-	if (value == NULL) {
-		return -1;
-	}
-	
-	return (strcmp(value, "1") == 0);
-	
-}
-
-static bigint_t get_env_int(const char* const key) {
-	
-	const char* const value = getenv(key);
-	
-	if (value == NULL) {
-		return -1;
-	}
-	
-	const bigint_t integer = strtobi(value, NULL, 10);
-	
-	return integer;
-	
-}
-
 static int known_clang(const char* const cc) {
 	
 	const int status = (
@@ -678,7 +635,7 @@ static int clang_specific_replace(
 		
 		current += 1;
 		
-		if (*current == '\0') {
+		if (*current == ZERO) {
 			status = 0;
 			goto end;
 		}
@@ -846,7 +803,7 @@ int copy_shared_library(
 }
 #endif
 
-int main(int argc, char* argv[], char* envp[]) {
+int main(int argc, char* argv[]) {
 	
 	int status = 0;
 	int err = ERR_SUCCESS;
@@ -890,6 +847,8 @@ int main(int argc, char* argv[], char* envp[]) {
 	int wants_libpino_math = 0;
 	int wants_libpino_mman = 0;
 	int wants_force_static = 0;
+	
+	hquery_t query = {0};
 	
 	#if defined(OBGGCC)
 		int require_atomic_library = 0;
@@ -974,30 +933,38 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	unsigned char ch = 0;
 	
+	query_load_environ(&query);
+	
 	#if defined(OBGGCC)
-		wants_system_libraries = get_env(WRAPPER_FLAVOR_NAME "_SYSTEM_LIBRARIES") == 1;
-		wants_builtin_loader = get_env(WRAPPER_FLAVOR_NAME "_BUILTIN_LOADER") == 1;
+		wants_system_libraries = query_get_bool(&query, ENV_SYSTEM_LIBRARIES) == 1;
+		wants_builtin_loader = query_get_bool(&query, ENV_BUILTIN_LOADER) == 1;
 	#endif
 	
 	#if defined(PINO)
 		wants_force_static = 1;
 	#endif
 	
-	status = get_env(WRAPPER_FLAVOR_NAME "_STATIC");
+	status = query_get_bool(&query, ENV_STATIC);
 	
 	if (status != -1) {
 		wants_force_static = (status == 1);
 	}
 	
-	wants_nz = get_env(WRAPPER_FLAVOR_NAME "_NZ") == 1;
-	wants_runtime_rpath = get_env(WRAPPER_FLAVOR_NAME "_RUNTIME_RPATH") == 1;
-	verbose = get_env(WRAPPER_FLAVOR_NAME "_VERBOSE") == 1;
-	wants_neon = get_env(WRAPPER_FLAVOR_NAME "_NEON") == 1;
-	wants_simd = get_env(WRAPPER_FLAVOR_NAME "_SIMD") == 1;
-	wants_lto = get_env_int(WRAPPER_FLAVOR_NAME "_LTO");
+	wants_nz = query_get_bool(&query, ENV_NZ) == 1;
+	wants_runtime_rpath = query_get_bool(&query, ENV_RUNTIME_RPATH) == 1;
+	verbose = query_get_bool(&query, ENV_VERBOSE) == 1;
+	wants_neon = query_get_bool(&query, ENV_NEON) == 1;
+	wants_simd = query_get_bool(&query, ENV_SIMD) == 1;
+	wants_lto = query_get_bool(&query, ENV_LTO) == 1;
 	
-	if (!(wants_lto == LTO_FULL || wants_lto == LTO_THIN)) {
-		wants_lto = -1;
+	cur = query_get_string(&query, ENV_LTO);
+	
+	if (cur != NULL && strcmp(cur, "full") == 0) {
+		wants_lto = LTO_FULL;
+	} else if (cur != NULL && strcmp(cur, "thin") == 0) {
+		wants_lto = LTO_THIN;
+	} else {
+		wants_lto = LTO_NONE;
 	}
 	
 	kargv = malloc(
@@ -1254,11 +1221,11 @@ int main(int argc, char* argv[], char* envp[]) {
 			cur += strlen(GCC_OPT_SYSROOT);
 			ch = *cur;
 			
-			if (!(ch == EQUAL || ch == '\0')) {
+			if (!(ch == EQUAL || ch == ZERO)) {
 				goto next;
 			}
 			
-			if (ch == '\0') {
+			if (ch == ZERO) {
 				index++;
 			}
 			
@@ -1408,21 +1375,6 @@ int main(int argc, char* argv[], char* envp[]) {
 		wants_libgcc = 1;
 	}
 	
-	#if defined(PINO)
-		/*
-		libstdc++ requires certain mathematical functions that are not present in older
-		versions of Bionic. We implement these functions in an external library called
-		libpino-math using GCC's builtins.
-		
-		Additionally, we expose these functions in the standard library headers
-		(math.h and complex.h) so that anyone can use them.
-		*/
-		if ((wants_libcxx || wants_libm) && !nodefaultlibs) {
-			kargv[kargc++] = (char*) GCC_OPT_L;
-			kargv[kargc++] = (char*) PINO_MATH_LIBRARY;
-		}
-	#endif
-	
 	if (linking && wants_force_static) {
 		/*
 		These libraries rely on libgcc. If we are going to statically link with them,
@@ -1478,7 +1430,7 @@ int main(int argc, char* argv[], char* envp[]) {
 		a = *ptr;
 		
 		/* We reached the end of the string without finding it. */
-		if (a == '\0') {
+		if (a == ZERO) {
 			if (override_libcv != NULL) {
 				/*
 				 It's okay if we could not extract the libc version from the target triplet;
@@ -1606,7 +1558,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	ch = *ptr;
 	
 	if (ch == ZERO && override_libcv != NULL) {
-		ptr = override_libcv;
+		ptr = (char*) override_libcv;
 	}
 	
 	start = ptr;
@@ -1614,7 +1566,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	while (1) {
 		a = *ptr;
 		
-		if (a == '-' || a == '\0') {
+		if (a == '-' || a == ZERO) {
 			break;
 		}
 		
@@ -1635,7 +1587,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	libc_major = strtol(libc_version, &ptr, 10);
 	
-	if (!(*ptr == '-' || *ptr == '\0')) {
+	if (!(*ptr == '-' || *ptr == ZERO)) {
 		libc_minor = strtol(ptr + 1, NULL, 10);
 	}
 	
@@ -1661,16 +1613,30 @@ int main(int argc, char* argv[], char* envp[]) {
 			kargv[kargc++] = (char*) GCC_OPT_NO_PIE;
 		}
 		
-		wants_libpino_mman = LIBC_VERSION(libc_major, libc_minor) < LIBC_VERSION(21, 0);
+		wants_libpino_mman = LIBC_VERSION(libc_major, libc_minor) < LIBC_VERSION(21, 0) && !nodefaultlibs;
+		wants_libpino_math = (wants_libcxx || wants_libm) && !nodefaultlibs;
 		
 		/*
 		Android versions below 5.0 (API level 21) did not have an mmap64() implementation.
 		The NDK provided a pseudo-implementation for this as an inline, and we moved it to its
 		own external library.
 		*/
-		if (wants_libpino_mman && !nodefaultlibs) {
+		if (wants_libpino_mman) {
 			kargv[kargc++] = (char*) GCC_OPT_L;
 			kargv[kargc++] = (char*) PINO_MMAN_LIBRARY;
+		}
+		
+		/*
+		libstdc++ requires certain mathematical functions that are not present in older
+		versions of Bionic. We implement these functions in an external library called
+		libpino-math using GCC's builtins.
+		
+		Additionally, we expose these functions in the standard library headers
+		(math.h and complex.h) so that anyone can use them.
+		*/
+		if (wants_libpino_math) {
+			kargv[kargc++] = (char*) GCC_OPT_L;
+			kargv[kargc++] = (char*) PINO_MATH_LIBRARY;
 		}
 	#endif
 	
@@ -2177,23 +2143,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	memcpy(&args[offset], &kargv[1], kargc * sizeof(*kargv));
 	
 	if (verbose) {
-		fprintf(stderr, "%s", "+ ");
-		
-		for (index = 0; 1; index++) {
-			cur = args[index];
-			
-			if (cur == NULL) {
-				break;
-			}
-			
-			if (index != 0) {
-				fprintf(stderr, "%s", " ");
-			}
-			
-			fprintf(stderr, "%s", cur);
-		}
-		
-		fprintf(stderr, "%s", "\n");
+		obggcc_print_args(args);
 	}
 	
 	#if defined(PINO)
@@ -2306,7 +2256,7 @@ int main(int argc, char* argv[], char* envp[]) {
 		}
 	#endif
 	
-	if (execve(executable, args, envp) == -1) {
+	if (execve(executable, args, environ) == -1) {
 		err = ERR_EXECVE_FAILURE;
 		goto end;
 	}
@@ -2346,43 +2296,10 @@ int main(int argc, char* argv[], char* envp[]) {
 		free(android_min_sdk_version);
 	#endif
 	
-	switch (err) {
-		case ERR_SUCCESS:
-			opt = "Success";
-			break;
-		case ERR_MEM_ALLOC_FAILURE:
-			opt = "Could not allocate memory";
-			break;
-		case ERR_UNKNOWN_COMPILER:
-			opt = "Unknown C/C++ compiler";
-			break;
-		case ERR_GET_APP_FILENAME_FAILURE:
-			opt = "Could not get app filename";
-			break;
-		case ERR_EXECVE_FAILURE:
-			opt = "Call to execve failed";
-			break;
-		case ERR_BAD_TRIPLET:
-			opt = "The target triplet is invalid or was not recognized";
-			break;
-		case ERR_GETEXT_FAILURE:
-			opt = "Could not get file extension of object file";
-			break;
-		case ERR_COPY_FILE_FAILURE:
-			opt = "Could not copy file";
-			break;
-		case ERR_UNKNOWN_SYSTEM_VERSION:
-			opt = "The system or libc version provided through the target triplet is invalid or was not recognized";
-			break;
-		default:
-			opt = "Unknown error";
-			break;
-	}
-	
 	if (err != ERR_SUCCESS) {
 		cur = strerror(errno);
 		
-		fprintf(stderr, "fatal error: %s", opt);
+		fprintf(stderr, "fatal error: %s", obggcc_strerror(err));
 		
 		switch (err) {
 			case ERR_EXECVE_FAILURE:
