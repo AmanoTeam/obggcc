@@ -9,7 +9,10 @@
 
 #include "fs/getexec.h"
 #include "fs/parentpath.h"
+#include "fs/basename.h"
+#include "fs/exists.h"
 #include "fs/sep.h"
+#include "fs/rm.h"
 #include "fstream.h"
 #include "errors.h"
 #include "obggcc.h"
@@ -19,6 +22,13 @@ extern char** environ;
 
 static const char HYPHEN[] = "-";
 static const char BINUTILS_STRIP[] = "strip";
+
+static const char LLVM_STRIP[] = "llvm-strip";
+static const char LLVM_OBJCOPY[] = "llvm-objcopy";
+
+static const char LLVM_COMMAND_PREFIX[] = "llvm-";
+
+static const char LIBCXX_SHARED[] = "libc++_shared.so";
 
 #define BINFMT_X86_64 (0x01)
 #define BINFMT_i386 (0x02)
@@ -187,6 +197,105 @@ static const char* binfmt_get_triplet(const struct binfmt* const fmt) {
 	
 }
 
+static int ends_with(const char* const string, const char* const sep) {
+	
+	const size_t asize = strlen(string);
+	const size_t bsize = strlen(sep);
+	
+	const char* pos = string;
+	
+	if (bsize > asize) {
+		return 0;
+	}
+	
+	pos += (asize - bsize);
+	
+	return strcmp(pos, sep) == 0;
+	
+}
+
+static const char* const ARGUMENT_EXPECTS_VALUE[] = {
+	"-o",
+	"--keep-section",
+	"--remove-relocations",
+	"--add-gnu-debuglink",
+	"--keep-section",
+	"--interleave-width",
+	"--gap-fill",
+	"--pad-to",
+	"--set-start",
+	"-K", "--keep-symbol",
+	"-N", "--strip-symbol",
+	"-R", "--remove-section",
+	"-I", "--input-target",
+	"-O", "--output-target",
+	"-F", "--target",
+	"-j", "--only-section",
+	"-L", "--localize-symbol",
+	"-G", "--keep-global-symbol",
+	"-W", "--weaken-symbol",
+	"-i", "--interleave",
+	"-b", "--byte",
+	"--change-start", "--adjust-start",
+	"--change-addresses", "--adjust-vma",
+	"--change-section-address", "--adjust-section-vma",
+	"--change-section-lma",
+	"--change-section-vma",
+	"--set-section-flags",
+	"--set-section-alignment",
+	"--add-section",
+	"--update-section",
+	"--dump-section",
+	"--rename-section",
+	"--long-section-names",
+	"--reverse-bytes",
+	"--redefine-sym",
+	"--redefine-syms",
+	"--srec-len",
+	"--strip-symbols",
+	"--strip-unneeded-symbols",
+	"--keep-symbols",
+	"--localize-symbols",
+	"--globalize-symbols",
+	"--keep-global-symbols",
+	"--weaken-symbols",
+	"--add-symbol",
+	"--alt-machine-code",
+	"--prefix-symbols",
+	"--prefix-sections",
+	"--prefix-alloc-sections",
+	"--file-alignment",
+	"--heap",
+	"--image-base",
+	"--section-alignment",
+	"--stack",
+	"--subsystem",
+	"--compress-debug-sections",
+	"--elf-stt-common",
+	"--verilog-data-width"
+};
+
+static int argument_expects_value(const char* const name) {
+	
+	size_t index = 0;
+	const char* item = NULL;
+	
+	if (name == NULL) {
+		return 0;
+	}
+	
+	for (index = 0; index < sizeof(ARGUMENT_EXPECTS_VALUE) / sizeof(*ARGUMENT_EXPECTS_VALUE); index++) {
+		item = ARGUMENT_EXPECTS_VALUE[index];
+		
+		if (strcmp(name, item) == 0) {
+			return 1;
+		}
+	}
+	
+	return 0;
+	
+}
+ 
 int main(int argc, char* argv[], char* envp[]) {
 	
 	hquery_t query = {0};
@@ -201,8 +310,10 @@ int main(int argc, char* argv[], char* envp[]) {
 	const struct binfmt* fmt = NULL;
 	
 	const char* triplet = NULL;
+	const char* output = NULL;
 	char* input = NULL;
 	
+	const char* file_name = NULL;
 	char* parent_directory = NULL;
 	char* app_filename = NULL;
 	
@@ -246,7 +357,15 @@ int main(int argc, char* argv[], char* envp[]) {
 	for (index = 1; index < (size_t) argc; index++) {
 		cur = argv[index];
 		
-		if (cur[0] == '-' || prev != NULL && strcmp(prev, "-o") == 0) {
+		if (ends_with(cur, ".sym") && file_exists(cur) != 1) {
+			continue;
+		}
+		
+		if (prev != NULL && strcmp(prev, "-o") == 0) {
+			output = cur;
+		}
+		
+		if (ends_with(cur, ".sym") || cur[0] == '-' || argument_expects_value(prev)) {
 			kargv[kargc++] = cur;
 		} else {
 			inputs[inputsc++] = cur;
@@ -268,6 +387,15 @@ int main(int argc, char* argv[], char* envp[]) {
 		err = ERR_GET_APP_FILENAME_FAILURE;
 		goto end;
 	}
+	
+	file_name = basename(app_filename);
+	
+	if (!(strcmp(file_name, LLVM_STRIP) == 0 || strcmp(file_name, LLVM_OBJCOPY) == 0)) {
+		err = ERR_UNKNOWN_BINUTILS_WRAPPER;
+		goto end;
+	}
+	
+	file_name += strlen(LLVM_COMMAND_PREFIX);
 	
 	parent_directory = malloc(strlen(app_filename) + 1);
 	
@@ -314,7 +442,7 @@ int main(int argc, char* argv[], char* envp[]) {
 		
 		free(executable);
 		
-		executable = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(triplet) + strlen(HYPHEN) + strlen(BINUTILS_STRIP) + 1);
+		executable = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(triplet) + strlen(HYPHEN) + strlen(file_name) + 1);
 		
 		if (executable == NULL) {
 			err = ERR_MEM_ALLOC_FAILURE;
@@ -325,7 +453,7 @@ int main(int argc, char* argv[], char* envp[]) {
 		strcat(executable, PATHSEP_S);
 		strcat(executable, triplet);
 		strcat(executable, HYPHEN);
-		strcat(executable, BINUTILS_STRIP);
+		strcat(executable, file_name);
 		
 		args[0] = executable;
 		args[kargc] = input;
@@ -342,6 +470,8 @@ int main(int argc, char* argv[], char* envp[]) {
 				fprintf(stderr, "fatal error: %s: %s\n", obggcc_strerror(ERR_EXECVE_FAILURE), strerror(errno));
 				_exit(EXIT_FAILURE);
 			}
+			
+			_exit(EXIT_SUCCESS);
 		} else if (pid > 0) {
 			wait(&wstatus);
 			wstatus = WIFSIGNALED(wstatus) ? 128 + WTERMSIG(wstatus) : WEXITSTATUS(wstatus);
@@ -354,6 +484,21 @@ int main(int argc, char* argv[], char* envp[]) {
 			err = ERR_FORK_FAILURE;
 			goto end;
 		}
+		
+		#if defined(PINO)
+			if (output == NULL) {
+				output = input;
+			}
+			
+			cur = basename(output);
+			
+			if (strcmp(cur, LIBCXX_SHARED) == 0) {
+				if (verbose) {
+					fprintf(stderr, "- Removing '%s'\n", output);
+				}
+				remove_file(output);
+			}
+		#endif
 	}
 	
 	end:;

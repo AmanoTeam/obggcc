@@ -18,6 +18,7 @@ SOURCES = biggestint.c \
 	strsplit.c \
 	urldecode.c \
 	urlencode.c \
+	walkdir.c \
 	fs/absoluteness.c \
 	fs/basename.c \
 	fs/cp.c \
@@ -28,15 +29,16 @@ SOURCES = biggestint.c \
 	fs/parentpath.c \
 	fs/realpath.c \
 	fs/stripsep.c \
+	fs/rm.c \
 	os/find_exe.c
 
-GCC_SOURCES = $(SOURCES) main.c
-STRIP_SOURCES = $(SOURCES) strip.c
+GCC_SOURCES = $(SOURCES) gcc.c
+STRIP_SOURCES = $(SOURCES) binutils.c
 
 gcc:
 	$(CC) -D $(FLAVOR) -I $(SOURCE_DIRECTORY) $(CFLAGS) $(LDFLAGS) $(CPPFLAGS) $(GCC_SOURCES) -o $(PREFIX)/gcc-wrapper
 
-strip:
-	$(CC) -D $(FLAVOR) -I $(SOURCE_DIRECTORY) $(CFLAGS) $(LDFLAGS) $(CPPFLAGS) $(STRIP_SOURCES) -o $(PREFIX)/strip-wrapper
+binutils:
+	$(CC) -D $(FLAVOR) -I $(SOURCE_DIRECTORY) $(CFLAGS) $(LDFLAGS) $(CPPFLAGS) $(STRIP_SOURCES) -o $(PREFIX)/binutils-wrapper
 
-all: gcc strip
+all: gcc binutils

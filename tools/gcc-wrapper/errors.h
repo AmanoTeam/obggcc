@@ -14,6 +14,7 @@
 #define ERR_BINFMT_GUESS_FAILURE -10
 #define ERR_FORK_FAILURE -11
 #define ERR_EXECVE_SUBPROCESS_FAILURE -12
+#define ERR_UNKNOWN_BINUTILS_WRAPPER -13
 
 const char* obggcc_strerror(const int err);
 

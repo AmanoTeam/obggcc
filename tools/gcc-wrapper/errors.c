@@ -9,6 +9,8 @@ const char* obggcc_strerror(const int err) {
 			return "Memory allocation failed";
 		case ERR_UNKNOWN_COMPILER:
 			return "Unrecognized or unsupported C/C++ compiler";
+		case ERR_UNKNOWN_BINUTILS_WRAPPER:
+			return "Unrecognized or unsupported binutils wrapper";
 		case ERR_GET_APP_FILENAME_FAILURE:
 			return "Failed to retrieve application filename";
 		case ERR_EXECVE_FAILURE:
