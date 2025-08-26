@@ -499,15 +499,12 @@ if ! (( is_native )); then
 	readelf="${READELF}"
 fi
 
-"${cc}" \
-	"${workdir}/tools/gcc-wrapper/"*'/'*'.c' \
-	"${workdir}/tools/gcc-wrapper/"*".c" \
-	-I "${workdir}/tools/gcc-wrapper" \
-	${ccflags} \
-	${linkflags} \
-	-D OBGGCC \
-	-D AUTO_PICK_LINKER=0 \
-	-o "${gcc_wrapper}"
+make \
+	-C "${workdir}/tools/gcc-wrapper" \
+	PREFIX="$(dirname "${gcc_wrapper}")" \
+	CFLAGS="${ccflags}" \
+	CXXFLAGS="${ccflags}" \
+	LDFLAGS="${linkflags}"
 
 for target in "${targets[@]}"; do
 	declare specs='-Xlinker --disable-new-dtags'

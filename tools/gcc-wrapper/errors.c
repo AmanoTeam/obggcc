@@ -6,23 +6,27 @@ const char* obggcc_strerror(const int err) {
 		case ERR_SUCCESS:
 			return "Success";
 		case ERR_MEM_ALLOC_FAILURE:
-			return "Could not allocate memory";
+			return "Memory allocation failed";
 		case ERR_UNKNOWN_COMPILER:
-			return "Unknown C/C++ compiler";
+			return "Unrecognized or unsupported C/C++ compiler";
 		case ERR_GET_APP_FILENAME_FAILURE:
-			return "Could not get app filename";
+			return "Failed to retrieve application filename";
 		case ERR_EXECVE_FAILURE:
-			return "Call to execve failed";
+			return "Process execution failed (execve)";
+		case ERR_EXECVE_SUBPROCESS_FAILURE:
+			return "Subprocess execution failed (execve returned an error)";
+		case ERR_FORK_FAILURE:
+			return "Process creation failed (fork)";
 		case ERR_BAD_TRIPLET:
-			return "The target triplet is invalid or was not recognized";
+			return "Invalid or unrecognized target triplet";
 		case ERR_GETEXT_FAILURE:
-			return "Could not get file extension of object file";
+			return "Failed to determine file extension for object file";
 		case ERR_COPY_FILE_FAILURE:
-			return "Could not copy file";
+			return "File copy operation failed";
 		case ERR_UNKNOWN_SYSTEM_VERSION:
-			return "The system or C library version provided through the target triplet is invalid or was not recognized";
+			return "Invalid or unrecognized system/C library version in target triplet";
 		case ERR_BINFMT_GUESS_FAILURE:
-			return "Could not guess ELF architecture";
+			return "Failed to detect binary format (ELF architecture guessing failed)";
 		default:
 			return "Unknown error";
 	}

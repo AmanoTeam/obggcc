@@ -12,6 +12,8 @@
 #define ERR_COPY_FILE_FAILURE -8
 #define ERR_UNKNOWN_SYSTEM_VERSION -9
 #define ERR_BINFMT_GUESS_FAILURE -10
+#define ERR_FORK_FAILURE -11
+#define ERR_EXECVE_SUBPROCESS_FAILURE -12
 
 const char* obggcc_strerror(const int err);
 
