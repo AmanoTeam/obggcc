@@ -940,15 +940,7 @@ int main(int argc, char* argv[]) {
 		wants_builtin_loader = query_get_bool(&query, ENV_BUILTIN_LOADER) == 1;
 	#endif
 	
-	#if defined(PINO)
-		wants_force_static = 1;
-	#endif
-	
-	status = query_get_bool(&query, ENV_STATIC);
-	
-	if (status != -1) {
-		wants_force_static = (status == 1);
-	}
+	wants_force_static = query_get_bool(&query, ENV_STATIC);
 	
 	wants_nz = query_get_bool(&query, ENV_NZ) == 1;
 	wants_runtime_rpath = query_get_bool(&query, ENV_RUNTIME_RPATH) == 1;
@@ -1273,6 +1265,10 @@ int main(int argc, char* argv[]) {
 		}
 		
 		kargv[kargc++] = (char*) cur;
+	}
+	
+	if (wants_force_static == -1) {
+		wants_force_static = (wants_static_libcxx || wants_static_libgcc);
 	}
 	
 	if (address_sanitizer) {
@@ -2295,6 +2291,8 @@ int main(int argc, char* argv[]) {
 		free(android_api);
 		free(android_min_sdk_version);
 	#endif
+	
+	query_free(&query);
 	
 	if (err != ERR_SUCCESS) {
 		cur = strerror(errno);
