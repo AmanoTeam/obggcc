@@ -826,7 +826,7 @@ int main(int argc, char* argv[]) {
 	int wants_nz = 0;
 	int wants_neon = 0;
 	int wants_simd = 0;
-	bigint_t wants_lto = 0;
+	int wants_lto = LTO_NONE;
 	
 	int nodefaultlibs = 0;
 	int address_sanitizer = 0;
@@ -947,16 +947,15 @@ int main(int argc, char* argv[]) {
 	verbose = query_get_bool(&query, ENV_VERBOSE) == 1;
 	wants_neon = query_get_bool(&query, ENV_NEON) == 1;
 	wants_simd = query_get_bool(&query, ENV_SIMD) == 1;
-	wants_lto = query_get_bool(&query, ENV_LTO) == 1;
 	
 	cur = query_get_string(&query, ENV_LTO);
 	
-	if (cur != NULL && strcmp(cur, "full") == 0) {
-		wants_lto = LTO_FULL;
-	} else if (cur != NULL && strcmp(cur, "thin") == 0) {
-		wants_lto = LTO_THIN;
-	} else {
-		wants_lto = LTO_NONE;
+	if (cur != NULL) {
+		if (strcmp(cur, "full") == 0) {
+			wants_lto = LTO_FULL;
+		} else if (strcmp(cur, "thin") == 0) {
+			wants_lto = LTO_THIN;
+		}
 	}
 	
 	kargv = malloc(
@@ -1696,21 +1695,15 @@ int main(int argc, char* argv[]) {
 		}
 	}
 	
-	if (wants_lto != -1) {
+	if (wants_lto != LTO_NONE) {
 		kargv[kargc++] = (char*) GCC_OPT_F_LTO_AUTO;
 		kargv[kargc++] = (char*) GCC_OPT_F_NO_FAT_LTO_OBJECTS;
 		kargv[kargc++] = (char*) GCC_OPT_F_LTO_COMPRESSION_LEVEL_ZERO;
-	}
-	
-	switch (wants_lto) {
-		case LTO_FULL: {
-			kargv[kargc++] = (char*) GCC_OPT_F_LTO_PARTITION_NONE;
+		
+		kargv[kargc++] = (char*) ((wants_lto == LTO_FULL) ? GCC_OPT_F_LTO_PARTITION_NONE : GCC_OPT_F_LTO_PARTITION_BALANCED);
+		
+		if (wants_lto == LTO_FULL) {
 			kargv[kargc++] = (char*) GCC_OPT_F_DEVIRTUALIZE_AT_LTRANS;
-			break;
-		}
-		case LTO_THIN: {
-			kargv[kargc++] = (char*) GCC_OPT_F_LTO_PARTITION_BALANCED;
-			break;
 		}
 	}
 	
