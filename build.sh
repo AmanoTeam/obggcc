@@ -508,7 +508,7 @@ make \
 	LDFLAGS="${linkflags}"
 
 for target in "${targets[@]}"; do
-	declare specs='-Xlinker --disable-new-dtags'
+	declare specs='%{!ftrivial-auto-var-init*:-ftrivial-auto-var-init=zero} -Xlinker --disable-new-dtags'
 	declare hash_style='both'
 	
 	source "${workdir}/${target}.sh"
