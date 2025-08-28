@@ -1593,7 +1593,7 @@ int main(int argc, char* argv[]) {
 		
 		- https://github.com/llvm/llvm-project/commit/fae16fc
 		*/
-		if (LIBC_VERSION(libc_major, libc_minor) < LIBC_VERSION(29, 0)) {
+		if (linking && LIBC_VERSION(libc_major, libc_minor) < LIBC_VERSION(29, 0)) {
 			kargv[kargc++] = (char*) GCC_OPT_XLINKER;
 			kargv[kargc++] = (char*) LD_OPT_NO_ROSEGMENT;
 		}
@@ -1608,8 +1608,8 @@ int main(int argc, char* argv[]) {
 			kargv[kargc++] = (char*) GCC_OPT_NO_PIE;
 		}
 		
-		wants_libpino_mman = LIBC_VERSION(libc_major, libc_minor) < LIBC_VERSION(21, 0) && !nodefaultlibs;
-		wants_libpino_math = (wants_libcxx || wants_libm) && !nodefaultlibs;
+		wants_libpino_mman = linking && LIBC_VERSION(libc_major, libc_minor) < LIBC_VERSION(21, 0) && !nodefaultlibs;
+		wants_libpino_math = linking && (wants_libcxx || wants_libm) && !nodefaultlibs;
 		
 		/*
 		Android versions below 5.0 (API level 21) did not have an mmap64() implementation.
@@ -1985,30 +1985,32 @@ int main(int argc, char* argv[]) {
 		args[offset++] = (char*) GCC_OPT_ISYSTEM;
 		args[offset++] = directory;
 		
-		args[offset++] = (char*) GCC_OPT_XLINKER;
-		args[offset++] = (char*) LD_OPT_UNRESOLVED_SYMBOLS;
-		
-		for (index = 0; index < sizeof(SYSTEM_LIBRARY_PATH) / sizeof(*SYSTEM_LIBRARY_PATH); index++) {
-			cur = SYSTEM_LIBRARY_PATH[index];
+		if (linking) {
+			args[offset++] = (char*) GCC_OPT_XLINKER;
+			args[offset++] = (char*) LD_OPT_UNRESOLVED_SYMBOLS;
 			
-			directory = malloc(strlen(nz_sysroot_directory) + strlen(cur) + 1);
-			
-			if (directory == NULL) {
-				err = ERR_MEM_ALLOC_FAILURE;
-				goto end;
+			for (index = 0; index < sizeof(SYSTEM_LIBRARY_PATH) / sizeof(*SYSTEM_LIBRARY_PATH); index++) {
+				cur = SYSTEM_LIBRARY_PATH[index];
+				
+				directory = malloc(strlen(nz_sysroot_directory) + strlen(cur) + 1);
+				
+				if (directory == NULL) {
+					err = ERR_MEM_ALLOC_FAILURE;
+					goto end;
+				}
+				
+				strcpy(directory, nz_sysroot_directory);
+				strcat(directory, cur);
+				
+				args[offset++] = (char*) GCC_OPT_LIBDIR;
+				args[offset++] = (char*) directory;
+				
+				args[offset++] = (char*) GCC_OPT_XLINKER;
+				args[offset++] = (char*) LD_OPT_RPATH_LINK;
+				
+				args[offset++] = (char*) GCC_OPT_XLINKER;
+				args[offset++] = (char*) directory;
 			}
-			
-			strcpy(directory, nz_sysroot_directory);
-			strcat(directory, cur);
-			
-			args[offset++] = (char*) GCC_OPT_LIBDIR;
-			args[offset++] = (char*) directory;
-			
-			args[offset++] = (char*) GCC_OPT_XLINKER;
-			args[offset++] = (char*) LD_OPT_RPATH_LINK;
-			
-			args[offset++] = (char*) GCC_OPT_XLINKER;
-			args[offset++] = (char*) directory;
 		}
 	}
 	
@@ -2033,24 +2035,26 @@ int main(int argc, char* argv[]) {
 		args[offset++] = (char*) GCC_OPT_ISYSTEM;
 		args[offset++] = directory;
 		
-		args[offset++] = (char*) GCC_OPT_XLINKER;
-		args[offset++] = (char*) LD_OPT_UNRESOLVED_SYMBOLS;
-		
-		for (index = 0; index < sizeof(SYSTEM_LIBRARY_PATH) / sizeof(*SYSTEM_LIBRARY_PATH); index++) {
-			cur = SYSTEM_LIBRARY_PATH[index];
-			
-			args[offset++] = (char*) GCC_OPT_LIBDIR;
-			args[offset++] = (char*) cur;
-			
+		if (linking) {
 			args[offset++] = (char*) GCC_OPT_XLINKER;
-			args[offset++] = (char*) LD_OPT_RPATH_LINK;
+			args[offset++] = (char*) LD_OPT_UNRESOLVED_SYMBOLS;
 			
-			args[offset++] = (char*) GCC_OPT_XLINKER;
-			args[offset++] = (char*) cur;
+			for (index = 0; index < sizeof(SYSTEM_LIBRARY_PATH) / sizeof(*SYSTEM_LIBRARY_PATH); index++) {
+				cur = SYSTEM_LIBRARY_PATH[index];
+				
+				args[offset++] = (char*) GCC_OPT_LIBDIR;
+				args[offset++] = (char*) cur;
+				
+				args[offset++] = (char*) GCC_OPT_XLINKER;
+				args[offset++] = (char*) LD_OPT_RPATH_LINK;
+				
+				args[offset++] = (char*) GCC_OPT_XLINKER;
+				args[offset++] = (char*) cur;
+			}
 		}
 	}
 	
-	if (wants_builtin_loader) {
+	if (linking && wants_builtin_loader) {
 		args[offset++] = (char*) GCC_OPT_XLINKER;
 		args[offset++] = (char*) LD_OPT_DYNAMIC_LINKER;
 		
@@ -2084,7 +2088,7 @@ int main(int argc, char* argv[]) {
 		}
 	}
 	
-	if (wants_runtime_rpath) {
+	if (linking && wants_runtime_rpath) {
 		args[offset++] = (char*) GCC_OPT_XLINKER;
 		args[offset++] = (char*) LD_OPT_RPATH;
 		
@@ -2093,7 +2097,7 @@ int main(int argc, char* argv[]) {
 	}
 	
 	#if defined(OBGGCC)
-		if (address_sanitizer) {
+		if (linking && address_sanitizer) {
 			args[offset++] = (char*) GCC_OPT_XLINKER;
 			args[offset++] = (char*) LD_OPT_UNRESOLVED_SYMBOLS;
 		}
