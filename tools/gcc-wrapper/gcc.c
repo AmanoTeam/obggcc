@@ -1937,21 +1937,24 @@ int main(int argc, char* argv[]) {
 	args[offset++] = gcc_include_directory;
 	args[offset++] = (char*) GCC_OPT_ISYSTEM;
 	args[offset++] = sysroot_include_directory;
-	args[offset++] = (char*) GCC_OPT_LIBDIR;
-	args[offset++] = sysroot_library_directory;
-	args[offset++] = (char*) GCC_OPT_B;
-	args[offset++] = sysroot_library_directory;
 	
-	#if defined(OBGGCC)
-		if (wants_librt && !nodefaultlibs) {
-			args[offset++] = (char*) GCC_OPT_L_RT;
-		}
+	if (linking) {
+		args[offset++] = (char*) GCC_OPT_LIBDIR;
+		args[offset++] = sysroot_library_directory;
+		args[offset++] = (char*) GCC_OPT_B;
+		args[offset++] = sysroot_library_directory;
 		
-		/* TODO: apply this patch instead: https://gitlab.alpinelinux.org/alpine/aports/-/blob/4d8f399a49555dae872efd56251c066d21f428a0/main/gcc/0029-configure-Add-enable-autolink-libatomic-use-in-LINK_.patch */
-		if (require_atomic_library && !nodefaultlibs) {
-			args[offset++] = (char*) GCC_OPT_L_ATOMIC;
-		}
-	#endif
+		#if defined(OBGGCC)
+			if (wants_librt && !nodefaultlibs) {
+				args[offset++] = (char*) GCC_OPT_L_RT;
+			}
+			
+			/* TODO: apply this patch instead: https://gitlab.alpinelinux.org/alpine/aports/-/blob/4d8f399a49555dae872efd56251c066d21f428a0/main/gcc/0029-configure-Add-enable-autolink-libatomic-use-in-LINK_.patch */
+			if (require_atomic_library && !nodefaultlibs) {
+				args[offset++] = (char*) GCC_OPT_L_ATOMIC;
+			}
+		#endif
+	}
 	
 	if (wants_nz) {
 		args[offset++] = (char*) GCC_OPT_ISYSTEM;
