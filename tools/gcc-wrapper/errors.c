@@ -29,6 +29,8 @@ const char* obggcc_strerror(const int err) {
 			return "Invalid or unrecognized system/C library version in target triplet";
 		case ERR_BINFMT_GUESS_FAILURE:
 			return "Failed to detect binary format (ELF architecture guessing failed)";
+		case ERR_NO_INPUT_FILES:
+			return "No input files";
 		default:
 			return "Unknown error";
 	}

@@ -197,23 +197,6 @@ static const char* binfmt_get_triplet(const struct binfmt* const fmt) {
 	
 }
 
-static int ends_with(const char* const string, const char* const sep) {
-	
-	const size_t asize = strlen(string);
-	const size_t bsize = strlen(sep);
-	
-	const char* pos = string;
-	
-	if (bsize > asize) {
-		return 0;
-	}
-	
-	pos += (asize - bsize);
-	
-	return strcmp(pos, sep) == 0;
-	
-}
-
 static const char* const ARGUMENT_EXPECTS_VALUE[] = {
 	"-o",
 	"--keep-section",
@@ -357,17 +340,23 @@ int main(int argc, char* argv[], char* envp[]) {
 	for (index = 1; index < (size_t) argc; index++) {
 		cur = argv[index];
 		
-		if (ends_with(cur, ".sym") && file_exists(cur) != 1) {
-			continue;
-		}
-		
 		if (prev != NULL && strcmp(prev, "-o") == 0) {
 			output = cur;
 		}
 		
-		if (ends_with(cur, ".sym") || cur[0] == '-' || argument_expects_value(prev)) {
+		if (cur[0] == '-' || argument_expects_value(prev)) {
 			kargv[kargc++] = cur;
 		} else {
+			if (file_exists(cur) != 1) {
+				fprintf(stderr, "warning: ignoring non-existent input file: %s\n", cur);
+				continue;
+			}
+			
+			if (binfmt_guess(cur) == NULL) {
+				kargv[kargc++] = cur;
+				continue;
+			}
+			
 			inputs[inputsc++] = cur;
 		}
 		
@@ -375,7 +364,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	}
 	
 	if (inputsc == 0) {
-		fprintf(stderr, "nothing here but crickets\n");
+		err = ERR_NO_INPUT_FILES;
 		goto end;
 	}
 	
@@ -493,9 +482,6 @@ int main(int argc, char* argv[], char* envp[]) {
 			cur = basename(output);
 			
 			if (strcmp(cur, LIBCXX_SHARED) == 0) {
-				if (verbose) {
-					fprintf(stderr, "- Removing '%s'\n", output);
-				}
 				remove_file(output);
 			}
 		#endif
@@ -508,6 +494,7 @@ int main(int argc, char* argv[], char* envp[]) {
 	free(args);
 	free(parent_directory);
 	free(app_filename);
+	free(inputs);
 	
 	query_free(&query);
 	
