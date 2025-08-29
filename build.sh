@@ -344,7 +344,6 @@ if ! [ -f "${gcc_tarball}" ]; then
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Add-relative-RPATHs-to-GCC-host-tools.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Add-ARM-and-ARM64-drivers-to-OpenBSD-host-tools.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Fix-missing-stdint.h-include-when-compiling-host-tools-on-OpenBSD.patch"
-	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-On-linux-targets-pass-as-needed-by-default-to-the-li.patch"
 fi
 
 # Follow Debian's approach for removing hardcoded RPATH from binaries
