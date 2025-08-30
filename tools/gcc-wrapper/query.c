@@ -563,14 +563,14 @@ int query_load_string(
 	
 	hquery_param_t param = {0};
 	
-	strsplit_init(&split, string, separator);
+	strsplit_init(&split, &part, string, separator);
 	
 	while (strsplit_next(&split, &part) != NULL) {
 		if (part.size == 0) {
 			continue;
 		}
 		
-		strsplit_init(&subsplit, part.begin, query->subsep);
+		strsplit_init(&subsplit, &subpart, part.begin, query->subsep);
 		
 		/* Parse parameter name */
 		strsplit_next(&subsplit, &subpart);

@@ -10,6 +10,7 @@
 
 void strsplit_init(
 	strsplit_t* const strsplit,
+	strsplit_part_t* const part,
 	const char* const string,
 	const char* const sep
 ) {
@@ -26,6 +27,10 @@ void strsplit_init(
 	strsplit->pend = strstr(strsplit->pbegin, strsplit->sep);
 	
 	strsplit->eof = 0;
+	
+	part->index = 0;
+	part->size = 0;
+	part->begin = NULL;
 	
 }
 
@@ -139,5 +144,28 @@ int strsplit_resize(
 	part->size = (size_t) value;
 	
 	return 0;
+	
+}
+
+size_t strsplit_size(
+	strsplit_t* const strsplit,
+	strsplit_part_t* const part
+) {
+	
+	strsplit_t strsplit2 = {0};
+	strsplit_part_t part2 = {0};
+	size_t size = 0;
+	
+	memcpy(&strsplit2, strsplit, sizeof(*strsplit));
+	memcpy(&part2, part, sizeof(*part));
+	
+	while (strsplit_next(strsplit, part) != NULL) {
+		size++;
+	}
+	
+	memcpy(strsplit, &strsplit2, sizeof(strsplit2));
+	memcpy(part, &part2, sizeof(part2));
+	
+	return size;
 	
 }

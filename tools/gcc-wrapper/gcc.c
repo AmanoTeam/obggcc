@@ -19,6 +19,7 @@
 #include "errors.h"
 #include "obggcc.h"
 #include "query.h"
+#include "strsplit.h"
 
 #if !defined(AUTO_PICK_LINKER)
 	#define AUTO_PICK_LINKER 1
@@ -131,14 +132,18 @@ static const char GCC_OPT_F_STACK_PROTECTOR[] = "-fstack-protector";
 
 static const char GCC_OPT_NODEFAULTLIBS[] = "-nodefaultlibs";
 static const char GCC_OPT_NOSTDLIB[] = "-nostdlib";
+static const char GCC_OPT_WERROR[] = "-Werror";
+static const char GCC_OPT_WNO_ERROR[] = "-Wno-error";
 
 static const char CLANG_OPT_OZ[] = "-Oz";
 static const char CLANG_OPT_ICF[] = "--icf";
 static const char CLANG_OPT_TARGET[] = "--target";
 static const char CLANG_OPT_Q_UNUSED_ARGUMENTS[] = "-Qunused-arguments";
-static const char CLANG_OPT_W_NO_UNUSED_COMMAND_LINE_ARGUMENT[] = "-Wno-unused-command-line-argument";
-static const char CLANG_OPT_W_NO_INVALID_COMMAND_LINE_ARGUMENT[] = "-Wno-invalid-command-line-argument";
+static const char CLANG_OPT_W_UNUSED_COMMAND_LINE_ARGUMENT[] = "-Wunused-command-line-argument";
+static const char CLANG_OPT_W_INVALID_COMMAND_LINE_ARGUMENT[] = "-Winvalid-command-line-argument";
 static const char CLANG_OPT_W_NEWLINE_EOF[] = "-Wnewline-eof";
+static const char CLANG_OPT_W_UNGUARDED_AVAILABILITY[] = "-Wunguarded-availability";
+static const char CLANG_OPT_W_UNGUARDED_AVAILABILITY_NEW[] = "-Wunguarded-availability-new";
 static const char CLANG_OPT_PRINT_RESOURCE_DIR[] = "-print-resource-dir";
 static const char CLANG_OPT_F_NO_LIMIT_DEBUG_INFO[] = "-fno-limit-debug-info";
 static const char CLANG_OPT_GCC_TOOLCHAIN[] = "--gcc-toolchain";
@@ -245,17 +250,27 @@ static const char CLANG_VERSION_TEMPLATE[] =
 	"Thread model: posix\n"
 	"InstalledDir: %s\n";
 
+static const char CLANG_WARNING_REMOVE_NONE[] = "none";
+
 static clang_option_t CLANG_SPECIFIC_REMOVE[] = {
 	{
 		.name = CLANG_OPT_Q_UNUSED_ARGUMENTS,
 		.value = 0
 	},
 	{
-		.name = CLANG_OPT_W_NO_UNUSED_COMMAND_LINE_ARGUMENT,
+		.name = CLANG_OPT_W_UNUSED_COMMAND_LINE_ARGUMENT,
 		.value = 0
 	},
 	{
-		.name = CLANG_OPT_W_NO_INVALID_COMMAND_LINE_ARGUMENT,
+		.name = CLANG_OPT_W_INVALID_COMMAND_LINE_ARGUMENT,
+		.value = 0
+	},
+	{
+		.name = CLANG_OPT_W_UNGUARDED_AVAILABILITY,
+		.value = 0
+	},
+	{
+		.name = CLANG_OPT_W_UNGUARDED_AVAILABILITY_NEW,
 		.value = 0
 	},
 	{
@@ -544,6 +559,145 @@ static int known_compiler(const char* const cc) {
 	
 }
 
+static char* clang_warning_remove(const char* const cur) {
+	
+	int remove = 0;
+	
+	size_t index = 0;
+	size_t indexes_offset = 0;
+	size_t* indexes = NULL;
+	size_t warnings = 0;
+	
+	strsplit_t split = {0};
+	strsplit_part_t part = {0};
+	
+	char* wopt = NULL;
+	
+	const char* werror = GCC_OPT_WERROR + 1;
+	size_t size = 0;
+	
+	const char* current = cur;
+	const char* pos = NULL;
+	
+	const char separator[] = {EQUAL, '\0'};
+	
+	const char* name = cur;
+	int value = 0;
+	const clang_option_t* option = NULL;
+	
+	while (*(++current) == DASH) {};
+	
+	size = strlen(werror);
+	
+	if (strncmp(current, werror, size) != 0) {
+		werror = GCC_OPT_WNO_ERROR + 1;
+	}
+	
+	size = strlen(werror);
+	
+	if (strncmp(current, werror, size) != 0) {
+		return (char*) CLANG_WARNING_REMOVE_NONE;
+	}
+	
+	current += size;
+	
+	if (*current != EQUAL) {
+		return (char*) CLANG_WARNING_REMOVE_NONE;
+	}
+	
+	current++;
+	
+	strsplit_init(&split, &part, current, ",");
+	
+	warnings = strsplit_size(&split, &part);
+	
+	indexes = malloc(warnings * sizeof(*indexes));
+	
+	for (index = 0; index < sizeof(CLANG_SPECIFIC_REMOVE) / sizeof(*CLANG_SPECIFIC_REMOVE); index++) {
+		option = &CLANG_SPECIFIC_REMOVE[index];
+		
+		name = option->name;
+		value = option->value;
+		
+		while (*(++name) == DASH) {};
+		
+		if (name[0] != 'W') {
+			continue;
+		}
+		
+		name++;
+		puts(name);
+		size = strlen(name);
+		
+		strsplit_init(&split, &part, current, ",");
+		
+		while (strsplit_next(&split, &part) != NULL) {
+			if (!(size == part.size && strncmp(part.begin, name, part.size) == 0)) {
+				continue;
+			}
+			
+			indexes[indexes_offset++] = part.index;
+		}
+	}
+	
+	if (indexes_offset == warnings) {
+		return NULL;
+	}
+	
+	if (indexes_offset != 0) {
+		wopt = malloc(strlen(cur) + 1);
+		
+		if (wopt == NULL) {
+			return (char*) CLANG_WARNING_REMOVE_NONE;
+		}
+		
+		wopt[0] = DASH;
+		
+		strcpy(wopt + 1, werror);
+		strcat(wopt, separator);
+	
+		strsplit_init(&split, &part, current, ",");
+		
+		while (strsplit_next(&split, &part) != NULL) {
+			remove = 0;
+			
+			if (part.size == 0) {
+				continue;
+			}
+			
+			for (index = 0; index < indexes_offset; index++) {
+				remove = (indexes[index] == part.index);
+				
+				if (remove) {
+					break;
+				}
+			}
+			
+			if (remove) {
+				continue;
+			}
+			
+			pos = strchr(wopt, '\0') - 1;
+			
+			if (strcmp(pos, separator) != 0) {
+				strcat(wopt, ",");
+			}
+			
+			strncat(wopt, part.begin, part.size);
+		}
+		
+		pos = strchr(wopt, '\0') - 1;
+		
+		if (strcmp(pos, separator) == 0) {
+			free(wopt);
+			wopt = NULL;
+		}
+	}
+	
+	return wopt;
+	
+}
+
 static int clang_specific_remove(const char* const prev, const char* const cur) {
 	/*
 	Remove Clang-specific options that have no GCC equivalents.
@@ -583,6 +737,10 @@ static int clang_specific_remove(const char* const prev, const char* const cur) 
 		while (*(++name) == DASH) {};
 		
 		size = strlen(name);
+		
+		if (name[0] == 'W' && strncmp(current, "Wno-", 4) == 0 && strcmp(name + 1, current + 4) == 0) {
+			goto end;
+		}
 		
 		if (strncmp(current, name, size) != 0) {
 			continue;
@@ -866,6 +1024,7 @@ int main(int argc, char* argv[]) {
 	char** args = NULL;
 	char* arg = NULL;
 	
+	const char* werror = NULL;
 	const char* cc = NULL;
 	const char* override_cc = NULL;
 	const char* override_libcv = NULL;
@@ -1261,6 +1420,18 @@ int main(int argc, char* argv[]) {
 		
 		if (clang_specific_replace(cur, &kargc, kargv)) {
 			continue;
+		}
+		
+		werror = clang_warning_remove(cur);
+		
+		if (werror != CLANG_WARNING_REMOVE_NONE) {
+			if (werror == NULL) {
+				continue;
+			}
+			
+			if (werror != cur) {
+				cur = werror;
+			}
 		}
 		
 		kargv[kargc++] = (char*) cur;
