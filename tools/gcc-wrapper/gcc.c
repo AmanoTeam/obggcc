@@ -2122,16 +2122,18 @@ int main(int argc, char* argv[]) {
 	strcat(gpp_include_directory, PATHSEP_S);
 	strcat(gpp_include_directory, GCC_MAJOR_VERSION);
 	
-	gpp_builtins_include_directory = malloc(strlen(gpp_include_directory) + strlen(PATHSEP_S) + strlen(triplet) + 1);
-	
-	if (gpp_builtins_include_directory == NULL) {
-		err = ERR_MEM_ALLOC_FAILURE;
-		goto end;
-	}
-	
-	strcpy(gpp_builtins_include_directory, gpp_include_directory);
-	strcat(gpp_builtins_include_directory, PATHSEP_S);
-	strcat(gpp_builtins_include_directory, triplet);
+	#if !defined(PINO)
+		gpp_builtins_include_directory = malloc(strlen(gpp_include_directory) + strlen(PATHSEP_S) + strlen(triplet) + 1);
+		
+		if (gpp_builtins_include_directory == NULL) {
+			err = ERR_MEM_ALLOC_FAILURE;
+			goto end;
+		}
+		
+		strcpy(gpp_builtins_include_directory, gpp_include_directory);
+		strcat(gpp_builtins_include_directory, PATHSEP_S);
+		strcat(gpp_builtins_include_directory, triplet);
+	#endif
 	
 	arg = malloc(strlen(GCC_OPT_SYSROOT) + strlen(EQUAL_S) + strlen(sysroot_directory) + 1);
 	
@@ -2164,8 +2166,10 @@ int main(int argc, char* argv[]) {
 		args[offset++] = (char*) GCC_OPT_ISYSTEM;
 		args[offset++] = gpp_include_directory;
 		
-		args[offset++] = (char*) GCC_OPT_ISYSTEM;
-		args[offset++] = gpp_builtins_include_directory;
+		#if !defined(PINO)
+			args[offset++] = (char*) GCC_OPT_ISYSTEM;
+			args[offset++] = gpp_builtins_include_directory;
+		#endif
 	}
 	
 	args[offset++] = (char*) GCC_OPT_ISYSTEM;
