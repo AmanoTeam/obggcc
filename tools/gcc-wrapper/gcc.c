@@ -168,6 +168,7 @@ static const char LLD_OPT_PACK_DYN_RELOCS[] = "--pack-dyn-relocs=relr";
 
 static const char M_ANDROID_API[] = "__ANDROID_API__=";
 static const char M_ANDROID_MIN_SDK_VERSION[] = "__ANDROID_MIN_SDK_VERSION__=";
+static const char M_ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK[] = "__ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK__";
 
 static const char GCC_FPU_NEON[] = "neon-vfpv3";
 
@@ -528,6 +529,38 @@ static const char* get_loader(const char* const triplet) {
 	
 }
 
+static const char* get_max_libc_version(const char* const triplet) {
+	
+	int status = 0;
+	
+	#if defined(PINO)
+		status = (
+			strcmp(triplet, "riscv64-unknown-linux-android") == 0 ||
+			strcmp(triplet, "i686-unknown-linux-android") == 0 ||
+			strcmp(triplet, "armv7-unknown-linux-androideabi") == 0 ||
+			strcmp(triplet, "aarch64-unknown-linux-android") == 0 ||
+			strcmp(triplet, "x86_64-unknown-linux-android") == 0 ||
+			strcmp(triplet, "armv5-unknown-linux-androideabi") == 0
+		);
+		
+		if (status) {
+			return "35";
+		}
+		
+		status = (
+			strcmp(triplet, "mipsel-unknown-linux-android") == 0 ||
+			strcmp(triplet, "mips64el-unknown-linux-android") == 0
+		);
+		
+		if (status) {
+			return "27";
+		}
+	#endif
+	
+	return NULL;
+	
+}
+
 static int known_clang(const char* const cc) {
 	
 	const int status = (
@@ -626,7 +659,7 @@ static char* clang_warning_remove(const char* const cur) {
 		}
 		
 		name++;
-		puts(name);
+		
 		size = strlen(name);
 		
 		strsplit_init(&split, &part, current, ",");
@@ -1077,8 +1110,11 @@ int main(int argc, char* argv[]) {
 	char* destination = NULL;
 	
 	#if defined(PINO)
+		int android_weak_api_defs = 0;
 		char* android_api = NULL;
 		char* android_min_sdk_version = NULL;
+		
+		char* android_current_sdk_version = NULL;
 	#endif
 	
 	size_t kargc = 0;
@@ -1205,6 +1241,12 @@ int main(int argc, char* argv[]) {
 				
 				cur = argv[index + offset];
 			}
+			
+			#if defined(PINO)
+				if (strcmp(cur, M_ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK) == 0) {
+					android_weak_api_defs = 1;
+				}
+			#endif
 			
 			if (strncmp(cur, M_ANDROID_API, strlen(M_ANDROID_API)) == 0) {
 				cur += strlen(M_ANDROID_API);
@@ -1751,6 +1793,10 @@ int main(int argc, char* argv[]) {
 	memcpy(libc_version, start, size);
 	libc_version[size] = '\0';
 	
+	#if defined(PINO)
+		android_current_sdk_version = libc_version;
+	#endif
+	
 	libc_major = strtol(libc_version, &ptr, 10);
 	
 	if (!(*ptr == '-' || *ptr == ZERO)) {
@@ -1758,6 +1804,24 @@ int main(int argc, char* argv[]) {
 	}
 	
 	#if defined(PINO)
+		/*
+		Handle support for weak API references.
+		
+		- https://developer.android.com/ndk/guides/using-newer-apis
+		*/
+		if (android_weak_api_defs) {
+			cur = get_max_libc_version(triplet);
+			
+			libc_version = malloc(strlen(cur) + 1);
+			
+			if (libc_version == NULL) {
+				err = ERR_MEM_ALLOC_FAILURE;
+				goto end;
+			}
+			
+			strcpy(libc_version, cur);
+		}
+		
 		/*
 		Disable emitting a single read-only, non-code segment (--rosegment) on
 		Android versions below 10 (API 29), as it's not supported there.
@@ -2279,7 +2343,7 @@ int main(int argc, char* argv[]) {
 	
 	#if defined(PINO)
 		/* __ANDROID_API__ */
-		android_api = malloc(strlen(M_ANDROID_API) + strlen(libc_version) + 1);
+		android_api = malloc(strlen(M_ANDROID_API) + strlen(android_current_sdk_version) + 1);
 		
 		if (android_api == NULL) {
 			err = ERR_MEM_ALLOC_FAILURE;
@@ -2287,13 +2351,13 @@ int main(int argc, char* argv[]) {
 		}
 		
 		strcpy(android_api, M_ANDROID_API);
-		strcat(android_api, libc_version);
+		strcat(android_api, android_current_sdk_version);
 		
 		args[offset++] = (char*) GCC_OPT_D;
 		args[offset++] = android_api;
 		
 		/* __ANDROID_MIN_SDK_VERSION__ */
-		android_min_sdk_version = malloc(strlen(M_ANDROID_MIN_SDK_VERSION) + strlen(libc_version) + 1);
+		android_min_sdk_version = malloc(strlen(M_ANDROID_MIN_SDK_VERSION) + strlen(android_current_sdk_version) + 1);
 		
 		if (android_min_sdk_version == NULL) {
 			err = ERR_MEM_ALLOC_FAILURE;
@@ -2301,7 +2365,7 @@ int main(int argc, char* argv[]) {
 		}
 		
 		strcpy(android_min_sdk_version, M_ANDROID_MIN_SDK_VERSION);
-		strcat(android_min_sdk_version, libc_version);
+		strcat(android_min_sdk_version, android_current_sdk_version);
 		
 		args[offset++] = (char*) GCC_OPT_D;
 		args[offset++] = android_min_sdk_version;
@@ -2461,6 +2525,10 @@ int main(int argc, char* argv[]) {
 	#if defined(PINO)
 		free(android_api);
 		free(android_min_sdk_version);
+		
+		if (android_weak_api_defs) {
+			free(android_current_sdk_version);
+		}
 	#endif
 	
 	query_free(&query);
