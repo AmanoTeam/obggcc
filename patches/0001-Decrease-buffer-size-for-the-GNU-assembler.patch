@@ -1,0 +1,42 @@
+From b6789553a50ac6dde4ee895ed6fe409cd69d1a54 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Mon, 1 Sep 2025 01:51:37 +0000
+Subject: [PATCH] Decrease buffer size for the GNU assembler
+
+The current buffer size is so large that it causes a stack overflow on systems with a low stack size (e.g., 32-bit Android).
+
+From: https://github.com/termux/termux-packages/blob/master/packages/binutils-libs/gas-decrease-input-buffer-size.patch
+---
+ gas/app.c        | 2 +-
+ gas/input-file.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/gas/app.c b/gas/app.c
+index b9df9dab..a0d59e42 100644
+--- a/gas/app.c
++++ b/gas/app.c
+@@ -281,7 +281,7 @@ static char out_buf[20];
+ static int add_newlines;
+ static char *saved_input;
+ static size_t saved_input_len;
+-static char input_buffer[32 * 1024];
++static char input_buffer[4 * 1024];
+ 
+ /* Data structure for saving the state of app across #include's.  Note that
+    app is called asynchronously to the parsing of the .include's, so our
+diff --git a/gas/input-file.c b/gas/input-file.c
+index f3af77c6..97204fe1 100644
+--- a/gas/input-file.c
++++ b/gas/input-file.c
+@@ -37,7 +37,7 @@ int preprocess = 0;
+    The caller only asks once what BUFFER_SIZE is, and asks before
+    the nature of the input files (if any) is known.  */
+ 
+-#define BUFFER_SIZE (32 * 1024)
++#define BUFFER_SIZE (4 * 1024)
+ 
+ /* We use static data: the data area is not sharable.  */
+ 
+-- 
+2.25.1
+
