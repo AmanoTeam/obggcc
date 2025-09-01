@@ -539,8 +539,7 @@ static const char* get_max_libc_version(const char* const triplet) {
 			strcmp(triplet, "i686-unknown-linux-android") == 0 ||
 			strcmp(triplet, "armv7-unknown-linux-androideabi") == 0 ||
 			strcmp(triplet, "aarch64-unknown-linux-android") == 0 ||
-			strcmp(triplet, "x86_64-unknown-linux-android") == 0 ||
-			strcmp(triplet, "armv5-unknown-linux-androideabi") == 0
+			strcmp(triplet, "x86_64-unknown-linux-android") == 0
 		);
 		
 		if (status) {
@@ -549,7 +548,8 @@ static const char* get_max_libc_version(const char* const triplet) {
 		
 		status = (
 			strcmp(triplet, "mipsel-unknown-linux-android") == 0 ||
-			strcmp(triplet, "mips64el-unknown-linux-android") == 0
+			strcmp(triplet, "mips64el-unknown-linux-android") == 0 ||
+			strcmp(triplet, "armv5-unknown-linux-androideabi") == 0
 		);
 		
 		if (status) {
