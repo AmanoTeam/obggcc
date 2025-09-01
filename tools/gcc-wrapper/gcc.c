@@ -593,13 +593,18 @@ static int known_compiler(const char* const cc) {
 }
 
 static char* clang_warning_remove(const char* const cur) {
+	/*
+	Remove Clang-specific warning options that have no GCC equivalents.
+	*/
 	
 	int remove = 0;
 	
 	size_t index = 0;
-	size_t indexes_offset = 0;
-	size_t* indexes = NULL;
-	size_t warnings = 0;
+	
+	size_t* items = NULL;
+	size_t items_offset = 0;
+	
+	size_t warnc = 0;
 	
 	strsplit_t split = {0};
 	strsplit_part_t part = {0};
@@ -642,9 +647,9 @@ static char* clang_warning_remove(const char* const cur) {
 	
 	strsplit_init(&split, &part, current, ",");
 	
-	warnings = strsplit_size(&split, &part);
+	warnc = strsplit_size(&split, &part);
 	
-	indexes = malloc(warnings * sizeof(*indexes));
+	items = malloc(warnc * sizeof(*items));
 	
 	for (index = 0; index < sizeof(CLANG_SPECIFIC_REMOVE) / sizeof(*CLANG_SPECIFIC_REMOVE); index++) {
 		option = &CLANG_SPECIFIC_REMOVE[index];
@@ -669,64 +674,66 @@ static char* clang_warning_remove(const char* const cur) {
 				continue;
 			}
 			
-			indexes[indexes_offset++] = part.index;
+			items[items_offset++] = part.index;
 		}
 	}
 	
-	if (indexes_offset == warnings) {
+	if (items_offset == 0) {
+		return (char*) CLANG_WARNING_REMOVE_NONE;
+	}
+	
+	if (items_offset == warnc) {
 		return NULL;
 	}
 	
-	if (indexes_offset != 0) {
-		wopt = malloc(strlen(cur) + 1);
+	wopt = malloc(strlen(cur) + 1);
+	
+	if (wopt == NULL) {
+		return (char*) CLANG_WARNING_REMOVE_NONE;
+	}
+	
+	wopt[0] = DASH;
+	
+	strcpy(wopt + 1, werror);
+	strcat(wopt, separator);
+
+	strsplit_init(&split, &part, current, ",");
+	
+	while (strsplit_next(&split, &part) != NULL) {
+		remove = 0;
 		
-		if (wopt == NULL) {
-			return (char*) CLANG_WARNING_REMOVE_NONE;
+		if (part.size == 0) {
+			continue;
 		}
 		
-		wopt[0] = DASH;
-		
-		strcpy(wopt + 1, werror);
-		strcat(wopt, separator);
-	
-		strsplit_init(&split, &part, current, ",");
-		
-		while (strsplit_next(&split, &part) != NULL) {
-			remove = 0;
-			
-			if (part.size == 0) {
-				continue;
-			}
-			
-			for (index = 0; index < indexes_offset; index++) {
-				remove = (indexes[index] == part.index);
-				
-				if (remove) {
-					break;
-				}
-			}
+		for (index = 0; index < items_offset; index++) {
+			remove = (items[index] == part.index);
 			
 			if (remove) {
-				continue;
+				break;
 			}
-			
-			pos = strchr(wopt, '\0') - 1;
-			
-			if (strcmp(pos, separator) != 0) {
-				strcat(wopt, ",");
-			}
-			
-			strncat(wopt, part.begin, part.size);
+		}
+		
+		if (remove) {
+			continue;
 		}
 		
 		pos = strchr(wopt, '\0') - 1;
 		
-		if (strcmp(pos, separator) == 0) {
-			free(wopt);
-			wopt = NULL;
+		if (strcmp(pos, separator) != 0) {
+			strcat(wopt, ",");
 		}
+		
+		strncat(wopt, part.begin, part.size);
 	}
 	
+	pos = strchr(wopt, '\0') - 1;
+	
+	if (strcmp(pos, separator) == 0) {
+		free(wopt);
+		wopt = NULL;
+	}
+
 	return wopt;
 	
 }
