@@ -30,7 +30,9 @@ static const char GCC_MAJOR_VERSION[] = "15";
 static const char INCLUDE_DIR[] = PATHSEP_M "include";
 static const char INCLUDE_MISSING_DIR[] = PATHSEP_M "include-missing";
 static const char LIBRARY_DIR[] = PATHSEP_M "lib";
-static const char STATIC_LIBRARY_DIR[] = PATHSEP_M "lib" PATHSEP_M "static";
+static const char STATIC_LIBRARY_DIR[] = PATHSEP_M "static";
+static const char NO_LFS_LIBRARY_DIR[] = PATHSEP_M "no-lfs";
+
 static const char GCC_LIBRARY_DIR[] = PATHSEP_M "lib" PATHSEP_M "gcc";
 
 static const char RT_LIBRARY[] = "rt";
@@ -155,6 +157,9 @@ static const char CLANG_OPT_F_INTEGRATED_AS[] = "-fintegrated-as";
 #define LTO_FULL 0x01
 #define LTO_THIN 0x02
 
+#define ARCH_ABI_32 0x20
+#define ARCH_ABI_64 0x40
+
 static const char LD_OPT_DYNAMIC_LINKER[] = "-dynamic-linker";
 static const char LD_OPT_RPATH_LINK[] = "-rpath-link";
 static const char LD_OPT_RPATH[] = "-rpath";
@@ -168,6 +173,7 @@ static const char LLD_OPT_PACK_DYN_RELOCS[] = "--pack-dyn-relocs=relr";
 
 static const char M_ANDROID_API[] = "__ANDROID_API__=";
 static const char M_ANDROID_MIN_SDK_VERSION[] = "__ANDROID_MIN_SDK_VERSION__=";
+static const char M_FILE_OFFSET_BITS[] = "_FILE_OFFSET_BITS=";
 static const char M_ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK[] = "__ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK__";
 
 static const char GCC_FPU_NEON[] = "neon-vfpv3";
@@ -319,6 +325,59 @@ static int libcv_matches(const char a, const char b) {
 	#elif defined(PINO) /* Android API level (e.g., 14) */
 		if ((a >= '1' && a <= '3') && (b >= '0' && b <= '9')) {
 			return 1;
+		}
+	#else
+		#error "I don't know how to handle this"
+	#endif
+	
+	return 0;
+	
+}
+
+static int get_bitness(const char* const triplet) {
+	
+	int status = 0;
+	
+	#if defined(PINO)
+		status = (
+			strcmp(triplet, "riscv64-unknown-linux-android") == 0 ||
+			strcmp(triplet, "aarch64-unknown-linux-android") == 0 ||
+			strcmp(triplet, "x86_64-unknown-linux-android") == 0 ||
+			strcmp(triplet, "mips64el-unknown-linux-android") == 0
+		);
+		
+		if (status) {
+			return ARCH_ABI_64;
+		}
+		
+		status = (
+			strcmp(triplet, "mipsel-unknown-linux-android") == 0 ||
+			strcmp(triplet, "i686-unknown-linux-android") == 0 ||
+			strcmp(triplet, "armv7-unknown-linux-androideabi") == 0 ||
+			strcmp(triplet, "armv5-unknown-linux-androideabi") == 0
+		);
+		
+		if (status) {
+			return ARCH_ABI_32;
+		}
+	#elif defined(OBGGCC)
+		status = (
+			strcmp(triplet, "x86_64-unknown-linux-gnu") == 0 ||
+			strcmp(triplet, "aarch64-unknown-linux-gnu") == 0
+		);
+		
+		if (status) {
+			return ARCH_ABI_64;
+		}
+		
+		status = (
+			strcmp(triplet, "arm-unknown-linux-gnueabi") == 0 ||
+			strcmp(triplet, "arm-unknown-linux-gnueabihf") == 0 ||
+			strcmp(triplet, "i386-unknown-linux-gnu") == 0
+		);
+		
+		if (status) {
+			return ARCH_ABI_32;
 		}
 	#else
 		#error "I don't know how to handle this"
@@ -1013,6 +1072,8 @@ int main(int argc, char* argv[]) {
 	long int libc_major = 0;
 	long int libc_minor = 0;
 	
+	int bitness = 0;
+	
 	unsigned char a = 0;
 	unsigned char b = 0;
 	
@@ -1118,6 +1179,8 @@ int main(int argc, char* argv[]) {
 	
 	#if defined(PINO)
 		int android_weak_api_defs = 0;
+		int android_lfs = 0;
+		
 		char* android_api = NULL;
 		char* android_min_sdk_version = NULL;
 		
@@ -1252,6 +1315,14 @@ int main(int argc, char* argv[]) {
 			#if defined(PINO)
 				if (strcmp(cur, M_ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK) == 0) {
 					android_weak_api_defs = 1;
+					goto next;
+				}
+				
+				if (strncmp(cur, M_FILE_OFFSET_BITS, strlen(M_FILE_OFFSET_BITS)) == 0) {
+					cur += strlen(M_FILE_OFFSET_BITS);
+					android_lfs = (strcmp(cur, "64") == 0);
+					
+					goto next;
 				}
 			#endif
 			
@@ -1679,6 +1750,8 @@ int main(int argc, char* argv[]) {
 	memcpy(triplet, file_name, size);
 	triplet[size] = '\0';
 	
+	bitness = get_bitness(triplet);
+	
 	if (wants_neon && target_supports_neon(triplet)) {
 		floating_point_unit = malloc(strlen(GCC_OPT_M_FPU) + strlen(GCC_FPU_NEON) + 1);
 		
@@ -2060,7 +2133,7 @@ int main(int argc, char* argv[]) {
 		strcat(sysroot_include_missing_directory, INCLUDE_MISSING_DIR);
 	}
 	
-	sysroot_library_directory = malloc(strlen(sysroot_directory) + strlen(STATIC_LIBRARY_DIR) + 1);
+	sysroot_library_directory = malloc(strlen(sysroot_directory) + strlen(LIBRARY_DIR) + strlen(NO_LFS_LIBRARY_DIR) + strlen(STATIC_LIBRARY_DIR) + 1);
 	
 	if (sysroot_library_directory == NULL) {
 		err = ERR_MEM_ALLOC_FAILURE;
@@ -2068,7 +2141,32 @@ int main(int argc, char* argv[]) {
 	}
 	
 	strcpy(sysroot_library_directory, sysroot_directory);
-	strcat(sysroot_library_directory, ((wants_force_static) ? STATIC_LIBRARY_DIR : LIBRARY_DIR));
+	strcat(sysroot_library_directory, LIBRARY_DIR);
+	
+	#if defined(PINO)
+		/*
+		On 32-bit Android platforms prior to Android 7.0, most fopen()-related functions lack 64-bit variants.
+		While Bionic does not expose these functions in its headers, the 32-bit versions are still available in both
+		the headers and the C standard library.
+		
+		When -D_FILE_OFFSET_BITS=64 is specified, the header logic correctly hides the 32-bit definitions and does not
+		provide 64-bit variants. However, this is insufficient to prevent build tools like Autotools and CMake from mistakenly
+		detecting the 32-bit variants as 64-bit ones, as they share the same name and remain accessible via the linker.
+		
+		This leads to undefined behavior in applications that operate under these incorrect assumptions, as they end up
+		passing 64-bit values to 32-bit functions.
+		
+		To avoid this issue, we must redirect the linker to a custom directory containing a modified version of the C library
+		that does not expose any of the problematic functions.
+		*/
+		if (android_lfs && bitness == ARCH_ABI_32 && LIBC_VERSION(libc_major, libc_minor) < LIBC_VERSION(24, 0)) {
+			strcat(sysroot_library_directory, NO_LFS_LIBRARY_DIR);
+		}
+	#endif
+	
+	if (wants_force_static) {
+		strcat(sysroot_library_directory, STATIC_LIBRARY_DIR);
+	}
 	
 	if (wants_runtime_rpath) {
 		sysroot_runtime_directory = malloc(strlen(sysroot_library_directory) + strlen(PATHSEP_S) + strlen(GCC) + 1);
