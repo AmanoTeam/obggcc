@@ -199,9 +199,13 @@ jobs:
             export PINO_HOME='/tmp/pino'
             export PATH="${PINO_HOME}/bin:${PATH}"
             
-            export PINO_STATIC='0'
-            
             source "${PINO_HOME}/usr/local/share/pino/autotools/${{ matrix.target }}.sh"
+            
+            rm \
+                "${PINO_HOME}/include/bionic/"{zconf,zlib}'.h' \
+                "${PINO_HOME}/"*'-unknown-linux-'{androideabi,android}'/include/'{zconf,zlib}'.h' \
+                "${PINO_HOME}/"*'-unknown-linux-android'*'/lib/libz.'{a,so} \
+                "${PINO_HOME}/"*'-unknown-linux-android'*'/lib/static/libz.'{a,so}
         fi
         
         bash './build.sh' '${{ matrix.target }}'

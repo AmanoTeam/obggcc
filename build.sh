@@ -487,9 +487,10 @@ cp "${workdir}/tools/ln.sh" '/tmp/ln'
 
 export PATH="/tmp:${PATH}"
 
-# The gold linker build incorrectly detects ffsll() as unsupported.
-if [[ "${CROSS_COMPILE_TRIPLET}" == *'-android'* ]]; then
-	export ac_cv_func_ffsll=yes
+if [[ "${CROSS_COMPILE_TRIPLET}" == 'arm'*'-android'* ]]; then
+	export \
+		ac_cv_func_fseeko='no' \
+		ac_cv_func_ftello='no'
 fi
 
 declare cc='gcc'
