@@ -509,7 +509,7 @@ make \
 	LDFLAGS="${linkflags}"
 
 for target in "${targets[@]}"; do
-	declare specs='%{!ftrivial-auto-var-init*:-ftrivial-auto-var-init=zero} %{!fsyntax-only:%{!c:%{!M:%{!MM:%{!E:%{!S:-Xlinker --disable-new-dtags}}}}}}'
+	declare specs='%{!fsyntax-only:%{!c:%{!M:%{!MM:%{!E:%{!S:-Xlinker --disable-new-dtags}}}}}}'
 	declare hash_style='both'
 	
 	source "${workdir}/${target}.sh"
