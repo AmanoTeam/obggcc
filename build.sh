@@ -684,7 +684,7 @@ for target in "${targets[@]}"; do
 	
 	rm "${toolchain_directory}/bin/${triplet}-${triplet}-"* || true
 	
-	if [[ "${triplet}" = 'sparc-'* ]] || [[ "${triplet}" = 's390-'* ]] || [[ "${triplet}" = 'powerpc-'* ]] || [[ "${triplet}" = 'hppa-'* ]] || [[ "${triplet}" = 'alpha-'* ]]; then
+	if [[ "${triplet}" = 'sparc-'* ]] || [[ "${triplet}" = 's390-'* ]] || [[ "${triplet}" = 'powerpc-'* ]] || [[ "${triplet}" = 'hppa-'* ]] || [[ "${triplet}" = 'alpha-'* ]] || [[ "${triplet}" = 'arm-'*'-gnueabi' ]]; then
 		patch \
 			--directory="${toolchain_directory}/${triplet}/include/c++/${gcc_major}/${triplet}" \
 			--strip='1' \
