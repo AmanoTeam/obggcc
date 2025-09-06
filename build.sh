@@ -872,8 +872,9 @@ while read item; do
 	cd "${toolchain_directory}/${triplet}${glibc_version}/lib"
 	mkdir 'gcc' 'static'
 	
-	ln --symbolic './lib'*.{so,a}* './static'
-	ln --symbolic './crt'*'.o' './static'
+	ln --symbolic './lib'*'.'{so,a}* './static'
+	ln --symbolic './ld-'*'.so'* './static'
+	ln --symbolic './'*'.o' './static'
 	
 	if (( nz )); then
 		mkdir 'nouzen'
