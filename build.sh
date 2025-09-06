@@ -26,7 +26,7 @@ declare -r isl_tarball='/tmp/isl.tar.xz'
 declare -r isl_directory='/tmp/isl-0.27'
 
 declare -r binutils_tarball='/tmp/binutils.tar.xz'
-declare -r binutils_directory='/tmp/binutils-2.45'
+declare -r binutils_directory='/tmp/binutils'
 
 declare -r gcc_major='15'
 
@@ -265,7 +265,7 @@ fi
 
 if ! [ -f "${binutils_tarball}" ]; then
 	curl \
-		--url 'https://mirrors.kernel.org/gnu/binutils/binutils-2.45.tar.xz' \
+		--url 'https://github.com/AmanoTeam/binutils-snapshots/releases/latest/download/binutils.tar.xz' \
 		--retry '30' \
 		--retry-all-errors \
 		--retry-delay '0' \
