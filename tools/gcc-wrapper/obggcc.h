@@ -20,6 +20,7 @@ static const char ENV_NZ[] = WRAPPER_FLAVOR_NAME "_NZ";
 static const char ENV_RUNTIME_RPATH[] = WRAPPER_FLAVOR_NAME "_RUNTIME_RPATH";
 static const char ENV_VERBOSE[] = WRAPPER_FLAVOR_NAME "_VERBOSE";
 static const char ENV_NEON[] = WRAPPER_FLAVOR_NAME "_NEON";
+static const char ENV_ARM_MODE[] = WRAPPER_FLAVOR_NAME "_ARM_MODE";
 static const char ENV_SIMD[] = WRAPPER_FLAVOR_NAME "_SIMD";
 static const char ENV_LTO[] = WRAPPER_FLAVOR_NAME "_LTO";
 

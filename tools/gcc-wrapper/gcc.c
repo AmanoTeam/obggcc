@@ -121,6 +121,7 @@ static const char GCC_OPT_NO_PIE[] = "-no-pie";
 static const char GCC_OPT_M_FPU[] = "-mfpu=";
 static const char GCC_OPT_M_SSE3[] = "-msse3";
 static const char GCC_OPT_M_SSE4_2[] = "-msse4.2";
+static const char GCC_OPT_M_ARM[] = "-marm";
 
 static const char GCC_OPT_DFORTIFY_SOURCE[] = "-D_FORTIFY_SOURCE=";
 static const char GCC_OPT_U_GNUC[] = "-U__GNUC__";
@@ -159,6 +160,12 @@ static const char CLANG_OPT_F_INTEGRATED_AS[] = "-fintegrated-as";
 
 #define ARCH_ABI_32 0x20
 #define ARCH_ABI_64 0x40
+
+#define ARCH_SPEC_NONE 0x00
+#define ARCH_SPEC_ARM 0x01
+#define ARCH_SPEC_X86 0x02
+#define ARCH_SPEC_MIPS 0x03
+#define ARCH_SPEC_RISCV 0x04
 
 static const char LD_OPT_DYNAMIC_LINKER[] = "-dynamic-linker";
 static const char LD_OPT_RPATH_LINK[] = "-rpath-link";
@@ -387,41 +394,94 @@ static int get_bitness(const char* const triplet) {
 	
 }
 
-static int arch_is_mips(const char* const name) {
+static int get_arch(const char* const triplet) {
 	
-	if (strcmp(name, "mips64el-unknown-linux-gnuabi64") == 0) {
-		return 1;
-	}
+	int status = 0;
 	
-	if (strcmp(name, "mipsel-unknown-linux-gnu") == 0) {
-		return 1;
-	}
+	#if defined(PINO)
+		status = (strcmp(triplet, "riscv64-unknown-linux-android") == 0);
+		
+		if (status) {
+			return ARCH_SPEC_RISCV;
+		}
+		
+		status = (
+			strcmp(triplet, "x86_64-unknown-linux-android") == 0 ||
+			strcmp(triplet, "i686-unknown-linux-android") == 0
+		);
+		
+		if (status) {
+			return ARCH_SPEC_X86;
+		}
+		
+		status = (
+			strcmp(triplet, "aarch64-unknown-linux-android") == 0 ||
+			strcmp(triplet, "armv7-unknown-linux-androideabi") == 0 ||
+			strcmp(triplet, "armv5-unknown-linux-androideabi") == 0
+		);
+		
+		if (status) {
+			return ARCH_SPEC_ARM;
+		}
+		
+		status = (
+			strcmp(triplet, "mipsel-unknown-linux-android") == 0 ||
+			strcmp(triplet, "mips64el-unknown-linux-android") == 0
+		);
+		
+		if (status) {
+			return ARCH_SPEC_MIPS;
+		}
+	#elif defined(OBGGCC)
+		status = (
+			strcmp(triplet, "x86_64-unknown-linux-gnu") == 0 ||
+			strcmp(triplet, "i386-unknown-linux-gnu") == 0
+		);
+		
+		if (status) {
+			return ARCH_SPEC_X86;
+		}
+		
+		status = (
+			strcmp(triplet, "aarch64-unknown-linux-gnu") == 0 ||
+			strcmp(triplet, "arm-unknown-linux-gnueabi") == 0 ||
+			strcmp(triplet, "arm-unknown-linux-gnueabihf") == 0
+		);
+		
+		if (status) {
+			return ARCH_SPEC_ARM;
+		}
+		
+		status = (
+			strcmp(triplet, "mips-unknown-linux-gnu") == 0 ||
+			strcmp(triplet, "mips64el-unknown-linux-gnuabi64") == 0 ||
+			strcmp(triplet, "mipsel-unknown-linux-gnu") == 0
+		);
+		
+		if (status) {
+			return ARCH_SPEC_MIPS;
+		}
+	#else
+		#error "I don't know how to handle this"
+	#endif
 	
-	if (strcmp(name, "mips-unknown-linux-gnu") == 0) {
-		return 1;
-	}
-	
-	if (strcmp(name, "mipsel-unknown-linux-android") == 0) {
-		return 1;
-	}
-	
-	if (strcmp(name, "mips64el-unknown-linux-android") == 0) {
-		return 1;
-	}
-	
-	return 0;
+	return ARCH_SPEC_NONE;
 	
 }
 
 static int target_supports_neon(const char* const name) {
 	
-	if (strcmp(name, "arm-unknown-linux-gnueabi") == 0) {
-		return 1;
-	}
-	
-	if (strcmp(name, "armv7-unknown-linux-androideabi") == 0) {
-		return 1;
-	}
+	#if defined(PINO)
+		if (strcmp(name, "armv7-unknown-linux-androideabi") == 0) {
+			return 1;
+		}
+	#elif defined(OBGGCC)
+		if (strcmp(name, "arm-unknown-linux-gnueabihf") == 0) {
+			return 1;
+		}
+	#else
+		#error "I don't know how to handle this"
+	#endif
 	
 	return 0;
 	
@@ -941,7 +1001,7 @@ static const char* get_fast_linker(
 	
 	const char* linker = NULL;
 	
-	if (arch_is_mips(triplet)) {
+	if (get_arch(triplet) == ARCH_SPEC_MIPS) {
 		return linker;
 	}
 	
@@ -1072,6 +1132,7 @@ int main(int argc, char* argv[]) {
 	long int libc_major = 0;
 	long int libc_minor = 0;
 	
+	int arch = 0;
 	int bitness = 0;
 	
 	unsigned char a = 0;
@@ -1084,6 +1145,7 @@ int main(int argc, char* argv[]) {
 	int wants_runtime_rpath = 0;
 	int wants_nz = 0;
 	int wants_neon = 0;
+	int wants_arm_mode = 0;
 	int wants_simd = 0;
 	int wants_lto = LTO_NONE;
 	
@@ -1211,6 +1273,7 @@ int main(int argc, char* argv[]) {
 	wants_runtime_rpath = query_get_bool(&query, ENV_RUNTIME_RPATH) == 1;
 	verbose = query_get_bool(&query, ENV_VERBOSE) == 1;
 	wants_neon = query_get_bool(&query, ENV_NEON) == 1;
+	wants_arm_mode = query_get_bool(&query, ENV_ARM_MODE) == 1;
 	wants_simd = query_get_bool(&query, ENV_SIMD) == 1;
 	
 	cur = query_get_string(&query, ENV_LTO);
@@ -1245,6 +1308,7 @@ int main(int argc, char* argv[]) {
 			2 + /* -l pino-math */
 			2 + /* -l pino-mman */
 			1 + /* -msse<version> */
+			1 + /* -marm */
 			4 + /* -Xlinker -z -Xlinker pack-relative-relocs */
 			5 + /* -flto=auto -flto-compression-level=0 -flto-partition={none,balanced} -fno-fat-lto-objects -fdevirtualize-at-ltrans */
 			1 /* NULL */
@@ -1750,6 +1814,7 @@ int main(int argc, char* argv[]) {
 	memcpy(triplet, file_name, size);
 	triplet[size] = '\0';
 	
+	arch = get_arch(triplet);
 	bitness = get_bitness(triplet);
 	
 	if (wants_neon && target_supports_neon(triplet)) {
@@ -1768,6 +1833,10 @@ int main(int argc, char* argv[]) {
 	
 	if (wants_simd && (cur = get_simd(triplet)) != NULL) {
 		kargv[kargc++] = (char*) cur;
+	}
+	
+	if (wants_arm_mode && (arch == ARCH_SPEC_ARM && bitness == ARCH_ABI_32)) {
+		kargv[kargc++] = (char*) GCC_OPT_M_ARM;
 	}
 	
 	#if AUTO_PICK_LINKER
