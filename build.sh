@@ -493,6 +493,10 @@ if [[ "${CROSS_COMPILE_TRIPLET}" == 'arm'*'-android'* ]]; then
 		ac_cv_func_ftello='no'
 fi
 
+if [[ "${CROSS_COMPILE_TRIPLET}" == *'-haiku' ]]; then
+	export ac_cv_c_bigendian='no'
+fi
+
 declare cc='gcc'
 declare readelf='readelf'
 
@@ -634,6 +638,7 @@ for target in "${targets[@]}"; do
 		--enable-libgomp \
 		--with-specs="${specs}" \
 		--with-pic \
+		--disable-c++-tools \
 		--disable-libsanitizer \
 		--disable-bootstrap \
 		--disable-libstdcxx-pch \
