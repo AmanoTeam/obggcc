@@ -137,6 +137,7 @@ static const char GCC_OPT_NODEFAULTLIBS[] = "-nodefaultlibs";
 static const char GCC_OPT_NOSTDLIB[] = "-nostdlib";
 static const char GCC_OPT_WERROR[] = "-Werror";
 static const char GCC_OPT_WNO_ERROR[] = "-Wno-error";
+static const char GCC_OPT_F_TREE_VECTORIZE[] = "-ftree-vectorize";
 
 static const char CLANG_OPT_OZ[] = "-Oz";
 static const char CLANG_OPT_ICF[] = "--icf";
@@ -153,6 +154,7 @@ static const char CLANG_OPT_GCC_TOOLCHAIN[] = "--gcc-toolchain";
 static const char CLANG_OPT_F_COLOR_DIAGNOSTICS[] = "-fcolor-diagnostics";
 static const char CLANG_OPT_F_NO_INTEGRATED_AS[] = "-fno-integrated-as";
 static const char CLANG_OPT_F_INTEGRATED_AS[] = "-fintegrated-as";
+static const char CLANG_OPT_F_SLP_VECTORIZE_AGGRESSIVE[] = "-fslp-vectorize-aggressive";
 
 #define LTO_NONE 0x00
 #define LTO_FULL 0x01
@@ -972,6 +974,12 @@ static int clang_specific_replace(
 	} else if (strcmp(current, CLANG_OPT_OZ) == 0 && gcc_version < 12) {
 		/* Replace -Oz with -Os. */
 		kargv[index++] = (char*) GCC_OPT_OS;
+		
+		status = 1;
+		goto end;
+	} else if (strcmp(current, CLANG_OPT_F_SLP_VECTORIZE_AGGRESSIVE) == 0) {
+		/* Replace -fslp-vectorize-aggressive with -ftree-vectorize. */
+		kargv[index++] = (char*) GCC_OPT_F_TREE_VECTORIZE;
 		
 		status = 1;
 		goto end;
