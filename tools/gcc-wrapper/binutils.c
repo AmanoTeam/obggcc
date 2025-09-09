@@ -29,6 +29,8 @@ static const char LLVM_OBJCOPY[] = "llvm-objcopy";
 static const char LLVM_COMMAND_PREFIX[] = "llvm-";
 
 static const char LIBCXX_SHARED[] = "libc++_shared.so";
+static const char LIBCXX_SHARED_SYM[] = "libc++_shared.so.sym";
+static const char LIBCXX_SHARED_DBG[] = "libc++_shared.so.dbg";
 
 #define BINFMT_X86_64 (0x01)
 #define BINFMT_i386 (0x02)
@@ -39,6 +41,10 @@ static const char LIBCXX_SHARED[] = "libc++_shared.so";
 #define BINFMT_ARM (0x07)
 
 #define BINFMT_SIZE (40)
+
+#define W_NONE (0x00)
+#define W_LLVM_STRIP (0x01)
+#define W_LLVM_OBJCOPY (0x02)
 
 struct binfmt {
 	int type;
@@ -290,6 +296,8 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	int err = ERR_SUCCESS;
 	
+	int wrapper = W_NONE;
+	
 	const struct binfmt* fmt = NULL;
 	
 	const char* triplet = NULL;
@@ -337,6 +345,26 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	verbose = query_get_bool(&query, ENV_VERBOSE) == 1;
 	
+	app_filename = get_app_filename();
+	
+	if (app_filename == NULL) {
+		err = ERR_GET_APP_FILENAME_FAILURE;
+		goto end;
+	}
+	
+	file_name = basename(app_filename);
+	
+	if (strcmp(file_name, LLVM_STRIP) == 0) {
+		wrapper = W_LLVM_STRIP;
+	} else if (strcmp(file_name, LLVM_OBJCOPY) == 0) {
+		wrapper = W_LLVM_OBJCOPY;
+	}
+	
+	if (wrapper == W_NONE) {
+		err = ERR_UNKNOWN_BINUTILS_WRAPPER;
+		goto end;
+	}
+	
 	for (index = 1; index < (size_t) argc; index++) {
 		cur = argv[index];
 		
@@ -347,6 +375,16 @@ int main(int argc, char* argv[], char* envp[]) {
 		if (cur[0] == '-' || argument_expects_value(prev)) {
 			kargv[kargc++] = cur;
 		} else {
+			/*
+			* objcopy doesn't use the -o argument for specifying the output file.
+			* Instead, it takes the second non-option argument as the output file.
+			*/
+			if (inputsc > 0 && wrapper == W_LLVM_OBJCOPY) {
+				output = cur;
+				kargv[kargc++] = cur;
+				continue;
+			}
+			
 			if (file_exists(cur) != 1) {
 				fprintf(stderr, "warning: ignoring non-existent input file: %s\n", cur);
 				continue;
@@ -369,20 +407,6 @@ int main(int argc, char* argv[], char* envp[]) {
 	}
 	
 	kargv[kargc++] = NULL;
-	
-	app_filename = get_app_filename();
-	
-	if (app_filename == NULL) {
-		err = ERR_GET_APP_FILENAME_FAILURE;
-		goto end;
-	}
-	
-	file_name = basename(app_filename);
-	
-	if (!(strcmp(file_name, LLVM_STRIP) == 0 || strcmp(file_name, LLVM_OBJCOPY) == 0)) {
-		err = ERR_UNKNOWN_BINUTILS_WRAPPER;
-		goto end;
-	}
 	
 	file_name += strlen(LLVM_COMMAND_PREFIX);
 	
@@ -410,7 +434,7 @@ int main(int argc, char* argv[], char* envp[]) {
 		goto end;
 	}
 	
-	memcpy(&args[1], kargv, kargc * sizeof(*kargv));
+	memcpy(&args[2], kargv, kargc * sizeof(*kargv));
 	
 	for (index = 0; index < inputsc; index++) {
 		input = inputs[index];
@@ -445,7 +469,7 @@ int main(int argc, char* argv[], char* envp[]) {
 		strcat(executable, file_name);
 		
 		args[0] = executable;
-		args[kargc] = input;
+		args[1] = input;
 		args[kargc + 1] = NULL;
 		
 		if (verbose) {
@@ -481,8 +505,26 @@ int main(int argc, char* argv[], char* envp[]) {
 			
 			cur = basename(output);
 			
-			if (strcmp(cur, LIBCXX_SHARED) == 0) {
+			wstatus = (
+				strcmp(cur, LIBCXX_SHARED) == 0 ||
+				strcmp(cur, LIBCXX_SHARED_SYM) == 0 ||
+				strcmp(cur, LIBCXX_SHARED_DBG) == 0
+			);
+			
+			if (wstatus) {
 				remove_file(output);
+			}
+			
+			if (input == output) {
+				continue;
+			}
+			
+			cur = basename(input);
+			
+			wstatus = strcmp(cur, LIBCXX_SHARED) == 0;
+			
+			if (wstatus) {
+				remove_file(input);
 			}
 		#endif
 	}
