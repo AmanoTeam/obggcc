@@ -1148,6 +1148,7 @@ int main(int argc, char* argv[]) {
 	
 	int intercept = 0;
 	
+	const char* system_prefix = NULL;
 	int wants_system_libraries = 0;
 	int wants_builtin_loader = 0;
 	int wants_runtime_rpath = 0;
@@ -1271,12 +1272,12 @@ int main(int argc, char* argv[]) {
 	query_load_environ(&query);
 	
 	#if defined(OBGGCC)
-		wants_system_libraries = query_get_bool(&query, ENV_SYSTEM_LIBRARIES) == 1;
 		wants_builtin_loader = query_get_bool(&query, ENV_BUILTIN_LOADER) == 1;
 	#endif
 	
 	wants_force_static = query_get_bool(&query, ENV_STATIC);
 	
+	wants_system_libraries = query_get_bool(&query, ENV_SYSTEM_LIBRARIES) == 1;
 	wants_nz = query_get_bool(&query, ENV_NZ) == 1;
 	wants_runtime_rpath = query_get_bool(&query, ENV_RUNTIME_RPATH) == 1;
 	verbose = query_get_bool(&query, ENV_VERBOSE) == 1;
@@ -1293,6 +1294,8 @@ int main(int argc, char* argv[]) {
 			wants_lto = LTO_THIN;
 		}
 	}
+	
+	system_prefix = query_get_string(&query, ENV_SYSTEM_PREFIX);
 	
 	kargv = malloc(
 		sizeof(*argv) * (
@@ -1893,26 +1896,38 @@ int main(int argc, char* argv[]) {
 	memmove(dst, start, size);
 	
 	if (wants_system_libraries || wants_nz) {
-		primary_library_directory = malloc(strlen(USR_DIRECTORY) + strlen(LIB_DIRECTORY) + strlen(PATHSEP_S) + strlen(non_prefixed_triplet) + 1);
+		primary_library_directory = malloc((system_prefix == NULL ? 0 : strlen(system_prefix)) + strlen(USR_DIRECTORY) + strlen(LIB_DIRECTORY) + strlen(PATHSEP_S) + strlen(non_prefixed_triplet) + 1);
 		
 		if (primary_library_directory == NULL) {
 			err = ERR_MEM_ALLOC_FAILURE;
 			goto end;
 		}
 		
-		strcpy(primary_library_directory, USR_DIRECTORY);
+		primary_library_directory[0] = '\0';
+		
+		if (system_prefix != NULL) {
+			strcat(primary_library_directory, system_prefix);
+		}
+		
+		strcat(primary_library_directory, USR_DIRECTORY);
 		strcat(primary_library_directory, LIB_DIRECTORY);
 		strcat(primary_library_directory, PATHSEP_S);
 		strcat(primary_library_directory, non_prefixed_triplet);
 		
-		secondary_library_directory = malloc(strlen(LIB_DIRECTORY) + strlen(PATHSEP_S) + strlen(non_prefixed_triplet) + 1);
+		secondary_library_directory = malloc((system_prefix == NULL ? 0 : strlen(system_prefix)) + strlen(LIB_DIRECTORY) + strlen(PATHSEP_S) + strlen(non_prefixed_triplet) + 1);
 		
 		if (secondary_library_directory == NULL) {
 			err = ERR_MEM_ALLOC_FAILURE;
 			goto end;
 		}
 		
-		strcpy(secondary_library_directory, LIB_DIRECTORY);
+		secondary_library_directory[0] = '\0';
+		
+		if (system_prefix != NULL) {
+			strcat(secondary_library_directory, system_prefix);
+		}
+		
+		strcat(secondary_library_directory, LIB_DIRECTORY);
 		strcat(secondary_library_directory, PATHSEP_S);
 		strcat(secondary_library_directory, non_prefixed_triplet);
 		
@@ -2439,25 +2454,52 @@ int main(int argc, char* argv[]) {
 	}
 	
 	if (wants_system_libraries) {
-		args[offset++] = (char*) GCC_OPT_ISYSTEM;
-		args[offset++] = sysroot_include_missing_directory;
+		if (directory_exists(sysroot_include_missing_directory) == 1) {
+			args[offset++] = (char*) GCC_OPT_ISYSTEM;
+			args[offset++] = sysroot_include_missing_directory;
+		}
 		
-		args[offset++] = (char*) GCC_OPT_ISYSTEM;
-		args[offset++] = (char*) SYSTEM_INCLUDE_PATH;
-		
-		directory = malloc(strlen(SYSTEM_INCLUDE_PATH) + strlen(PATHSEP_S) + strlen(non_prefixed_triplet) + 1);
+		/* <prefix>/usr/include */
+		directory = malloc((system_prefix == NULL ? 0 : strlen(system_prefix)) + strlen(SYSTEM_INCLUDE_PATH) + 1);
 		
 		if (directory == NULL) {
 			err = ERR_MEM_ALLOC_FAILURE;
 			goto end;
 		}
 		
-		strcpy(directory, SYSTEM_INCLUDE_PATH);
+		directory[0] = '\0';
+		
+		if (system_prefix != NULL) {
+			strcat(directory, system_prefix);
+		}
+		
+		strcat(directory, SYSTEM_INCLUDE_PATH);
+		
+		args[offset++] = (char*) GCC_OPT_ISYSTEM;
+		args[offset++] = (char*) directory;
+		
+		/* <prefix>/usr/include/<triplet> */
+		directory = malloc((system_prefix == NULL ? 0 : strlen(system_prefix)) + strlen(SYSTEM_INCLUDE_PATH) + strlen(PATHSEP_S) + strlen(non_prefixed_triplet) + 1);
+		
+		if (directory == NULL) {
+			err = ERR_MEM_ALLOC_FAILURE;
+			goto end;
+		}
+		
+		directory[0] = '\0';
+		
+		if (system_prefix != NULL) {
+			strcat(directory, system_prefix);
+		}
+		
+		strcat(directory, SYSTEM_INCLUDE_PATH);
 		strcat(directory, PATHSEP_S);
 		strcat(directory, non_prefixed_triplet);
 		
-		args[offset++] = (char*) GCC_OPT_ISYSTEM;
-		args[offset++] = directory;
+		if (directory_exists(directory) == 1) {
+			args[offset++] = (char*) GCC_OPT_ISYSTEM;
+			args[offset++] = directory;
+		}
 		
 		if (linking) {
 			args[offset++] = (char*) GCC_OPT_XLINKER;
@@ -2466,14 +2508,33 @@ int main(int argc, char* argv[]) {
 			for (index = 0; index < sizeof(SYSTEM_LIBRARY_PATH) / sizeof(*SYSTEM_LIBRARY_PATH); index++) {
 				cur = SYSTEM_LIBRARY_PATH[index];
 				
+				directory = malloc((system_prefix == NULL ? 0 : strlen(system_prefix)) + strlen(cur) + 1);
+				
+				if (directory == NULL) {
+					err = ERR_MEM_ALLOC_FAILURE;
+					goto end;
+				}
+				
+				directory[0] = '\0';
+				
+				if (system_prefix != NULL) {
+					strcat(directory, system_prefix);
+				}
+				
+				strcat(directory, cur);
+				
+				if (directory_exists(directory) != 1) {
+					continue;
+				}
+				
 				args[offset++] = (char*) GCC_OPT_LIBDIR;
-				args[offset++] = (char*) cur;
+				args[offset++] = (char*) directory;
 				
 				args[offset++] = (char*) GCC_OPT_XLINKER;
 				args[offset++] = (char*) LD_OPT_RPATH_LINK;
 				
 				args[offset++] = (char*) GCC_OPT_XLINKER;
-				args[offset++] = (char*) cur;
+				args[offset++] = (char*) directory;
 			}
 		}
 	}

@@ -13,6 +13,7 @@
 	#error "I don't know how to handle this"
 #endif
 
+static const char ENV_SYSTEM_PREFIX[] = WRAPPER_FLAVOR_NAME "_SYSTEM_PREFIX";
 static const char ENV_SYSTEM_LIBRARIES[] = WRAPPER_FLAVOR_NAME "_SYSTEM_LIBRARIES";
 static const char ENV_BUILTIN_LOADER[] = WRAPPER_FLAVOR_NAME "_BUILTIN_LOADER";
 static const char ENV_STATIC[] = WRAPPER_FLAVOR_NAME "_STATIC";
