@@ -6,6 +6,14 @@
 
 #include <unistd.h>
 
+#if defined(__ANDROID__)
+	#include <android/api-level.h>
+#endif
+
+#if defined(__GLIBC__)
+	#include <gnu/libc-version.h>
+#endif
+
 #include "fs/getexec.h"
 #include "fs/ext.h"
 #include "fs/dirname.h"
@@ -14,6 +22,7 @@
 #include "fs/cp.h"
 #include "fs/exists.h"
 #include "fs/basename.h"
+#include "os/find_exe.h"
 #include "biggestint.h"
 #include "clang_option.h"
 #include "errors.h"
@@ -138,6 +147,8 @@ static const char GCC_OPT_NOSTDLIB[] = "-nostdlib";
 static const char GCC_OPT_WERROR[] = "-Werror";
 static const char GCC_OPT_WNO_ERROR[] = "-Wno-error";
 static const char GCC_OPT_F_TREE_VECTORIZE[] = "-ftree-vectorize";
+
+static const char GCC_M_ANDROID_VERSION_MIN[] = "-mandroid-version-min=";
 
 static const char CLANG_OPT_OZ[] = "-Oz";
 static const char CLANG_OPT_ICF[] = "--icf";
@@ -340,6 +351,26 @@ static int libcv_matches(const char a, const char b) {
 	#endif
 	
 	return 0;
+	
+}
+
+static long int* get_libc_version_int(const char* const string, long int value[2]) {
+	
+	char* ptr = NULL;
+	
+	long int libc_major = 0;
+	long int libc_minor = 0;
+	
+	libc_major = strtol(string, &ptr, 10);
+	
+	if (!(*ptr == '-' || *ptr == ZERO)) {
+		libc_minor = strtol(ptr + 1, NULL, 10);
+	}
+	
+	value[0] = libc_major;
+	value[1] = libc_minor;
+	
+	return value;
 	
 }
 
@@ -645,6 +676,76 @@ static const char* get_loader(const char* const triplet) {
 	if (strcmp(triplet, "x86_64-unknown-linux-gnu") == 0) {
 		return "ld-linux-x86-64.so.2";
 	}
+	
+	return NULL;
+	
+}
+
+static int get_host_version(void) {
+	/*
+	Get the system/libc version of the host system.
+	*/
+	
+	long int libc_major = 0;
+	long int libc_minor = 0;
+	
+	long int version[2];
+	
+	#if defined(__ANDROID__)
+		libc_major = android_get_device_api_level();
+		
+		if (libc_major == -1) {
+			libc_major = 0;
+		}
+	#elif defined(__GLIBC__)
+		const char* string = gnu_get_libc_version();
+		
+		get_libc_version_int(string, version);
+		
+		libc_major = version[0];
+		libc_minor = version[1];
+	#endif
+	
+	return LIBC_VERSION(libc_major, libc_minor);
+	
+}
+
+static const char* get_host_triplet(void) {
+	/*
+	Get the triplet of the host system.
+	*/
+	
+	#if defined(__ANDROID__)
+		#if defined(__x86_64__)
+			return "x86_64-unknown-linux-android";
+		#elif defined(__i386__)
+			return "i686-unknown-linux-android";
+		#elif defined(__ARM_ARCH_5TE__)
+			return "armv5-unknown-linux-androideabi";
+		#elif defined(__ARM_ARCH_7A__)
+			return "armv7-unknown-linux-androideabi";
+		#elif defined(__aarch64__)
+			return "aarch64-unknown-linux-android";
+		#elif defined(__riscv)
+			return "riscv64-unknown-linux-android";
+		#elif defined(__mips64)
+			return "mips64el-unknown-linux-android";
+		#elif defined(__mips__)
+			return "mipsel-unknown-linux-android";
+		#endif
+	#elif defined(__GLIBC__)
+		#if defined(__x86_64__)
+			return "x86_64-unknown-linux-gnu";
+		#elif defined(__i386__)
+			return "i386-unknown-linux-gnu";
+		#elif defined(__ARM_ARCH_4T__)
+			return "arm-unknown-linux-gnueabi";
+		#elif defined(__ARM_ARCH_7A__)
+			return "armv7-unknown-linux-androideabi";
+		#elif defined(__aarch64__)
+			return "aarch64-unknown-linux-gnu";
+		#endif
+	#endif
 	
 	return NULL;
 	
@@ -1139,6 +1240,7 @@ int main(int argc, char* argv[]) {
 	
 	long int libc_major = 0;
 	long int libc_minor = 0;
+	long int version[2];
 	
 	int arch = 0;
 	int bitness = 0;
@@ -1161,7 +1263,7 @@ int main(int argc, char* argv[]) {
 	int nodefaultlibs = 0;
 	int address_sanitizer = 0;
 	int stack_protector = 0;
-	int version = 0;
+	int print_version = 0;
 	int verbose = 0;
 	int wants_libcxx = 0;
 	int wants_static_libcxx = 0;
@@ -1248,15 +1350,19 @@ int main(int argc, char* argv[]) {
 	char* source = NULL;
 	char* destination = NULL;
 	
+	const char* host = NULL;
+	long int host_version = 0;
+	long int target_version = 0;
+	
 	#if defined(PINO)
 		int android_weak_api_defs = 0;
 		int android_lfs = 0;
 		
-		char* android_api = NULL;
-		char* android_min_sdk_version = NULL;
-		
+		char* android_version_min = NULL;
 		char* android_current_sdk_version = NULL;
 	#endif
+	
+	int hardcode_system_rpath = 0;
 	
 	size_t kargc = 0;
 	char** kargv = NULL;
@@ -1297,6 +1403,24 @@ int main(int argc, char* argv[]) {
 	
 	system_prefix = query_get_string(&query, ENV_SYSTEM_PREFIX);
 	
+	host = get_host_triplet();
+	host_version = get_host_version();
+	
+	#if defined(__ANDROID__)
+		file_name = find_exe("termux-open");
+		
+		/*
+		* On Android 7.0 (API level 24) and higher, Termux's C/C++ toolchains hardcode the system library path
+		* into every executable built.
+		* 
+		* On Android 6.0 (API level 23) and below, they default to using LD_LIBRARY_PATH instead.
+		*/
+		hardcode_system_rpath = (file_name != NULL) && host_version >= LIBC_VERSION(24, 0) ;
+	#endif
+	
+	free(file_name);
+	file_name = NULL;
+	
 	kargv = malloc(
 		sizeof(*argv) * (
 			argc + 
@@ -1307,8 +1431,6 @@ int main(int argc, char* argv[]) {
 			1 + /* -D__clang_patchlevel__ */
 			1 + /* -flto-partition=<...> */
 			1 + /* -fuse-ld=<linker> */
-			2 + /* -Xlinker --no-rosegment (Android 9 and below) */
-			1 + /* -no-pie (Android 4 and below) */
 			1 + /* -static-libgcc */
 			1 + /* -static-libasan */
 			1 + /* -static-libtsan */
@@ -1438,7 +1560,7 @@ int main(int argc, char* argv[]) {
 		} else if (strncmp(cur, GCC_OPT_F_STACK_PROTECTOR, strlen(GCC_OPT_F_STACK_PROTECTOR)) == 0) {
 			stack_protector = 1;
 		} else if (strcmp(cur, GCC_OPT_VERSION) == 0) {
-			version = 1;
+			print_version = 1;
 		} else if (strcmp(cur, GCC_OPT_NODEFAULTLIBS) == 0 || strcmp(cur, GCC_OPT_NOSTDLIB) == 0) {
 			nodefaultlibs = 1;
 		} else if (strcmp(cur, GCC_OPT_L_STDCXX) == 0) {
@@ -1725,7 +1847,7 @@ int main(int argc, char* argv[]) {
 		}
 	}
 	
-	if (version && known_clang(cc)) {
+	if (print_version && known_clang(cc)) {
 		printf(CLANG_VERSION_TEMPLATE, DEFAULT_TARGET, parent_directory);
 		goto end;
 	}
@@ -1824,6 +1946,14 @@ int main(int argc, char* argv[]) {
 	
 	memcpy(triplet, file_name, size);
 	triplet[size] = '\0';
+	
+	if (wants_system_libraries) {
+		/*
+		* Using system libraries during compilation makes no sense when the target
+		* and host don't match; linking would fail due to mismatching ABIs.
+		*/
+		wants_system_libraries -= (host != NULL && strcmp(host, triplet) != 0);
+	}
 	
 	arch = get_arch(triplet);
 	bitness = get_bitness(triplet);
@@ -1969,11 +2099,12 @@ int main(int argc, char* argv[]) {
 		android_current_sdk_version = libc_version;
 	#endif
 	
-	libc_major = strtol(libc_version, &ptr, 10);
+	get_libc_version_int(libc_version, version);
 	
-	if (!(*ptr == '-' || *ptr == ZERO)) {
-		libc_minor = strtol(ptr + 1, NULL, 10);
-	}
+	libc_major = version[0];
+	libc_minor = version[1];
+	
+	target_version = LIBC_VERSION(libc_major, libc_minor);
 	
 	#if defined(PINO)
 		/*
@@ -1994,28 +2125,7 @@ int main(int argc, char* argv[]) {
 			strcpy(libc_version, cur);
 		}
 		
-		/*
-		Disable emitting a single read-only, non-code segment (--rosegment) on
-		Android versions below 10 (API 29), as it's not supported there.
-		
-		- https://github.com/llvm/llvm-project/commit/fae16fc
-		*/
-		if (linking && LIBC_VERSION(libc_major, libc_minor) < LIBC_VERSION(29, 0)) {
-			kargv[kargc++] = (char*) GCC_OPT_XLINKER;
-			kargv[kargc++] = (char*) LD_OPT_NO_ROSEGMENT;
-		}
-		
-		/*
-		Disable Position Independent Executable (PIE) on Android 4.0.4 (API 15) and below.
-		PIEs are only supported on Android 4.1+.
-		
-		- https://web.archive.org/web/0/https://source.android.com/security/enhancements/enhancements41
-		*/
-		if ((linking && !linking_shared) && LIBC_VERSION(libc_major, libc_minor) < LIBC_VERSION(16, 0)) {
-			kargv[kargc++] = (char*) GCC_OPT_NO_PIE;
-		}
-		
-		wants_libpino_mman = linking && LIBC_VERSION(libc_major, libc_minor) < LIBC_VERSION(21, 0) && !nodefaultlibs;
+		wants_libpino_mman = linking && target_version < LIBC_VERSION(21, 0) && !nodefaultlibs;
 		wants_libpino_math = linking && (wants_libcxx || wants_libm) && !nodefaultlibs;
 		
 		/*
@@ -2058,7 +2168,7 @@ int main(int argc, char* argv[]) {
 	- mold
 	Assumed to follow the same behavior as LLD.
 	*/
-	if (linking && target_supports_relr(triplet, override_linker, LIBC_VERSION(libc_major, libc_minor))) {
+	if (linking && target_supports_relr(triplet, override_linker, target_version)) {
 		if (override_linker == NULL || strcmp(override_linker, "bfd") == 0) {
 			kargv[kargc++] = (char*) GCC_OPT_XLINKER;
 			kargv[kargc++] = (char*) LD_OPT_Z;
@@ -2089,13 +2199,6 @@ int main(int argc, char* argv[]) {
 				/*
 				Everything else should work with --pack-dyn-relocs.
 				*/
-				#if defined(PINO)
-					if (strcmp(override_linker, "lld") == 0) {
-						kargv[kargc++] = (char*) GCC_OPT_XLINKER;
-						kargv[kargc++] = (char*) LLD_OPT_PACK_DYN_RELOCS;
-					}
-				#endif
-				
 				kargv[kargc++] = (char*) GCC_OPT_XLINKER;
 				kargv[kargc++] = (char*) LLD_OPT_PACK_DYN_RELOCS;
 			#endif
@@ -2116,7 +2219,7 @@ int main(int argc, char* argv[]) {
 	
 	#if defined(OBGGCC)
 		/* Determine whether we need to implicit link with -lrt */
-		wants_librt = wants_libcxx && !have_rt_library && LIBC_VERSION(libc_major, libc_minor) < LIBC_VERSION(2, 17);
+		wants_librt = wants_libcxx && !have_rt_library && target_version < LIBC_VERSION(2, 17);
 	#endif
 	
 	executable = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(triplet) + 1 + strlen(cc) + 1);
@@ -2162,6 +2265,10 @@ int main(int argc, char* argv[]) {
 	if (wants_system_libraries) {
 		size += (sizeof(SYSTEM_LIBRARY_PATH) / sizeof(*SYSTEM_LIBRARY_PATH)) * 6;
 		size += 8;
+		
+		if (hardcode_system_rpath) {
+			size += (sizeof(SYSTEM_LIBRARY_PATH) / sizeof(*SYSTEM_LIBRARY_PATH)) * 4;
+		}
 	}
 	
 	if (wants_nz) {
@@ -2192,8 +2299,7 @@ int main(int argc, char* argv[]) {
 	#endif
 	
 	#if defined(PINO)
-		size += 2; /* -D __ANDROID_API__=<LEVEL> */
-		size += 2; /* -D __ANDROID_MIN_SDK_VERSION__=<LEVEL> */
+		size += 1; /* -mandroid-version-min=<version> */
 	#endif
 	
 	args = malloc(size * sizeof(char*));
@@ -2251,7 +2357,7 @@ int main(int argc, char* argv[]) {
 		To avoid this issue, we must redirect the linker to a custom directory containing a modified version of the C library
 		that does not expose any of the problematic functions.
 		*/
-		if (android_lfs && bitness == ARCH_ABI_32 && LIBC_VERSION(libc_major, libc_minor) < LIBC_VERSION(24, 0)) {
+		if (android_lfs && bitness == ARCH_ABI_32 && target_version < LIBC_VERSION(24, 0)) {
 			strcat(sysroot_library_directory, NO_LFS_LIBRARY_DIR);
 		}
 	#endif
@@ -2454,7 +2560,7 @@ int main(int argc, char* argv[]) {
 	}
 	
 	if (wants_system_libraries) {
-		if (directory_exists(sysroot_include_missing_directory) == 1) {
+		if (host_version < target_version && directory_exists(sysroot_include_missing_directory) == 1) {
 			args[offset++] = (char*) GCC_OPT_ISYSTEM;
 			args[offset++] = sysroot_include_missing_directory;
 		}
@@ -2475,8 +2581,10 @@ int main(int argc, char* argv[]) {
 		
 		strcat(directory, SYSTEM_INCLUDE_PATH);
 		
-		args[offset++] = (char*) GCC_OPT_ISYSTEM;
-		args[offset++] = (char*) directory;
+		if (directory_exists(directory) == 1) {
+			args[offset++] = (char*) GCC_OPT_ISYSTEM;
+			args[offset++] = (char*) directory;
+		}
 		
 		/* <prefix>/usr/include/<triplet> */
 		directory = malloc((system_prefix == NULL ? 0 : strlen(system_prefix)) + strlen(SYSTEM_INCLUDE_PATH) + strlen(PATHSEP_S) + strlen(non_prefixed_triplet) + 1);
@@ -2502,8 +2610,13 @@ int main(int argc, char* argv[]) {
 		}
 		
 		if (linking) {
-			args[offset++] = (char*) GCC_OPT_XLINKER;
-			args[offset++] = (char*) LD_OPT_UNRESOLVED_SYMBOLS;
+			if (host_version < target_version) {
+				/*
+				* Setting this flag is only useful when the host has a system/libc version lower than the target system.
+				*/
+				args[offset++] = (char*) GCC_OPT_XLINKER;
+				args[offset++] = (char*) LD_OPT_UNRESOLVED_SYMBOLS;
+			}
 			
 			for (index = 0; index < sizeof(SYSTEM_LIBRARY_PATH) / sizeof(*SYSTEM_LIBRARY_PATH); index++) {
 				cur = SYSTEM_LIBRARY_PATH[index];
@@ -2535,6 +2648,21 @@ int main(int argc, char* argv[]) {
 				
 				args[offset++] = (char*) GCC_OPT_XLINKER;
 				args[offset++] = (char*) directory;
+				
+				/*
+				* Hardcode the system library directories during linkage.
+				* Currently, we only do this on systems where this is the
+				* default required behavior:
+				*
+				* - Termux running on Android 7.0 (API level 24) or higher.
+				*/
+				if (hardcode_system_rpath) {
+					args[offset++] = (char*) GCC_OPT_XLINKER;
+					args[offset++] = (char*) LD_OPT_RPATH;
+					
+					args[offset++] = (char*) GCC_OPT_XLINKER;
+					args[offset++] = (char*) directory;
+				}
 			}
 		}
 	}
@@ -2589,33 +2717,18 @@ int main(int argc, char* argv[]) {
 	#endif
 	
 	#if defined(PINO)
-		/* __ANDROID_API__ */
-		android_api = malloc(strlen(M_ANDROID_API) + strlen(android_current_sdk_version) + 1);
+		/* -mandroid-version-min */
+		android_version_min = malloc(strlen(GCC_M_ANDROID_VERSION_MIN) + strlen(android_current_sdk_version) + 1);
 		
-		if (android_api == NULL) {
+		if (android_version_min == NULL) {
 			err = ERR_MEM_ALLOC_FAILURE;
 			goto end;
 		}
 		
-		strcpy(android_api, M_ANDROID_API);
-		strcat(android_api, android_current_sdk_version);
+		strcpy(android_version_min, GCC_M_ANDROID_VERSION_MIN);
+		strcat(android_version_min, android_current_sdk_version);
 		
-		args[offset++] = (char*) GCC_OPT_D;
-		args[offset++] = android_api;
-		
-		/* __ANDROID_MIN_SDK_VERSION__ */
-		android_min_sdk_version = malloc(strlen(M_ANDROID_MIN_SDK_VERSION) + strlen(android_current_sdk_version) + 1);
-		
-		if (android_min_sdk_version == NULL) {
-			err = ERR_MEM_ALLOC_FAILURE;
-			goto end;
-		}
-		
-		strcpy(android_min_sdk_version, M_ANDROID_MIN_SDK_VERSION);
-		strcat(android_min_sdk_version, android_current_sdk_version);
-		
-		args[offset++] = (char*) GCC_OPT_D;
-		args[offset++] = android_min_sdk_version;
+		args[offset++] = android_version_min;
 	#endif
 	
 	memcpy(&args[offset], &kargv[1], kargc * sizeof(*kargv));
@@ -2770,8 +2883,7 @@ int main(int argc, char* argv[]) {
 	free(override_triplet);
 	
 	#if defined(PINO)
-		free(android_api);
-		free(android_min_sdk_version);
+		free(android_version_min);
 		
 		if (android_weak_api_defs) {
 			free(android_current_sdk_version);
