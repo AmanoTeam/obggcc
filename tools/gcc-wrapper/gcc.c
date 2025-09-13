@@ -555,36 +555,7 @@ static int target_supports_relr(const char* const name, const char* const linker
 			}
 		}
 	#elif defined(PINO)
-		/* The Bionic C Library has supported DT_RELR since Android 9 (API level 28). */
-		if (version < LIBC_VERSION(28, 0)) {
-			return 0;
-		}
-		
-		if (strcmp(name, "x86_64-unknown-linux-android") == 0) {
-			return 1;
-		}
-		
-		if (strcmp(name, "i686-unknown-linux-android") == 0) {
-			return 1;
-		}
-		
-		if (strcmp(name, "aarch64-unknown-linux-android") == 0) {
-			return 1;
-		}
-		
-		if (check_linker_lld(linker) || check_linker_mold(linker)) {
-			if (strcmp(name, "armv7-unknown-linux-androideabi") == 0) {
-				return 1;
-			}
-			
-			if (strcmp(name, "armv5-unknown-linux-androideabi") == 0) {
-				return 1;
-			}
-			
-			if (strcmp(name, "riscv64-unknown-linux-android") == 0) {
-				return 1;
-			}
-		}
+		/* Not handled */
 	#else
 		#error "I don't know how to handle this"
 	#endif
