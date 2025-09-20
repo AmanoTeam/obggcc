@@ -514,7 +514,7 @@ make \
 	LDFLAGS="${linkflags}"
 
 for target in "${targets[@]}"; do
-	declare specs='%{!fsyntax-only:%{!c:%{!M:%{!MM:%{!E:%{!S:-Xlinker --disable-new-dtags}}}}}}'
+	declare specs='%{!Qy:-Qn} -Xlinker --disable-new-dtags'
 	declare hash_style='both'
 	
 	source "${workdir}/${target}.sh"
@@ -605,7 +605,7 @@ for target in "${targets[@]}"; do
 		--with-system-zlib \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v3.6-${revision}" \
+		--with-pkgversion="OBGGCC v3.7-${revision}" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--with-native-system-header-dir='/include' \
 		--with-default-libstdcxx-abi='new' \
