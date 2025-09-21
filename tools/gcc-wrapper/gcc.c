@@ -1380,13 +1380,18 @@ int main(int argc, char* argv[]) {
 	#if defined(__ANDROID__)
 		file_name = find_exe("termux-open");
 		
+		if (file_name != NULL && host_version == 0) {
+			/* We are probably running inside termux-docker; assume API level 24 */
+			host_version = LIBC_VERSION(24, 0);
+		}
+		
 		/*
 		* On Android 7.0 (API level 24) and higher, Termux's C/C++ toolchains hardcode the system library path
 		* into every executable built.
 		* 
 		* On Android 6.0 (API level 23) and below, they default to using LD_LIBRARY_PATH instead.
 		*/
-		hardcode_system_rpath = (file_name != NULL) && host_version >= LIBC_VERSION(24, 0) ;
+		hardcode_system_rpath = (file_name != NULL) && host_version >= LIBC_VERSION(24, 0);
 	#endif
 	
 	free(file_name);
