@@ -41,6 +41,7 @@ static const char INCLUDE_MISSING_DIR[] = PATHSEP_M "include-missing";
 static const char LIBRARY_DIR[] = PATHSEP_M "lib";
 static const char STATIC_LIBRARY_DIR[] = PATHSEP_M "static";
 static const char NO_LFS_LIBRARY_DIR[] = PATHSEP_M "no-lfs";
+static const char LDSCRIPTS_DIR[] = PATHSEP_M "ldscripts";
 
 static const char GCC_LIBRARY_DIR[] = PATHSEP_M "lib" PATHSEP_M "gcc";
 
@@ -51,9 +52,6 @@ static const char GOMP_LIBRARY[] = "gomp";
 static const char ITM_LIBRARY[] = "itm";
 static const char QUADMATH_LIBRARY[] = "quadmath";
 static const char MATH_LIBRARY[] = "m";
-
-static const char PINO_MMAN_LIBRARY[] = "pino-mman";
-static const char PINO_MATH_LIBRARY[] = "pino-math";
 
 static const char LIBATOMIC_SHARED[] = "libatomic.so";
 
@@ -1247,8 +1245,6 @@ int main(int argc, char* argv[]) {
 	int wants_librt = 0;
 	int wants_libssp = 0;
 	int wants_libm = 0;
-	int wants_libpino_math = 0;
-	int wants_libpino_mman = 0;
 	int wants_force_static = 0;
 	
 	hquery_t query = {0};
@@ -1299,6 +1295,7 @@ int main(int argc, char* argv[]) {
 	char* sysroot_include_directory = NULL;
 	char* sysroot_include_missing_directory = NULL;
 	char* sysroot_library_directory = NULL;
+	char* sysroot_ldscripts_directory = NULL;
 	char* sysroot_runtime_directory = NULL;
 	
 	char* sysroot_dynamic_linker = NULL;
@@ -1414,8 +1411,6 @@ int main(int argc, char* argv[]) {
 			1 + /* -static-libubsan */
 			1 + /* -static-libhwasan */
 			1 + /* -mfpu=<value> */
-			2 + /* -l pino-math */
-			2 + /* -l pino-mman */
 			1 + /* -msse<version> */
 			1 + /* -marm */
 			4 + /* -Xlinker -z -Xlinker pack-relative-relocs */
@@ -2100,32 +2095,6 @@ int main(int argc, char* argv[]) {
 			
 			strcpy(libc_version, cur);
 		}
-		
-		wants_libpino_mman = linking && target_version < LIBC_VERSION(21, 0) && !nodefaultlibs;
-		wants_libpino_math = linking && (wants_libcxx || wants_libm) && !nodefaultlibs;
-		
-		/*
-		Android versions below 5.0 (API level 21) did not have an mmap64() implementation.
-		The NDK provided a pseudo-implementation for this as an inline, and we moved it to its
-		own external library.
-		*/
-		if (wants_libpino_mman) {
-			kargv[kargc++] = (char*) GCC_OPT_L;
-			kargv[kargc++] = (char*) PINO_MMAN_LIBRARY;
-		}
-		
-		/*
-		libstdc++ requires certain mathematical functions that are not present in older
-		versions of Bionic. We implement these functions in an external library called
-		libpino-math using GCC's builtins.
-		
-		Additionally, we expose these functions in the standard library headers
-		(math.h and complex.h) so that anyone can use them.
-		*/
-		if (wants_libpino_math) {
-			kargv[kargc++] = (char*) GCC_OPT_L;
-			kargv[kargc++] = (char*) PINO_MATH_LIBRARY;
-		}
 	#endif
 	
 	/*
@@ -2237,6 +2206,7 @@ int main(int argc, char* argv[]) {
 	size = kargc + 13 + (size_t) wants_librt;
 	
 	size += 2; /* -B <directory> */
+	size += 2; /* -L <sysroot/lib/ldscripts> */
 	
 	if (wants_system_libraries) {
 		size += (sizeof(SYSTEM_LIBRARY_PATH) / sizeof(*SYSTEM_LIBRARY_PATH)) * 6;
@@ -2316,6 +2286,16 @@ int main(int argc, char* argv[]) {
 	
 	strcpy(sysroot_library_directory, sysroot_directory);
 	strcat(sysroot_library_directory, LIBRARY_DIR);
+	
+	sysroot_ldscripts_directory = malloc(strlen(sysroot_library_directory) + strlen(LDSCRIPTS_DIR) + 1);
+	
+	if (sysroot_ldscripts_directory == NULL) {
+		err = ERR_MEM_ALLOC_FAILURE;
+		goto end;
+	}
+	
+	strcpy(sysroot_ldscripts_directory, sysroot_library_directory);
+	strcat(sysroot_ldscripts_directory, LDSCRIPTS_DIR);
 	
 	#if defined(PINO)
 		/*
@@ -2458,7 +2438,11 @@ int main(int argc, char* argv[]) {
 	
 	if (linking) {
 		args[offset++] = (char*) GCC_OPT_LIBDIR;
+		args[offset++] = sysroot_ldscripts_directory;
+		
+		args[offset++] = (char*) GCC_OPT_LIBDIR;
 		args[offset++] = sysroot_library_directory;
+		
 		args[offset++] = (char*) GCC_OPT_B;
 		args[offset++] = sysroot_library_directory;
 		
@@ -2848,6 +2832,7 @@ int main(int argc, char* argv[]) {
 	free(sysroot_include_directory);
 	free(sysroot_include_missing_directory);
 	free(sysroot_library_directory);
+	free(sysroot_ldscripts_directory);
 	free(gcc_include_directory);
 	free(gpp_include_directory);
 	free(gpp_builtins_include_directory);
