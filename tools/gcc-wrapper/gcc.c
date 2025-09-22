@@ -77,6 +77,7 @@ static const char GCC_OPT_ISYSTEM[] = "-isystem";
 static const char GCC_OPT_SYSROOT[] = "--sysroot";
 static const char GCC_OPT_NOSTDINC[] = "--no-standard-includes";
 static const char GCC_OPT_LIBDIR[] = "-L";
+static const char GCC_OPT_STATIC[] = "-static";
 static const char GCC_OPT_STATIC_LIBCXX[] = "-static-libstdc++";
 static const char GCC_OPT_STATIC_LIBGCC[] = "-static-libgcc";
 static const char GCC_OPT_STATIC_LIBASAN[] = "-static-libasan";
@@ -323,7 +324,13 @@ static clang_option_t CLANG_SPECIFIC_REMOVE[] = {
 	{
 		.name = CLANG_OPT_F_INTEGRATED_AS,
 		.value = 0
+	},
+#if defined(PINO)
+	{
+		.name = GCC_OPT_STATIC,
+		.value = 0
 	}
+#endif
 };
 
 #define CLANG_SPECIFIC_REMOVE_NON 0
