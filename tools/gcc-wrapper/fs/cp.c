@@ -6,6 +6,10 @@
 	#include <string.h>
 #endif
 
+#if defined(__APPLE__)
+	#include <copyfile.h>
+#endif
+
 #if defined(_WIN32)
 	#include "fs/absoluteness.h"
 #endif
