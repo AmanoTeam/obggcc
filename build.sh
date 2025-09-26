@@ -279,6 +279,13 @@ if ! [ -f "${binutils_tarball}" ]; then
 		--extract \
 		--file="${binutils_tarball}"
 	
+	if [[ "${CROSS_COMPILE_TRIPLET}" = *'-darwin'* ]]; then
+		sed \
+			--in-place \
+			's/$$ORIGIN/@loader_path/g' \
+			"${workdir}/patches/0001-Add-relative-RPATHs-to-binutils-host-tools.patch"
+	fi
+	
 	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Add-relative-RPATHs-to-binutils-host-tools.patch"
 	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Don-t-warn-about-local-symbols-within-the-globals.patch"
 	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Decrease-buffer-size-for-the-GNU-assembler.patch"
@@ -336,6 +343,13 @@ if ! [ -f "${gcc_tarball}" ]; then
 		--extract \
 		--file="${gcc_tarball}"
 	
+	if [[ "${CROSS_COMPILE_TRIPLET}" = *'-darwin'* ]]; then
+		sed \
+			--in-place \
+			's/$$ORIGIN/@loader_path/g' \
+			"${workdir}/patches/0001-Add-relative-RPATHs-to-GCC-host-tools.patch"
+	fi
+	
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Revert-GCC-change-about-turning-Wimplicit-function-d.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Fix-libsanitizer-build.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Change-the-default-language-version-for-C-compilatio.patch"
@@ -348,7 +362,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Fix-missing-stdint.h-include-when-compiling-host-tools-on-OpenBSD.patch"
 fi
 
-# Follow Debian's approach for removing hardcoded RPATH from binaries
+# Follow Debian's approach to remove hardcoded RPATHs from binaries
 # https://wiki.debian.org/RpathIssue
 sed \
 	--in-place \
@@ -359,6 +373,15 @@ sed \
 	"${mpfr_directory}/configure" \
 	"${gmp_directory}/configure" \
 	"${gcc_directory}/libsanitizer/configure"
+
+# Avoid using absolute hardcoded install_name values on macOS
+sed \
+	--in-place \
+	's|-install_name \\$rpath/\\$soname|-install_name @rpath/\\$soname|g' \
+	"${isl_directory}/configure" \
+	"${mpc_directory}/configure" \
+	"${mpfr_directory}/configure" \
+	"${gmp_directory}/configure"
 
 # Fix Autotools mistakenly detecting shared libraries as not supported on OpenBSD
 while read file; do
@@ -434,6 +457,12 @@ make install
 cd "${isl_directory}/build"
 rm --force --recursive ./*
 
+declare isl_extra_ldflags=''
+
+if [[ "${CROSS_COMPILE_TRIPLET}" != *'-darwin'* ]]; then
+	isl_extra_ldflags+=" -Xlinker -rpath-link -Xlinker ${toolchain_directory}/lib"
+fi
+
 ../configure \
 	--host="${CROSS_COMPILE_TRIPLET}" \
 	--prefix="${toolchain_directory}" \
@@ -442,7 +471,7 @@ rm --force --recursive ./*
 	--disable-static \
 	CFLAGS="${pieflags} ${ccflags}" \
 	CXXFLAGS="${pieflags} ${ccflags}" \
-	LDFLAGS="-Xlinker -rpath-link -Xlinker ${toolchain_directory}/lib ${linkflags}"
+	LDFLAGS="${linkflags} ${isl_extra_ldflags}"
 
 make all --jobs
 make install
@@ -469,9 +498,16 @@ unlink "${toolchain_directory}/lib/libz.a"
 cd "${zstd_directory}/.build"
 rm --force --recursive ./*
 
+declare cmake_flags=''
+
+if [[ "${CROSS_COMPILE_TRIPLET}" = *'-darwin'* ]]; then
+	cmake_flags+=' -DCMAKE_SYSTEM_NAME=Darwin'
+fi
+
 cmake \
 	-S "${zstd_directory}/build/cmake" \
 	-B "${PWD}" \
+	${cmake_flags} \
 	-DCMAKE_C_FLAGS="-DZDICT_QSORT=ZDICT_QSORT_MIN ${ccflags}" \
 	-DCMAKE_INSTALL_PREFIX="${toolchain_directory}" \
 	-DBUILD_SHARED_LIBS=ON \
@@ -592,6 +628,10 @@ for target in "${targets[@]}"; do
 		extra_configure_flags+=" --with-toolexeclibdir=${toolchain_directory}/${triplet}/lib/"
 	fi
 	
+	if [[ "${CROSS_COMPILE_TRIPLET}" != *'-darwin'* ]]; then
+		extra_configure_flags+=' --enable-host-bind-now'
+	fi
+	
 	[ -d "${gcc_directory}/build" ] || mkdir "${gcc_directory}/build"
 	
 	cd "${gcc_directory}/build"
@@ -639,7 +679,6 @@ for target in "${targets[@]}"; do
 		--enable-cxx-flags="${linkflags} ${extra_cxx_flags}" \
 		--enable-host-pie \
 		--enable-host-shared \
-		--enable-host-bind-now \
 		--enable-libgomp \
 		--with-specs="${specs}" \
 		--with-pic \
@@ -800,7 +839,7 @@ if ! (( is_native )); then
 fi
 
 # Bundle both libstdc++ and libgcc within host tools
-if ! (( is_native )); then
+if ! (( is_native )) && [[ "${CROSS_COMPILE_TRIPLET}" != *'-darwin'* ]]; then
 	[ -d "${toolchain_directory}/lib" ] || mkdir "${toolchain_directory}/lib"
 	
 	# libstdc++

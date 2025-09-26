@@ -49,6 +49,10 @@ jobs:
     strategy:
       matrix:
         target: [
+          # macOS
+          'aarch64-unknown-apple-darwin',
+          'x86_64-unknown-apple-darwin',
+          
           # Linux (musl)
           'aarch64-unknown-linux-musl',
           'x86_64-unknown-linux-musl',
@@ -222,8 +226,20 @@ jobs:
             rm \
                 "${PINO_HOME}/include/bionic/"{zconf,zlib}'.h' \
                 "${PINO_HOME}/"*'-unknown-linux-'{androideabi,android}'/include/'{zconf,zlib}'.h' \
-                "${PINO_HOME}/"*'-unknown-linux-android'*'/lib/libz.'{a,so} \
-                "${PINO_HOME}/"*'-unknown-linux-android'*'/lib/static/libz.'{a,so}
+                "${PINO_HOME}/"*'-unknown-linux-android'*'/lib/libz.so' \
+                "${PINO_HOME}/"*'-unknown-linux-android'*'/lib/static/libz.so'
+        elif [[ '${{ matrix.target }}' == *'-darwin' ]]; then
+            curl \
+                --silent \
+                --show-error \
+                --fail \
+                --url 'https://raw.githubusercontent.com/AmanoTeam/OSXCross-Builds/refs/heads/master/main.sh' \
+                    | bash -s -- install
+            
+            export DARWIN_HOME='/tmp/darwin'
+            export PATH="${DARWIN_HOME}/bin:${PATH}"
+            
+            source "${DARWIN_HOME}/usr/local/share/darwin/autotools/${{ matrix.target }}.sh"
         fi
         
         bash './build.sh' '${{ matrix.target }}'
