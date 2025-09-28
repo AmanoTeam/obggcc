@@ -393,11 +393,13 @@ while read file; do
 done <<< "$(find '/tmp' -type 'f' -name 'configure')"
 
 # Force GCC and binutils to prefix host tools with the target triplet even in native builds
-sed \
-	--in-place \
-	's/test "$host_noncanonical" = "$target_noncanonical"/false/' \
-	"${gcc_directory}/configure" \
-	"${binutils_directory}/configure"
+if (( is_native )); then
+	sed \
+		--in-place \
+		's/test "$host_noncanonical" = "$target_noncanonical"/false/' \
+		"${gcc_directory}/configure" \
+		"${binutils_directory}/configure"
+fi
 
 [ -d "${gmp_directory}/build" ] || mkdir "${gmp_directory}/build"
 
