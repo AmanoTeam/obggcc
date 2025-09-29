@@ -1263,7 +1263,7 @@ int main(int argc, char* argv[]) {
 	
 	int have_rt_library = 0;
 	
-	int linking = 1;
+	int linking = argc != 1;
 	int linking_shared = 0;
 	
 	char** args = NULL;
@@ -1719,6 +1719,24 @@ int main(int argc, char* argv[]) {
 		}
 		
 		kargv[kargc++] = (char*) cur;
+	}
+	
+	if (linking) {
+		/*
+		* If none of the -fsyntax-only/-c/-M/-MM/-E/-S flags are passed,
+		* GCC will automatically assume linking behavior when a valid input file is provided.
+		*/
+		for (index = 1; index < kargc; index++) {
+			cur = kargv[index];
+			linking = (strcmp(cur, "-") == 0 || file_exists(cur) == 1);
+			
+			if (linking) {
+				/*
+				* A valid input file was found on the command line, which means we are going to perform linking.
+				*/
+				break;
+			}
+		}
 	}
 	
 	if (wants_force_static == -1) {
