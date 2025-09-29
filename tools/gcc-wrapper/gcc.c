@@ -663,8 +663,6 @@ static int get_host_version(void) {
 	long int libc_major = 0;
 	long int libc_minor = 0;
 	
-	long int version[2];
-	
 	#if defined(__ANDROID__)
 		libc_major = android_get_device_api_level();
 		
@@ -673,6 +671,7 @@ static int get_host_version(void) {
 		}
 	#elif defined(__GLIBC__)
 		const char* string = gnu_get_libc_version();
+		long int version[2];
 		
 		get_libc_version_int(string, version);
 		

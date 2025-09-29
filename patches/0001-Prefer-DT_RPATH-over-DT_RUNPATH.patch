@@ -1,0 +1,195 @@
+From cac7bd33d6270d7a9b9c91dda9f249ee9f8035d3 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sun, 28 Sep 2025 22:03:14 -0300
+Subject: [PATCH] Prefer DT_RPATH over DT_RUNPATH
+
+---
+ gcc/config/aarch64/aarch64-linux.h | 1 +
+ gcc/config/alpha/linux-elf.h       | 2 +-
+ gcc/config/arm/linux-elf.h         | 1 +
+ gcc/config/i386/gnu-user.h         | 2 +-
+ gcc/config/i386/gnu-user64.h       | 1 +
+ gcc/config/ia64/linux.h            | 2 +-
+ gcc/config/loongarch/gnu-user.h    | 2 +-
+ gcc/config/mips/gnu-user.h         | 1 +
+ gcc/config/riscv/linux.h           | 1 +
+ gcc/config/rs6000/linux64.h        | 4 ++--
+ gcc/config/rs6000/sysv4.h          | 2 +-
+ gcc/config/s390/linux.h            | 2 +-
+ gcc/config/sparc/linux.h           | 2 +-
+ 13 files changed, 14 insertions(+), 9 deletions(-)
+
+diff --git a/gcc/config/aarch64/aarch64-linux.h b/gcc/config/aarch64/aarch64-linux.h
+index 116bb4e69..37ea01c4a 100644
+--- a/gcc/config/aarch64/aarch64-linux.h
++++ b/gcc/config/aarch64/aarch64-linux.h
+@@ -39,6 +39,7 @@
+ #define CPP_SPEC "%{pthread:-D_REENTRANT}"
+ 
+ #define LINUX_TARGET_LINK_SPEC  "%{h*}		\
++   --disable-new-dtags					\
+    %{static:-Bstatic}				\
+    %{shared:-shared}				\
+    %{symbolic:-Bsymbolic}			\
+diff --git a/gcc/config/alpha/linux-elf.h b/gcc/config/alpha/linux-elf.h
+index 3fd3b8311..006bc0c0d 100644
+--- a/gcc/config/alpha/linux-elf.h
++++ b/gcc/config/alpha/linux-elf.h
+@@ -37,7 +37,7 @@ along with GCC; see the file COPYING3.  If not see
+ 
+ #define ELF_DYNAMIC_LINKER	GNU_USER_DYNAMIC_LINKER
+ 
+-#define LINK_SPEC "-m elf64alpha %{G*} %{relax:-relax}		\
++#define LINK_SPEC "-m elf64alpha --disable-new-dtags %{G*} %{relax:-relax}		\
+   %{O*:-O3} %{!O*:-O1}						\
+   %{shared:-shared}						\
+   %{!shared:							\
+diff --git a/gcc/config/arm/linux-elf.h b/gcc/config/arm/linux-elf.h
+index d4d389e2a..41276f3e1 100644
+--- a/gcc/config/arm/linux-elf.h
++++ b/gcc/config/arm/linux-elf.h
+@@ -70,6 +70,7 @@
+      %{rdynamic:-export-dynamic} \
+      %{!shared:-dynamic-linker " GNU_USER_DYNAMIC_LINKER "}} \
+    -X \
++   --disable-new-dtags \
+    %{mbig-endian:-EB} %{mlittle-endian:-EL}" \
+    SUBTARGET_EXTRA_LINK_SPEC
+ 
+diff --git a/gcc/config/i386/gnu-user.h b/gcc/config/i386/gnu-user.h
+index 7abfda530..b471295a3 100644
+--- a/gcc/config/i386/gnu-user.h
++++ b/gcc/config/i386/gnu-user.h
+@@ -68,7 +68,7 @@ along with GCC; see the file COPYING3.  If not see
+   { "link_emulation", GNU_USER_LINK_EMULATION },\
+   { "dynamic_linker", GNU_USER_DYNAMIC_LINKER }
+ 
+-#define GNU_USER_TARGET_LINK_SPEC "-m %(link_emulation) %{shared:-shared} \
++#define GNU_USER_TARGET_LINK_SPEC "-m %(link_emulation) --disable-new-dtags %{shared:-shared} \
+   %{!shared: \
+     %{!static: \
+       %{!static-pie: \
+diff --git a/gcc/config/i386/gnu-user64.h b/gcc/config/i386/gnu-user64.h
+index abe714711..46c82d608 100644
+--- a/gcc/config/i386/gnu-user64.h
++++ b/gcc/config/i386/gnu-user64.h
+@@ -56,6 +56,7 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
+                   "%{" SPEC_64 ":-m " GNU_USER_LINK_EMULATION64 "} \
+                    %{" SPEC_32 ":-m " GNU_USER_LINK_EMULATION32 "} \
+                    %{" SPEC_X32 ":-m " GNU_USER_LINK_EMULATIONX32 "} \
++  --disable-new-dtags \
+   %{shared:-shared} \
+   %{!shared: \
+     %{!static: \
+diff --git a/gcc/config/ia64/linux.h b/gcc/config/ia64/linux.h
+index a2494c214..739e2bcb4 100644
+--- a/gcc/config/ia64/linux.h
++++ b/gcc/config/ia64/linux.h
+@@ -58,7 +58,7 @@ do {						\
+ #define GLIBC_DYNAMIC_LINKER "/lib/ld-linux-ia64.so.2"
+ 
+ #undef LINK_SPEC
+-#define LINK_SPEC "\
++#define LINK_SPEC " --disable-new-dtags \
+   %{shared:-shared} \
+   %{!shared: \
+     %{!static: \
+diff --git a/gcc/config/loongarch/gnu-user.h b/gcc/config/loongarch/gnu-user.h
+index fbc75a90a..0de408450 100644
+--- a/gcc/config/loongarch/gnu-user.h
++++ b/gcc/config/loongarch/gnu-user.h
+@@ -44,7 +44,7 @@ along with GCC; see the file COPYING3.  If not see
+ 
+ #undef GNU_USER_TARGET_LINK_SPEC
+ #define GNU_USER_TARGET_LINK_SPEC \
+-  "%{G*} %{shared} -m " GNU_USER_LINK_EMULATION \
++  "%{G*} %{shared} --disable-new-dtags -m " GNU_USER_LINK_EMULATION \
+   "%{!shared: %{static} " \
+   "%{!static: %{!static-pie: %{rdynamic:-export-dynamic} " \
+   "-dynamic-linker " GNU_USER_DYNAMIC_LINKER "}} " \
+diff --git a/gcc/config/mips/gnu-user.h b/gcc/config/mips/gnu-user.h
+index 5a82508c1..6289c83ae 100644
+--- a/gcc/config/mips/gnu-user.h
++++ b/gcc/config/mips/gnu-user.h
+@@ -55,6 +55,7 @@ along with GCC; see the file COPYING3.  If not see
+ #undef GNU_USER_TARGET_LINK_SPEC
+ #define GNU_USER_TARGET_LINK_SPEC "\
+   %{G*} %{EB} %{EL} %{mips*} %{shared} \
++ --disable-new-dtags \
+   %{!shared: \
+     %{!static: \
+       %{rdynamic:-export-dynamic} \
+diff --git a/gcc/config/riscv/linux.h b/gcc/config/riscv/linux.h
+index 9060c940a..21eca9202 100644
+--- a/gcc/config/riscv/linux.h
++++ b/gcc/config/riscv/linux.h
+@@ -48,6 +48,7 @@ along with GCC; see the file COPYING3.  If not see
+   "%{mabi=ilp32:_ilp32}"
+ 
+ #define LINK_SPEC "\
++--disable-new-dtags \
+ -melf" XLEN_SPEC DEFAULT_ENDIAN_SPEC "riscv" LD_EMUL_SUFFIX " \
+ %{mno-relax:--no-relax} \
+ -X \
+diff --git a/gcc/config/rs6000/linux64.h b/gcc/config/rs6000/linux64.h
+index 0316d8cb6..10dee7e8e 100644
+--- a/gcc/config/rs6000/linux64.h
++++ b/gcc/config/rs6000/linux64.h
+@@ -378,13 +378,13 @@ extern int dot_symbols;
+ 					   " -m elf64ppc")
+ #endif
+ 
+-#define LINK_OS_LINUX_SPEC32 LINK_OS_LINUX_EMUL32 " %{!shared: %{!static: \
++#define LINK_OS_LINUX_SPEC32 LINK_OS_LINUX_EMUL32 " --disable-new-dtags %{!shared: %{!static: \
+   %{!static-pie: \
+     %{rdynamic:-export-dynamic} \
+     -dynamic-linker " GNU_USER_DYNAMIC_LINKER32 "}}} \
+   %(link_os_extra_spec32)"
+ 
+-#define LINK_OS_LINUX_SPEC64 LINK_OS_LINUX_EMUL64 " %{!shared: %{!static: \
++#define LINK_OS_LINUX_SPEC64 LINK_OS_LINUX_EMUL64 " --disable-new-dtags %{!shared: %{!static: \
+   %{!static-pie: \
+     %{rdynamic:-export-dynamic} \
+     -dynamic-linker " GNU_USER_DYNAMIC_LINKER64 "}}} \
+diff --git a/gcc/config/rs6000/sysv4.h b/gcc/config/rs6000/sysv4.h
+index afb5c6ad8..de7002603 100644
+--- a/gcc/config/rs6000/sysv4.h
++++ b/gcc/config/rs6000/sysv4.h
+@@ -781,7 +781,7 @@ GNU_USER_TARGET_CC1_SPEC
+ #define GNU_USER_DYNAMIC_LINKER GLIBC_DYNAMIC_LINKER
+ #endif
+ 
+-#define LINK_OS_LINUX_SPEC "-m elf32ppclinux %{!shared: %{!static: \
++#define LINK_OS_LINUX_SPEC "-m elf32ppclinux --disable-new-dtags %{!shared: %{!static: \
+   %{rdynamic:-export-dynamic} \
+   -dynamic-linker " GNU_USER_DYNAMIC_LINKER "}}"
+ 
+diff --git a/gcc/config/s390/linux.h b/gcc/config/s390/linux.h
+index 2c3bca5df..aacbf39e3 100644
+--- a/gcc/config/s390/linux.h
++++ b/gcc/config/s390/linux.h
+@@ -82,7 +82,7 @@ along with GCC; see the file COPYING3.  If not see
+ 
+ #undef  LINK_SPEC
+ #define LINK_SPEC \
+-  "%{m31:-m elf_s390}%{m64:-m elf64_s390} \
++  "%{m31:-m elf_s390}%{m64:-m elf64_s390} --disable-new-dtags \
+    %{shared:-shared} \
+    %{!shared: \
+       %{static:-static} \
+diff --git a/gcc/config/sparc/linux.h b/gcc/config/sparc/linux.h
+index 6d9288468..f63fc7567 100644
+--- a/gcc/config/sparc/linux.h
++++ b/gcc/config/sparc/linux.h
+@@ -81,7 +81,7 @@ extern const char *host_detect_local_cpu (int argc, const char **argv);
+ #define GLIBC_DYNAMIC_LINKER "/lib/ld-linux.so.2"
+ 
+ #undef  LINK_SPEC
+-#define LINK_SPEC "-m elf32_sparc %{shared:-shared} \
++#define LINK_SPEC "-m elf32_sparc --disable-new-dtags %{shared:-shared} \
+   %{!mno-relax:%{!r:-relax}} \
+   %{!shared: \
+     %{!static: \
+-- 
+2.50.1
+
