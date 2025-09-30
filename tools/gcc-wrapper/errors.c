@@ -31,8 +31,12 @@ const char* obggcc_strerror(const int err) {
 			return "Failed to detect binary format (ELF architecture guessing failed)";
 		case ERR_NO_INPUT_FILES:
 			return "No input files";
+		case ERR_CLANG_NOT_FOUND:
+			return "Clang compiler not found in PATH";
 		default:
 			return "Unknown error";
 	}
 	
 }
+
+

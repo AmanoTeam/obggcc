@@ -10,3 +10,6 @@
 [submodule "submodules/nz"]
 	path = submodules/nz
 	url = https://github.com/AmanoTeam/Nouzen
+[submodule "submodules/llvm-project"]
+	path = submodules/llvm-project
+	url = https://github.com/llvm/llvm-project

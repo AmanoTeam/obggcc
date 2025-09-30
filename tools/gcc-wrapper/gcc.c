@@ -164,6 +164,7 @@ static const char CLANG_OPT_F_COLOR_DIAGNOSTICS[] = "-fcolor-diagnostics";
 static const char CLANG_OPT_F_NO_INTEGRATED_AS[] = "-fno-integrated-as";
 static const char CLANG_OPT_F_INTEGRATED_AS[] = "-fintegrated-as";
 static const char CLANG_OPT_F_SLP_VECTORIZE_AGGRESSIVE[] = "-fslp-vectorize-aggressive";
+static const char CLANG_OPT_F_USE_LD_LLD[] = "-fuse-ld=lld";
 
 #define LTO_NONE 0x00
 #define LTO_FULL 0x01
@@ -1681,42 +1682,46 @@ int main(int argc, char* argv[]) {
 		
 		cur = argv[index];
 		
-		status = clang_specific_remove(prev, cur);
-		
-		 if (status != CLANG_SPECIFIC_REMOVE_NON) {
-			if (status == CLANG_SPECIFIC_REMOVE_NXT) {
-				index++;
-			}
+		#if !defined(WCLANG)
+			status = clang_specific_remove(prev, cur);
 			
-			if (prev != NULL && strcmp(prev, GCC_OPT_XLINKER) == 0) {
-				prev = NULL;
-				kargv[--kargc] = (char*) prev;
-				
+			if (status != CLANG_SPECIFIC_REMOVE_NON) {
 				if (status == CLANG_SPECIFIC_REMOVE_NXT) {
 					index++;
 				}
+				
+				if (prev != NULL && strcmp(prev, GCC_OPT_XLINKER) == 0) {
+					prev = NULL;
+					kargv[--kargc] = (char*) prev;
+					
+					if (status == CLANG_SPECIFIC_REMOVE_NXT) {
+						index++;
+					}
+				}
+				
+				continue;
 			}
-			
-			continue;
-		}
+		#endif
 		
 		prev = cur;
 		
-		if (clang_specific_replace(cur, &kargc, kargv)) {
-			continue;
-		}
-		
-		werror = clang_warning_remove(cur);
-		
-		if (werror != CLANG_WARNING_REMOVE_NONE) {
-			if (werror == NULL) {
+		#if !defined(WCLANG)
+			if (clang_specific_replace(cur, &kargc, kargv)) {
 				continue;
 			}
 			
-			if (werror != cur) {
-				cur = werror;
+			werror = clang_warning_remove(cur);
+			
+			if (werror != CLANG_WARNING_REMOVE_NONE) {
+				if (werror == NULL) {
+					continue;
+				}
+				
+				if (werror != cur) {
+					cur = werror;
+				}
 			}
-		}
+		#endif
 		
 		kargv[kargc++] = (char*) cur;
 	}
@@ -2181,25 +2186,34 @@ int main(int argc, char* argv[]) {
 		wants_librt = wants_libcxx && !have_rt_library && target_version < LIBC_VERSION(2, 17);
 	#endif
 	
-	executable = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(triplet) + 1 + strlen(cc) + 1);
-	
-	if (executable == NULL) {
-		err = ERR_MEM_ALLOC_FAILURE;
-		goto end;
-	}
-	
-	strcpy(executable, parent_directory);
-	strcat(executable, PATHSEP_S);
-	strcat(executable, triplet);
-	strcat(executable, "-");
-	
-	if (strcmp(cc, CLANG) == 0) {
-		strcat(executable, GCC);
-	} else if (strcmp(cc, CLANGPP) == 0) {
-		strcat(executable, GPP);
-	} else {
-		strcat(executable, cc);
-	}
+	#if defined(WCLANG)
+		executable = find_exe(cc);
+		
+		if (executable == NULL) {
+			err = ERR_CLANG_NOT_FOUND;
+			goto end;
+		}
+	#else
+		executable = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(triplet) + 1 + strlen(cc) + 1);
+		
+		if (executable == NULL) {
+			err = ERR_MEM_ALLOC_FAILURE;
+			goto end;
+		}
+		
+		strcpy(executable, parent_directory);
+		strcat(executable, PATHSEP_S);
+		strcat(executable, triplet);
+		strcat(executable, "-");
+		
+		if (strcmp(cc, CLANG) == 0) {
+			strcat(executable, GCC);
+		} else if (strcmp(cc, CLANGPP) == 0) {
+			strcat(executable, GPP);
+		} else {
+			strcat(executable, cc);
+		}
+	#endif
 	
 	get_parent_path(app_filename, parent_directory, 2);
 	
@@ -2218,6 +2232,11 @@ int main(int argc, char* argv[]) {
 	kargv[kargc++] = NULL;
 	
 	size = kargc + 13 + (size_t) wants_librt;
+	
+	#if defined(WCLANG)
+		size += 2; /* -target <triplet> */
+		size += 1; /* -fuse-ld=lld */
+	#endif
 	
 	size += 2; /* -B <directory> */
 	size += 2; /* -L <sysroot/lib/ldscripts> */
@@ -2343,7 +2362,7 @@ int main(int argc, char* argv[]) {
 		strcat(sysroot_dynamic_linker, opt);
 	}
 	
-	gcc_include_directory = malloc(strlen(parent_directory) + strlen(GCC_LIBRARY_DIR) + strlen(PATHSEP_S) + strlen(triplet) + strlen(PATHSEP_S) + strlen(GCC_MAJOR_VERSION) + strlen(INCLUDE_DIR) + 1);
+	gcc_include_directory = malloc(strlen(parent_directory) + strlen(GCC_LIBRARY_DIR) + strlen(PATHSEP_S) + strlen(triplet) + strlen(PATHSEP_S) + strlen(GCC_MAJOR_VERSION) + strlen(INCLUDE_DIR) + strlen(PATHSEP_S) + strlen(CLANG) + 1);
 	
 	if (gcc_include_directory == NULL) {
 		err = ERR_MEM_ALLOC_FAILURE;
@@ -2357,6 +2376,11 @@ int main(int argc, char* argv[]) {
 	strcat(gcc_include_directory, PATHSEP_S);
 	strcat(gcc_include_directory, GCC_MAJOR_VERSION);
 	strcat(gcc_include_directory, INCLUDE_DIR);
+	
+	#if defined(WCLANG)
+		strcat(gcc_include_directory, PATHSEP_S);
+		strcat(gcc_include_directory, CLANG);
+	#endif
 	
 	gpp_include_directory = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(triplet) + strlen(INCLUDE_DIR) + strlen(PATHSEP_S) + strlen(CPP) + strlen(PATHSEP_S) + strlen(GCC_MAJOR_VERSION) + 1);
 	
@@ -2412,7 +2436,19 @@ int main(int argc, char* argv[]) {
 	
 	args[offset++] = executable;
 	args[offset++] = arg;
-	args[offset++] = (char*) GCC_OPT_NOSTDINC;
+	
+	#if defined(WCLANG)
+		args[offset++] = (char*) (CLANG_OPT_TARGET + 1);
+		args[offset++] = triplet;
+		
+		if (linking) {
+			args[offset++] = (char*) CLANG_OPT_F_USE_LD_LLD;
+		}
+	#endif
+	
+	#if !defined(WCLANG)
+		args[offset++] = (char*) GCC_OPT_NOSTDINC;
+	#endif
 	
 	if (strcmp(cc, GPP) == 0 || strcmp(cc, CPP) == 0 || strcmp(cc, CLANGPP) == 0) {
 		args[offset++] = (char*) GCC_OPT_ISYSTEM;

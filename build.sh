@@ -56,6 +56,7 @@ declare -r max_jobs='40'
 
 declare -r sysroot_tarball='/tmp/sysroot.tar.xz'
 declare -r gcc_wrapper='/tmp/gcc-wrapper'
+declare -r clang_wrapper='/tmp/clang-wrapper'
 
 declare gdb='1'
 declare nz='1'
@@ -394,13 +395,11 @@ while read file; do
 done <<< "$(find '/tmp' -type 'f' -name 'configure')"
 
 # Force GCC and binutils to prefix host tools with the target triplet even in native builds
-if (( is_native )); then
-	sed \
-		--in-place \
-		's/test "$host_noncanonical" = "$target_noncanonical"/false/' \
-		"${gcc_directory}/configure" \
-		"${binutils_directory}/configure"
-fi
+sed \
+	--in-place \
+	's/test "$host_noncanonical" = "$target_noncanonical"/false/' \
+	"${gcc_directory}/configure" \
+	"${binutils_directory}/configure"
 
 [ -d "${gmp_directory}/build" ] || mkdir "${gmp_directory}/build"
 
@@ -552,6 +551,16 @@ fi
 make \
 	-C "${workdir}/tools/gcc-wrapper" \
 	PREFIX="$(dirname "${gcc_wrapper}")" \
+	CFLAGS="-D WCLANG ${ccflags}" \
+	CXXFLAGS="${ccflags}" \
+	LDFLAGS="${linkflags}"  \
+	gcc
+
+cp "${gcc_wrapper}" "${clang_wrapper}"
+
+make \
+	-C "${workdir}/tools/gcc-wrapper" \
+	PREFIX="$(dirname "${gcc_wrapper}")" \
 	CFLAGS="${ccflags}" \
 	CXXFLAGS="${ccflags}" \
 	LDFLAGS="${linkflags}"
@@ -652,7 +661,7 @@ for target in "${targets[@]}"; do
 		--with-system-zlib \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v3.7-${revision}" \
+		--with-pkgversion="OBGGCC v3.8-${revision}" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--with-native-system-header-dir='/include' \
 		--with-default-libstdcxx-abi='new' \
@@ -726,6 +735,38 @@ for target in "${targets[@]}"; do
 		mv './'* '../lib' || true
 		rmdir "${PWD}"
 		cd '../lib'
+	fi
+	
+	env ${args} make \
+		-C "${workdir}/tools/libblocksruntime" \
+		PREFIX="${toolchain_directory}/${triplet}" \
+		CC="${triplet}-gcc" \
+		CFLAGS="${ccflags}" \
+		CXXFLAGS="${ccflags}" \
+		LDFLAGS="${linkflags}"
+	
+	ln \
+		--symbolic \
+		--relative \
+		"${toolchain_directory}/lib/gcc/${triplet}/${gcc_major}/"*'.'{a,o} \
+		'./'
+	
+	declare gcc_include_dir="${toolchain_directory}/lib/gcc/${triplet}/${gcc_major}/include"
+	declare clang_include_dir="${gcc_include_dir}/clang"
+	
+	if ! [ -d "${clang_include_dir}" ]; then
+		mkdir "${clang_include_dir}"
+		
+		ln \
+			--symbolic \
+			--relative \
+			"${gcc_include_dir}/"*'.h' \
+			"${clang_include_dir}"
+		
+		rm --force \
+			"${clang_include_dir}/"*'intrin'*'.h' \
+			"${clang_include_dir}/arm"*'.h' \
+			"${clang_include_dir}/stdatomic.h"
 	fi
 	
 	[ -f './libiberty.a' ] && unlink './libiberty.a'
@@ -896,6 +937,9 @@ while read item; do
 	cp "${gcc_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-g++"
 	cp "${gcc_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-c++"
 	
+	cp "${clang_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-clang"
+	cp "${clang_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-clang++"
+	
 	if [[ "${languages}" = *'m2'* ]]; then
 		cp "${gcc_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-gm2"
 	fi
@@ -928,6 +972,36 @@ while read item; do
 	ln --symbolic './ld-'*'.so'* './static'
 	ln --symbolic './'*'.o' './static'
 	
+	ln \
+		--symbolic \
+		--relative \
+		"${toolchain_directory}/${triplet}/include/Block"* \
+		'../include'
+	
+	ln \
+		--symbolic \
+		--relative \
+		"${toolchain_directory}/${triplet}/lib/libBlocksRuntime.a" \
+		'./'
+	
+	ln \
+		--symbolic \
+		--relative \
+		"${toolchain_directory}/${triplet}/lib/libBlocksRuntime.a" \
+		'./static'
+	
+	ln \
+		--symbolic \
+		--relative \
+		"${toolchain_directory}/lib/gcc/${triplet}/${gcc_major}/"*'.'{a,o} \
+		'./'
+	
+	ln \
+		--symbolic \
+		--relative \
+		"${toolchain_directory}/lib/gcc/${triplet}/${gcc_major}/"*'.'{a,o} \
+		'./static'
+	
 	if (( nz )); then
 		mkdir 'nouzen'
 		
@@ -959,16 +1033,16 @@ while read item; do
 				
 				echo "- Symlinking '${file}' to '${PWD}'"
 				
-				ln --symbolic "${file}" './'
+				ln --force --symbolic "${file}" './'
 				
 				echo "- Symlinking '${file}' to '${PWD}/gcc'"
 				
-				ln --symbolic --relative "${file}" './gcc'
+				ln --force --symbolic --relative "${file}" './gcc'
 				
 				if [[ "${file}" == *'.a' ]]; then
 					echo "- Symlinking '${file}' to '${PWD}/static'"
 					
-					ln --symbolic --relative "${file}" './static'
+					ln --force --symbolic --relative "${file}" './static'
 				fi
 			done
 		done
@@ -1024,4 +1098,5 @@ ln \
 for target in "${deprecated_targets[@]}"; do
 	rm --force "${toolchain_directory}/bin/${target}"*
 	rm --force "${share_directory}/"*"/${target}"*
+	rm --force "${share_directory}/"*"/clang/${target}"*
 done

@@ -13,6 +13,10 @@
 	#error "I don't know how to handle this"
 #endif
 
+#if defined(WCLANG) && defined(PINO)
+	#error "-DWCLANG and -DPINO are not supported together"
+#endif
+
 static const char ENV_SYSTEM_PREFIX[] = WRAPPER_FLAVOR_NAME "_SYSTEM_PREFIX";
 static const char ENV_SYSTEM_LIBRARIES[] = WRAPPER_FLAVOR_NAME "_SYSTEM_LIBRARIES";
 static const char ENV_BUILTIN_LOADER[] = WRAPPER_FLAVOR_NAME "_BUILTIN_LOADER";
