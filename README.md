@@ -1,10 +1,10 @@
 # OBGGCC
 
-A GCC cross-compiler targeting older glibc versions.
+A Clang and GCC cross-compiler targeting older glibc versions.
 
 ## How does it work?
 
-I extracted the sysroot from almost all major legacy/obsolete Debian releases and built a GCC cross-compiler for each of them. This results in a GCC toolchain targeting software for a specific Debian version (and thus, a specific glibc version as well).
+I extracted the sysroot from almost all major legacy/obsolete Debian releases and built a cross-compiler for each of them. This results in a cross-compiler toolchain targeting software for a specific Debian version (and thus, a specific glibc version as well).
 
 This eliminates the need to install an ancient Linux distribution in Docker/LXC just to build portable binaries, which is the current standard practice.
 
@@ -25,7 +25,7 @@ OBGGCC can also be useful if you just want to test whether your program builds o
 
 ## Supported targets
 
-Currently, OBGGCC provides cross-compilers targeting 6 major Ubuntu releases and 9 major Debian releases on 4 system architectures.
+Currently, OBGGCC provides cross-compilers targeting 6 major Ubuntu releases and 9 major Debian releases on 5 system architectures.
 
 ### Distributions
 
@@ -58,19 +58,24 @@ Currently, OBGGCC provides cross-compilers targeting 6 major Ubuntu releases and
 
 ### CMake
 
-Cross-compiling CMake projects involves using a CMake toolchain file, which is a special file that defines the cross-compilation tools and also the system root CMake should use. Inside the `${OBGGCC_HOME}/usr/local/share/obggcc/cmake` directory, there is a custom CMake toolchain file for each cross-compilation target OBGGCC supports:
+Cross-compiling CMake projects involves using a CMake toolchain file, which is a special file that defines the cross-compilation tools and also the system root CMake should use. Inside the `${OBGGCC_HOME}/build/cmake` directory, there is a custom CMake toolchain file for each cross-compilation target OBGGCC supports:
 
 ```bash
-$ ls ${OBGGCC_HOME}/usr/local/share/obggcc/cmake
+$ ls ${OBGGCC_HOME}/build/cmake
+aarch64-unknown-linux-gnu.cmake
 aarch64-unknown-linux-gnu2.19.cmake
-aarch64-unknown-linux-gnu2.24.cmake
-aarch64-unknown-linux-gnu2.28.cmake
-aarch64-unknown-linux-gnu2.31.cmake
-alpha-unknown-linux-gnu2.7.cmake
+...
+arm-unknown-linux-gnueabi.cmake
 arm-unknown-linux-gnueabi2.11.cmake
-arm-unknown-linux-gnueabi2.13.cmake
-arm-unknown-linux-gnueabi2.19.cmake
-arm-unknown-linux-gnueabi2.24.cmake
+...
+arm-unknown-linux-gnueabihf.cmake
+arm-unknown-linux-gnueabihf2.13.cmake
+...
+i386-unknown-linux-gnu.cmake
+i386-unknown-linux-gnu2.11.cmake
+...
+x86_64-unknown-linux-gnu.cmake
+x86_64-unknown-linux-gnu2.11.cmake
 ...
 ```
 
@@ -79,7 +84,7 @@ To use one of them, pass the `CMAKE_TOOLCHAIN_FILE` definition to your CMake com
 ```bash
 # Setup the environment for cross-compilation
 $ cmake \
-    -DCMAKE_TOOLCHAIN_FILE=${OBGGCC_HOME}/usr/local/share/obggcc/cmake/aarch64-unknown-linux-gnu2.19.cmake \
+    -DCMAKE_TOOLCHAIN_FILE=${OBGGCC_HOME}/build/cmake/aarch64-unknown-linux-gnu2.19.cmake \
     -B build \
     -S  ./
 # Build the project
@@ -88,19 +93,24 @@ $ cmake --build ./build
 
 ### GNU Autotools (aka GNU Build System)
 
-Configuring an autotools project for cross-compilation usually requires the user to modify the environment variables and define the compilation tools the project should use. Inside the `${OBGGCC_HOME}/usr/local/share/obggcc/autotools` directory, there is a custom bash script for each cross-compilation target that OBGGCC supports:
+Configuring an autotools project for cross-compilation usually requires the user to modify the environment variables and define the compilation tools the project should use. Inside the `${OBGGCC_HOME}/build/autotools` directory, there is a custom bash script for each cross-compilation target that OBGGCC supports:
 
 ```bash
-$ ls ${OBGGCC_HOME}/usr/local/share/obggcc/autotools
+$ ls ${OBGGCC_HOME}/build/autotools
+aarch64-unknown-linux-gnu.sh
 aarch64-unknown-linux-gnu2.19.sh
-aarch64-unknown-linux-gnu2.24.sh
-aarch64-unknown-linux-gnu2.28.sh
-aarch64-unknown-linux-gnu2.31.sh
-alpha-unknown-linux-gnu2.7.sh
+...
+arm-unknown-linux-gnueabi.sh
 arm-unknown-linux-gnueabi2.11.sh
-arm-unknown-linux-gnueabi2.13.sh
-arm-unknown-linux-gnueabi2.19.sh
-arm-unknown-linux-gnueabi2.24.sh
+...
+arm-unknown-linux-gnueabihf.sh
+arm-unknown-linux-gnueabihf2.13.sh
+...
+i386-unknown-linux-gnu.sh
+i386-unknown-linux-gnu2.11.sh
+...
+x86_64-unknown-linux-gnu.sh
+x86_64-unknown-linux-gnu2.11.sh
 ...
 ```
 
@@ -108,7 +118,7 @@ They are meant to be `source`d by you whenever you want to cross-compile somethi
 
 ```bash
 # Setup the environment for cross-compilation
-$ source ${OBGGCC_HOME}/usr/local/share/obggcc/autotools/aarch64-unknown-linux-gnu2.19.sh
+$ source ${OBGGCC_HOME}/build/autotools/aarch64-unknown-linux-gnu2.19.sh
 
 # Configure & build the project
 $ ./configure --host="${CROSS_COMPILE_TRIPLET}"
@@ -154,21 +164,24 @@ So, with that in mind, glibc 2.3 seems to be the minimum version that GCC is abl
 
 ## Controlling OBGGCC Behavior
 
-OBGGCC allows you to change its behavior in some scenarios with the use of environment variables. Below are all the switches OBGGCC supports and their intended purpose:
+OBGGCC allows you to change its behavior in certain scenarios through the use of environment variables. Below are all the switches OBGGCC supports and their intended purposes:
 
-- `OBGGCC_SYSTEM_LIBRARIES`
-  - Allows you to compile and link code using libraries and headers from your host's machine system root in conjunction with the cross-compiler's system root. See [Linking with system libraries](#linking-with-system-libraries).
+- `OBGGCC_SYSTEM_LIBRARIES`  
+  - Allows you to compile and link code using libraries and headers from your host machine’s system root in conjunction with the cross-compiler’s system root. See [Linking with system libraries](#linking-with-system-libraries).
 
-- `OBGGCC_BUILTIN_LOADER`
-  - Allows you to change the dynamic linker of an executable during linkage so that it can be run using OBGGCC's glibc libraries rather than your host machine's glibc libraries. See [Running binaries with a specific glibc](#running-binaries-with-a-specific-glibc).
+- `OBGGCC_BUILTIN_LOADER`  
+  - Allows you to change the dynamic linker of an executable during linkage so that it can be run using OBGGCC’s glibc libraries rather than your host machine’s glibc libraries. See [Running binaries with a specific glibc](#running-binaries-with-a-specific-glibc).
 
-- `OBGGCC_RUNTIME_RPATH`
-  - Automatically appends the path to the directory containing GCC libraries (e.g., libsanitizer (Address Sanitizer), libatomic, and libstdc++) to your executables' RPATH. This option is enabled by default when using `OBGGCC_BUILTIN_LOADER`.
+- `OBGGCC_RUNTIME_RPATH`  
+  - Automatically appends the path to the directory containing GCC libraries (e.g., libsanitizer (AddressSanitizer), libatomic, and libstdc++) to your executables’ RPATH. This option is enabled by default when using `OBGGCC_BUILTIN_LOADER`.
 
-- `OBGGCC_NZ`
-  - Allows you to use libraries and headers installed using OBGGCC's package manager (nz) during cross-compilation. See [Software availability](#software-availability).
+- `OBGGCC_NZ`  
+  - Allows you to use libraries and headers installed using OBGGCC’s package manager (nz) during cross-compilation. See [Software availability](#software-availability).
 
-You can enable a switch by setting its value to `1` (e.g: `export OBGGCC_NZ=1`), and disable it by setting its value to `0` (e.g: `export OBGGCC_NZ=0`).
+- `OBGGCC_STATIC`  
+  - Tells the cross-compiler to prefer linking with the static versions of the GCC runtime libraries rather than the dynamic ones.
+
+You can enable a switch by setting its value to `true` (e.g: `export OBGGCC_NZ=true`), and disable it by setting its value to `false` (e.g: `export OBGGCC_NZ=false`).
 
 ## Software availability
 
@@ -198,7 +211,7 @@ $ autoreconf -fi
 Now, configure the environment for cross-compilation:
 
 ```bash
-$ source ${OBGGCC_HOME}/usr/local/share/obggcc/autotools/x86_64-unknown-linux-gnu2.23.sh
+$ source ${OBGGCC_HOME}/build/autotools/x86_64-unknown-linux-gnu2.23.sh
 ```
 
 #### Step 3
@@ -481,19 +494,10 @@ There are also bundled binaries of GDB available for use:
 
 ```
 $ ls ${OBGGCC_HOME}/bin/*-gdb
-obggcc/bin/aarch64-unknown-linux-gnu-gdb                obggcc/bin/alpha-unknown-linux-gnu-gdb
+obggcc/bin/aarch64-unknown-linux-gnu-gdb
 obggcc/bin/arm-unknown-linux-gnueabi-gdb
 obggcc/bin/arm-unknown-linux-gnueabihf-gdb
-obggcc/bin/hppa-unknown-linux-gnu-gdb
 obggcc/bin/i386-unknown-linux-gnu-gdb
-obggcc/bin/ia64-unknown-linux-gnu-gdb
-obggcc/bin/mips64el-unknown-linux-gnuabi64-gdb
-obggcc/bin/mipsel-unknown-linux-gnu-gdb
-obggcc/bin/mips-unknown-linux-gnu-gdb
-obggcc/bin/powerpc64le-unknown-linux-gnu-gdb
-obggcc/bin/powerpc-unknown-linux-gnu-gdb
-obggcc/bin/s390-unknown-linux-gnu-gdb
-obggcc/bin/s390x-unknown-linux-gnu-gdb
 obggcc/bin/x86_64-unknown-linux-gnu-gdb
 ```
 
@@ -527,24 +531,6 @@ done <<< "$(find '.' -type 'f' -name 'configure')"
 
 > [!NOTE]  
 > If you have already run the `./configure` script before applying the patch, make sure to run `make distclean` before re-running it, so that the changes take effect.
-
-## Behavior changes
-
-Usually, we attempt to keep the default GCC behavior unchanged. Sometimes we patch GCC here and there to make it work with older glibc versions or fix breakages after a toolchain/dependency update, but most of these changes don't affect the default behavior of GCC in any way. However, currently, there are some specific changes in place that modify the default behavior in some scenarios.
-
-### Warnings no longer treated as errors
-
-The warnings `-Wimplicit-function-declaration`, `-Wimplicit-int`, and `-Wint-conversion` are no longer treated as errors by default. Treating these warnings as errors intentionally breaks the compilation of old/legacy code and makes it difficult for people who just want to compile something without having to modify any code.
-
-You can revert to the old behavior by passing `-Werror=implicit-function-declaration -Werror=implicit-int -Werror=int-conversion` to the compiler command invocation.
-
-### The default language version for C compilation is still `gnu17` (aka C17)
-
-Changing the default language version for C compilation from `-std=gnu17` to `-std=gnu23` was one of the most noticeable changes in GCC 15, not because of all the new features it comes with, but because of the compilation breakage it caused in some [GCC dependencies](https://github.com/compiler-explorer/compiler-explorer/issues/7360) and even GCC itself after the update.
-
-It's something that essentially breaks old/legacy code. Since it causes more harm than good, we just reverted this change.
-
-You can revert to the old behavior by passing `-std=gnu23` to the compiler command invocation.
 
 ## Releases
 
