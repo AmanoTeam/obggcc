@@ -34,7 +34,7 @@
 	#define AUTO_PICK_LINKER 1
 #endif
 
-static const char GCC_MAJOR_VERSION[] = "15";
+static const char GCC_MAJOR_VERSION[] = "16";
 
 static const char INCLUDE_DIR[] = PATHSEP_M "include";
 static const char INCLUDE_MISSING_DIR[] = PATHSEP_M "include-missing";

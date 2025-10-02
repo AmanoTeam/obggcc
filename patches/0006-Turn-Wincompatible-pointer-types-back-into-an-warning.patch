@@ -1,34 +1,36 @@
-From 80e8838fcd7b37fcd92c741f6cb432ff19819173 Mon Sep 17 00:00:00 2001
+From c4217f6c0f265f0db345877563f0a6fe522f8f43 Mon Sep 17 00:00:00 2001
 From: Kartatz <105828205+Kartatz@users.noreply.github.com>
-Date: Sat, 6 Sep 2025 22:58:49 -0300
-Subject: [PATCH] Turn -Wincompatible-pointer-types back into an warning
+Date: Thu, 2 Oct 2025 04:21:09 -0300
+Subject: [PATCH 06/11] Turn -Wincompatible-pointer-types back into an warning
 
 ---
- gcc/c/c-typeck.cc | 24 ++++++++----------------
- 1 file changed, 8 insertions(+), 16 deletions(-)
+ gcc/c/c-typeck.cc | 26 ++++++++------------------
+ 1 file changed, 8 insertions(+), 18 deletions(-)
 
 diff --git a/gcc/c/c-typeck.cc b/gcc/c/c-typeck.cc
-index b007c8ffe..e0b2819ca 100644
+index f2a0e3fd5..d1d7cf712 100644
 --- a/gcc/c/c-typeck.cc
 +++ b/gcc/c/c-typeck.cc
-@@ -6323,15 +6323,7 @@ build_conditional_expr (location_t colon_loc, tree ifexp, bool ifexp_bcp,
+@@ -6736,17 +6736,7 @@ build_conditional_expr (location_t colon_loc, tree ifexp, bool ifexp_bcp,
        else
  	{
  	  int qual = ENCODE_QUAL_ADDR_SPACE (as_common);
--	  diagnostic_t kind = DK_PERMERROR;
+-	  enum diagnostics::kind kind = diagnostics::kind::permerror;
 -	  if (!flag_isoc99)
 -	    /* This downgrade to a warning ensures that -std=gnu89
 -	       -pedantic-errors does not flag these mismatches between
--	       builtins as errors (as DK_PERMERROR would).  ISO C99
--	       and later do not have implicit function declarations,
+-	       builtins as errors (as diagnostics::kind::permerror would)
+-	       ISO C99 and later do not have implicit function declarations,
 -	       so the mismatch cannot occur naturally there.  */
--	    kind = bltin1 && bltin2 ? DK_WARNING : DK_PEDWARN;
+-	    kind = (bltin1 && bltin2
+-		    ? diagnostics::kind::warning
+-		    : diagnostics::kind::pedwarn);
 -	  if (emit_diagnostic (kind, colon_loc, OPT_Wincompatible_pointer_types,
-+	  if (emit_diagnostic (bltin1 && bltin2 ? DK_WARNING : DK_PEDWARN, colon_loc, OPT_Wincompatible_pointer_types,
++	  if (emit_diagnostic ((bltin1 && bltin2 ? diagnostics::kind::warning : diagnostics::kind::pedwarn), colon_loc, OPT_Wincompatible_pointer_types,
  			       "pointer type mismatch "
  			       "in conditional expression"))
  	    {
-@@ -8573,7 +8565,7 @@ convert_for_assignment (location_t location, location_t expr_loc, tree type,
+@@ -8983,7 +8973,7 @@ convert_for_assignment (location_t location, location_t expr_loc, tree type,
  		gcc_rich_location richloc (expr_loc, &rhs_label,
  					   highlight_colors::actual);
  		warned
@@ -37,7 +39,7 @@ index b007c8ffe..e0b2819ca 100644
  				   "passing argument %d of %qE from "
  				   "incompatible pointer type",
  				   parmnum, rname);
-@@ -8584,13 +8576,13 @@ convert_for_assignment (location_t location, location_t expr_loc, tree type,
+@@ -8994,13 +8984,13 @@ convert_for_assignment (location_t location, location_t expr_loc, tree type,
  	    case ic_assign:
  	      if (bltin)
  		warned
@@ -53,7 +55,7 @@ index b007c8ffe..e0b2819ca 100644
  				   "assignment to %e from incompatible "
  				   "pointer type %e",
  				   &e_type, &e_rhstype);
-@@ -8599,13 +8591,13 @@ convert_for_assignment (location_t location, location_t expr_loc, tree type,
+@@ -9009,13 +8999,13 @@ convert_for_assignment (location_t location, location_t expr_loc, tree type,
  	    case ic_init_const:
  	      if (bltin)
  		warned
@@ -69,7 +71,7 @@ index b007c8ffe..e0b2819ca 100644
  				    "initialization of %e from incompatible "
  				    "pointer type %e",
  				    &e_type, &e_rhstype);
-@@ -8613,13 +8605,13 @@ convert_for_assignment (location_t location, location_t expr_loc, tree type,
+@@ -9023,13 +9013,13 @@ convert_for_assignment (location_t location, location_t expr_loc, tree type,
  	    case ic_return:
  	      if (bltin)
  		warned

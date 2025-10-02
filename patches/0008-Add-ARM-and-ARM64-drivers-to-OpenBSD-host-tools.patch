@@ -1,7 +1,7 @@
-From a289af598ca58a5b7a61aea87a112f23dc66d984 Mon Sep 17 00:00:00 2001
+From 27ab98e6d0ff235326eeaad5226ede04f4b0e1cd Mon Sep 17 00:00:00 2001
 From: Kartatz <105828205+Kartatz@users.noreply.github.com>
-Date: Fri, 11 Jul 2025 15:54:18 -0300
-Subject: [PATCH] Add ARM and ARM64 drivers to OpenBSD host tools
+Date: Thu, 2 Oct 2025 04:24:20 -0300
+Subject: [PATCH 08/11] Add ARM and ARM64 drivers to OpenBSD host tools
 
 ---
  gcc/config.host | 4 ++--
@@ -30,5 +30,5 @@ index 4c1a5e991..362ed53da 100644
        arm*-*-*)
  	host_extra_gcc_objs="driver-arm.o"
 -- 
-2.49.0
+2.50.1
 

@@ -1,19 +1,56 @@
-From 8e8f8cbc807755dd7a598009790b56a76e3d2c24 Mon Sep 17 00:00:00 2001
+From f1bcc2f2ce8d8105e0bf887eadf7565cd4ece891 Mon Sep 17 00:00:00 2001
 From: Kartatz <105828205+Kartatz@users.noreply.github.com>
-Date: Wed, 12 Feb 2025 21:51:40 +0100
-Subject: [PATCH] Fix libgcc build on arm
+Date: Thu, 2 Oct 2025 04:13:13 -0300
+Subject: [PATCH 03/11] =?UTF-8?q?Change=C2=A0the=C2=A0default=C2=A0languag?=
+ =?UTF-8?q?e=C2=A0version=C2=A0for=C2=A0C=C2=A0compilation=C2=A0from=C2=A0?=
+ =?UTF-8?q?-std=3Dgnu23=20to=C2=A0-std=3Dgnu17?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 ---
+ gcc/c-family/c-opts.cc                 | 4 ++--
+ gcc/config/i386/i386.h                 | 4 ++++
  libgcc/config/arm/freebsd-atomic.c     | 4 ++++
  libgcc/config/arm/linux-atomic-64bit.c | 4 ++++
  libgcc/config/arm/linux-atomic.c       | 4 ++++
  libgcc/config/csky/linux-atomic.c      | 4 ++++
  libgcc/config/nds32/linux-atomic.c     | 4 ++++
  libgcc/unwind-arm-common.inc           | 5 +++++
- 6 files changed, 25 insertions(+)
+ 8 files changed, 31 insertions(+), 2 deletions(-)
 
+diff --git a/gcc/c-family/c-opts.cc b/gcc/c-family/c-opts.cc
+index 0ec30e852..50d05f844 100644
+--- a/gcc/c-family/c-opts.cc
++++ b/gcc/c-family/c-opts.cc
+@@ -261,8 +261,8 @@ c_common_init_options (unsigned int decoded_options_count,
+ 
+   if (c_language == clk_c)
+     {
+-      /* The default for C is gnu23.  */
+-      set_std_c23 (false /* ISO */);
++      /* The default for C is gnu17.  */
++      set_std_c17 (false /* ISO */);
+ 
+       /* If preprocessing assembly language, accept any of the C-family
+ 	 front end options since the driver may pass them through.  */
+diff --git a/gcc/config/i386/i386.h b/gcc/config/i386/i386.h
+index f4c89f012..8e7eb1a71 100644
+--- a/gcc/config/i386/i386.h
++++ b/gcc/config/i386/i386.h
+@@ -39,6 +39,10 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
+ 
+ /* Redefines for option macros.  */
+ 
++#if !defined(__cplusplus) && (__STDC_VERSION__ < 202311L)
++#define bool unsigned char
++#endif
++
+ #define TARGET_CMPXCHG16B	TARGET_CX16
+ #define TARGET_CMPXCHG16B_P(x)	TARGET_CX16_P(x)
+ 
 diff --git a/libgcc/config/arm/freebsd-atomic.c b/libgcc/config/arm/freebsd-atomic.c
-index a2231c3..3898cdb 100644
+index a2231c3ff..3898cdb59 100644
 --- a/libgcc/config/arm/freebsd-atomic.c
 +++ b/libgcc/config/arm/freebsd-atomic.c
 @@ -127,6 +127,10 @@ __sync_val_compare_and_swap_##N (TYPE *mem, TYPE expected,		\
@@ -28,7 +65,7 @@ index a2231c3..3898cdb 100644
  bool HIDDEN								\
  __sync_bool_compare_and_swap_##N (TYPE *ptr, TYPE oldval,		\
 diff --git a/libgcc/config/arm/linux-atomic-64bit.c b/libgcc/config/arm/linux-atomic-64bit.c
-index 3a7ec91..b86e688 100644
+index 3a7ec91e9..b86e6885b 100644
 --- a/libgcc/config/arm/linux-atomic-64bit.c
 +++ b/libgcc/config/arm/linux-atomic-64bit.c
 @@ -141,6 +141,10 @@ __sync_val_compare_and_swap_8 (long long *ptr, long long oldval,
@@ -43,7 +80,7 @@ index 3a7ec91..b86e688 100644
  __sync_bool_compare_and_swap_8 (long long *ptr, long long oldval,
  				 long long newval)
 diff --git a/libgcc/config/arm/linux-atomic.c b/libgcc/config/arm/linux-atomic.c
-index 8f24cb3..9521423 100644
+index 8f24cb348..9521423fa 100644
 --- a/libgcc/config/arm/linux-atomic.c
 +++ b/libgcc/config/arm/linux-atomic.c
 @@ -249,6 +249,10 @@ __sync_val_compare_and_swap_4 (int *ptr, int oldval, int newval)
@@ -58,7 +95,7 @@ index 8f24cb3..9521423 100644
  __sync_bool_compare_and_swap_4 (int *ptr, int oldval, int newval)
  {
 diff --git a/libgcc/config/csky/linux-atomic.c b/libgcc/config/csky/linux-atomic.c
-index 019980e..df0b9f0 100644
+index 019980e43..df0b9f09a 100644
 --- a/libgcc/config/csky/linux-atomic.c
 +++ b/libgcc/config/csky/linux-atomic.c
 @@ -215,6 +215,10 @@ __sync_val_compare_and_swap_4 (int *ptr, int oldval, int newval)
@@ -73,7 +110,7 @@ index 019980e..df0b9f0 100644
  __sync_bool_compare_and_swap_4 (int *ptr, int oldval, int newval)
  {
 diff --git a/libgcc/config/nds32/linux-atomic.c b/libgcc/config/nds32/linux-atomic.c
-index 98e16c1..324af1b 100644
+index 98e16c134..324af1b08 100644
 --- a/libgcc/config/nds32/linux-atomic.c
 +++ b/libgcc/config/nds32/linux-atomic.c
 @@ -208,6 +208,10 @@ __sync_val_compare_and_swap_4 (int *ptr, int oldval, int newval)
@@ -88,7 +125,7 @@ index 98e16c1..324af1b 100644
  __sync_bool_compare_and_swap_4 (int *ptr, int oldval, int newval)
  {
 diff --git a/libgcc/unwind-arm-common.inc b/libgcc/unwind-arm-common.inc
-index cce3888..892bfa1 100644
+index cce388824..892bfa141 100644
 --- a/libgcc/unwind-arm-common.inc
 +++ b/libgcc/unwind-arm-common.inc
 @@ -52,6 +52,11 @@
@@ -104,5 +141,5 @@ index cce3888..892bfa1 100644
  enum __cxa_type_match_result
    {
 -- 
-2.36.6
+2.50.1
 

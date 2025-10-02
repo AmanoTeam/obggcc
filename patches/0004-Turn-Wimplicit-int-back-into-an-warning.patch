@@ -1,17 +1,17 @@
-From c2a5a0d9cdf1bfb17763ac69d2d550b3b3f5720b Mon Sep 17 00:00:00 2001
+From 8e6bad93c6c9ce2fb32e321797329c1dbc6ce8e5 Mon Sep 17 00:00:00 2001
 From: Kartatz <105828205+Kartatz@users.noreply.github.com>
-Date: Wed, 12 Feb 2025 06:55:56 +0100
-Subject: [PATCH] Turn -Wimplicit-int back into an warning
+Date: Thu, 2 Oct 2025 04:14:13 -0300
+Subject: [PATCH 04/11] Turn -Wimplicit-int back into an warning
 
 ---
  gcc/c/c-decl.cc | 43 +++++++++++++++++++++++++++++++------------
  1 file changed, 31 insertions(+), 12 deletions(-)
 
 diff --git a/gcc/c/c-decl.cc b/gcc/c/c-decl.cc
-index 0dcbae9..3322696 100644
+index d2ef91d9d..832a48cbb 100644
 --- a/gcc/c/c-decl.cc
 +++ b/gcc/c/c-decl.cc
-@@ -687,6 +687,8 @@ static tree grokdeclarator (const struct c_declarator *,
+@@ -686,6 +686,8 @@ static tree grokdeclarator (const struct c_declarator *,
  			    bool *, enum deprecated_states);
  static tree grokparms (struct c_arg_info *, bool);
  static void layout_array_type (tree);
@@ -20,7 +20,7 @@ index 0dcbae9..3322696 100644
  static const char *header_for_builtin_fn (tree);
  
  /* T is a statement.  Add it to the statement-tree.  This is the
-@@ -6717,6 +6719,23 @@ warn_variable_length_array (tree name, tree size)
+@@ -6555,6 +6557,23 @@ warn_variable_length_array (tree name, tree size)
      }
  }
  
@@ -29,14 +29,14 @@ index 0dcbae9..3322696 100644
 +static void
 +warn_defaults_to (location_t location, int opt, const char *gmsgid, ...)
 +{
-+  diagnostic_info diagnostic;
++  diagnostics::diagnostic_info diagnostic;
 +  va_list ap;
 +  rich_location richloc (line_table, location);
 +
 +  va_start (ap, gmsgid);
 +  diagnostic_set_info (&diagnostic, gmsgid, &ap, &richloc,
-+                       flag_isoc99 ? DK_PEDWARN : DK_WARNING);
-+  diagnostic.option_id = opt;
++                       flag_isoc99 ? diagnostics::kind::pedwarn : diagnostics::kind::warning);
++  diagnostic_set_option_id (&diagnostic, opt);
 +  diagnostic_report_diagnostic (global_dc, &diagnostic);
 +  va_end (ap);
 +}
@@ -44,7 +44,7 @@ index 0dcbae9..3322696 100644
  /* Returns the smallest location != UNKNOWN_LOCATION in LOCATIONS,
     considering only those c_declspec_words found in LIST, which
     must be terminated by cdw_number_of_elements.  */
-@@ -7004,12 +7023,12 @@ grokdeclarator (const struct c_declarator *declarator,
+@@ -6862,12 +6881,12 @@ grokdeclarator (const struct c_declarator *declarator,
        else
  	{
  	  if (name)
@@ -62,7 +62,7 @@ index 0dcbae9..3322696 100644
  	}
      }
  
-@@ -10685,10 +10704,10 @@ start_function (struct c_declspecs *declspecs, struct c_declarator *declarator,
+@@ -10582,10 +10601,10 @@ start_function (struct c_declspecs *declspecs, struct c_declarator *declarator,
      }
  
    if (warn_about_return_type)
@@ -77,7 +77,7 @@ index 0dcbae9..3322696 100644
  
    /* Make the init_value nonzero so pushdecl knows this is not tentative.
       error_mark_node is replaced below (in pop_scope) with the BLOCK.  */
-@@ -11049,9 +11068,9 @@ store_parm_decls_oldstyle (tree fndecl, const struct c_arg_info *arg_info)
+@@ -10946,9 +10965,9 @@ store_parm_decls_oldstyle (tree fndecl, const struct c_arg_info *arg_info)
  	  warn_if_shadowing (decl);
  
  	  if (flag_isoc99)
@@ -91,5 +91,5 @@ index 0dcbae9..3322696 100644
  	    warning_at (DECL_SOURCE_LOCATION (decl),
  			OPT_Wmissing_parameter_type,
 -- 
-2.36.6
+2.50.1
 

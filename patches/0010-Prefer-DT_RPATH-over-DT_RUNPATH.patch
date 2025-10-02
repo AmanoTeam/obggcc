@@ -1,7 +1,7 @@
-From cac7bd33d6270d7a9b9c91dda9f249ee9f8035d3 Mon Sep 17 00:00:00 2001
+From 05c8148550bc825d6428b642fd76bffd5d63fddc Mon Sep 17 00:00:00 2001
 From: Kartatz <105828205+Kartatz@users.noreply.github.com>
-Date: Sun, 28 Sep 2025 22:03:14 -0300
-Subject: [PATCH] Prefer DT_RPATH over DT_RUNPATH
+Date: Thu, 2 Oct 2025 04:25:53 -0300
+Subject: [PATCH 10/11] Prefer DT_RPATH over DT_RUNPATH
 
 ---
  gcc/config/aarch64/aarch64-linux.h | 1 +
