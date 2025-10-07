@@ -122,7 +122,7 @@ declare -ra bits=(
 	'64'
 )
 
-declare -r languages='c,c++,jit'
+declare -r languages='c,c++'
 
 declare -ra deprecated_targets=(
 	'ia64-unknown-linux-gnu'
