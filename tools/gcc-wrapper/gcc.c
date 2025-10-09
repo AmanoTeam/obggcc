@@ -14,6 +14,11 @@
 	#include <gnu/libc-version.h>
 #endif
 
+#if defined(__OpenBSD__)
+	#include <sys/types.h>
+	#include <sys/sysctl.h>
+#endif
+
 #include "fs/getexec.h"
 #include "fs/ext.h"
 #include "fs/dirname.h"
