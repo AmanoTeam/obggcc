@@ -162,40 +162,54 @@ static const char* binfmt_get_triplet(const struct binfmt* const fmt) {
 				return "x86_64-unknown-linux-gnu";
 			#elif defined(PINO)
 				return "x86_64-unknown-linux-android";
+			#elif defined(ATAR)
+				return "x86_64-unknown-openbsd";
 			#endif
 		case BINFMT_i386:
 			#if defined(OBGGCC)
 				return "i386-unknown-linux-gnu";
 			#elif defined(PINO)
 				return "i686-unknown-linux-android";
+			#elif defined(ATAR)
+				return "i386-unknown-openbsd";
 			#endif
 		case BINFMT_MIPS64EL:
 			#if defined(OBGGCC)
 				return "mips64el-unknown-linux-gnuabi64";
 			#elif defined(PINO)
 				return "mips64el-unknown-linux-android";
+			#elif defined(ATAR)
+				return "mips64el-unknown-openbsd";
 			#endif
 		case BINFMT_MIPSEL:
 			#if defined(OBGGCC)
 				return "mipsel-unknown-linux-gnu";
 			#elif defined(PINO)
 				return "mipsel-unknown-linux-android";
+			#elif defined(ATAR)
+				return NULL;
 			#endif
 		case BINFMT_RISCV64:
 			#if defined(PINO)
 				return "riscv64-unknown-linux-android";
+			#elif defined(ATAR)
+				return "riscv64-unknown-openbsd";
 			#endif
 		case BINFMT_AARCH64:
 			#if defined(OBGGCC)
 				return "aarch64-unknown-linux-gnu";
 			#elif defined(PINO)
 				return "aarch64-unknown-linux-android";
+			#elif defined(ATAR)
+				return "aarch64-unknown-openbsd";
 			#endif
 		case BINFMT_ARM:
 			#if defined(OBGGCC)
 				return "arm-unknown-linux-gnueabihf";
 			#elif defined(PINO)
 				return "armv7-unknown-linux-androideabi";
+			#elif defined(ATAR)
+				return "arm-unknown-openbsd";
 			#endif
 	}
 	

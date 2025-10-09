@@ -1,7 +1,7 @@
 #if !defined(OBGGCC_H)
 #define OBGGCC_H
 
-#if !(defined(OBGGCC) || defined(PINO))
+#if !(defined(OBGGCC) || defined(PINO) || defined(ATAR))
 	#error "Please define the cross-compiler flavor for which we will be a wrapper"
 #endif
 
@@ -9,12 +9,29 @@
 	#define WRAPPER_FLAVOR_NAME "OBGGCC"
 #elif defined(PINO)
 	#define WRAPPER_FLAVOR_NAME "PINO"
+#elif defined(ATAR)
+	#define WRAPPER_FLAVOR_NAME "ATAR"
 #else
 	#error "I don't know how to handle this"
 #endif
 
 #if defined(WCLANG) && defined(PINO)
 	#error "-DWCLANG and -DPINO are not supported together"
+#endif
+
+#if defined(ATAR)
+	#define UNVERSIONED_CROSS_COMPILER
+#endif
+
+static const char DEFAULT_TARGET[] = 
+#if defined(OBGGCC)
+	 "x86_64-unknown-linux-gnu2.3";
+#elif defined(PINO)
+	"x86_64-unknown-linux-android21";
+#elif defined(ATAR)
+	"x86_64-unknown-openbsd";
+#else
+	#error "I don't know how to handle this"
 #endif
 
 static const char ENV_SYSTEM_PREFIX[] = WRAPPER_FLAVOR_NAME "_SYSTEM_PREFIX";

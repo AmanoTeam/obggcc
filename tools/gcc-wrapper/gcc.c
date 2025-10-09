@@ -124,7 +124,9 @@ static const char GCC_OPT_F_USE_LD[] = "-fuse-ld=";
 static const char GCC_OPT_F_GNU_TM[] = "-fgnu-tm";
 static const char GCC_OPT_F_OPENMP[] = "-fopenmp";
 static const char GCC_OPT_F_OPENACC[] = "-fopenacc";
+static const char GCC_OPT_F_PIC[] = "-fPIC";
 static const char GCC_OPT_NO_PIE[] = "-no-pie";
+static const char GCC_OPT_PIE[] = "-pie";
 static const char GCC_OPT_M_FPU[] = "-mfpu=";
 static const char GCC_OPT_M_SSE3[] = "-msse3";
 static const char GCC_OPT_M_SSE4_2[] = "-msse4.2";
@@ -178,6 +180,10 @@ static const char CLANG_OPT_F_USE_LD_LLD[] = "-fuse-ld=lld";
 #define ARCH_SPEC_X86 0x02
 #define ARCH_SPEC_MIPS 0x03
 #define ARCH_SPEC_RISCV 0x04
+#define ARCH_SPEC_ALPHA 0x05
+#define ARCH_SPEC_HPPA 0x06
+#define ARCH_SPEC_PPC 0x07
+#define ARCH_SPEC_SPARC 0x08
 
 static const char LD_OPT_DYNAMIC_LINKER[] = "-dynamic-linker";
 static const char LD_OPT_RPATH_LINK[] = "-rpath-link";
@@ -185,6 +191,7 @@ static const char LD_OPT_RPATH[] = "-rpath";
 static const char LD_OPT_UNRESOLVED_SYMBOLS[] = "--unresolved-symbols=ignore-in-shared-libs";
 static const char LD_OPT_NO_ROSEGMENT[] = "--no-rosegment";
 static const char LD_OPT_Z[] = "-z";
+static const char LD_OPT_ORIGIN[] = "origin";
 static const char LD_OPT_PACK_RELATIVE_RELOCS[] = "pack-relative-relocs";
 
 static const char LLD_OPT_USE_ANDROID_RELR_TAGS[] = "--use-android-relr-tags";
@@ -203,15 +210,6 @@ static const char CMAKE_C_COMPILER_TEST[] = "testCCompiler.c";
 static const char CMAKE_CXX_COMPILER_TEST[] = "testCXXCompiler.cxx";
 
 static const char CMAKE_FILES_DIRECTORY[] = "CMakeFiles";
-
-static const char DEFAULT_TARGET[] = 
-#if defined(OBGGCC)
-	 "x86_64-unknown-linux-gnu2.3";
-#elif defined(PINO)
-	"x86_64-unknown-linux-android21";
-#else
-	#error "I don't know how to handle this"
-#endif
 
 static const char HYPHEN[] = "-";
 
@@ -259,9 +257,12 @@ static const char EQUAL = '=';
 static const char ZERO = '\0';
 static const char EQUAL_S[] = "=";
 
+static const char LD_LLD[] = "ld.lld";
+static const char LD[] = "ld";
+
 extern char** environ;
 
-#if AUTO_PICK_LINKER
+#if AUTO_PICK_LINKER && !defined(WCLANG)
 static const char* const FASTER_LINKERS[] = {
 	"mold",
 	"lld",
@@ -342,7 +343,9 @@ static clang_option_t CLANG_SPECIFIC_REMOVE[] = {
 
 static int libcv_matches(const char a, const char b) {
 	
-	#if defined(OBGGCC) /* Linux glibc (e.g., 2.17) */
+	#if defined(UNVERSIONED_CROSS_COMPILER)
+		
+	#elif defined(OBGGCC) /* Linux glibc (e.g., 2.17) */
 		if (a == '2' && (b == '.' || b == '-' || b == ZERO)) {
 			return 1;
 		}
@@ -423,6 +426,32 @@ static int get_bitness(const char* const triplet) {
 		if (status) {
 			return ARCH_ABI_32;
 		}
+	#elif defined(ATAR)
+		status = (
+			strcmp(triplet, "aarch64-unknown-openbsd") == 0 ||
+			strcmp(triplet, "alpha-unknown-openbsd") == 0 ||
+			strcmp(triplet, "mips64-unknown-openbsd") == 0 ||
+			strcmp(triplet, "mips64el-unknown-openbsd") == 0 ||
+			strcmp(triplet, "powerpc64-unknown-openbsd") == 0 ||
+			strcmp(triplet, "riscv64-unknown-openbsd") == 0 ||
+			strcmp(triplet, "sparc64-unknown-openbsd") == 0 ||
+			strcmp(triplet, "x86_64-unknown-openbsd") == 0
+		);
+		
+		if (status) {
+			return ARCH_ABI_64;
+		}
+		
+		status = (
+			strcmp(triplet, "powerpc-unknown-openbsd") == 0 ||
+			strcmp(triplet, "arm-unknown-openbsd") == 0 ||
+			strcmp(triplet, "hppa-unknown-openbsd") == 0 ||
+			strcmp(triplet, "i386-unknown-openbsd") == 0
+		);
+		
+		if (status) {
+			return ARCH_ABI_32;
+		}
 	#else
 		#error "I don't know how to handle this"
 	#endif
@@ -498,11 +527,79 @@ static int get_arch(const char* const triplet) {
 		if (status) {
 			return ARCH_SPEC_MIPS;
 		}
+	#elif defined(ATAR)
+		status = (
+			strcmp(triplet, "i386-unknown-openbsd") == 0 ||
+			strcmp(triplet, "x86_64-unknown-openbsd") == 0
+		);
+		
+		if (status) {
+			return ARCH_SPEC_X86;
+		}
+		
+		status = (
+			strcmp(triplet, "aarch64-unknown-openbsd") == 0 ||
+			strcmp(triplet, "arm-unknown-openbsd") == 0
+		);
+		
+		if (status) {
+			return ARCH_SPEC_ARM;
+		}
+		
+		status = (
+			strcmp(triplet, "mips64-unknown-openbsd") == 0 ||
+			strcmp(triplet, "mips64el-unknown-openbsd") == 0
+		);
+		
+		if (status) {
+			return ARCH_SPEC_MIPS;
+		}
+		
+		status = (
+			strcmp(triplet, "powerpc-unknown-openbsd") == 0 ||
+			strcmp(triplet, "powerpc64-unknown-openbsd") == 0
+		);
+		
+		if (status) {
+			return ARCH_SPEC_PPC;
+		}
+		
+		status = (
+			strcmp(triplet, "riscv64-unknown-openbsd") == 0
+		);
+		
+		if (status) {
+			return ARCH_SPEC_RISCV;
+		}
+		
+		status = (
+			strcmp(triplet, "sparc64-unknown-openbsd") == 0
+		);
+		
+		if (status) {
+			return ARCH_SPEC_SPARC;
+		}
+		
+		status = (
+			strcmp(triplet, "hppa-unknown-openbsd") == 0
+		);
+		
+		if (status) {
+			return ARCH_SPEC_HPPA;
+		}
+		
+		status = (
+			strcmp(triplet, "alpha-unknown-openbsd") == 0
+		);
+		
+		if (status) {
+			return ARCH_SPEC_HPPA;
+		}
 	#else
 		#error "I don't know how to handle this"
 	#endif
 	
-	return ARCH_SPEC_NONE;
+	return ARCH_SPEC_ALPHA;
 	
 }
 
@@ -514,6 +611,10 @@ static int target_supports_neon(const char* const name) {
 		}
 	#elif defined(OBGGCC)
 		if (strcmp(name, "arm-unknown-linux-gnueabihf") == 0) {
+			return 1;
+		}
+	#elif defined(ATAR)
+		if (strcmp(name, "arm-unknown-openbsd") == 0) {
 			return 1;
 		}
 	#else
@@ -541,25 +642,12 @@ static int target_supports_relr(const char* const name, const char* const linker
 			return 0;
 		}
 		
-		if (strcmp(name, "x86_64-unknown-linux-gnu") == 0) {
-			return 1;
-		}
-		
-		if (strcmp(name, "i386-unknown-linux-gnu") == 0) {
-			return 1;
-		}
-		
-		if (strcmp(name, "aarch64-unknown-linux-gnu") == 0) {
-			return 1;
-		}
-		
-		if (check_linker_lld(linker) || check_linker_mold(linker)) {
-			if (strcmp(name, "arm-unknown-linux-gnueabihf") == 0) {
-				return 1;
-			}
-		}
+		return 1;
 	#elif defined(PINO)
 		/* Not handled */
+	#elif defined(ATAR)
+		/* OpenBSD has supported DT_RELR since the 7.1 release. */
+		return 1;
 	#else
 		#error "I don't know how to handle this"
 	#endif
@@ -661,6 +749,8 @@ static int get_host_version(void) {
 	Get the system/libc version of the host system.
 	*/
 	
+	long int version[2];
+	
 	long int libc_major = 0;
 	long int libc_minor = 0;
 	
@@ -668,12 +758,26 @@ static int get_host_version(void) {
 		libc_major = android_get_device_api_level();
 		
 		if (libc_major == -1) {
-			libc_major = 0;
+			return 0;
 		}
 	#elif defined(__GLIBC__)
 		const char* string = gnu_get_libc_version();
-		long int version[2];
 		
+		if (string == NULL) {
+			return 0;
+		}
+	#elif defined(__OpenBSD__)
+		int call[] = {CTL_KERN, KERN_OSRELEASE};
+		
+		char string[16];
+		size_t size = sizeof(string);
+		
+		if (sysctl(call, sizeof(call) / sizeof(*call), string, &size, NULL, 0) == -1) {
+			return 0;
+		}
+	#endif
+	
+	#if defined(__GLIBC__) || defined(__OpenBSD__)
 		get_libc_version_int(string, version);
 		
 		libc_major = version[0];
@@ -718,6 +822,32 @@ static const char* get_host_triplet(void) {
 			return "armv7-unknown-linux-androideabi";
 		#elif defined(__aarch64__)
 			return "aarch64-unknown-linux-gnu";
+		#endif
+	#elif defined(__OpenBSD__)
+		#if defined(__x86_64__)
+			return "x86_64-unknown-openbsd";
+		#elif defined(__i386__)
+			return "i386-unknown-openbsd";
+		#elif defined(__ARM_ARCH_7A__)
+			return "arm-unknown-openbsd";
+		#elif defined(__aarch64__)
+			return "aarch64-unknown-openbsd";
+		#elif defined(__riscv)
+			return "riscv64-unknown-openbsd";
+		#elif defined(__MIPSEL__)
+			return "mips64el-unknown-openbsd";
+		#elif defined(__MIPSEB__)
+			return "mips64-unknown-openbsd";
+		#elif defined(__powerpc64__)
+			return "powerpc64-unknown-openbsd";
+		#elif defined(__powerpc)
+			return "powerpc-unknown-openbsd";
+		#elif defined(__sparc64__)
+			return "sparc64-unknown-openbsd";
+		#elif defined(__hppa__)
+			return "hppa-unknown-openbsd";
+		#elif defined(__alpha__)
+			return "alpha-unknown-openbsd";
 		#endif
 	#endif
 	
@@ -1068,7 +1198,7 @@ static int clang_specific_replace(
 	
 }
 
-#if AUTO_PICK_LINKER
+#if AUTO_PICK_LINKER && !defined(WCLANG)
 static const char* get_fast_linker(
 	const char* const directory,
 	const char* const triplet
@@ -1338,10 +1468,7 @@ int main(int argc, char* argv[]) {
 	
 	size_t kargc = 0;
 	char** kargv = NULL;
-	
-	#if AUTO_PICK_LINKER
-		char* linker = NULL;
-	#endif
+	char* linker = NULL;
 	
 	char* floating_point_unit = NULL;
 	
@@ -1419,6 +1546,7 @@ int main(int argc, char* argv[]) {
 			1 + /* -marm */
 			4 + /* -Xlinker -z -Xlinker pack-relative-relocs */
 			5 + /* -flto=auto -flto-compression-level=0 -flto-partition={none,balanced} -fno-fat-lto-objects -fdevirtualize-at-ltrans */
+			6 + /* -Xlinker -z -Xlinker origin -fPIC -pie (OpenBSD) */
 			1 /* NULL */
 		)
 	);
@@ -1912,8 +2040,13 @@ int main(int argc, char* argv[]) {
 				break;
 			}
 			
-			err = ERR_UNKNOWN_SYSTEM_VERSION;
-			goto end;
+			#if !defined(UNVERSIONED_CROSS_COMPILER)
+				err = ERR_UNKNOWN_SYSTEM_VERSION;
+				goto end;
+			#else
+				while (*(--ptr) != '-') {}
+				break;
+			#endif
 		}
 		
 		b = *(ptr + 1);
@@ -1970,7 +2103,7 @@ int main(int argc, char* argv[]) {
 		kargv[kargc++] = (char*) GCC_OPT_M_ARM;
 	}
 	
-	#if AUTO_PICK_LINKER
+	#if AUTO_PICK_LINKER && !defined(WCLANG)
 		/* Pick a fast linker if available. */
 		if (!override_linker && (cur = get_fast_linker(parent_directory, triplet)) != NULL) {
 			linker = malloc(strlen(GCC_OPT_F_USE_LD) + strlen(cur) + 1);
@@ -1984,6 +2117,24 @@ int main(int argc, char* argv[]) {
 			strcat(linker, cur);
 			
 			kargv[kargc++] = linker;
+		}
+	#endif
+	
+	#if defined(ATAR) && defined(WCLANG)
+		/* GCC already uses these options by default, but Clang doesn't. */
+		if (linking) {
+			kargv[kargc++] = (char*) GCC_OPT_XLINKER;
+			kargv[kargc++] = (char*) LD_OPT_Z;
+			kargv[kargc++] = (char*) GCC_OPT_XLINKER;
+			kargv[kargc++] = (char*) LD_OPT_ORIGIN;
+		}
+		
+		if (!linking) {
+			kargv[kargc++] = (char*) GCC_OPT_F_PIC;
+		}
+		
+		if (linking && !linking_shared) {
+			kargv[kargc++] = (char*) GCC_OPT_PIE;
 		}
 	#endif
 	
@@ -2055,44 +2206,46 @@ int main(int argc, char* argv[]) {
 		SYSTEM_LIBRARY_PATH[7] = secondary_library_directory;
 	}
 	
-	ch = *ptr;
-	
-	if (ch == ZERO && override_libcv != NULL) {
-		ptr = (char*) override_libcv;
-	}
-	
-	start = ptr;
-	
-	while (1) {
-		a = *ptr;
+	#if !defined(UNVERSIONED_CROSS_COMPILER)
+		ch = *ptr;
 		
-		if (a == '-' || a == ZERO) {
-			break;
+		if (ch == ZERO && override_libcv != NULL) {
+			ptr = (char*) override_libcv;
 		}
 		
-		ptr++;
-	}
-	
-	size = (size_t) (ptr - start);
-	
-	libc_version = malloc(size + 1);
-	
-	if (libc_version == NULL) {
-		err = ERR_MEM_ALLOC_FAILURE;
-		goto end;
-	}
-	
-	memcpy(libc_version, start, size);
-	libc_version[size] = '\0';
-	
-	#if defined(PINO)
-		android_current_sdk_version = libc_version;
+		start = ptr;
+		
+		while (1) {
+			a = *ptr;
+			
+			if (a == '-' || a == ZERO) {
+				break;
+			}
+			
+			ptr++;
+		}
+		
+		size = (size_t) (ptr - start);
+		
+		libc_version = malloc(size + 1);
+		
+		if (libc_version == NULL) {
+			err = ERR_MEM_ALLOC_FAILURE;
+			goto end;
+		}
+		
+		memcpy(libc_version, start, size);
+		libc_version[size] = '\0';
+		
+		#if defined(PINO)
+			android_current_sdk_version = libc_version;
+		#endif
+		
+		get_libc_version_int(libc_version, version);
+		
+		libc_major = version[0];
+		libc_minor = version[1];
 	#endif
-	
-	get_libc_version_int(libc_version, version);
-	
-	libc_major = version[0];
-	libc_minor = version[1];
 	
 	target_version = LIBC_VERSION(libc_major, libc_minor);
 	
@@ -2213,6 +2366,17 @@ int main(int argc, char* argv[]) {
 		} else {
 			strcat(executable, cc);
 		}
+	#endif
+	
+	#if defined(UNVERSIONED_CROSS_COMPILER)
+		libc_version = malloc(1);
+		
+		if (libc_version == NULL) {
+			err = ERR_MEM_ALLOC_FAILURE;
+			goto end;
+		}
+		
+		libc_version[0] = '\0';
 	#endif
 	
 	get_parent_path(app_filename, parent_directory, 2);
@@ -2442,7 +2606,46 @@ int main(int argc, char* argv[]) {
 		args[offset++] = triplet;
 		
 		if (linking) {
-			args[offset++] = (char*) CLANG_OPT_F_USE_LD_LLD;
+			/* Try LLD first, fall back to the built-in linker if not available. */
+			file_name = find_exe(LD_LLD);
+			
+			if (file_name == NULL) {
+				get_parent_path(app_filename, parent_directory, 1);
+				
+				file_name = malloc(
+					strlen(parent_directory) +
+					strlen(PATHSEP_S) +
+					strlen(triplet) + 
+					strlen(HYPHEN) +
+					strlen(LD) +
+					1
+				);
+				
+				if (file_name == NULL) {
+					err = ERR_MEM_ALLOC_FAILURE;
+					goto end;
+				}
+				
+				strcpy(file_name, parent_directory);
+				strcat(file_name, PATHSEP_S);
+				strcat(file_name, triplet);
+				strcat(file_name, HYPHEN);
+				strcat(file_name, LD);
+			}
+			
+			linker = malloc(strlen(GCC_OPT_F_USE_LD) + strlen(file_name) + 1);
+			
+			if (linker == NULL) {
+				err = ERR_MEM_ALLOC_FAILURE;
+				goto end;
+			}
+			
+			strcpy(linker, GCC_OPT_F_USE_LD);
+			strcat(linker, file_name);
+			
+			free(file_name);
+			
+			args[offset++] = linker;
 		}
 	#endif
 	
@@ -2852,10 +3055,7 @@ int main(int argc, char* argv[]) {
 	free(args);
 	free(kargv);
 	free(arg);
-	
-	#if AUTO_PICK_LINKER
-		free(linker);
-	#endif
+	free(linker);
 	
 	free(floating_point_unit);
 	free(sysroot_include_directory);
