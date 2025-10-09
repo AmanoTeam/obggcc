@@ -352,6 +352,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0009-Fix-missing-stdint.h-include-when-compiling-host-tools-on-OpenBSD.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0011-Revert-configure-Always-add-pre-installed-header-directories-to-search-path.patch"
+	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Revert-vect-Remove-type-from-misalignment-hook.patch"
 fi
 
 # Follow Debian's approach to remove hardcoded RPATHs from binaries
