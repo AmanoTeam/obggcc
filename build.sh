@@ -52,7 +52,7 @@ declare -r pieflags='-fPIE'
 declare -r ccflags='-w -O2'
 declare -r linkflags='-Xlinker -s'
 
-declare -r max_jobs='40'
+declare -r max_jobs='1'
 
 declare -r sysroot_tarball='/tmp/sysroot.tar.xz'
 declare -r gcc_wrapper='/tmp/gcc-wrapper'
@@ -146,6 +146,8 @@ declare -ra targets=(
 	'i386-unknown-linux-gnu'
 )
 
+declare -r build=$("${workdir}/tools/config.guess")
+
 declare -r PKG_CONFIG_PATH="${toolchain_directory}/lib/pkgconfig"
 declare -r PKG_CONFIG_LIBDIR="${PKG_CONFIG_PATH}"
 declare -r PKG_CONFIG_SYSROOT_DIR="${toolchain_directory}"
@@ -164,29 +166,17 @@ export \
 	ZSTD_CFLAGS \
 	ZSTD_LIBS
 
-declare build_type="${1}"
-
-if [ -z "${build_type}" ]; then
-	build_type='native'
-fi
-
-declare is_native='0'
-
-if [ "${build_type}" = 'native' ]; then
-	is_native='1'
-fi
-
 set +u
 
 if [ -z "${CROSS_COMPILE_TRIPLET}" ]; then
-	declare CROSS_COMPILE_TRIPLET=''
+	declare -r host="${build}"
+	declare -r native='1'
+else
+	declare -r host="${CROSS_COMPILE_TRIPLET}"
+	declare -r native='0'
 fi
 
 set -u
-
-declare -r \
-	build_type \
-	is_native
 
 if ! [ -f "${gmp_tarball}" ]; then
 	curl \
@@ -280,7 +270,7 @@ if ! [ -f "${binutils_tarball}" ]; then
 		--extract \
 		--file="${binutils_tarball}"
 	
-	if [[ "${CROSS_COMPILE_TRIPLET}" = *'-darwin'* ]]; then
+	if [[ "${host}" = *'-darwin'* ]]; then
 		sed \
 			--in-place \
 			's/$$ORIGIN/@loader_path/g' \
@@ -344,7 +334,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 		--extract \
 		--file="${gcc_tarball}"
 	
-	if [[ "${CROSS_COMPILE_TRIPLET}" = *'-darwin'* ]]; then
+	if [[ "${host}" = *'-darwin'* ]]; then
 		sed \
 			--in-place \
 			's/$$ORIGIN/@loader_path/g' \
@@ -407,7 +397,8 @@ cd "${gmp_directory}/build"
 rm --force --recursive ./*
 
 ../configure \
-	--host="${CROSS_COMPILE_TRIPLET}" \
+	--build="${build}" \
+	--host="${host}" \
 	--prefix="${toolchain_directory}" \
 	--enable-shared \
 	--disable-static \
@@ -424,7 +415,8 @@ cd "${mpfr_directory}/build"
 rm --force --recursive ./*
 
 ../configure \
-	--host="${CROSS_COMPILE_TRIPLET}" \
+	--build="${build}" \
+	--host="${host}" \
 	--prefix="${toolchain_directory}" \
 	--with-gmp="${toolchain_directory}" \
 	--enable-shared \
@@ -442,7 +434,8 @@ cd "${mpc_directory}/build"
 rm --force --recursive ./*
 
 ../configure \
-	--host="${CROSS_COMPILE_TRIPLET}" \
+	--build="${build}" \
+	--host="${host}" \
 	--prefix="${toolchain_directory}" \
 	--with-gmp="${toolchain_directory}" \
 	--enable-shared \
@@ -461,12 +454,13 @@ rm --force --recursive ./*
 
 declare isl_extra_ldflags=''
 
-if [[ "${CROSS_COMPILE_TRIPLET}" != *'-darwin'* ]]; then
+if [[ "${host}" != *'-darwin'* ]]; then
 	isl_extra_ldflags+=" -Xlinker -rpath-link -Xlinker ${toolchain_directory}/lib"
 fi
 
 ../configure \
-	--host="${CROSS_COMPILE_TRIPLET}" \
+	--build="${build}" \
+	--host="${host}" \
 	--prefix="${toolchain_directory}" \
 	--with-gmp-prefix="${toolchain_directory}" \
 	--enable-shared \
@@ -484,7 +478,8 @@ cd "${zlib_directory}/build"
 rm --force --recursive ./*
 
 ../configure \
-	--host="${CROSS_COMPILE_TRIPLET}" \
+	--build="${build}" \
+	--host="${host}" \
 	--prefix="${toolchain_directory}" \
 	CFLAGS="${ccflags}" \
 	CXXFLAGS="${ccflags}" \
@@ -502,7 +497,7 @@ rm --force --recursive ./*
 
 declare cmake_flags=''
 
-if [[ "${CROSS_COMPILE_TRIPLET}" = *'-darwin'* ]]; then
+if [[ "${host}" = *'-darwin'* ]]; then
 	cmake_flags+=' -DCMAKE_SYSTEM_NAME=Darwin'
 fi
 
@@ -526,24 +521,24 @@ cp "${workdir}/tools/ln.sh" '/tmp/ln'
 
 export PATH="/tmp:${PATH}"
 
-if [[ "${CROSS_COMPILE_TRIPLET}" == 'arm'*'-android'* ]] || [[ "${CROSS_COMPILE_TRIPLET}" == 'i686-'*'-android'* ]] || [[ "${CROSS_COMPILE_TRIPLET}" == 'mipsel-'*'-android'* ]]; then
+if [[ "${host}" = 'arm'*'-android'* ]] || [[ "${host}" = 'i686-'*'-android'* ]] || [[ "${host}" = 'mipsel-'*'-android'* ]]; then
 	export \
 		ac_cv_func_fseeko='no' \
 		ac_cv_func_ftello='no'
 fi
 
-if [[ "${CROSS_COMPILE_TRIPLET}" == 'armv5'*'-android'* ]]; then
+if [[ "${host}" = 'armv5'*'-android'* ]]; then
 	export PINO_ARM_MODE='true'
 fi
 
-if [[ "${CROSS_COMPILE_TRIPLET}" == *'-haiku' ]]; then
+if [[ "${host}" = *'-haiku' ]]; then
 	export ac_cv_c_bigendian='no'
 fi
 
 declare cc='gcc'
 declare readelf='readelf'
 
-if ! (( is_native )); then
+if ! (( native )); then
 	cc="${CC}"
 	readelf="${READELF}"
 fi
@@ -601,7 +596,8 @@ for target in "${targets[@]}"; do
 	cd "${binutils_directory}/build"
 	
 	../configure \
-		--host="${CROSS_COMPILE_TRIPLET}" \
+		--build="${build}" \
+		--host="${host}" \
 		--target="${triplet}" \
 		--prefix="${toolchain_directory}" \
 		--enable-ld \
@@ -635,12 +631,12 @@ for target in "${targets[@]}"; do
 		hash_style='sysv'
 	fi
 	
-	if ! (( is_native )); then
-		extra_configure_flags+=" --with-cross-host=${CROSS_COMPILE_TRIPLET}"
+	if ! (( native )); then
+		extra_configure_flags+=" --with-cross-host=${host}"
 		extra_configure_flags+=" --with-toolexeclibdir=${toolchain_directory}/${triplet}/lib/"
 	fi
 	
-	if [[ "${CROSS_COMPILE_TRIPLET}" != *'-darwin'* ]]; then
+	if [[ "${host}" != *'-darwin'* ]]; then
 		extra_configure_flags+=' --enable-host-bind-now'
 	fi
 	
@@ -649,7 +645,8 @@ for target in "${targets[@]}"; do
 	cd "${gcc_directory}/build"
 	
 	../configure \
-		--host="${CROSS_COMPILE_TRIPLET}" \
+		--build="${build}" \
+		--host="${host}" \
 		--target="${triplet}" \
 		--prefix="${toolchain_directory}" \
 		--with-linker-hash-style="${hash_style}" \
@@ -714,7 +711,7 @@ for target in "${targets[@]}"; do
 	
 	declare args=''
 	
-	if (( is_native )); then
+	if (( native )); then
 		args+="${environment}"
 	fi
 	
@@ -722,12 +719,12 @@ for target in "${targets[@]}"; do
 		CFLAGS_FOR_TARGET="${cflags_for_target}" \
 		CXXFLAGS_FOR_TARGET="${cxxflags_for_target}" \
 		LDFLAGS_FOR_TARGET="${ldflags_for_target}" \
-		gcc_cv_objdump="${CROSS_COMPILE_TRIPLET}-objdump" \
+		gcc_cv_objdump="${host}-objdump" \
 		all \
 		--jobs="${max_jobs}"
 	make install
 	
-	rm --force --recursive "${PWD}" &
+	rm --force --recursive "${PWD}"
 	
 	cd "${toolchain_directory}/${triplet}/lib64" 2>/dev/null || cd "${toolchain_directory}/${triplet}/lib"
 	
@@ -754,20 +751,18 @@ for target in "${targets[@]}"; do
 	declare gcc_include_dir="${toolchain_directory}/lib/gcc/${triplet}/${gcc_major}/include"
 	declare clang_include_dir="${gcc_include_dir}/clang"
 	
-	if ! [ -d "${clang_include_dir}" ]; then
-		mkdir "${clang_include_dir}"
-		
-		ln \
-			--symbolic \
-			--relative \
-			"${gcc_include_dir}/"*'.h' \
-			"${clang_include_dir}"
-		
-		rm --force \
-			"${clang_include_dir}/"*'intrin'*'.h' \
-			"${clang_include_dir}/arm"*'.h' \
-			"${clang_include_dir}/stdatomic.h"
-	fi
+	mkdir "${clang_include_dir}"
+	
+	ln \
+		--symbolic \
+		--relative \
+		"${gcc_include_dir}/"*'.h' \
+		"${clang_include_dir}"
+	
+	rm --force \
+		"${clang_include_dir}/"*'intrin'*'.h' \
+		"${clang_include_dir}/arm"*'.h' \
+		"${clang_include_dir}/stdatomic.h"
 	
 	[ -f './libiberty.a' ] && unlink './libiberty.a'
 	
@@ -830,8 +825,8 @@ while read triplet; do
 	rm --recursive "${libsanitizer_directory}"
 done <<< "$(jq --raw-output --compact-output '.[]' "${workdir}/submodules/libsanitizer/triplets.json")"
 
-if ! (( is_native )); then
-	declare url="https://github.com/AmanoTeam/GDB-Builds/releases/latest/download/${CROSS_COMPILE_TRIPLET}.tar.xz"
+if ! (( native )); then
+	declare url="https://github.com/AmanoTeam/GDB-Builds/releases/latest/download/${host}.tar.xz"
 	
 	echo "- Fetching data from '${url}'"
 	
@@ -855,8 +850,8 @@ if ! (( is_native )); then
 		rm --recursive "${gdb_directory}"
 	fi
 	
-	declare url="https://github.com/AmanoTeam/Nouzen/releases/latest/download/${CROSS_COMPILE_TRIPLET}.tar.xz"
-	declare nz_directory="/tmp/${CROSS_COMPILE_TRIPLET}"
+	declare url="https://github.com/AmanoTeam/Nouzen/releases/latest/download/${host}.tar.xz"
+	declare nz_directory="/tmp/${host}"
 	
 	rm --force --recursive "${nz_directory}"
 	
@@ -883,7 +878,7 @@ if ! (( is_native )); then
 fi
 
 # Bundle both libstdc++ and libgcc within host tools
-if ! (( is_native )) && [[ "${CROSS_COMPILE_TRIPLET}" != *'-darwin'* ]]; then
+if ! (( native )) && [[ "${host}" != *'-darwin'* ]]; then
 	[ -d "${toolchain_directory}/lib" ] || mkdir "${toolchain_directory}/lib"
 	
 	# libstdc++
@@ -899,7 +894,7 @@ if ! (( is_native )) && [[ "${CROSS_COMPILE_TRIPLET}" != *'-darwin'* ]]; then
 	cp "${name}" "${toolchain_directory}/lib/${soname}"
 	
 	# OpenBSD does not have a libgcc library
-	if [[ "${CROSS_COMPILE_TRIPLET}" != *'-openbsd'* ]]; then
+	if [[ "${host}" != *'-openbsd'* ]]; then
 		# libgcc_s
 		declare name=$(realpath $("${cc}" --print-file-name='libgcc_s.so.1'))
 		
@@ -1023,11 +1018,11 @@ while read item; do
 	for library in "${libraries[@]}"; do
 		for bit in "${bits[@]}"; do
 			for file in "../../${triplet}/lib${bit}/${library}"*; do
-				if [[ "${file}" == *'*' ]]; then
+				if [[ "${file}" = *'*' ]]; then
 					continue
 				fi
 				
-				if ! ( [[ "${file}" == *'.so'* ]] || [[ "${file}" == *'.a' ]] ); then
+				if ! ( [[ "${file}" = *'.so'* ]] || [[ "${file}" = *'.a' ]] ); then
 					continue
 				fi
 				
@@ -1039,7 +1034,7 @@ while read item; do
 				
 				ln --force --symbolic --relative "${file}" './gcc'
 				
-				if [[ "${file}" == *'.a' ]]; then
+				if [[ "${file}" = *'.a' ]]; then
 					echo "- Symlinking '${file}' to '${PWD}/static'"
 					
 					ln --force --symbolic --relative "${file}" './static'

@@ -32,7 +32,7 @@ jobs:
     - name: Build OBGGCC
       if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
       run: |
-        bash './build.sh' 'native'
+        bash './build.sh'
     - name: Generate tarball
       if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
       run: |
@@ -258,7 +258,7 @@ jobs:
             source "${DARWIN_HOME}/usr/local/share/darwin/autotools/${{ matrix.target }}.sh"
         fi
         
-        bash './build.sh' '${{ matrix.target }}'
+        bash './build.sh'
     - name: Create logs
       if: always()
       run: |
