@@ -1,62 +1,80 @@
 #!/bin/bash
 
+if [ -z "${CROSS_COMPILE_TRIPLET}" ]; then
+	declare -r host="${build}"
+	declare -r native='1'
+else
+	declare -r host="${CROSS_COMPILE_TRIPLET}"
+	declare -r native='0'
+fi
+
+if [ -z "${OBGGCC_BUILD_PARALLEL_LEVEL}" ]; then
+	declare -r max_jobs="$(nproc)"
+else
+	declare -r max_jobs="${OBGGCC_BUILD_PARALLEL_LEVEL}"
+fi
+
+if [ -z "${OBGGCC_BUILD_DIRECTORY}" ]; then
+	declare -r build_directory='/var/tmp/obggcc-build'
+else
+	declare -r build_directory="${OBGGCC_BUILD_DIRECTORY}"
+fi
+
 set -eu
 
 declare -r revision="$(git rev-parse --short HEAD)"
 
 declare -r workdir="${PWD}"
 
-declare -r toolchain_directory='/tmp/obggcc'
+declare -r toolchain_directory="${build_directory}/obggcc"
 declare -r share_directory="${toolchain_directory}/usr/local/share/obggcc"
 
 declare -r environment="LD_LIBRARY_PATH=${toolchain_directory}/lib PATH=${PATH}:${toolchain_directory}/bin"
 
 declare -r autotools_directory="${share_directory}/autotools"
 
-declare -r gmp_tarball='/tmp/gmp.tar.xz'
-declare -r gmp_directory='/tmp/gmp-6.3.0'
+declare -r gmp_tarball="${build_directory}/gmp.tar.xz"
+declare -r gmp_directory="${build_directory}/gmp-6.3.0"
 
-declare -r mpfr_tarball='/tmp/mpfr.tar.xz'
-declare -r mpfr_directory='/tmp/mpfr-4.2.2'
+declare -r mpfr_tarball="${build_directory}/mpfr.tar.xz"
+declare -r mpfr_directory="${build_directory}/mpfr-4.2.2"
 
-declare -r mpc_tarball='/tmp/mpc.tar.gz'
-declare -r mpc_directory='/tmp/mpc-1.3.1'
+declare -r mpc_tarball="${build_directory}/mpc.tar.gz"
+declare -r mpc_directory="${build_directory}/mpc-1.3.1"
 
-declare -r isl_tarball='/tmp/isl.tar.xz'
-declare -r isl_directory='/tmp/isl-0.27'
+declare -r isl_tarball="${build_directory}/isl.tar.xz"
+declare -r isl_directory="${build_directory}/isl-0.27"
 
-declare -r binutils_tarball='/tmp/binutils.tar.xz'
-declare -r binutils_directory='/tmp/binutils'
+declare -r binutils_tarball="${build_directory}/binutils.tar.xz"
+declare -r binutils_directory="${build_directory}/binutils"
 
 declare -r gcc_major='16'
 
-declare -r gcc_tarball='/tmp/gcc.tar.xz'
-declare -r gcc_directory="/tmp/gcc-master"
+declare -r gcc_tarball="${build_directory}/gcc.tar.xz"
+declare -r gcc_directory="${build_directory}/gcc-master"
 
-declare -r libsanitizer_tarball='/tmp/libsanitizer.tar.xz'
-declare -r libsanitizer_directory='/tmp/libsanitizer'
+declare -r libsanitizer_tarball="${build_directory}/libsanitizer.tar.xz"
+declare -r libsanitizer_directory="${build_directory}/libsanitizer"
 
-declare -r gdb_tarball='/tmp/gdb.tar.xz'
-declare -r gdb_directory='/tmp/gdb'
+declare -r gdb_tarball="${build_directory}/gdb.tar.xz"
+declare -r gdb_directory="${build_directory}/gdb"
 
-declare -r nz_tarball='/tmp/nz.tar.xz'
+declare -r nz_tarball="${build_directory}/nz.tar.xz"
 declare nz_directory=""
 
-declare -r zstd_tarball='/tmp/zstd.tar.gz'
-declare -r zstd_directory='/tmp/zstd-dev'
+declare -r zstd_tarball="${build_directory}/zstd.tar.gz"
+declare -r zstd_directory="${build_directory}/zstd-dev"
 
-declare -r zlib_tarball='/tmp/zlib.tar.gz'
-declare -r zlib_directory='/tmp/zlib-develop'
+declare -r zlib_tarball="${build_directory}/zlib.tar.gz"
+declare -r zlib_directory="${build_directory}/zlib-develop"
 
 declare -r pieflags='-fPIE'
 declare -r ccflags='-w -O2'
 declare -r linkflags='-Xlinker -s'
 
-declare -r max_jobs='1'
-
-declare -r sysroot_tarball='/tmp/sysroot.tar.xz'
-declare -r gcc_wrapper='/tmp/gcc-wrapper'
-declare -r clang_wrapper='/tmp/clang-wrapper'
+declare -r sysroot_tarball="${build_directory}/sysroot.tar.xz"
+declare -r gcc_wrapper="${build_directory}/gcc-wrapper"
+declare -r clang_wrapper="${build_directory}/clang-wrapper"
 
 declare gdb='1'
 declare nz='1'
@@ -146,7 +164,7 @@ declare -ra targets=(
 	'i386-unknown-linux-gnu'
 )
 
-declare -r build=$("${workdir}/tools/config.guess")
+declare -r build="$("${workdir}/tools/config.guess")"
 
 declare -r PKG_CONFIG_PATH="${toolchain_directory}/lib/pkgconfig"
 declare -r PKG_CONFIG_LIBDIR="${PKG_CONFIG_PATH}"
@@ -165,18 +183,6 @@ export \
 	pkg_cv_ZSTD_LIBS \
 	ZSTD_CFLAGS \
 	ZSTD_LIBS
-
-set +u
-
-if [ -z "${CROSS_COMPILE_TRIPLET}" ]; then
-	declare -r host="${build}"
-	declare -r native='1'
-else
-	declare -r host="${CROSS_COMPILE_TRIPLET}"
-	declare -r native='0'
-fi
-
-set -u
 
 if ! [ -f "${gmp_tarball}" ]; then
 	curl \
@@ -383,7 +389,7 @@ while read file; do
 		--regexp-extended \
 		's|test -f /usr/libexec/ld.so|true|g' \
 		"${file}"
-done <<< "$(find '/tmp' -type 'f' -name 'configure')"
+done <<< "$(find "${build_directory}" -type 'f' -name 'configure')"
 
 # Force GCC and binutils to prefix host tools with the target triplet even in native builds
 sed \
@@ -518,9 +524,9 @@ cmake --build "${PWD}" -- --jobs
 cmake --install "${PWD}" --strip
 
 # We prefer symbolic links over hard links.
-cp "${workdir}/tools/ln.sh" '/tmp/ln'
+cp "${workdir}/tools/ln.sh" "${build_directory}/ln"
 
-export PATH="/tmp:${PATH}"
+export PATH="${build_directory}:${PATH}"
 
 if [[ "${host}" = 'arm'*'-android'* ]] || [[ "${host}" = 'i686-'*'-android'* ]] || [[ "${host}" = 'mipsel-'*'-android'* ]]; then
 	export \
@@ -852,7 +858,7 @@ if ! (( native )); then
 	fi
 	
 	declare url="https://github.com/AmanoTeam/Nouzen/releases/latest/download/${host}.tar.xz"
-	declare nz_directory="/tmp/${host}"
+	declare nz_directory="${build_directory}/${host}"
 	
 	rm --force --recursive "${nz_directory}"
 	

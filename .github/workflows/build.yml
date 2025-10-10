@@ -31,6 +31,8 @@ jobs:
           /tmp/x86_64-linux-gnu.tar.xz.sha256
     - name: Build OBGGCC
       if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
+      env: 
+        OBGGCC_BUILD_PARALLEL_LEVEL: 40
       run: |
         bash './build.sh'
     - name: Generate tarball
@@ -139,6 +141,8 @@ jobs:
         tar --directory='/tmp' --extract --file='/tmp/x86_64-linux-gnu.tar.xz'
         mv '/tmp/obggcc' '/tmp/obggcc-toolchain'
     - name: Cross-compile OBGGCC to ${{ matrix.target }}
+      env: 
+        OBGGCC_BUILD_PARALLEL_LEVEL: 40
       run: |
         source './tools/setup_toolchain.sh'
         
