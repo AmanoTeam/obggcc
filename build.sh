@@ -68,6 +68,10 @@ declare -r zstd_directory="${build_directory}/zstd-dev"
 declare -r zlib_tarball="${build_directory}/zlib.tar.gz"
 declare -r zlib_directory="${build_directory}/zlib-develop"
 
+declare -r cmake_directory="${workdir}/submodules/cmake"
+
+declare -r curl_directory="${workdir}/submodules/curl"
+
 declare -r pieflags='-fPIE'
 declare -r ccflags='-w -O2'
 declare -r linkflags='-Xlinker -s'
@@ -186,6 +190,31 @@ export \
 
 mkdir --parent "${build_directory}"
 rm --force --recursive "${toolchain_directory}"
+
+export PATH="${build_directory}/bin:${PATH}"
+
+cd "${cmake_directory}"
+
+CC= CXX= \
+	./bootstrap \
+	--prefix="${build_directory}" \
+	--parallel="${max_jobs}"
+
+make all --jobs="${max_jobs}"
+make install
+
+CC= CXX= \
+	cmake \
+	-S "${curl_directory}" \
+	-B "${curl_directory}/build" \
+	-DCMAKE_INSTALL_PREFIX="${build_directory}" \
+	-DCMAKE_INSTALL_RPATH='$ORIGIN/../lib' \
+	-DCURL_USE_LIBPSL=OFF
+
+make \
+	-C "${curl_directory}/build" \
+	--jobs="${max_jobs}" \
+	install
 
 if ! [ -f "${gmp_tarball}" ]; then
 	curl \

@@ -13,3 +13,9 @@
 [submodule "submodules/llvm-project"]
 	path = submodules/llvm-project
 	url = https://github.com/llvm/llvm-project
+[submodule "submodules/cmake"]
+	path = submodules/cmake
+	url = https://github.com/Kitware/CMake
+[submodule "submodules/curl"]
+	path = submodules/curl
+	url = https://github.com/curl/curl
