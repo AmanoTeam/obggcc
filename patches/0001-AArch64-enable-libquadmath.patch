@@ -1,0 +1,78 @@
+From d0edbbdd5a61508d8dc4f1a8990b0b9cdde913f4 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Thu, 28 Aug 2025 02:44:55 +0000
+Subject: [PATCH] AArch64: enable libquadmath
+
+From https://gcc.gnu.org/bugzilla/attachment.cgi?id=48815
+---
+ libquadmath/configure            |  5 +++++
+ libquadmath/quadmath.h           | 13 ++++++++++---
+ libquadmath/strtod/strtoflt128.c |  3 +++
+ 3 files changed, 18 insertions(+), 3 deletions(-)
+
+diff --git a/libquadmath/configure b/libquadmath/configure
+index f82dd3d0d..bd9a6bba4 100755
+--- a/libquadmath/configure
++++ b/libquadmath/configure
+@@ -12693,6 +12693,11 @@ $as_echo "#define HAVE_FETESTEXCEPT 1" >>confdefs.h
+   fi
+ fi
+ 
++$as_echo "#if __aarch64__" >> confdefs.h
++$as_echo "    typedef long double __float128;" >> confdefs.h
++$as_echo "    #define __builtin_huge_valq() (__extension__ 0x1.0p32767Q)" >> confdefs.h
++$as_echo "#endif" >> confdefs.h
++
+ # Check for hidden visibility (copied from libssp).
+ saved_CFLAGS="$CFLAGS"
+ CFLAGS="$CFLAGS -Werror"
+diff --git a/libquadmath/quadmath.h b/libquadmath/quadmath.h
+index 81eb957d2..56071585a 100644
+--- a/libquadmath/quadmath.h
++++ b/libquadmath/quadmath.h
+@@ -27,6 +27,11 @@ Boston, MA 02110-1301, USA.  */
+ extern "C" {
+ #endif
+ 
++#if __aarch64__
++typedef long double __float128;
++#endif
++
++
+ /* Define the complex type corresponding to __float128
+    ("_Complex __float128" is not allowed) */
+ #if (!defined(_ARCH_PPC)) || defined(__LONG_DOUBLE_IEEE128__)
+@@ -159,11 +164,13 @@ extern int quadmath_snprintf (char *str, size_t size,
+ #define FLT128_MIN_10_EXP (-4931)
+ #define FLT128_MAX_10_EXP 4932
+ 
+-
+-#define HUGE_VALQ __builtin_huge_valq()
++#if __aarch64__
+ /* The following alternative is valid, but brings the warning:
+    (floating constant exceeds range of ‘__float128’)  */
+-/* #define HUGE_VALQ (__extension__ 0x1.0p32767Q) */
++   #define HUGE_VALQ (__extension__ 0x1.0p32767Q)
++#else
++   #define HUGE_VALQ __builtin_huge_valq()
++#endif
+ 
+ #define M_Eq		2.718281828459045235360287471352662498Q  /* e */
+ #define M_LOG2Eq	1.442695040888963407359924681001892137Q  /* log_2 e */
+diff --git a/libquadmath/strtod/strtoflt128.c b/libquadmath/strtod/strtoflt128.c
+index cf2da4f1a..dfe456304 100644
+--- a/libquadmath/strtod/strtoflt128.c
++++ b/libquadmath/strtod/strtoflt128.c
+@@ -18,6 +18,9 @@
+ 
+ /* The actual implementation for all floating point sizes is in strtod.c.
+    These macros tell it to produce the `__float128' version, `strtold'.  */
++#if __aarch64__
++typedef long double __float128;
++#endif
+ 
+ #define FLOAT		__float128
+ #define FLT		FLT128
+-- 
+2.25.1
+

@@ -184,6 +184,9 @@ export \
 	ZSTD_CFLAGS \
 	ZSTD_LIBS
 
+mkdir --parent "${build_directory}"
+rm --force --recursive "${toolchain_directory}"
+
 if ! [ -f "${gmp_tarball}" ]; then
 	curl \
 		--url 'https://mirrors.kernel.org/gnu/gmp/gmp-6.3.0.tar.xz' \
@@ -191,6 +194,7 @@ if ! [ -f "${gmp_tarball}" ]; then
 		--retry-all-errors \
 		--retry-delay '0' \
 		--retry-max-time '0' \
+		--show-error \
 		--location \
 		--silent \
 		--output "${gmp_tarball}"
@@ -210,6 +214,7 @@ if ! [ -f "${mpfr_tarball}" ]; then
 		--retry-all-errors \
 		--retry-delay '0' \
 		--retry-max-time '0' \
+		--show-error \
 		--location \
 		--silent \
 		--output "${mpfr_tarball}"
@@ -229,6 +234,7 @@ if ! [ -f "${mpc_tarball}" ]; then
 		--retry-all-errors \
 		--retry-delay '0' \
 		--retry-max-time '0' \
+		--show-error \
 		--location \
 		--silent \
 		--output "${mpc_tarball}"
@@ -248,6 +254,7 @@ if ! [ -f "${isl_tarball}" ]; then
 		--retry-all-errors \
 		--retry-delay '0' \
 		--retry-max-time '0' \
+		--show-error \
 		--location \
 		--silent \
 		--output "${isl_tarball}"
@@ -267,6 +274,7 @@ if ! [ -f "${binutils_tarball}" ]; then
 		--retry-all-errors \
 		--retry-delay '0' \
 		--retry-max-time '0' \
+		--show-error \
 		--location \
 		--silent \
 		--output "${binutils_tarball}"
@@ -295,6 +303,7 @@ if ! [ -f "${zlib_tarball}" ]; then
 		--retry-all-errors \
 		--retry-delay '0' \
 		--retry-max-time '0' \
+		--show-error \
 		--location \
 		--silent \
 		--output "${zlib_tarball}"
@@ -314,6 +323,7 @@ if ! [ -f "${zstd_tarball}" ]; then
 		--retry-all-errors \
 		--retry-delay '0' \
 		--retry-max-time '0' \
+		--show-error \
 		--location \
 		--silent \
 		--output "${zstd_tarball}"
@@ -331,6 +341,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 		--retry-all-errors \
 		--retry-delay '0' \
 		--retry-max-time '0' \
+		--show-error \
 		--location \
 		--silent \
 		--output "${gcc_tarball}"
@@ -359,6 +370,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0011-Revert-configure-Always-add-pre-installed-header-directories-to-search-path.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Revert-vect-Remove-type-from-misalignment-hook.patch"
+	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-AArch64-enable-libquadmath.patch"
 fi
 
 # Follow Debian's approach to remove hardcoded RPATHs from binaries
@@ -596,7 +608,7 @@ for target in "${targets[@]}"; do
 	
 	mv "${sysroot_directory}" "${toolchain_directory}/${triplet}"
 	
-	rm --force --recursive "${PWD}" &
+	rm --force --recursive "${PWD}"
 	
 	[ -d "${binutils_directory}/build" ] || mkdir "${binutils_directory}/build"
 	
