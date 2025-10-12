@@ -54,6 +54,41 @@ Currently, OBGGCC provides cross-compilers targeting 6 major Ubuntu releases and
 - `i386-unknown-linux-gnu`
 - `x86_64-unknown-linux-gnu`
 
+### Quick start
+
+First, start by [downloading the precompiled binaries for your platform](#releases). For reference, you can download the prebuilt binaries of the toolchain for Linux x86_64 with:
+
+```
+$ wget https://github.com/AmanoTeam/obggcc/releases/download/latest/x86_64-unknown-linux-gnu.tar.xz
+$ tar --extract --file=x86_64-unknown-linux-gnu.tar.xz
+```
+
+After unpacking the tarball, you will find the cross-compiler as well as wrapper scripts for targeting specific glibc versions inside the `obggcc/bin` directory:
+
+```
+$ ls obggcc/bin
+...
+x86_64-unknown-linux-gnu2.31-clang
+x86_64-unknown-linux-gnu2.31-clang++
+x86_64-unknown-linux-gnu2.31-g++
+x86_64-unknown-linux-gnu2.31-gcc
+...
+```
+
+The names of the binaries follow the standard GCC naming convention for cross-compilers, which is `<system><system_version>-<compiler>`. So, with this in mind, it is safe to assume that `x86_64-unknown-linux-gnu2.31-gcc` refers to "a GCC cross-compiler targeting binaries for Linux x86_64 with glibc 2.31".
+
+You can use it to compile C/C++ programs as follows:
+
+```
+# Compile C programs
+$ x86_64-unknown-linux-gnu2.31-gcc main.c -o main
+
+# Compile C++ programs
+$ x86_64-unknown-linux-gnu2.31-g++ main.c -o main
+```
+
+If you prefer, you can use Clang instead of GCC. Just make sure to replace the `gcc`/`g++` suffixes with `clang`/`clang++`.
+
 ## Cross-compilation
 
 ### CMake
@@ -531,6 +566,46 @@ done <<< "$(find '.' -type 'f' -name 'configure')"
 
 > [!NOTE]  
 > If you have already run the `./configure` script before applying the patch, make sure to run `make distclean` before re-running it, so that the changes take effect.
+
+## Building OBGGCC
+
+*Compiling OBGGCC from source is best supported on Linux. We recommend using a Debian/Ubuntu-based distribution for this.*
+
+Start by installing the dependencies with:
+
+```
+$ sudo apt-get install build-essential jq python3-minimal
+```
+
+Then, clone the repository with:
+
+```
+$ git clone https://github.com/AmanoTeam/obggcc
+$ cd obggcc
+$ git submodule update --init --depth=1
+```
+
+Build the project with:
+
+```
+$ ./build.sh
+```
+
+This will fetch the GCC sources and build a cross-compiler for all supported architectures.
+
+By default, it will install everything to `/var/tmp`, but you can customize the location by setting the `OBGGCC_BUILD_DIRECTORY` environment variable:
+
+```
+$ export OBGGCC_BUILD_DIRECTORY=path/to/directory
+$ ./build.sh
+```
+
+You can also customize the build parallelism with `OBGGCC_BUILD_PARALLEL_LEVEL`:
+
+```
+$ export OBGGCC_BUILD_PARALLEL_LEVEL=$(nproc)
+$ ./build.sh
+```
 
 ## Releases
 
