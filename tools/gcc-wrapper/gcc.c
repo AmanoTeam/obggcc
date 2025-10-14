@@ -34,6 +34,7 @@
 #include "obggcc.h"
 #include "query.h"
 #include "strsplit.h"
+#include "kargv.h"
 
 #if !defined(AUTO_PICK_LINKER)
 	#define AUTO_PICK_LINKER 1
@@ -172,6 +173,8 @@ static const char CLANG_OPT_F_NO_INTEGRATED_AS[] = "-fno-integrated-as";
 static const char CLANG_OPT_F_INTEGRATED_AS[] = "-fintegrated-as";
 static const char CLANG_OPT_F_SLP_VECTORIZE_AGGRESSIVE[] = "-fslp-vectorize-aggressive";
 static const char CLANG_OPT_F_USE_LD_LLD[] = "-fuse-ld=lld";
+static const char CLANG_OPT_F_LTO_FULL[] = "-flto=full";
+static const char CLANG_OPT_F_LTO_THIN[] = "-flto=thin";
 
 #define LTO_NONE 0x00
 #define LTO_FULL 0x01
@@ -1109,8 +1112,14 @@ static int clang_specific_remove(const char* const prev, const char* const cur) 
 		
 		size = strlen(name);
 		
-		if (name[0] == 'W' && strncmp(current, "Wno-", 4) == 0 && strcmp(name + 1, current + 4) == 0) {
-			goto end;
+		if (name[0] == 'W') {
+			if (strncmp(current, "Wno-", 4) == 0 && strcmp(name + 1, current + 4) == 0) {
+				goto end;
+			}
+			
+			if (strncmp(current, "Werror-", 7) == 0 && strcmp(name + 1, current + 7) == 0) {
+				goto end;
+			}
 		}
 		
 		if (strncmp(current, name, size) != 0) {
@@ -1140,8 +1149,7 @@ static int clang_specific_remove(const char* const prev, const char* const cur) 
 
 static int clang_specific_replace(
 	const char* const cur,
-	size_t* const kargc,
-	char** kargv
+	kargv_t* const xargv
 ) {
 	/*
 	Replace Clang-specific options with GCC equivalents, if any.
@@ -1149,7 +1157,6 @@ static int clang_specific_replace(
 	
 	int status = 0;
 	
-	size_t index = *kargc;
 	const char* current = cur;
 	
 	const biguint_t gcc_version = strtobui(GCC_MAJOR_VERSION, NULL, 10);
@@ -1169,35 +1176,33 @@ static int clang_specific_replace(
 			goto end;
 		}
 		
-		kargv[index++] = (char*) GCC_OPT_F_LTO_AUTO;
+		kargv_append(xargv, GCC_OPT_F_LTO_AUTO);
 		
 		if (strcmp(current, "auto") == 0 || strcmp(current, "full") == 0) {
 			/* Replace -flto={full,auto} with -flto=auto -flto-partition=none. */
-			kargv[index++] = (char*) GCC_OPT_F_LTO_PARTITION_NONE;
+			kargv_append(xargv, GCC_OPT_F_LTO_PARTITION_NONE);
 		} else {
 			/* Replace -flto=thin with -flto=auto -flto-partition=balanced. */
-			kargv[index++] = (char*) GCC_OPT_F_LTO_PARTITION_BALANCED;
+			kargv_append(xargv, GCC_OPT_F_LTO_PARTITION_BALANCED);
 		}
 		
 		status = 1;
 		goto end;
 	} else if (strcmp(current, CLANG_OPT_OZ) == 0 && gcc_version < 12) {
 		/* Replace -Oz with -Os. */
-		kargv[index++] = (char*) GCC_OPT_OS;
+		kargv_append(xargv, GCC_OPT_OS);
 		
 		status = 1;
 		goto end;
 	} else if (strcmp(current, CLANG_OPT_F_SLP_VECTORIZE_AGGRESSIVE) == 0) {
 		/* Replace -fslp-vectorize-aggressive with -ftree-vectorize. */
-		kargv[index++] = (char*) GCC_OPT_F_TREE_VECTORIZE;
+		kargv_append(xargv, GCC_OPT_F_TREE_VECTORIZE);
 		
 		status = 1;
 		goto end;
 	}
 	
 	end:;
-	
-	*kargc = index;
 	
 	return status;
 	
@@ -1472,7 +1477,6 @@ int main(int argc, char* argv[]) {
 	int hardcode_system_rpath = 0;
 	
 	size_t kargc = 0;
-	char** kargv = NULL;
 	char* linker = NULL;
 	
 	char* floating_point_unit = NULL;
@@ -1530,36 +1534,10 @@ int main(int argc, char* argv[]) {
 	free(file_name);
 	file_name = NULL;
 	
-	kargv = malloc(
-		sizeof(*argv) * (
-			argc + 
-			1 + /* -U__GNUC__ */
-			1 + /* -D__clang__ */
-			1 + /* -D__clang_major__ */
-			1 + /* -D__clang_minor__ */
-			1 + /* -D__clang_patchlevel__ */
-			1 + /* -flto-partition=<...> */
-			1 + /* -fuse-ld=<linker> */
-			1 + /* -static-libgcc */
-			1 + /* -static-libasan */
-			1 + /* -static-libtsan */
-			1 + /* -static-liblsan */
-			1 + /* -static-libubsan */
-			1 + /* -static-libhwasan */
-			1 + /* -mfpu=<value> */
-			1 + /* -msse<version> */
-			1 + /* -marm */
-			4 + /* -Xlinker -z -Xlinker pack-relative-relocs */
-			5 + /* -flto=auto -flto-compression-level=0 -flto-partition={none,balanced} -fno-fat-lto-objects -fdevirtualize-at-ltrans */
-			6 + /* -Xlinker -z -Xlinker origin -fPIC -pie (OpenBSD) */
-			1 /* NULL */
-		)
-	);
+	kargv_t xargv = {0};
+	kargv_t yargv = {0};
 	
-	if (kargv == NULL) {
-		err = ERR_MEM_ALLOC_FAILURE;
-		goto end;
-	}
+	kargv_t kargv_libdir = {0};
 	
 	for (index = 0; index < (size_t) argc; index++) {
 		cur = argv[index];
@@ -1595,13 +1573,23 @@ int main(int argc, char* argv[]) {
 			Since this is irrelevant to us—and may even cause conflicts with our own implementation—
 			strip these arguments out and avoid passing them down to the compiler.
 			*/
-			if (strstr(cur, NDK_CXX_STL_DIRECTORY) == NULL && strstr(cur, NDK_SYSROOT_INCLUDE_DIRECTORY) == NULL && strstr(cur, NDK_SYSROOT_LIBRARY_DIRECTORY) == NULL) {
-				goto next;
+			if (!(strstr(cur, NDK_CXX_STL_DIRECTORY) == NULL && strstr(cur, NDK_SYSROOT_INCLUDE_DIRECTORY) == NULL && strstr(cur, NDK_SYSROOT_LIBRARY_DIRECTORY) == NULL)) {
+				index += offset;
+				continue;
 			}
 			
-			index += offset;
-			
-			continue;
+			/*
+			* Push custom "-L" flags to the beginning of the command line so they
+			* can override the sysroot library directories.
+			*/
+			if (strcmp(pattern, GCC_OPT_LIBDIR) == 0) {
+				kargv_append(&kargv_libdir, GCC_OPT_LIBDIR);
+				kargv_append(&kargv_libdir, cur);
+				
+				index += offset;
+				
+				continue;
+			}
 		} else if (strncmp(cur, GCC_OPT_D, strlen(GCC_OPT_D)) == 0) {
 			size = strlen(GCC_OPT_D);
 			offset = 0;
@@ -1813,6 +1801,10 @@ int main(int argc, char* argv[]) {
 		
 		next:;
 		
+		if (index == 0) {
+			continue;
+		}
+		
 		cur = argv[index];
 		
 		#if !defined(WCLANG)
@@ -1825,7 +1817,8 @@ int main(int argc, char* argv[]) {
 				
 				if (prev != NULL && strcmp(prev, GCC_OPT_XLINKER) == 0) {
 					prev = NULL;
-					kargv[--kargc] = (char*) prev;
+					
+					xargv.items[--xargv.offset] = prev;
 					
 					if (status == CLANG_SPECIFIC_REMOVE_NXT) {
 						index++;
@@ -1839,7 +1832,7 @@ int main(int argc, char* argv[]) {
 		prev = cur;
 		
 		#if !defined(WCLANG)
-			if (clang_specific_replace(cur, &kargc, kargv)) {
+			if (clang_specific_replace(cur, &xargv)) {
 				continue;
 			}
 			
@@ -1856,7 +1849,7 @@ int main(int argc, char* argv[]) {
 			}
 		#endif
 		
-		kargv[kargc++] = (char*) cur;
+		kargv_append(&xargv, cur);
 	}
 	
 	if (linking) {
@@ -1864,8 +1857,8 @@ int main(int argc, char* argv[]) {
 		* If none of the -fsyntax-only/-c/-M/-MM/-E/-S flags are passed,
 		* GCC will automatically assume linking behavior when a valid input file is provided.
 		*/
-		for (index = 1; index < kargc; index++) {
-			cur = kargv[index];
+		for (index = 1; index < kargv_getoffset(&xargv); index++) {
+			cur = kargv_get(&xargv, index);
 			linking = (strcmp(cur, "-") == 0 || file_exists(cur) == 1);
 			
 			if (linking) {
@@ -1929,11 +1922,11 @@ int main(int argc, char* argv[]) {
 		This spoofing is only applied during the initial C/C++ compiler detection.
 		*/
 		if (known_clang(override_cc) && cmake_init) {
-			kargv[kargc++] = (char*) GCC_OPT_U_GNUC;
-			kargv[kargc++] = (char*) GCC_OPT_D_CLANG;
-			kargv[kargc++] = (char*) GCC_OPT_D_CLANG_MAJOR;
-			kargv[kargc++] = (char*) GCC_OPT_D_CLANG_MINOR;
-			kargv[kargc++] = (char*) GCC_OPT_D_CLANG_PATCHLEVEL;
+			kargv_append(&xargv, GCC_OPT_U_GNUC);
+			kargv_append(&xargv, GCC_OPT_D_CLANG);
+			kargv_append(&xargv, GCC_OPT_D_CLANG_MAJOR);
+			kargv_append(&xargv, GCC_OPT_D_CLANG_MINOR);
+			kargv_append(&xargv, GCC_OPT_D_CLANG_PATCHLEVEL);
 		}
 	}
 	
@@ -1987,7 +1980,7 @@ int main(int argc, char* argv[]) {
 		we should statically link with libgcc as well.
 		*/
 		if ((wants_libcxx || wants_libitm || wants_libgomp) && !wants_static_libgcc) {
-			kargv[kargc++] = (char*) GCC_OPT_STATIC_LIBGCC;
+			kargv_append(&xargv, GCC_OPT_STATIC_LIBGCC);
 		}
 		
 		/*
@@ -2000,11 +1993,11 @@ int main(int argc, char* argv[]) {
 		...
 		*/
 		if (address_sanitizer) {
-			kargv[kargc++] = (char*) GCC_OPT_STATIC_LIBASAN;
-			kargv[kargc++] = (char*) GCC_OPT_STATIC_LIBTSAN;
-			kargv[kargc++] = (char*) GCC_OPT_STATIC_LIBLSAN;
-			kargv[kargc++] = (char*) GCC_OPT_STATIC_LIBUBSAN;
-			kargv[kargc++] = (char*) GCC_OPT_STATIC_LIBHWASAN;
+			kargv_append(&xargv, GCC_OPT_STATIC_LIBASAN);
+			kargv_append(&xargv, GCC_OPT_STATIC_LIBTSAN);
+			kargv_append(&xargv, GCC_OPT_STATIC_LIBLSAN);
+			kargv_append(&xargv, GCC_OPT_STATIC_LIBUBSAN);
+			kargv_append(&xargv, GCC_OPT_STATIC_LIBHWASAN);
 		}
 	}
 	
@@ -2097,15 +2090,15 @@ int main(int argc, char* argv[]) {
 		strcpy(floating_point_unit, GCC_OPT_M_FPU);
 		strcat(floating_point_unit, GCC_FPU_NEON);
 		
-		kargv[kargc++] = floating_point_unit;
+		kargv_append(&xargv, floating_point_unit);
 	}
 	
 	if (wants_simd && (cur = get_simd(triplet)) != NULL) {
-		kargv[kargc++] = (char*) cur;
+		kargv_append(&xargv, cur);
 	}
 	
 	if (wants_arm_mode && (arch == ARCH_SPEC_ARM && bitness == ARCH_ABI_32)) {
-		kargv[kargc++] = (char*) GCC_OPT_M_ARM;
+		kargv_append(&xargv, GCC_OPT_M_ARM);
 	}
 	
 	#if AUTO_PICK_LINKER && !defined(WCLANG)
@@ -2121,31 +2114,26 @@ int main(int argc, char* argv[]) {
 			strcpy(linker, GCC_OPT_F_USE_LD);
 			strcat(linker, cur);
 			
-			kargv[kargc++] = linker;
+			kargv_append(&xargv, linker);
 		}
 	#endif
 	
 	#if defined(ATAR) && defined(WCLANG)
 		/* GCC already uses these options by default, but Clang doesn't. */
 		if (linking) {
-			kargv[kargc++] = (char*) GCC_OPT_XLINKER;
-			kargv[kargc++] = (char*) LD_OPT_Z;
-			kargv[kargc++] = (char*) GCC_OPT_XLINKER;
-			kargv[kargc++] = (char*) LD_OPT_ORIGIN;
+			kargv_append(&xargv, GCC_OPT_XLINKER);
+			kargv_append(&xargv, LD_OPT_Z);
+			kargv_append(&xargv, GCC_OPT_XLINKER);
+			kargv_append(&xargv, LD_OPT_ORIGIN);
 		}
 		
 		if (!linking) {
-			kargv[kargc++] = (char*) GCC_OPT_F_PIC;
+			kargv_append(&xargv, GCC_OPT_F_PIC);
 		}
 		
 		if (linking && !linking_shared) {
-			kargv[kargc++] = (char*) GCC_OPT_PIE;
+			kargv_append(&xargv, GCC_OPT_PIE);
 		}
-	#endif
-	
-	#if defined(OBGGCC)
-		/* Atomics are not natively supported on SPARC, so we need to rely on -latomic. */
-		require_atomic_library = strcmp(triplet, "sparc-unknown-linux-gnu") == 0;
 	#endif
 	
 	non_prefixed_triplet = malloc(strlen(triplet) + 1);
@@ -2292,10 +2280,10 @@ int main(int argc, char* argv[]) {
 	*/
 	if (linking && target_supports_relr(triplet, override_linker, target_version)) {
 		if (override_linker == NULL || strcmp(override_linker, "bfd") == 0) {
-			kargv[kargc++] = (char*) GCC_OPT_XLINKER;
-			kargv[kargc++] = (char*) LD_OPT_Z;
-			kargv[kargc++] = (char*) GCC_OPT_XLINKER;
-			kargv[kargc++] = (char*) LD_OPT_PACK_RELATIVE_RELOCS;
+			kargv_append(&xargv, GCC_OPT_XLINKER);
+			kargv_append(&xargv, LD_OPT_Z);
+			kargv_append(&xargv, GCC_OPT_XLINKER);
+			kargv_append(&xargv, LD_OPT_PACK_RELATIVE_RELOCS);
 		} else if (strcmp(override_linker, "mold") == 0 || strcmp(override_linker, "lld") == 0) {
 			#if defined(OBGGCC)
 				/*
@@ -2313,30 +2301,35 @@ int main(int argc, char* argv[]) {
 				ld.lld: error: unknown -z value: pack-relative-relocs
 				collect2: error: ld returned 1 exit status
 				*/
-				kargv[kargc++] = (char*) GCC_OPT_XLINKER;
-				kargv[kargc++] = (char*) LD_OPT_Z;
-				kargv[kargc++] = (char*) GCC_OPT_XLINKER;
-				kargv[kargc++] = (char*) LD_OPT_PACK_RELATIVE_RELOCS;
+				kargv_append(&xargv, GCC_OPT_XLINKER);
+				kargv_append(&xargv, LD_OPT_Z);
+				kargv_append(&xargv, GCC_OPT_XLINKER);
+				kargv_append(&xargv, LD_OPT_PACK_RELATIVE_RELOCS);
 			#else
 				/*
 				Everything else should work with --pack-dyn-relocs.
 				*/
-				kargv[kargc++] = (char*) GCC_OPT_XLINKER;
-				kargv[kargc++] = (char*) LLD_OPT_PACK_DYN_RELOCS;
+				kargv_append(&xargv, GCC_OPT_XLINKER);
+				kargv_append(&xargv, LLD_OPT_PACK_DYN_RELOCS);
 			#endif
 		}
 	}
 	
 	if (wants_lto != LTO_NONE) {
-		kargv[kargc++] = (char*) GCC_OPT_F_LTO_AUTO;
-		kargv[kargc++] = (char*) GCC_OPT_F_NO_FAT_LTO_OBJECTS;
-		kargv[kargc++] = (char*) GCC_OPT_F_LTO_COMPRESSION_LEVEL_ZERO;
-		
-		kargv[kargc++] = (char*) ((wants_lto == LTO_FULL) ? GCC_OPT_F_LTO_PARTITION_NONE : GCC_OPT_F_LTO_PARTITION_BALANCED);
-		
-		if (wants_lto == LTO_FULL) {
-			kargv[kargc++] = (char*) GCC_OPT_F_DEVIRTUALIZE_AT_LTRANS;
-		}
+		#if defined(WCLANG)
+			kargv_append(&xargv, ((wants_lto == LTO_FULL) ? CLANG_OPT_F_LTO_FULL : CLANG_OPT_F_LTO_THIN));
+			kargv_append(&xargv, GCC_OPT_F_NO_FAT_LTO_OBJECTS);
+		#else
+			kargv_append(&xargv, GCC_OPT_F_LTO_AUTO);
+			kargv_append(&xargv, GCC_OPT_F_NO_FAT_LTO_OBJECTS);
+			kargv_append(&xargv, GCC_OPT_F_LTO_COMPRESSION_LEVEL_ZERO);
+			
+			kargv_append(&xargv, ((wants_lto == LTO_FULL) ? GCC_OPT_F_LTO_PARTITION_NONE : GCC_OPT_F_LTO_PARTITION_BALANCED));
+			
+			if (wants_lto == LTO_FULL) {
+				kargv_append(&xargv, GCC_OPT_F_DEVIRTUALIZE_AT_LTRANS);
+			}
+		#endif
 	}
 	
 	#if defined(OBGGCC)
@@ -2398,64 +2391,7 @@ int main(int argc, char* argv[]) {
 	strcat(sysroot_directory, triplet);
 	strcat(sysroot_directory, libc_version);
 	
-	kargv[kargc++] = NULL;
-	
-	size = kargc + 13 + (size_t) wants_librt;
-	
-	#if defined(WCLANG)
-		size += 2; /* -target <triplet> */
-		size += 1; /* -fuse-ld=lld */
-	#endif
-	
-	size += 2; /* -B <directory> */
-	size += 2; /* -L <sysroot/lib/ldscripts> */
-	
-	if (wants_system_libraries) {
-		size += (sizeof(SYSTEM_LIBRARY_PATH) / sizeof(*SYSTEM_LIBRARY_PATH)) * 6;
-		size += 8;
-		
-		if (hardcode_system_rpath) {
-			size += (sizeof(SYSTEM_LIBRARY_PATH) / sizeof(*SYSTEM_LIBRARY_PATH)) * 4;
-		}
-	}
-	
-	if (wants_nz) {
-		size += (sizeof(SYSTEM_LIBRARY_PATH) / sizeof(*SYSTEM_LIBRARY_PATH)) * 6;
-		size += 8;
-	}
-	
-	if (wants_builtin_loader) {
-		size += 8;
-		
-		if (wants_nz) {
-			size += (sizeof(SYSTEM_LIBRARY_PATH) / sizeof(*SYSTEM_LIBRARY_PATH)) * 4;
-		}
-	}
-	
-	if (wants_runtime_rpath) {
-		size += 4;
-	}
-	
-	if (address_sanitizer) {
-		size += 2;
-	}
-	
-	#if defined(OBGGCC)
-		if (require_atomic_library) {
-			size += 1;
-		}
-	#endif
-	
-	#if defined(PINO)
-		size += 1; /* -mandroid-version-min=<version> */
-	#endif
-	
-	args = malloc(size * sizeof(char*));
-	
-	if (args == NULL) {
-		err = ERR_MEM_ALLOC_FAILURE;
-		goto end;
-	}
+	kargv_append(&xargv, NULL);
 	
 	sysroot_include_directory = malloc(strlen(sysroot_directory) + strlen(INCLUDE_DIR) + 1);
 	
@@ -2603,12 +2539,12 @@ int main(int argc, char* argv[]) {
 	
 	offset = 0;
 	
-	args[offset++] = executable;
-	args[offset++] = arg;
+	kargv_append(&yargv, executable);
+	kargv_append(&yargv, arg);
 	
 	#if defined(WCLANG)
-		args[offset++] = (char*) (CLANG_OPT_TARGET + 1);
-		args[offset++] = triplet;
+		kargv_append(&yargv, (CLANG_OPT_TARGET + 1));
+		kargv_append(&yargv, triplet);
 		
 		if (linking) {
 			/* Try LLD first, fall back to the built-in linker if not available. */
@@ -2650,54 +2586,51 @@ int main(int argc, char* argv[]) {
 			
 			free(file_name);
 			
-			args[offset++] = linker;
+			kargv_append(&yargv, linker);
 		}
 	#endif
 	
 	#if !defined(WCLANG)
-		args[offset++] = (char*) GCC_OPT_NOSTDINC;
+		kargv_append(&yargv, GCC_OPT_NOSTDINC);
 	#endif
 	
 	if (strcmp(cc, GPP) == 0 || strcmp(cc, CPP) == 0 || strcmp(cc, CLANGPP) == 0) {
-		args[offset++] = (char*) GCC_OPT_ISYSTEM;
-		args[offset++] = gpp_include_directory;
+		kargv_append(&yargv, GCC_OPT_ISYSTEM);
+		kargv_append(&yargv, gpp_include_directory);
 		
 		#if !defined(PINO)
-			args[offset++] = (char*) GCC_OPT_ISYSTEM;
-			args[offset++] = gpp_builtins_include_directory;
+			kargv_append(&yargv, GCC_OPT_ISYSTEM);
+			kargv_append(&yargv, gpp_builtins_include_directory);
 		#endif
 	}
 	
-	args[offset++] = (char*) GCC_OPT_ISYSTEM;
-	args[offset++] = gcc_include_directory;
-	args[offset++] = (char*) GCC_OPT_ISYSTEM;
-	args[offset++] = sysroot_include_directory;
+	kargv_append(&yargv, GCC_OPT_ISYSTEM);
+	kargv_append(&yargv, gcc_include_directory);
+	kargv_append(&yargv, GCC_OPT_ISYSTEM);
+	kargv_append(&yargv, sysroot_include_directory);
 	
 	if (linking) {
-		args[offset++] = (char*) GCC_OPT_LIBDIR;
-		args[offset++] = sysroot_ldscripts_directory;
+		kargv_merge(&yargv, &kargv_libdir);
 		
-		args[offset++] = (char*) GCC_OPT_LIBDIR;
-		args[offset++] = sysroot_library_directory;
+		kargv_append(&yargv, GCC_OPT_LIBDIR);
+		kargv_append(&yargv, sysroot_ldscripts_directory);
 		
-		args[offset++] = (char*) GCC_OPT_B;
-		args[offset++] = sysroot_library_directory;
+		kargv_append(&yargv, GCC_OPT_LIBDIR);
+		kargv_append(&yargv, sysroot_library_directory);
+		
+		kargv_append(&yargv, GCC_OPT_B);
+		kargv_append(&yargv, sysroot_library_directory);
 		
 		#if defined(OBGGCC)
 			if (wants_librt && !nodefaultlibs) {
-				args[offset++] = (char*) GCC_OPT_L_RT;
-			}
-			
-			/* TODO: apply this patch instead: https://gitlab.alpinelinux.org/alpine/aports/-/blob/4d8f399a49555dae872efd56251c066d21f428a0/main/gcc/0029-configure-Add-enable-autolink-libatomic-use-in-LINK_.patch */
-			if (require_atomic_library && !nodefaultlibs) {
-				args[offset++] = (char*) GCC_OPT_L_ATOMIC;
+				kargv_append(&yargv, GCC_OPT_L_RT);
 			}
 		#endif
 	}
 	
 	if (wants_nz) {
-		args[offset++] = (char*) GCC_OPT_ISYSTEM;
-		args[offset++] = sysroot_include_missing_directory;
+		kargv_append(&yargv, GCC_OPT_ISYSTEM);
+		kargv_append(&yargv, sysroot_include_missing_directory);
 		
 		directory = malloc(strlen(nz_sysroot_directory) + strlen(SYSTEM_INCLUDE_PATH) + 1);
 		
@@ -2709,8 +2642,8 @@ int main(int argc, char* argv[]) {
 		strcpy(directory, nz_sysroot_directory);
 		strcat(directory, SYSTEM_INCLUDE_PATH);
 		
-		args[offset++] = (char*) GCC_OPT_ISYSTEM;
-		args[offset++] = directory;
+		kargv_append(&yargv, GCC_OPT_ISYSTEM);
+		kargv_append(&yargv, directory);
 		
 		directory = malloc(strlen(nz_sysroot_directory) + strlen(SYSTEM_INCLUDE_PATH) + strlen(PATHSEP_S) + strlen(non_prefixed_triplet) + 1);
 		
@@ -2724,12 +2657,12 @@ int main(int argc, char* argv[]) {
 		strcat(directory, PATHSEP_S);
 		strcat(directory, non_prefixed_triplet);
 		
-		args[offset++] = (char*) GCC_OPT_ISYSTEM;
-		args[offset++] = directory;
+		kargv_append(&yargv, GCC_OPT_ISYSTEM);
+		kargv_append(&yargv, directory);
 		
 		if (linking) {
-			args[offset++] = (char*) GCC_OPT_XLINKER;
-			args[offset++] = (char*) LD_OPT_UNRESOLVED_SYMBOLS;
+			kargv_append(&yargv, GCC_OPT_XLINKER);
+			kargv_append(&yargv, LD_OPT_UNRESOLVED_SYMBOLS);
 			
 			for (index = 0; index < sizeof(SYSTEM_LIBRARY_PATH) / sizeof(*SYSTEM_LIBRARY_PATH); index++) {
 				cur = SYSTEM_LIBRARY_PATH[index];
@@ -2744,22 +2677,22 @@ int main(int argc, char* argv[]) {
 				strcpy(directory, nz_sysroot_directory);
 				strcat(directory, cur);
 				
-				args[offset++] = (char*) GCC_OPT_LIBDIR;
-				args[offset++] = (char*) directory;
+				kargv_append(&yargv, GCC_OPT_LIBDIR);
+				kargv_append(&yargv, directory);
 				
-				args[offset++] = (char*) GCC_OPT_XLINKER;
-				args[offset++] = (char*) LD_OPT_RPATH_LINK;
+				kargv_append(&yargv, GCC_OPT_XLINKER);
+				kargv_append(&yargv, LD_OPT_RPATH_LINK);
 				
-				args[offset++] = (char*) GCC_OPT_XLINKER;
-				args[offset++] = (char*) directory;
+				kargv_append(&yargv, GCC_OPT_XLINKER);
+				kargv_append(&yargv, directory);
 			}
 		}
 	}
 	
 	if (wants_system_libraries) {
 		if (host_version < target_version && directory_exists(sysroot_include_missing_directory) == 1) {
-			args[offset++] = (char*) GCC_OPT_ISYSTEM;
-			args[offset++] = sysroot_include_missing_directory;
+			kargv_append(&yargv, GCC_OPT_ISYSTEM);
+			kargv_append(&yargv, sysroot_include_missing_directory);
 		}
 		
 		/* <prefix>/usr/include */
@@ -2779,8 +2712,8 @@ int main(int argc, char* argv[]) {
 		strcat(directory, SYSTEM_INCLUDE_PATH);
 		
 		if (directory_exists(directory) == 1) {
-			args[offset++] = (char*) GCC_OPT_ISYSTEM;
-			args[offset++] = (char*) directory;
+			kargv_append(&yargv, GCC_OPT_ISYSTEM);
+			kargv_append(&yargv, directory);
 		}
 		
 		/* <prefix>/usr/include/<triplet> */
@@ -2802,8 +2735,8 @@ int main(int argc, char* argv[]) {
 		strcat(directory, non_prefixed_triplet);
 		
 		if (directory_exists(directory) == 1) {
-			args[offset++] = (char*) GCC_OPT_ISYSTEM;
-			args[offset++] = directory;
+			kargv_append(&yargv, GCC_OPT_ISYSTEM);
+			kargv_append(&yargv, directory);
 		}
 		
 		if (linking) {
@@ -2811,8 +2744,8 @@ int main(int argc, char* argv[]) {
 				/*
 				* Setting this flag is only useful when the host has a system/libc version lower than the target system.
 				*/
-				args[offset++] = (char*) GCC_OPT_XLINKER;
-				args[offset++] = (char*) LD_OPT_UNRESOLVED_SYMBOLS;
+				kargv_append(&yargv, GCC_OPT_XLINKER);
+				kargv_append(&yargv, LD_OPT_UNRESOLVED_SYMBOLS);
 			}
 			
 			for (index = 0; index < sizeof(SYSTEM_LIBRARY_PATH) / sizeof(*SYSTEM_LIBRARY_PATH); index++) {
@@ -2837,14 +2770,14 @@ int main(int argc, char* argv[]) {
 					continue;
 				}
 				
-				args[offset++] = (char*) GCC_OPT_LIBDIR;
-				args[offset++] = (char*) directory;
+				kargv_append(&yargv, GCC_OPT_LIBDIR);
+				kargv_append(&yargv, directory);
 				
-				args[offset++] = (char*) GCC_OPT_XLINKER;
-				args[offset++] = (char*) LD_OPT_RPATH_LINK;
+				kargv_append(&yargv, GCC_OPT_XLINKER);
+				kargv_append(&yargv, LD_OPT_RPATH_LINK);
 				
-				args[offset++] = (char*) GCC_OPT_XLINKER;
-				args[offset++] = (char*) directory;
+				kargv_append(&yargv, GCC_OPT_XLINKER);
+				kargv_append(&yargv, directory);
 				
 				/*
 				* Hardcode the system library directories during linkage.
@@ -2854,28 +2787,28 @@ int main(int argc, char* argv[]) {
 				* - Termux running on Android 7.0 (API level 24) or higher.
 				*/
 				if (hardcode_system_rpath) {
-					args[offset++] = (char*) GCC_OPT_XLINKER;
-					args[offset++] = (char*) LD_OPT_RPATH;
+					kargv_append(&yargv, GCC_OPT_XLINKER);
+					kargv_append(&yargv, LD_OPT_RPATH);
 					
-					args[offset++] = (char*) GCC_OPT_XLINKER;
-					args[offset++] = (char*) directory;
+					kargv_append(&yargv, GCC_OPT_XLINKER);
+					kargv_append(&yargv, directory);
 				}
 			}
 		}
 	}
 	
 	if (linking && wants_builtin_loader) {
-		args[offset++] = (char*) GCC_OPT_XLINKER;
-		args[offset++] = (char*) LD_OPT_DYNAMIC_LINKER;
+		kargv_append(&yargv, GCC_OPT_XLINKER);
+		kargv_append(&yargv, LD_OPT_DYNAMIC_LINKER);
 		
-		args[offset++] = (char*) GCC_OPT_XLINKER;
-		args[offset++] = sysroot_dynamic_linker;
+		kargv_append(&yargv, GCC_OPT_XLINKER);
+		kargv_append(&yargv, sysroot_dynamic_linker);
 		
-		args[offset++] = (char*) GCC_OPT_XLINKER;
-		args[offset++] = (char*) LD_OPT_RPATH;
+		kargv_append(&yargv, GCC_OPT_XLINKER);
+		kargv_append(&yargv, LD_OPT_RPATH);
 		
-		args[offset++] = (char*) GCC_OPT_XLINKER;
-		args[offset++] = sysroot_library_directory;
+		kargv_append(&yargv, GCC_OPT_XLINKER);
+		kargv_append(&yargv, sysroot_library_directory);
 		
 		for (index = 0; wants_nz && index < sizeof(SYSTEM_LIBRARY_PATH) / sizeof(*SYSTEM_LIBRARY_PATH); index++) {
 			cur = SYSTEM_LIBRARY_PATH[index];
@@ -2890,26 +2823,26 @@ int main(int argc, char* argv[]) {
 			strcpy(directory, nz_sysroot_directory);
 			strcat(directory, cur);
 			
-			args[offset++] = (char*) GCC_OPT_XLINKER;
-			args[offset++] = (char*) LD_OPT_RPATH;
+			kargv_append(&yargv, GCC_OPT_XLINKER);
+			kargv_append(&yargv, LD_OPT_RPATH);
 			
-			args[offset++] = (char*) GCC_OPT_XLINKER;
-			args[offset++] = (char*) directory;
+			kargv_append(&yargv, GCC_OPT_XLINKER);
+			kargv_append(&yargv, directory);
 		}
 	}
 	
 	if (linking && wants_runtime_rpath) {
-		args[offset++] = (char*) GCC_OPT_XLINKER;
-		args[offset++] = (char*) LD_OPT_RPATH;
+		kargv_append(&yargv, GCC_OPT_XLINKER);
+		kargv_append(&yargv, LD_OPT_RPATH);
 		
-		args[offset++] = (char*) GCC_OPT_XLINKER;
-		args[offset++] = sysroot_runtime_directory;
+		kargv_append(&yargv, GCC_OPT_XLINKER);
+		kargv_append(&yargv, sysroot_runtime_directory);
 	}
 	
 	#if defined(OBGGCC)
 		if (linking && address_sanitizer) {
-			args[offset++] = (char*) GCC_OPT_XLINKER;
-			args[offset++] = (char*) LD_OPT_UNRESOLVED_SYMBOLS;
+			kargv_append(&yargv, GCC_OPT_XLINKER);
+			kargv_append(&yargv, LD_OPT_UNRESOLVED_SYMBOLS);
 		}
 	#endif
 	
@@ -2925,10 +2858,12 @@ int main(int argc, char* argv[]) {
 		strcpy(android_version_min, GCC_M_ANDROID_VERSION_MIN);
 		strcat(android_version_min, android_current_sdk_version);
 		
-		args[offset++] = android_version_min;
+		kargv_append(&yargv, android_version_min);
 	#endif
 	
-	memcpy(&args[offset], &kargv[1], kargc * sizeof(*kargv));
+	kargv_merge(&yargv, &xargv);
+	
+	args = kargv_getargs(&yargv);
 	
 	if (verbose) {
 		obggcc_print_args(args);
@@ -3051,14 +2986,14 @@ int main(int argc, char* argv[]) {
 	
 	end:;
 	
+	kargv_free(&yargv);
+	
 	free(triplet);
 	free(libc_version);
 	free(executable);
 	free(sysroot_directory);
 	free(app_filename);
 	free(output_directory);
-	free(args);
-	free(kargv);
 	free(arg);
 	free(linker);
 	

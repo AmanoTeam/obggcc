@@ -19,6 +19,7 @@ SOURCES = biggestint.c \
 	urldecode.c \
 	urlencode.c \
 	walkdir.c \
+	kargv.c \
 	fs/absoluteness.c \
 	fs/basename.c \
 	fs/cp.c \
@@ -36,9 +37,9 @@ GCC_SOURCES = $(SOURCES) gcc.c
 STRIP_SOURCES = $(SOURCES) binutils.c
 
 gcc:
-	$(CC) -D $(FLAVOR) -I $(SOURCE_DIRECTORY) $(CFLAGS) $(LDFLAGS) $(CPPFLAGS) $(GCC_SOURCES) -o $(PREFIX)/gcc-wrapper
+	$(CC) -Wno-discarded-qualifiers -D $(FLAVOR) -I $(SOURCE_DIRECTORY) $(CFLAGS) $(LDFLAGS) $(CPPFLAGS) $(GCC_SOURCES) -o $(PREFIX)/gcc-wrapper
 
 binutils:
-	$(CC) -D $(FLAVOR) -I $(SOURCE_DIRECTORY) $(CFLAGS) $(LDFLAGS) $(CPPFLAGS) $(STRIP_SOURCES) -o $(PREFIX)/binutils-wrapper
+	$(CC) -Wno-discarded-qualifiers -D $(FLAVOR) -I $(SOURCE_DIRECTORY) $(CFLAGS) $(LDFLAGS) $(CPPFLAGS) $(STRIP_SOURCES) -o $(PREFIX)/binutils-wrapper
 
 all: gcc binutils
