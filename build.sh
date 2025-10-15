@@ -191,7 +191,7 @@ export \
 mkdir --parent "${build_directory}"
 rm --force --recursive "${toolchain_directory}"
 
-export PATH="${build_directory}/bin:${PATH}"
+export PATH="${build_directory}:${build_directory}/bin:${PATH}"
 
 cd "${cmake_directory}"
 
@@ -203,18 +203,25 @@ CC= CXX= \
 make all --jobs="${max_jobs}"
 make install
 
+cmake --version
+
 CC= CXX= \
 	cmake \
 	-S "${curl_directory}" \
 	-B "${curl_directory}/build" \
-	-DCMAKE_INSTALL_PREFIX="${build_directory}" \
-	-DCMAKE_INSTALL_RPATH='$ORIGIN/../lib' \
-	-DCURL_USE_LIBPSL=OFF
+	-D CMAKE_INSTALL_PREFIX="${build_directory}" \
+	-D CMAKE_INSTALL_RPATH='$ORIGIN/../lib' \
+	-D CMAKE_C_FLAGS='-Xlinker --disable-new-dtags' \
+	-D CURL_USE_LIBPSL=OFF \
+	-D CURL_ENABLE_SSL=ON \
+	-D CURL_USE_OPENSSL=ON
 
 make \
 	-C "${curl_directory}/build" \
 	--jobs="${max_jobs}" \
 	install
+
+curl --version
 
 if ! [ -f "${gmp_tarball}" ]; then
 	curl \
@@ -566,8 +573,6 @@ cmake --install "${PWD}" --strip
 
 # We prefer symbolic links over hard links.
 cp "${workdir}/tools/ln.sh" "${build_directory}/ln"
-
-export PATH="${build_directory}:${PATH}"
 
 if [[ "${host}" = 'arm'*'-android'* ]] || [[ "${host}" = 'i686-'*'-android'* ]] || [[ "${host}" = 'mipsel-'*'-android'* ]]; then
 	export \
