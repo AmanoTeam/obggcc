@@ -955,6 +955,13 @@ if ! (( native )) && [[ "${host}" != *'-darwin'* ]]; then
 		
 		cp "${name}" "${toolchain_directory}/lib/${soname}"
 	fi
+	
+	# libatomic
+	declare name=$(realpath $("${cc}" --print-file-name='libatomic.so'))
+	
+	declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
+	
+	cp "${name}" "${toolchain_directory}/lib/${soname}"
 fi
 
 while read item; do

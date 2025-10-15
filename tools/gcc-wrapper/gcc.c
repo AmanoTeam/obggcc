@@ -1818,7 +1818,7 @@ int main(int argc, char* argv[]) {
 				if (prev != NULL && strcmp(prev, GCC_OPT_XLINKER) == 0) {
 					prev = NULL;
 					
-					xargv.items[--xargv.offset] = prev;
+					xargv.items[--xargv.offset] = NULL;
 					
 					if (status == CLANG_SPECIFIC_REMOVE_NXT) {
 						index++;
