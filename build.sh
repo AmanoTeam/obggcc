@@ -188,7 +188,7 @@ export \
 	ZSTD_CFLAGS \
 	ZSTD_LIBS
 
-rm --force --recursive "${build_directory}"
+rm --force --recursive "${build_directory}/"*
 mkdir --parent "${build_directory}"
 
 export PATH="${build_directory}:${build_directory}/bin:${PATH}"

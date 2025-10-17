@@ -155,6 +155,7 @@ static const char GCC_OPT_WNO_ERROR[] = "-Wno-error";
 static const char GCC_OPT_F_TREE_VECTORIZE[] = "-ftree-vectorize";
 
 static const char GCC_M_ANDROID_VERSION_MIN[] = "-mandroid-version-min=";
+static const char GCC_M_ANDROID_WEAK_SYMBOLS[] = "-mandroid-weak-symbols";
 
 static const char CLANG_OPT_OZ[] = "-Oz";
 static const char CLANG_OPT_ICF[] = "--icf";
@@ -1468,7 +1469,7 @@ int main(int argc, char* argv[]) {
 	long int target_version = 0;
 	
 	#if defined(PINO)
-		int android_weak_api_defs = 0;
+		int android_weak_symbols = 0;
 		
 		char* android_version_min = NULL;
 		char* android_current_sdk_version = NULL;
@@ -1607,8 +1608,8 @@ int main(int argc, char* argv[]) {
 			
 			#if defined(PINO)
 				if (strcmp(cur, M_ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK) == 0) {
-					android_weak_api_defs = 1;
-					goto next;
+					android_weak_symbols = 1;
+					continue;
 				}
 			#endif
 			
@@ -1797,6 +1798,9 @@ int main(int argc, char* argv[]) {
 			Since that seems to be a completely useless call and has nothing to do with the compilation step, we will just ignore it.
 			*/
 			goto end;
+		} else if (strcmp(cur, GCC_M_ANDROID_WEAK_SYMBOLS) == 0) {
+			android_weak_symbols = 1;
+			continue;
 		}
 		
 		next:;
@@ -1857,7 +1861,7 @@ int main(int argc, char* argv[]) {
 		* If none of the -fsyntax-only/-c/-M/-MM/-E/-S flags are passed,
 		* GCC will automatically assume linking behavior when a valid input file is provided.
 		*/
-		for (index = 1; index < kargv_getoffset(&xargv); index++) {
+		for (index = 0; index < kargv_getoffset(&xargv); index++) {
 			cur = kargv_get(&xargv, index);
 			linking = (strcmp(cur, "-") == 0 || file_exists(cur) == 1);
 			
@@ -2248,7 +2252,7 @@ int main(int argc, char* argv[]) {
 		
 		- https://developer.android.com/ndk/guides/using-newer-apis
 		*/
-		if (android_weak_api_defs) {
+		if (android_weak_symbols) {
 			cur = get_max_libc_version(triplet);
 			
 			libc_version = malloc(strlen(cur) + 1);
@@ -2259,6 +2263,8 @@ int main(int argc, char* argv[]) {
 			}
 			
 			strcpy(libc_version, cur);
+			
+			kargv_append(&xargv, GCC_M_ANDROID_WEAK_SYMBOLS);
 		}
 	#endif
 	
@@ -3015,7 +3021,7 @@ int main(int argc, char* argv[]) {
 	#if defined(PINO)
 		free(android_version_min);
 		
-		if (android_weak_api_defs) {
+		if (android_weak_symbols) {
 			free(android_current_sdk_version);
 		}
 	#endif
