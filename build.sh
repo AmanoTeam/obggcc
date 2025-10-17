@@ -188,8 +188,8 @@ export \
 	ZSTD_CFLAGS \
 	ZSTD_LIBS
 
+rm --force --recursive "${build_directory}"
 mkdir --parent "${build_directory}"
-rm --force --recursive "${toolchain_directory}"
 
 export PATH="${build_directory}:${build_directory}/bin:${PATH}"
 
@@ -210,11 +210,11 @@ CC= CXX= \
 	-S "${curl_directory}" \
 	-B "${curl_directory}/build" \
 	-D CMAKE_INSTALL_PREFIX="${build_directory}" \
-	-D CMAKE_INSTALL_RPATH='$ORIGIN/../lib' \
-	-D CMAKE_C_FLAGS='-Xlinker --disable-new-dtags' \
 	-D CURL_USE_LIBPSL=OFF \
 	-D CURL_ENABLE_SSL=ON \
-	-D CURL_USE_OPENSSL=ON
+	-D CURL_USE_OPENSSL=ON \
+	-D BUILD_SHARED_LIBS=OFF \
+	-D BUILD_STATIC_LIBS=ON
 
 make \
 	-C "${curl_directory}/build" \
@@ -329,7 +329,6 @@ if ! [ -f "${binutils_tarball}" ]; then
 	
 	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Add-relative-RPATHs-to-binutils-host-tools.patch"
 	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Don-t-warn-about-local-symbols-within-the-globals.patch"
-	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Decrease-buffer-size-for-the-GNU-assembler.patch"
 fi
 
 if ! [ -f "${zlib_tarball}" ]; then
