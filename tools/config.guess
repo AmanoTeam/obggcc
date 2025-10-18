@@ -433,7 +433,7 @@ case $UNAME_MACHINE:$UNAME_SYSTEM:$UNAME_RELEASE:$UNAME_VERSION in
 	GUESS=sparc-sun-solaris2$SUN_REL
 	;;
     i86pc:AuroraUX:5.*:* | i86xen:AuroraUX:5.*:*)
-	GUESS=i386-pc-auroraux$UNAME_RELEASE
+	GUESS=i386-unknown-auroraux$UNAME_RELEASE
 	;;
     i86pc:SunOS:5.*:* | i86xen:SunOS:5.*:*)
 	set_cc_for_build
@@ -450,7 +450,7 @@ case $UNAME_MACHINE:$UNAME_SYSTEM:$UNAME_RELEASE:$UNAME_VERSION in
 	    fi
 	fi
 	SUN_REL=`echo "$UNAME_RELEASE" | sed -e 's/[^.]*//'`
-	GUESS=$SUN_ARCH-pc-solaris2$SUN_REL
+	GUESS=$SUN_ARCH-unknown-solaris2$SUN_REL
 	;;
     sun4*:SunOS:6*:*)
 	# According to config.sub, this is the proper way to canonicalize
@@ -514,10 +514,10 @@ case $UNAME_MACHINE:$UNAME_SYSTEM:$UNAME_RELEASE:$UNAME_VERSION in
 	GUESS=m68k-unknown-mint$UNAME_RELEASE
 	;;
     m68k:machten:*:*)
-	GUESS=m68k-apple-machten$UNAME_RELEASE
+	GUESS=m68k-unknown-apple-machten$UNAME_RELEASE
 	;;
     powerpc:machten:*:*)
-	GUESS=powerpc-apple-machten$UNAME_RELEASE
+	GUESS=powerpc-unknown-apple-machten$UNAME_RELEASE
 	;;
     RISC*:Mach:*:*)
 	GUESS=mips-dec-mach_bsd4.3
@@ -890,7 +890,7 @@ EOF
 	GUESS=sparc-fujitsu-${FUJITSU_SYS}${FUJITSU_REL}
 	;;
     i*86:BSD/386:*:* | i*86:BSD/OS:*:* | *:Ascend\ Embedded/OS:*:*)
-	GUESS=$UNAME_MACHINE-pc-bsdi$UNAME_RELEASE
+	GUESS=$UNAME_MACHINE-unknown-bsdi$UNAME_RELEASE
 	;;
     sparc*:BSD/OS:*:*)
 	GUESS=sparc-unknown-bsdi$UNAME_RELEASE
@@ -923,27 +923,27 @@ EOF
 	GUESS=$UNAME_PROCESSOR-unknown-freebsd$FREEBSD_REL
 	;;
     i*:CYGWIN*:*)
-	GUESS=$UNAME_MACHINE-pc-cygwin
+	GUESS=$UNAME_MACHINE-unknown-cygwin
 	;;
     *:MINGW64*:*)
-	GUESS=$UNAME_MACHINE-pc-mingw64
+	GUESS=$UNAME_MACHINE-unknown-mingw64
 	;;
     *:MINGW*:*)
-	GUESS=$UNAME_MACHINE-pc-mingw32
+	GUESS=$UNAME_MACHINE-unknown-mingw32
 	;;
     *:MSYS*:*)
-	GUESS=$UNAME_MACHINE-pc-msys
+	GUESS=$UNAME_MACHINE-unknown-msys
 	;;
     i*:PW*:*)
-	GUESS=$UNAME_MACHINE-pc-pw32
+	GUESS=$UNAME_MACHINE-unknown-pw32
 	;;
     *:SerenityOS:*:*)
-        GUESS=$UNAME_MACHINE-pc-serenity
+        GUESS=$UNAME_MACHINE-unknown-serenity
         ;;
     *:Interix*:*)
 	case $UNAME_MACHINE in
 	    x86)
-		GUESS=i586-pc-interix$UNAME_RELEASE
+		GUESS=i586-unknown-interix$UNAME_RELEASE
 		;;
 	    authenticamd | genuineintel | EM64T)
 		GUESS=x86_64-unknown-interix$UNAME_RELEASE
@@ -953,10 +953,10 @@ EOF
 		;;
 	esac ;;
     i*:UWIN*:*)
-	GUESS=$UNAME_MACHINE-pc-uwin
+	GUESS=$UNAME_MACHINE-unknown-uwin
 	;;
     amd64:CYGWIN*:*:* | x86_64:CYGWIN*:*:*)
-	GUESS=x86_64-pc-cygwin
+	GUESS=x86_64-unknown-cygwin
 	;;
     prep*:SunOS:5.*:*)
 	SUN_REL=`echo "$UNAME_RELEASE" | sed -e 's/[^.]*//'`
@@ -975,7 +975,7 @@ EOF
 	GUESS=$UNAME_MACHINE-unknown-$GNU_SYS$GNU_REL-$LIBC
 	;;
     x86_64:[Mm]anagarm:*:*|i?86:[Mm]anagarm:*:*)
-	GUESS="$UNAME_MACHINE-pc-managarm-mlibc"
+	GUESS="$UNAME_MACHINE-unknown-managarm-mlibc"
 	;;
     *:[Mm]anagarm:*:*)
 	GUESS="$UNAME_MACHINE-unknown-managarm-mlibc"
@@ -1062,7 +1062,7 @@ EOF
 	GUESS=$UNAME_MACHINE-unknown-linux-$LIBC
 	;;
     i*86:Linux:*:*)
-	GUESS=$UNAME_MACHINE-pc-linux-$LIBC
+	GUESS=$UNAME_MACHINE-unknown-linux-$LIBC
 	;;
     ia64:Linux:*:*)
 	GUESS=$UNAME_MACHINE-unknown-linux-$LIBC
@@ -1214,7 +1214,7 @@ EOF
 		x32) LIBCABI=${LIBC}x32 ;;
 	    esac
 	fi
-	GUESS=$CPU-pc-linux-$LIBCABI
+	GUESS=$CPU-unknown-linux-$LIBCABI
 	;;
     xtensa*:Linux:*:*)
 	GUESS=$UNAME_MACHINE-unknown-linux-$LIBC
@@ -1231,12 +1231,12 @@ EOF
 	# I am not positive that other SVR4 systems won't match this,
 	# I just have to hope.  -- rms.
 	# Use sysv4.2uw... so that sysv4* matches it.
-	GUESS=$UNAME_MACHINE-pc-sysv4.2uw$UNAME_VERSION
+	GUESS=$UNAME_MACHINE-unknown-sysv4.2uw$UNAME_VERSION
 	;;
     i*86:OS/2:*:*)
 	# If we were able to find 'uname', then EMX Unix compatibility
 	# is probably installed.
-	GUESS=$UNAME_MACHINE-pc-os2-emx
+	GUESS=$UNAME_MACHINE-unknown-os2-emx
 	;;
     i*86:XTS-300:*:STOP)
 	GUESS=$UNAME_MACHINE-unknown-stop
@@ -1245,20 +1245,20 @@ EOF
 	GUESS=$UNAME_MACHINE-unknown-atheos
 	;;
     i*86:syllable:*:*)
-	GUESS=$UNAME_MACHINE-pc-syllable
+	GUESS=$UNAME_MACHINE-unknown-syllable
 	;;
     i*86:LynxOS:2.*:* | i*86:LynxOS:3.[01]*:* | i*86:LynxOS:4.[02]*:*)
 	GUESS=i386-unknown-lynxos$UNAME_RELEASE
 	;;
     i*86:*DOS:*:*)
-	GUESS=$UNAME_MACHINE-pc-msdosdjgpp
+	GUESS=$UNAME_MACHINE-unknown-msdosdjgpp
 	;;
     i*86:*:4.*:*)
 	UNAME_REL=`echo "$UNAME_RELEASE" | sed 's/\/MP$//'`
 	if grep Novell /usr/include/link.h >/dev/null 2>/dev/null; then
 		GUESS=$UNAME_MACHINE-univel-sysv$UNAME_REL
 	else
-		GUESS=$UNAME_MACHINE-pc-sysv$UNAME_REL
+		GUESS=$UNAME_MACHINE-unknown-sysv$UNAME_REL
 	fi
 	;;
     i*86:*:5:[678]*)
@@ -1273,7 +1273,7 @@ EOF
     i*86:*:3.2:*)
 	if test -f /usr/options/cb.name; then
 		UNAME_REL=`sed -n 's/.*Version //p' </usr/options/cb.name`
-		GUESS=$UNAME_MACHINE-pc-isc$UNAME_REL
+		GUESS=$UNAME_MACHINE-unknown-isc$UNAME_REL
 	elif /bin/uname -X 2>/dev/null >/dev/null ; then
 		UNAME_REL=`(/bin/uname -X|grep Release|sed -e 's/.*= //')`
 		(/bin/uname -X|grep i80486 >/dev/null) && UNAME_MACHINE=i486
@@ -1283,9 +1283,9 @@ EOF
 			&& UNAME_MACHINE=i686
 		(/bin/uname -X|grep '^Machine.*Pentium Pro' >/dev/null) \
 			&& UNAME_MACHINE=i686
-		GUESS=$UNAME_MACHINE-pc-sco$UNAME_REL
+		GUESS=$UNAME_MACHINE-unknown-sco$UNAME_REL
 	else
-		GUESS=$UNAME_MACHINE-pc-sysv32
+		GUESS=$UNAME_MACHINE-unknown-sysv32
 	fi
 	;;
     pc:*:*:*)
@@ -1295,10 +1295,10 @@ EOF
 	# Note: whatever this is, it MUST be the same as what config.sub
 	# prints for the "djgpp" host, or else GDB configure will decide that
 	# this is a cross-build.
-	GUESS=i586-pc-msdosdjgpp
+	GUESS=i586-unknown-msdosdjgpp
 	;;
     Intel:Mach:3*:*)
-	GUESS=i386-pc-mach3
+	GUESS=i386-unknown-mach3
 	;;
     paragon:*:*:*)
 	GUESS=i860-intel-osf1
@@ -1397,7 +1397,7 @@ EOF
 	GUESS=hppa1.1-stratus-vos
 	;;
     mc68*:A/UX:*:*)
-	GUESS=m68k-apple-aux$UNAME_RELEASE
+	GUESS=m68k-unknown-apple-aux$UNAME_RELEASE
 	;;
     news*:NEWS-OS:6*:*)
 	GUESS=mips-sony-newsos6
@@ -1413,16 +1413,16 @@ EOF
 	GUESS=powerpc-be-beos
 	;;
     BeMac:BeOS:*:*)	# BeOS running on Mac or Mac clone, PPC only.
-	GUESS=powerpc-apple-beos
+	GUESS=powerpc-unknown-apple-beos
 	;;
     BePC:BeOS:*:*)	# BeOS running on Intel PC compatible.
-	GUESS=i586-pc-beos
+	GUESS=i586-unknown-beos
 	;;
     BePC:Haiku:*:*)	# Haiku running on Intel PC compatible.
-	GUESS=i586-pc-haiku
+	GUESS=i586-unknown-haiku
 	;;
     ppc:Haiku:*:*)	# Haiku running on Apple PowerPC
-	GUESS=powerpc-apple-haiku
+	GUESS=powerpc-unknown-apple-haiku
 	;;
     *:Haiku:*:*)	# Haiku modern gcc (not bound by BeOS compat)
 	GUESS=$UNAME_MACHINE-unknown-haiku
@@ -1449,13 +1449,13 @@ EOF
 	GUESS=sxace-nec-superux$UNAME_RELEASE
 	;;
     Power*:Rhapsody:*:*)
-	GUESS=powerpc-apple-rhapsody$UNAME_RELEASE
+	GUESS=powerpc-unknown-apple-rhapsody$UNAME_RELEASE
 	;;
     *:Rhapsody:*:*)
-	GUESS=$UNAME_MACHINE-apple-rhapsody$UNAME_RELEASE
+	GUESS=$UNAME_MACHINE-unknown-apple-rhapsody$UNAME_RELEASE
 	;;
     arm64:Darwin:*:*)
-	GUESS=aarch64-apple-darwin$UNAME_RELEASE
+	GUESS=aarch64-unknown-apple-darwin$UNAME_RELEASE
 	;;
     *:Darwin:*:*)
 	UNAME_PROCESSOR=`uname -p`
@@ -1492,18 +1492,18 @@ EOF
 	    # uname -m returns i386 or x86_64
 	    UNAME_PROCESSOR=$UNAME_MACHINE
 	fi
-	GUESS=$UNAME_PROCESSOR-apple-darwin$UNAME_RELEASE
+	GUESS=$UNAME_PROCESSOR-unknown-apple-darwin$UNAME_RELEASE
 	;;
     *:procnto*:*:* | *:QNX:[0123456789]*:*)
 	UNAME_PROCESSOR=`uname -p`
 	if test "$UNAME_PROCESSOR" = x86; then
 		UNAME_PROCESSOR=i386
-		UNAME_MACHINE=pc
+		UNAME_MACHINE=unknown
 	fi
 	GUESS=$UNAME_PROCESSOR-$UNAME_MACHINE-nto-qnx$UNAME_RELEASE
 	;;
     *:QNX:*:4*)
-	GUESS=i386-pc-qnx
+	GUESS=i386-unknown-qnx
 	;;
     NEO-*:NONSTOP_KERNEL:*:*)
 	GUESS=neo-tandem-nsk$UNAME_RELEASE
@@ -1573,17 +1573,17 @@ EOF
 	    V*) GUESS=vax-dec-vms ;;
 	esac ;;
     *:XENIX:*:SysV)
-	GUESS=i386-pc-xenix
+	GUESS=i386-unknown-xenix
 	;;
     i*86:skyos:*:*)
 	SKYOS_REL=`echo "$UNAME_RELEASE" | sed -e 's/ .*$//'`
-	GUESS=$UNAME_MACHINE-pc-skyos$SKYOS_REL
+	GUESS=$UNAME_MACHINE-unknown-skyos$SKYOS_REL
 	;;
     i*86:rdos:*:*)
-	GUESS=$UNAME_MACHINE-pc-rdos
+	GUESS=$UNAME_MACHINE-unknown-rdos
 	;;
     i*86:Fiwix:*:*)
-	GUESS=$UNAME_MACHINE-pc-fiwix
+	GUESS=$UNAME_MACHINE-unknown-fiwix
 	;;
     *:AROS:*:*)
 	GUESS=$UNAME_MACHINE-unknown-aros
@@ -1598,7 +1598,7 @@ EOF
 	GUESS=$UNAME_MACHINE-unknown-unleashed$UNAME_RELEASE
 	;;
     x86_64:[Ii]ronclad:*:*|i?86:[Ii]ronclad:*:*)
-	GUESS=$UNAME_MACHINE-pc-ironclad-mlibc
+	GUESS=$UNAME_MACHINE-unknown-ironclad-mlibc
 	;;
     *:[Ii]ronclad:*:*)
 	GUESS=$UNAME_MACHINE-unknown-ironclad-mlibc
@@ -1672,7 +1672,7 @@ main ()
 #endif
 
 #if defined (__386BSD__)
-  printf ("i386-pc-bsd\n"); exit (0);
+  printf ("i386-unknown-bsd\n"); exit (0);
 #endif
 
 #if defined (sequent)
