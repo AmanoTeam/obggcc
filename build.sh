@@ -48,10 +48,11 @@ declare -r isl_directory="${build_directory}/isl-0.27"
 declare -r binutils_tarball="${build_directory}/binutils.tar.xz"
 declare -r binutils_directory="${build_directory}/binutils"
 
-declare -r gcc_major='16'
+declare -r gcc_major='15'
 
+declare gcc_url='https://github.com/gcc-mirror/gcc/archive/master.tar.gz'
 declare -r gcc_tarball="${build_directory}/gcc.tar.xz"
-declare -r gcc_directory="${build_directory}/gcc-master"
+declare gcc_directory="${build_directory}/gcc-master"
 
 declare -r libsanitizer_tarball="${build_directory}/libsanitizer.tar.xz"
 declare -r libsanitizer_directory="${build_directory}/libsanitizer"
@@ -188,7 +189,7 @@ export \
 	ZSTD_CFLAGS \
 	ZSTD_LIBS
 
-rm --force --recursive "${build_directory}/"* 2>/dev/null || true
+rm --force --recursive "${toolchain_directory}"
 mkdir --parent "${build_directory}"
 
 export PATH="${build_directory}:${build_directory}/bin:${PATH}"
@@ -370,8 +371,13 @@ if ! [ -f "${zstd_tarball}" ]; then
 fi
 
 if ! [ -f "${gcc_tarball}" ]; then
+	if [ "${gcc_major}" != '16' ]; then
+		gcc_url='https://github.com/gcc-mirror/gcc/archive/releases/gcc-15.tar.gz'
+		gcc_directory="${build_directory}/gcc-releases-gcc-${gcc_major}"
+	fi
+	
 	curl \
-		--url 'https://github.com/gcc-mirror/gcc/archive/master.tar.gz' \
+		--url "${gcc_url}" \
 		--retry '30' \
 		--retry-all-errors \
 		--retry-delay '0' \
@@ -396,15 +402,31 @@ if ! [ -f "${gcc_tarball}" ]; then
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Turn-Wimplicit-function-declaration-back-into-an-warning.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0002-Fix-libsanitizer-build-on-older-platforms.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0003-Change-the-default-language-version-for-C-compilation-from-std-gnu23-to-std-gnu17.patch"
-	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0004-Turn-Wimplicit-int-back-into-an-warning.patch"
+	
+	if [ "${gcc_major}" = '16' ]; then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0004-Turn-Wimplicit-int-back-into-an-warning.patch"
+	else
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-15/0004-Turn-Wimplicit-int-back-into-an-warning.patch"
+	fi
+	
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0005-Turn-Wint-conversion-back-into-an-warning.patch"
-	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0006-Turn-Wincompatible-pointer-types-back-into-an-warning.patch"
+	
+	if [ "${gcc_major}" = '16' ]; then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0006-Turn-Wincompatible-pointer-types-back-into-an-warning.patch"
+	else
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-15/0006-Turn-Wincompatible-pointer-types-back-into-an-warning.patch"
+	fi
+	
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0008-Add-ARM-and-ARM64-drivers-to-OpenBSD-host-tools.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0009-Fix-missing-stdint.h-include-when-compiling-host-tools-on-OpenBSD.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
-	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0011-Revert-configure-Always-add-pre-installed-header-directories-to-search-path.patch"
-	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Revert-x86-Fixes-for-AMD-znver5-enablement.patch"
+	
+	if [ "${gcc_major}" = '16' ]; then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0011-Revert-configure-Always-add-pre-installed-header-directories-to-search-path.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Revert-x86-Fixes-for-AMD-znver5-enablement.patch"
+	fi
+	
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-AArch64-enable-libquadmath.patch"
 fi
 

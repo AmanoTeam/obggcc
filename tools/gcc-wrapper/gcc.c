@@ -40,7 +40,7 @@
 	#define AUTO_PICK_LINKER 1
 #endif
 
-static const char GCC_MAJOR_VERSION[] = "16";
+static const char GCC_MAJOR_VERSION[] = "15";
 
 static const char INCLUDE_DIR[] = PATHSEP_M "include";
 static const char INCLUDE_MISSING_DIR[] = PATHSEP_M "include-missing";
@@ -1799,8 +1799,10 @@ int main(int argc, char* argv[]) {
 			*/
 			goto end;
 		} else if (strcmp(cur, GCC_M_ANDROID_WEAK_SYMBOLS) == 0) {
-			android_weak_symbols = 1;
-			continue;
+			#if defined(PINO)
+				android_weak_symbols = 1;
+				continue;
+			#endif
 		}
 		
 		next:;
