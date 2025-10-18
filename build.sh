@@ -483,7 +483,12 @@ if ! (( native )); then
 		"${gcc_directory}/libiberty/configure" \
 		"${gcc_directory}/lto-plugin/configure" \
 		"${gcc_directory}/zlib/configure" \
-		"${gcc_directory}/configure"
+		"${gcc_directory}/configure" \
+		"${isl_directory}/configure" \
+		"${mpc_directory}/configure" \
+		"${mpfr_directory}/configure" \
+		"${gmp_directory}/configure" \
+		"${binutils_directory}/configure"
 fi
 
 sed -ri 's/(cross_compiling)=.*$/\1=yes/' ./configure
