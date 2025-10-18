@@ -1,5 +1,9 @@
 #!/bin/bash
 
+declare -r workdir="${PWD}"
+
+declare -r build="$("${workdir}/tools/config.guess")"
+
 if [ -z "${CROSS_COMPILE_TRIPLET}" ]; then
 	declare -r host="${build}"
 	declare -r native='1'
@@ -23,8 +27,6 @@ fi
 set -eu
 
 declare -r revision="$(git rev-parse --short HEAD)"
-
-declare -r workdir="${PWD}"
 
 declare -r toolchain_directory="${build_directory}/obggcc"
 declare -r share_directory="${toolchain_directory}/usr/local/share/obggcc"
@@ -168,8 +170,6 @@ declare -ra targets=(
 	'arm-unknown-linux-gnueabihf'
 	'i386-unknown-linux-gnu'
 )
-
-declare -r build="$("${workdir}/tools/config.guess")"
 
 declare -r PKG_CONFIG_PATH="${toolchain_directory}/lib/pkgconfig"
 declare -r PKG_CONFIG_LIBDIR="${PKG_CONFIG_PATH}"
@@ -467,6 +467,27 @@ sed \
 	"${gcc_directory}/configure" \
 	"${binutils_directory}/configure"
 
+if ! (( native )); then
+	sed \
+		--in-place \
+		--regexp-extended \
+		's/(cross_compiling)=.*$/\1=yes/' \
+		"${gcc_directory}/configure" \
+		"${gcc_directory}/gcc/configure" \
+		"${gcc_directory}/c++tools/configure" \
+		"${gcc_directory}/libcc1/configure" \
+		"${gcc_directory}/libcody/configure" \
+		"${gcc_directory}/libcpp/configure" \
+		"${gcc_directory}/libdecnumber/configure" \
+		"${gcc_directory}/libffi/configure" \
+		"${gcc_directory}/libiberty/configure" \
+		"${gcc_directory}/lto-plugin/configure" \
+		"${gcc_directory}/zlib/configure" \
+		"${gcc_directory}/configure"
+fi
+
+sed -ri 's/(cross_compiling)=.*$/\1=yes/' ./configure
+
 [ -d "${gmp_directory}/build" ] || mkdir "${gmp_directory}/build"
 
 cd "${gmp_directory}/build"
@@ -635,7 +656,7 @@ make \
 	LDFLAGS="${linkflags}"
 
 for target in "${targets[@]}"; do
-	declare specs='%{!Qy:-Qn}'
+	declare specs='%{!Qy: -Qn}'
 	declare hash_style='both'
 	
 	source "${workdir}/${target}.sh"
@@ -698,7 +719,7 @@ for target in "${targets[@]}"; do
 	rm --force --recursive "${PWD}" &
 	
 	if [ "${triplet}" = 'x86_64-unknown-linux-gnu' ] || [ "${triplet}" = 'i386-unknown-linux-gnu' ]; then
-		specs+=' %{!fno-plt:%{!fplt:-fno-plt}}'
+		specs+=' %{!fno-plt: %{!fplt: -fno-plt}}'
 	fi
 	
 	if [[ "${triplet}" = 'mips'* ]]; then
@@ -732,7 +753,7 @@ for target in "${targets[@]}"; do
 		--with-system-zlib \
 		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v3.9-${revision}" \
+		--with-pkgversion="OBGGCC v4.0-${revision}" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--with-native-system-header-dir='/include' \
 		--with-default-libstdcxx-abi='new' \
