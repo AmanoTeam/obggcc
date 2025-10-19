@@ -12,6 +12,9 @@ else
 	declare -r native='0'
 fi
 
+echo "build: ${build}"
+echo "host: ${host}"
+
 if [ -z "${OBGGCC_BUILD_PARALLEL_LEVEL}" ]; then
 	declare -r max_jobs="$(nproc)"
 else
