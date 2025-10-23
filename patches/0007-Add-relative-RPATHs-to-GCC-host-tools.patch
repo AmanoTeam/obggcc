@@ -1,23 +1,24 @@
-From 99ee7f73a325f310edc29e4bfab58fed05c7b9a6 Mon Sep 17 00:00:00 2001
+From 3b35a1d7cc1b218f62fd369ce5e719a3a8a3c232 Mon Sep 17 00:00:00 2001
 From: Kartatz <105828205+Kartatz@users.noreply.github.com>
-Date: Thu, 2 Oct 2025 04:23:01 -0300
+Date: Thu, 23 Oct 2025 14:47:32 -0300
 Subject: [PATCH 07/11] Add relative RPATHs to GCC host tools
 
 This change adds relative RPATHs to the host tools built as part of GCC.
 
-With this change, we can use the --without-static-standard-libraries configure option and place all runtime dependencies inside <toolchain_directory>/lib.
+With this change, we can use the --without-static-standard-libraries configure option and place all runtime dependencies inside <prefix>/lib.
 This eliminates the need to statically link any libraries and also saves disk space by producing smaller executables.
 ---
  c++tools/Makefile.in     |  2 +-
  gcc/Makefile.in          | 20 ++++++++++----------
  gcc/c/Make-lang.in       |  2 +-
+ gcc/cobol/Make-lang.in   |  2 +-
  gcc/cp/Make-lang.in      |  4 ++--
  gcc/fortran/Make-lang.in |  2 +-
  gcc/lto/Make-lang.in     |  4 ++--
  gcc/m2/Make-lang.in      |  6 +++---
  gcc/objc/Make-lang.in    |  2 +-
  gcc/objcp/Make-lang.in   |  2 +-
- 9 files changed, 22 insertions(+), 22 deletions(-)
+ 10 files changed, 23 insertions(+), 23 deletions(-)
 
 diff --git a/c++tools/Makefile.in b/c++tools/Makefile.in
 index 5acc6d681..9b875d0b9 100644
@@ -33,10 +34,10 @@ index 5acc6d681..9b875d0b9 100644
  # copy to gcc dir so tests there can run
  all::../gcc/g++-mapper-server$(exeext)
 diff --git a/gcc/Makefile.in b/gcc/Makefile.in
-index 6a9d6204c..39faa0807 100644
+index cf1408d56..14555da72 100644
 --- a/gcc/Makefile.in
 +++ b/gcc/Makefile.in
-@@ -2319,7 +2319,7 @@ libcommon.a: $(OBJS-libcommon)
+@@ -2334,7 +2334,7 @@ libcommon.a: $(OBJS-libcommon)
  # and CC is `gcc'.  It is renamed to `gcc' when it is installed.
  xgcc$(exeext): $(GCC_OBJS) c/gccspec.o libcommon-target.a $(LIBDEPS) \
  	$(EXTRA_GCC_OBJS)
@@ -45,7 +46,7 @@ index 6a9d6204c..39faa0807 100644
  	  c/gccspec.o $(EXTRA_GCC_OBJS) libcommon-target.a \
  	  $(EXTRA_GCC_LIBS) $(LIBS)
  
-@@ -2328,7 +2328,7 @@ xgcc$(exeext): $(GCC_OBJS) c/gccspec.o libcommon-target.a $(LIBDEPS) \
+@@ -2343,7 +2343,7 @@ xgcc$(exeext): $(GCC_OBJS) c/gccspec.o libcommon-target.a $(LIBDEPS) \
  # and only contain c-family extensions (see known_suffixes).
  cpp$(exeext): $(GCC_OBJS) c-family/cppspec.o libcommon-target.a $(LIBDEPS) \
  	$(EXTRA_GCC_OBJS)
@@ -54,7 +55,7 @@ index 6a9d6204c..39faa0807 100644
  	  c-family/cppspec.o $(EXTRA_GCC_OBJS) libcommon-target.a \
  	  $(EXTRA_GCC_LIBS) $(LIBS)
  
-@@ -2538,15 +2538,15 @@ AR_OBJS = file-find.o
+@@ -2553,15 +2553,15 @@ AR_OBJS = file-find.o
  AR_LIBS = @COLLECT2_LIBS@
  
  gcc-ar$(exeext): gcc-ar.o $(AR_OBJS) $(LIBDEPS)
@@ -73,7 +74,7 @@ index 6a9d6204c..39faa0807 100644
  		$(AR_OBJS) $(LIBS) $(AR_LIBS)
  
  CFLAGS-gcc-ar.o += $(DRIVER_DEFINES) \
-@@ -2574,7 +2574,7 @@ COLLECT2_OBJS = collect2.o collect2-aix.o vec.o ggc-none.o \
+@@ -2589,7 +2589,7 @@ COLLECT2_OBJS = collect2.o collect2-aix.o vec.o ggc-none.o \
  COLLECT2_LIBS = @COLLECT2_LIBS@
  collect2$(exeext): $(COLLECT2_OBJS) $(LIBDEPS)
  # Don't try modifying collect2 (aka ld) in place--it might be linking this.
@@ -82,7 +83,7 @@ index 6a9d6204c..39faa0807 100644
  		$(COLLECT2_OBJS) $(LIBS) $(COLLECT2_LIBS)
  	mv -f T$@ $@
  
-@@ -2585,7 +2585,7 @@ LTO_WRAPPER_OBJS = lto-wrapper.o collect-utils.o ggc-none.o lockfile.o \
+@@ -2600,7 +2600,7 @@ LTO_WRAPPER_OBJS = lto-wrapper.o collect-utils.o ggc-none.o lockfile.o \
    lto-ltrans-cache.o
  
  lto-wrapper$(exeext): $(LTO_WRAPPER_OBJS) libcommon-target.a $(LIBDEPS)
@@ -91,7 +92,7 @@ index 6a9d6204c..39faa0807 100644
  	   $(LTO_WRAPPER_OBJS) libcommon-target.a $(LIBS)
  	mv -f T$@ $@
  
-@@ -3469,11 +3469,11 @@ CFLAGS-gcov.o += $(ZLIBINC)
+@@ -3500,11 +3500,11 @@ CFLAGS-gcov.o += $(ZLIBINC)
  
  GCOV_OBJS = gcov.o json.o graphds.o prime-paths.o bitmap.o
  gcov$(exeext): $(GCOV_OBJS) $(LIBDEPS)
@@ -105,7 +106,7 @@ index 6a9d6204c..39faa0807 100644
  		hash-table.o ggc-none.o\
  		$(LIBS) -o $@
  
-@@ -3491,7 +3491,7 @@ libgcov-merge-tool.o: $(srcdir)/../libgcc/libgcov-merge.c $(GCOV_TOOL_DEP_FILES)
+@@ -3522,7 +3522,7 @@ libgcov-merge-tool.o: $(srcdir)/../libgcc/libgcov-merge.c $(GCOV_TOOL_DEP_FILES)
  	  -DIN_GCOV_TOOL=1 -o $@ $<
  GCOV_TOOL_OBJS = gcov-tool.o libgcov-util.o libgcov-driver-tool.o libgcov-merge-tool.o
  gcov-tool$(exeext): $(GCOV_TOOL_OBJS) $(LIBDEPS)
@@ -126,6 +127,19 @@ index f09fc9946..b5c97fd9d 100644
 +	+$(LLINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) -o $@ $(C_OBJS) \
  	  cc1-checksum.o $(BACKEND) $(LIBS) $(BACKENDLIBS)
  	@$(call LINK_PROGRESS,$(INDEX.c),end)
+ 
+diff --git a/gcc/cobol/Make-lang.in b/gcc/cobol/Make-lang.in
+index 0e2a773d4..a4c1c5175 100644
+--- a/gcc/cobol/Make-lang.in
++++ b/gcc/cobol/Make-lang.in
+@@ -264,7 +264,7 @@ cobol.srcextra: cobol/parse.cc cobol/cdf.cc cobol/scan.cc
+ 
+ cobol1$(exeext): $(cobol1_OBJS) $(BACKEND) $(LIBDEPS) attribs.o $(cobol.prev)
+ 	@$(call LINK_PROGRESS,$(INDEX.cobol),start)
+-	+$(LLINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) attribs.o -o $@	\
++	+$(LLINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) attribs.o -o $@	\
+ 	      $(cobol1_OBJS) $(BACKEND) $(LIBS) $(BACKENDLIBS)
+ 	@$(call LINK_PROGRESS,$(INDEX.cobol),end)
  
 diff --git a/gcc/cp/Make-lang.in b/gcc/cp/Make-lang.in
 index 70cfe2b16..d3850db09 100644
@@ -183,7 +197,7 @@ index 2af8bba44..7fc3c0129 100644
  	@$(call LINK_PROGRESS,$(INDEX.lto2),end)
  
 diff --git a/gcc/m2/Make-lang.in b/gcc/m2/Make-lang.in
-index fd5193fea..77940fa92 100644
+index cd4dc9f06..7d18e70e7 100644
 --- a/gcc/m2/Make-lang.in
 +++ b/gcc/m2/Make-lang.in
 @@ -126,7 +126,7 @@ GM2_OBJS = $(GCC_OBJS) prefix.o intl.o m2/gm2spec.o
@@ -195,7 +209,7 @@ index fd5193fea..77940fa92 100644
  	  $(GM2_OBJS) $(EXTRA_GCC_OBJS) libcommon-target.a \
  	  $(EXTRA_GCC_LIBS) $(LIBS)
  
-@@ -590,7 +590,7 @@ m2/stage2/cc1gm2$(exeext): m2/stage1/cc1gm2$(exeext) m2/gm2-compiler/m2flex.o \
+@@ -591,7 +591,7 @@ m2/stage2/cc1gm2$(exeext): m2/stage1/cc1gm2$(exeext) m2/gm2-compiler/m2flex.o \
                              m2/gm2-gcc/rtegraph.o $(M2RTE_PLUGIN_SO)
  	-test -d $(@D) || $(mkinstalldirs) $(@D)
  	@$(call LINK_PROGRESS,$(INDEX.m2),start)
@@ -204,7 +218,7 @@ index fd5193fea..77940fa92 100644
                              attribs.o \
                                $(GM2_LIBS) \
                                $(BACKEND) $(LIBS) m2/gm2-gcc/rtegraph.o \
-@@ -604,7 +604,7 @@ m2/stage1/cc1gm2$(exeext): gm2$(exeext) m2/gm2-compiler-boot/m2flex.o \
+@@ -605,7 +605,7 @@ m2/stage1/cc1gm2$(exeext): gm2$(exeext) m2/gm2-compiler-boot/m2flex.o \
                              $(m2.prev)
  	-test -d $(@D) || $(mkinstalldirs) $(@D)
  	@$(call LINK_PROGRESS,$(INDEX.m2),start)

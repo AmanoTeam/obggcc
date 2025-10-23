@@ -256,6 +256,9 @@ static const char GM2[] = "gm2";
 
 static const char GFORTRAN[] = "gfortran";
 
+static const char GCOBC[] = "gcobc";
+static const char GCOBOL[] = "gcobol";
+
 static const char VENDOR_NONE[] = "-none-";
 static const char VENDOR_UNKNOWN[] = "-unknown-";
 
@@ -914,7 +917,9 @@ static int known_gcc(const char* const cc) {
 		strcmp(cc, GPP) == 0 ||
 		strcmp(cc, CPP) == 0 ||
 		strcmp(cc, GM2) == 0 ||
-		strcmp(cc, GFORTRAN) == 0
+		strcmp(cc, GFORTRAN) == 0 ||
+		strcmp(cc, GCOBC) == 0 ||
+		strcmp(cc, GCOBOL) == 0
 	);
 	
 	return status;
@@ -1974,7 +1979,14 @@ int main(int argc, char* argv[]) {
 		goto end;
 	}
 	
-	wants_libcxx += (strcmp(cc, GPP) == 0 || strcmp(cc, CPP) == 0 || strcmp(cc, GM2) == 0 || strcmp(cc, CLANGPP) == 0);
+	wants_libcxx += (
+		strcmp(cc, GPP) == 0 ||
+		strcmp(cc, CPP) == 0 ||
+		strcmp(cc, GM2) == 0 ||
+		strcmp(cc, CLANGPP) == 0 ||
+		strcmp(cc, GCOBC) == 0 ||
+		strcmp(cc, GCOBOL) == 0
+	);
 	
 	if (wants_libcxx) {
 		wants_libgcc = 1;
