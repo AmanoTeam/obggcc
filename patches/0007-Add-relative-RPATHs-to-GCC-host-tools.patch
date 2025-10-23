@@ -11,14 +11,14 @@ This eliminates the need to statically link any libraries and also saves disk sp
  c++tools/Makefile.in     |  2 +-
  gcc/Makefile.in          | 20 ++++++++++----------
  gcc/c/Make-lang.in       |  2 +-
- gcc/cobol/Make-lang.in   |  2 +-
+ gcc/cobol/Make-lang.in   |  4 ++--
  gcc/cp/Make-lang.in      |  4 ++--
- gcc/fortran/Make-lang.in |  2 +-
+ gcc/fortran/Make-lang.in |  4 ++--
  gcc/lto/Make-lang.in     |  4 ++--
  gcc/m2/Make-lang.in      |  6 +++---
  gcc/objc/Make-lang.in    |  2 +-
  gcc/objcp/Make-lang.in   |  2 +-
- 10 files changed, 23 insertions(+), 23 deletions(-)
+ 10 files changed, 25 insertions(+), 25 deletions(-)
 
 diff --git a/c++tools/Makefile.in b/c++tools/Makefile.in
 index 5acc6d681..9b875d0b9 100644
@@ -129,9 +129,18 @@ index f09fc9946..b5c97fd9d 100644
  	@$(call LINK_PROGRESS,$(INDEX.c),end)
  
 diff --git a/gcc/cobol/Make-lang.in b/gcc/cobol/Make-lang.in
-index 0e2a773d4..a4c1c5175 100644
+index 0e2a773d4..b1d09fd09 100644
 --- a/gcc/cobol/Make-lang.in
 +++ b/gcc/cobol/Make-lang.in
+@@ -131,7 +131,7 @@ gcobol$(exeext): \
+ 	 $(EXTRA_GCC_OBJS) \
+      libcommon-target.a \
+      $(LIBDEPS)
+-	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) -o $@		\
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) -o $@		\
+ 	 $(GCOBOL_D_OBJS) $(EXTRA_GCC_OBJS) libcommon-target.a	\
+ 	 $(EXTRA_GCC_LIBS) $(LIBS)
+ 
 @@ -264,7 +264,7 @@ cobol.srcextra: cobol/parse.cc cobol/cdf.cc cobol/scan.cc
  
  cobol1$(exeext): $(cobol1_OBJS) $(BACKEND) $(LIBDEPS) attribs.o $(cobol.prev)
@@ -164,9 +173,18 @@ index 70cfe2b16..d3850db09 100644
  		$(LIBS) $(BACKENDLIBS)
  	@$(call LINK_PROGRESS,$(INDEX.c++),end)
 diff --git a/gcc/fortran/Make-lang.in b/gcc/fortran/Make-lang.in
-index 5b2f921bf..28c313750 100644
+index 5b2f921bf..7d4a52144 100644
 --- a/gcc/fortran/Make-lang.in
 +++ b/gcc/fortran/Make-lang.in
+@@ -83,7 +83,7 @@ CFLAGS-fortran/gfortranspec.o += $(DRIVER_DEFINES)
+ GFORTRAN_D_OBJS = $(GCC_OBJS) fortran/gfortranspec.o
+ gfortran$(exeext): $(GFORTRAN_D_OBJS) $(EXTRA_GCC_OBJS) libcommon-target.a \
+ 	$(LIBDEPS)
+-	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) -o $@ \
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) -o $@ \
+ 	  $(GFORTRAN_D_OBJS) $(EXTRA_GCC_OBJS) libcommon-target.a \
+ 	  $(EXTRA_GCC_LIBS) $(LIBS)
+ 
 @@ -95,7 +95,7 @@ gfortran-cross$(exeext): gfortran$(exeext)
  # The compiler itself is called f951.
  f951$(exeext): $(F95_OBJS) $(BACKEND) $(LIBDEPS) attribs.o $(fortran.prev)
