@@ -1,17 +1,17 @@
-From fcd9f4390f2f404f9ed37f2db54340e3047c657e Mon Sep 17 00:00:00 2001
+From 274292b9fc6312c672a0f16fcb7f04f9e9263ec6 Mon Sep 17 00:00:00 2001
 From: Kartatz <105828205+Kartatz@users.noreply.github.com>
-Date: Thu, 2 Oct 2025 04:15:22 -0300
+Date: Sat, 1 Nov 2025 18:15:33 -0300
 Subject: [PATCH 05/11] Turn -Wint-conversion back into an warning
 
 ---
- gcc/c/c-typeck.cc | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ gcc/c/c-typeck.cc | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
 diff --git a/gcc/c/c-typeck.cc b/gcc/c/c-typeck.cc
-index 9b2aeea50..f2a0e3fd5 100644
+index b007c8ffe..b71235f95 100644
 --- a/gcc/c/c-typeck.cc
 +++ b/gcc/c/c-typeck.cc
-@@ -6761,7 +6761,7 @@ build_conditional_expr (location_t colon_loc, tree ifexp, bool ifexp_bcp,
+@@ -6346,7 +6346,7 @@ build_conditional_expr (location_t colon_loc, tree ifexp, bool ifexp_bcp,
  	   && (code2 == INTEGER_TYPE || code2 == BITINT_TYPE))
      {
        if (!null_pointer_constant_p (orig_op2))
@@ -20,7 +20,7 @@ index 9b2aeea50..f2a0e3fd5 100644
  		       "pointer/integer type mismatch "
  		       "in conditional expression");
        else
-@@ -6774,7 +6774,7 @@ build_conditional_expr (location_t colon_loc, tree ifexp, bool ifexp_bcp,
+@@ -6359,7 +6359,7 @@ build_conditional_expr (location_t colon_loc, tree ifexp, bool ifexp_bcp,
  	   && (code1 == INTEGER_TYPE || code1 == BITINT_TYPE))
      {
        if (!null_pointer_constant_p (orig_op1))
@@ -29,6 +29,68 @@ index 9b2aeea50..f2a0e3fd5 100644
  		       "pointer/integer type mismatch "
  		       "in conditional expression");
        else
+@@ -8695,7 +8695,7 @@ convert_for_assignment (location_t location, location_t expr_loc, tree type,
+ 	      range_label_for_type_mismatch rhs_label (rhstype, type);
+ 	      gcc_rich_location richloc (expr_loc, &rhs_label,
+ 					 highlight_colors::actual);
+-	      if (permerror_opt (&richloc, OPT_Wint_conversion,
++	      if (pedwarn (&richloc, OPT_Wint_conversion,
+ 				 "passing argument %d of %qE makes pointer "
+ 				 "from integer without a cast", parmnum, rname))
+ 		{
+@@ -8705,18 +8705,18 @@ convert_for_assignment (location_t location, location_t expr_loc, tree type,
+ 	    }
+ 	    break;
+ 	  case ic_assign:
+-	    permerror_opt (location, OPT_Wint_conversion,
++	    pedwarn (location, OPT_Wint_conversion,
+ 			   "assignment to %qT from %qT makes pointer from "
+ 			   "integer without a cast", type, rhstype);
+ 	    break;
+ 	  case ic_init:
+ 	  case ic_init_const:
+-	    permerror_init (location, OPT_Wint_conversion,
++	    pedwarn_init (location, OPT_Wint_conversion,
+ 			    "initialization of %qT from %qT makes pointer "
+ 			    "from integer without a cast", type, rhstype);
+ 	    break;
+ 	  case ic_return:
+-	    permerror_init (location, OPT_Wint_conversion,
++	    pedwarn_init (location, OPT_Wint_conversion,
+ 			    "returning %qT from a function with return type "
+ 			    "%qT makes pointer from integer without a cast",
+ 			    rhstype, type);
+@@ -8738,7 +8738,7 @@ convert_for_assignment (location_t location, location_t expr_loc, tree type,
+ 	    range_label_for_type_mismatch rhs_label (rhstype, type);
+ 	    gcc_rich_location richloc (expr_loc, &rhs_label,
+ 				       highlight_colors::actual);
+-	    if (permerror_opt (&richloc, OPT_Wint_conversion,
++	    if (pedwarn (&richloc, OPT_Wint_conversion,
+ 			       "passing argument %d of %qE makes integer from "
+ 			       "pointer without a cast", parmnum, rname))
+ 	      {
+@@ -8748,18 +8748,18 @@ convert_for_assignment (location_t location, location_t expr_loc, tree type,
+ 	  }
+ 	  break;
+ 	case ic_assign:
+-	  permerror_opt (location, OPT_Wint_conversion,
++	  pedwarn (location, OPT_Wint_conversion,
+ 			 "assignment to %qT from %qT makes integer from "
+ 			 "pointer without a cast", type, rhstype);
+ 	  break;
+ 	case ic_init:
+ 	case ic_init_const:
+-	  permerror_init (location, OPT_Wint_conversion,
++	  pedwarn_init (location, OPT_Wint_conversion,
+ 			  "initialization of %qT from %qT makes integer "
+ 			  "from pointer without a cast", type, rhstype);
+ 	  break;
+ 	case ic_return:
+-	  permerror_opt (location, OPT_Wint_conversion, "returning %qT from a "
++	  pedwarn (location, OPT_Wint_conversion, "returning %qT from a "
+ 			 "function with return type %qT makes integer from "
+ 			 "pointer without a cast", rhstype, type);
+ 	  break;
 -- 
-2.50.1
+2.51.1
 
