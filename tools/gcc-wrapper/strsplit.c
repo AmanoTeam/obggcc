@@ -169,3 +169,24 @@ size_t strsplit_size(
 	return size;
 	
 }
+
+char* strsplit_get_string(strsplit_part_t* const part) {
+	
+	char* value = NULL;
+	
+	if (part->size == 0) {
+		return value;
+	}
+	
+	value = malloc(part->size + 1);
+	
+	if (value == NULL) {
+		return value;
+	}
+	
+	strncpy(value, part->begin, part->size);
+	value[part->size] = '\0';
+	
+	return value;
+	
+}

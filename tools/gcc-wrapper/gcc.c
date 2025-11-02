@@ -173,6 +173,7 @@ static const char CLANG_OPT_F_COLOR_DIAGNOSTICS[] = "-fcolor-diagnostics";
 static const char CLANG_OPT_F_NO_INTEGRATED_AS[] = "-fno-integrated-as";
 static const char CLANG_OPT_F_INTEGRATED_AS[] = "-fintegrated-as";
 static const char CLANG_OPT_F_SLP_VECTORIZE_AGGRESSIVE[] = "-fslp-vectorize-aggressive";
+static const char CLANG_OPT_F_ERROR_LIMIT[] = "-ferror-limit";
 static const char CLANG_OPT_F_USE_LD_LLD[] = "-fuse-ld=lld";
 static const char CLANG_OPT_F_LTO_FULL[] = "-flto=full";
 static const char CLANG_OPT_F_LTO_THIN[] = "-flto=thin";
@@ -343,8 +344,12 @@ static clang_option_t CLANG_SPECIFIC_REMOVE[] = {
 	{
 		.name = GCC_OPT_STATIC,
 		.value = 0
-	}
+	},
 #endif
+	{
+		.name = CLANG_OPT_F_ERROR_LIMIT,
+		.value = 1
+	}
 };
 
 #define CLANG_SPECIFIC_REMOVE_NON 0
@@ -1084,21 +1089,85 @@ static int clang_specific_remove(const char* const prev, const char* const cur) 
 	*/
 	
 	int status = CLANG_SPECIFIC_REMOVE_CUR;
+	int res = 0;
 	size_t index = 0;
 	
 	size_t size = 0;
 	
+	strsplit_t split = {0};
+	strsplit_part_t part = {0};
+	
+	char* value = NULL;
+	
 	const char* previous = prev;
 	const char* current = cur;
 	
+	char* destination = NULL;
+	char* source = NULL;
+	
 	const char* name = cur;
-	int value = 0;
+	int requires_value = 0;
 	const clang_option_t* option = NULL;
 	
 	unsigned char ch = 0;
 	
 	if (strncmp(current, GCC_OPT_WL, strlen(GCC_OPT_WL)) == 0) {
 		current += strlen(GCC_OPT_WL);
+		
+		strsplit_init(&split, &part, current, ",");
+		
+		while (strsplit_next(&split, &part) != NULL) {
+			value = strsplit_get_string(&part);
+			
+			if (value == NULL) {
+				continue;
+			}
+			
+			res = clang_specific_remove(NULL, value);
+			
+			free(value);
+			
+			res = (
+				(res != CLANG_SPECIFIC_REMOVE_NON) +
+				(res == CLANG_SPECIFIC_REMOVE_NXT)
+			);
+			
+			destination = part.begin;
+			
+			for (index = 0; index < res; index++) {
+				strsplit_next(&split, &part);
+			}
+			
+			if (res == 0) {
+				continue;
+			}
+			
+			source = part.begin;
+			
+			if (source == destination) {
+				if (destination != current) {
+					status = CLANG_SPECIFIC_REMOVE_NON;
+					*(destination) = '\0';
+					
+					while (destination != current) {
+						destination--;
+						
+						 if (*destination != ',') {
+							*(destination + 1) = '\0';
+							break;
+						}
+					}
+				}
+				
+				goto end;
+			}
+			
+			size = strlen(part.begin) + 1;
+			
+			memmove(destination, source, size);
+			
+			strsplit_init(&split, &part, destination, ",");
+		}
 	}
 	
 	if (*current != DASH || *current == ZERO) {
@@ -1112,7 +1181,7 @@ static int clang_specific_remove(const char* const prev, const char* const cur) 
 		option = &CLANG_SPECIFIC_REMOVE[index];
 		
 		name = option->name;
-		value = option->value;
+		requires_value = option->value;
 		
 		while (*(++name) == DASH) {};
 		
@@ -1138,7 +1207,7 @@ static int clang_specific_remove(const char* const prev, const char* const cur) 
 			continue;
 		}
 		
-		if (value && ch == ZERO) {
+		if (requires_value && ch == ZERO) {
 			status = CLANG_SPECIFIC_REMOVE_NXT;
 		}
 		
@@ -3007,6 +3076,7 @@ int main(int argc, char* argv[]) {
 	end:;
 	
 	kargv_free(&yargv);
+	kargv_free(&xargv);
 	
 	free(triplet);
 	free(libc_version);

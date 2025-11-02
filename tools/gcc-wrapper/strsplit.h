@@ -45,4 +45,6 @@ size_t strsplit_size(
 	strsplit_part_t* const part
 );
 
+char* strsplit_get_string(strsplit_part_t* const part);
+
 #endif
