@@ -427,6 +427,10 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Revert-x86-Fixes-for-AMD-znver5-enablement.patch"
 	fi
 	
+	if [ "${gcc_major}" = '15' ]; then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-15/0001-Enable-automatic-linking-of-libatomic.patch"
+	fi
+	
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-AArch64-enable-libquadmath.patch"
 fi
 
