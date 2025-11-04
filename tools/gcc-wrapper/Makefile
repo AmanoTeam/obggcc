@@ -31,6 +31,7 @@ SOURCES = biggestint.c \
 	fs/realpath.c \
 	fs/stripsep.c \
 	fs/rm.c \
+	fs/cwd.c \
 	os/find_exe.c
 
 GCC_SOURCES = $(SOURCES) gcc.c

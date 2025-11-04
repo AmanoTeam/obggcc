@@ -40,7 +40,7 @@
 	#define AUTO_PICK_LINKER 1
 #endif
 
-static const char GCC_MAJOR_VERSION[] = "16";
+static const char GCC_MAJOR_VERSION[] = "15";
 
 static const char INCLUDE_DIR[] = PATHSEP_M "include";
 static const char INCLUDE_MISSING_DIR[] = PATHSEP_M "include-missing";
@@ -166,6 +166,8 @@ static const char CLANG_OPT_W_INVALID_COMMAND_LINE_ARGUMENT[] = "-Winvalid-comma
 static const char CLANG_OPT_W_NEWLINE_EOF[] = "-Wnewline-eof";
 static const char CLANG_OPT_W_UNGUARDED_AVAILABILITY[] = "-Wunguarded-availability";
 static const char CLANG_OPT_W_UNGUARDED_AVAILABILITY_NEW[] = "-Wunguarded-availability-new";
+static const char CLANG_OPT_W_SHORTEN_64_TO_32[] = "-Wshorten-64-to-32";
+static const char CLANG_OPT_W_MACRO_REDEFINED[] = "-Wmacro-redefined";
 static const char CLANG_OPT_PRINT_RESOURCE_DIR[] = "-print-resource-dir";
 static const char CLANG_OPT_F_NO_LIMIT_DEBUG_INFO[] = "-fno-limit-debug-info";
 static const char CLANG_OPT_GCC_TOOLCHAIN[] = "--gcc-toolchain";
@@ -284,7 +286,7 @@ static const char* const FASTER_LINKERS[] = {
 #endif
 
 static const char CLANG_VERSION_TEMPLATE[] = 
-	"clang version 21.0.0\n"
+	"clang version 22.0.0\n"
 	"Target: %s\n"
 	"Thread model: posix\n"
 	"InstalledDir: %s\n";
@@ -310,6 +312,14 @@ static clang_option_t CLANG_SPECIFIC_REMOVE[] = {
 	},
 	{
 		.name = CLANG_OPT_W_UNGUARDED_AVAILABILITY_NEW,
+		.value = 0
+	},
+	{
+		.name = CLANG_OPT_W_SHORTEN_64_TO_32,
+		.value = 0
+	},
+	{
+		.name = CLANG_OPT_W_MACRO_REDEFINED,
 		.value = 0
 	},
 	{
