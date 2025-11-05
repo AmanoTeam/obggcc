@@ -57,6 +57,11 @@ static const char GOMP_LIBRARY[] = "gomp";
 static const char ITM_LIBRARY[] = "itm";
 static const char QUADMATH_LIBRARY[] = "quadmath";
 static const char MATH_LIBRARY[] = "m";
+static const char ICONV_LIBRARY[] = "iconv";
+static const char CHARSET_LIBRARY[] = "charset";
+static const char GFORTRAN_LIBRARY[] = "gfortran";
+static const char OBJC_LIBRARY[] = "objc";
+static const char GCOBOL_LIBRARY[] = "gcobol";
 
 static const char LIBATOMIC_SHARED[] = "libatomic.so";
 
@@ -78,6 +83,14 @@ static const char LIBHWASAN_SHARED[] = "libhwasan.so";
 static const char LIBLSAN_SHARED[] = "liblsan.so";
 static const char LIBTSAN_SHARED[] = "libtsan.so";
 static const char LIBUBSAN_SHARED[] = "libubsan.so";
+
+static const char LIBICONV_SHARED[] = "libiconv.so";
+static const char LIBCHARSET_SHARED[] = "libcharset.so";
+
+static const char LIBGFORTRAN_SHARED[] = "libgfortran.so";
+static const char LIBOBJC_SHARED[] = "libobjc.so";
+static const char LIBGCOBOL_SHARED[] = "libgcobol.so";
+
 
 static const char GCC_OPT_ISYSTEM[] = "-isystem";
 static const char GCC_OPT_SYSROOT[] = "--sysroot";
@@ -107,14 +120,7 @@ static const char GCC_OPT_B[] = "-B";
 static const char GCC_OPT_SHARED[] = "-shared";
 static const char GCC_OPT_F_SYNTAX_ONLY[] = "-fsyntax-only";
 static const char GCC_OPT_OS[] = "-Os";
-static const char GCC_OPT_L_RT[] = "-lrt";
 static const char GCC_OPT_FSANITIZE[] = "-fsanitize=";
-static const char GCC_OPT_L_STDCXX[] = "-lstdc++";
-static const char GCC_OPT_L_ATOMIC[] = "-latomic";
-static const char GCC_OPT_L_GOMP[] = "-lgomp";
-static const char GCC_OPT_L_ITM[] = "-litm";
-static const char GCC_OPT_L_QUADMATH[] = "-lquadmath";
-static const char GCC_OPT_L_MATH[] = "-lm";
 static const char GCC_OPT_XLINKER[] = "-Xlinker";
 static const char GCC_OPT_WL[] = "-Wl,";
 static const char GCC_OPT_F_FAT_LTO_OBJECTS[] = "-ffat-lto-objects";
@@ -274,8 +280,6 @@ static const char EQUAL_S[] = "=";
 
 static const char LD_LLD[] = "ld.lld";
 static const char LD[] = "ld";
-
-extern char** environ;
 
 #if AUTO_PICK_LINKER && !defined(WCLANG)
 static const char* const FASTER_LINKERS[] = {
@@ -1475,6 +1479,12 @@ int main(int argc, char* argv[]) {
 	int wants_librt = 0;
 	int wants_libssp = 0;
 	int wants_libm = 0;
+	int wants_libiconv = 0;
+	int wants_libcharset = 0;
+	int wants_libgfortran = 0;
+	int wants_libobjc = 0;
+	int wants_libgcobol = 0;
+	
 	int wants_force_static = 0;
 	
 	hquery_t query = {0};
@@ -1737,27 +1747,20 @@ int main(int argc, char* argv[]) {
 			print_version = 1;
 		} else if (strcmp(cur, GCC_OPT_NODEFAULTLIBS) == 0 || strcmp(cur, GCC_OPT_NOSTDLIB) == 0) {
 			nodefaultlibs = 1;
-		} else if (strcmp(cur, GCC_OPT_L_STDCXX) == 0) {
-			wants_libcxx = 1;
-		} else if (strcmp(cur, GCC_OPT_STATIC_LIBCXX) == 0) {
-			wants_libcxx = 1;
-			wants_static_libcxx = 1;
-		} else if (strcmp(cur, GCC_OPT_STATIC_LIBGCC) == 0) {
-			wants_libgcc = 1;
-			wants_static_libgcc = 1;
-		} else if (strcmp(cur, GCC_OPT_L_ATOMIC) == 0) {
-			wants_libatomic = 1;
-		} else if (strcmp(cur, GCC_OPT_L_GOMP) == 0 || strcmp(cur, GCC_OPT_F_OPENMP) == 0 || strcmp(cur, GCC_OPT_F_OPENACC) == 0) {
-			wants_libgomp = 1;
-		} else if (strcmp(cur, GCC_OPT_L_ITM) == 0 || strcmp(cur, GCC_OPT_F_GNU_TM) == 0) {
-			wants_libitm = 1;
-		} else if (strcmp(cur, GCC_OPT_L_QUADMATH) == 0) {
-			wants_libquadmath = 1;
-		} else if (strcmp(cur, GCC_OPT_L_RT) == 0) {
-			have_rt_library = 1;
-		} else if (strcmp(cur, GCC_OPT_L_MATH) == 0) {
-			wants_libm = 1;
-		} else if (prev != NULL && strcmp(prev, GCC_OPT_L) == 0) {
+		} else if (strncmp(cur, GCC_OPT_L, strlen(GCC_OPT_L)) == 0) {
+			size = strlen(GCC_OPT_L);
+			
+			cur += size;
+			ch = *cur;
+			
+			if (ch == ZERO) {
+				if ((index + 1) > (size_t) argc) {
+					goto next;
+				}
+				
+				cur = argv[index + 1];
+			}
+			
 			if (strcmp(cur, STDCXX_LIBRARY) == 0) {
 				wants_libcxx = 1;
 			} else if (strcmp(cur, RT_LIBRARY) == 0) {
@@ -1772,7 +1775,28 @@ int main(int argc, char* argv[]) {
 				wants_libquadmath = 1;
 			} else if (strcmp(cur, MATH_LIBRARY) == 0) {
 				wants_libm = 1;
+			} else if (strcmp(cur, ICONV_LIBRARY) == 0) {
+				wants_libiconv = 1;
+			} else if (strcmp(cur, CHARSET_LIBRARY) == 0) {
+				wants_libcharset = 1;
+			} else if (strcmp(cur, GFORTRAN_LIBRARY) == 0) {
+				wants_libgfortran = 1;
+			} else if (strcmp(cur, OBJC_LIBRARY) == 0) {
+				wants_libobjc = 1;
+			} else if (strcmp(cur, GCOBOL_LIBRARY) == 0) {
+				wants_libgcobol = 1;
 			}
+			
+		} else if (strcmp(cur, GCC_OPT_STATIC_LIBCXX) == 0) {
+			wants_libcxx = 1;
+			wants_static_libcxx = 1;
+		} else if (strcmp(cur, GCC_OPT_STATIC_LIBGCC) == 0) {
+			wants_libgcc = 1;
+			wants_static_libgcc = 1;
+		} else if (strcmp(cur, GCC_OPT_F_OPENMP) == 0 || strcmp(cur, GCC_OPT_F_OPENACC) == 0) {
+			wants_libgomp = 1;
+		} else if (strcmp(cur, GCC_OPT_F_GNU_TM) == 0) {
+			wants_libitm = 1;
 		} else if (strcmp(cur, CMAKE_C_COMPILER_ID) == 0 || strcmp(cur, CMAKE_CXX_COMPILER_ID) == 0) {
 			cmake_init = 1;
 		} else if (strstr(cur, CMAKE_FILES_DIRECTORY) != NULL) {
@@ -1967,9 +1991,11 @@ int main(int argc, char* argv[]) {
 	if (address_sanitizer) {
 		wants_libcxx = 1;
 		wants_libgcc = 1;
+		wants_libiconv = 1;
+		wants_libcharset = 1;
 	}
 	
-	if (wants_libcxx || wants_libitm || wants_libgomp) {
+	if (wants_libcxx || wants_libitm || wants_libgomp || wants_libobjc || wants_libgfortran) {
 		wants_libgcc = 1;
 	}
 	
@@ -2067,8 +2093,13 @@ int main(int argc, char* argv[]) {
 		strcmp(cc, GCOBOL) == 0
 	);
 	
+	wants_libgfortran += (strcmp(cc, GFORTRAN) == 0);
+	wants_libgcobol += (strcmp(cc, GCOBC) == 0 || strcmp(cc, GCOBOL) == 0);
+	
 	if (wants_libcxx) {
 		wants_libgcc = 1;
+		wants_libiconv = 1;
+		wants_libcharset = 1;
 	}
 	
 	if (linking && wants_force_static) {
@@ -2722,7 +2753,8 @@ int main(int argc, char* argv[]) {
 		
 		#if defined(OBGGCC)
 			if (wants_librt && !nodefaultlibs) {
-				kargv_append(&yargv, GCC_OPT_L_RT);
+				kargv_append(&yargv, GCC_OPT_L);
+				kargv_append(&yargv, RT_LIBRARY);
 			}
 		#endif
 	}
@@ -3075,10 +3107,55 @@ int main(int argc, char* argv[]) {
 					goto end;
 				}
 			}
+			
+			/* libiconv */
+			if (wants_libiconv) {
+				err = copy_shared_library(sysroot_library_directory, output_directory, LIBICONV_SHARED, LIBICONV_SHARED);
+				
+				if (err != ERR_SUCCESS) {
+					goto end;
+				}
+			}
+			
+			/* libcharset */
+			if (wants_libcharset) {
+				err = copy_shared_library(sysroot_library_directory, output_directory, LIBCHARSET_SHARED, LIBCHARSET_SHARED);
+				
+				if (err != ERR_SUCCESS) {
+					goto end;
+				}
+			}
+			
+			/* libgcobol */
+			if (wants_libgcobol) {
+				err = copy_shared_library(sysroot_library_directory, output_directory, LIBGCOBOL_SHARED, LIBGCOBOL_SHARED);
+				
+				if (err != ERR_SUCCESS) {
+					goto end;
+				}
+			}
+			
+			/* libobjc */
+			if (wants_libobjc) {
+				err = copy_shared_library(sysroot_library_directory, output_directory, LIBOBJC_SHARED, LIBOBJC_SHARED);
+				
+				if (err != ERR_SUCCESS) {
+					goto end;
+				}
+			}
+			
+			/* libgfortran */
+			if (wants_libgfortran) {
+				err = copy_shared_library(sysroot_library_directory, output_directory, LIBGFORTRAN_SHARED, LIBGFORTRAN_SHARED);
+				
+				if (err != ERR_SUCCESS) {
+					goto end;
+				}
+			}
 		}
 	#endif
 	
-	if (execve(executable, args, environ) == -1) {
+	if (execv(executable, args) == -1) {
 		err = ERR_EXECVE_FAILURE;
 		goto end;
 	}
