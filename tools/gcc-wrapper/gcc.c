@@ -91,7 +91,7 @@ static const char LIBGFORTRAN_SHARED[] = "libgfortran.so";
 static const char LIBOBJC_SHARED[] = "libobjc.so";
 static const char LIBGCOBOL_SHARED[] = "libgcobol.so";
 
-
+static const char GCC_OPT_I[] = "-I";
 static const char GCC_OPT_ISYSTEM[] = "-isystem";
 static const char GCC_OPT_SYSROOT[] = "--sysroot";
 static const char GCC_OPT_NOSTDINC[] = "--no-standard-includes";
@@ -1637,11 +1637,15 @@ int main(int argc, char* argv[]) {
 	for (index = 0; index < (size_t) argc; index++) {
 		cur = argv[index];
 		
-		if (strncmp(cur, GCC_OPT_ISYSTEM, strlen(GCC_OPT_ISYSTEM)) == 0 || strncmp(cur, GCC_OPT_LIBDIR, strlen(GCC_OPT_LIBDIR)) == 0) {
-			pattern = GCC_OPT_ISYSTEM;
+		if (strncmp(cur, GCC_OPT_ISYSTEM, strlen(GCC_OPT_ISYSTEM)) == 0 || strncmp(cur, GCC_OPT_LIBDIR, strlen(GCC_OPT_LIBDIR)) == 0 || strncmp(cur, GCC_OPT_I, strlen(GCC_OPT_I)) == 0) {
+			pattern = NULL;
 			
-			if (strncmp(cur, GCC_OPT_LIBDIR, strlen(GCC_OPT_LIBDIR)) == 0) {
+			if (strncmp(cur, GCC_OPT_ISYSTEM, strlen(GCC_OPT_ISYSTEM)) == 0) {
+				pattern = GCC_OPT_ISYSTEM;
+			} else if (strncmp(cur, GCC_OPT_LIBDIR, strlen(GCC_OPT_LIBDIR)) == 0) {
 				pattern = GCC_OPT_LIBDIR;
+			} else if (strncmp(cur, GCC_OPT_I, strlen(GCC_OPT_I)) == 0) {
+				pattern = GCC_OPT_I;
 			}
 			
 			size = strlen(pattern);
