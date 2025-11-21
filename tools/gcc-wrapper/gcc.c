@@ -185,6 +185,7 @@ static const char CLANG_OPT_F_ERROR_LIMIT[] = "-ferror-limit";
 static const char CLANG_OPT_F_USE_LD_LLD[] = "-fuse-ld=lld";
 static const char CLANG_OPT_F_LTO_FULL[] = "-flto=full";
 static const char CLANG_OPT_F_LTO_THIN[] = "-flto=thin";
+static const char CLANG_OPT_XCLANG[] = "-Xclang";
 
 #define LTO_NONE 0x00
 #define LTO_FULL 0x01
@@ -362,6 +363,10 @@ static clang_option_t CLANG_SPECIFIC_REMOVE[] = {
 #endif
 	{
 		.name = CLANG_OPT_F_ERROR_LIMIT,
+		.value = 1
+	},
+	{
+		.name = CLANG_OPT_XCLANG,
 		.value = 1
 	}
 };
