@@ -471,31 +471,6 @@ sed \
 	"${gcc_directory}/configure" \
 	"${binutils_directory}/configure"
 
-if ! (( native )); then
-	sed \
-		--in-place \
-		--regexp-extended \
-		--expression 's/(cross_compiling_build)=.*$/\1=yes/' \
-		--expression 's/(cross_compiling)=.*$/\1=yes/' \
-		"${gcc_directory}/configure" \
-		"${gcc_directory}/gcc/configure" \
-		"${gcc_directory}/c++tools/configure" \
-		"${gcc_directory}/libcc1/configure" \
-		"${gcc_directory}/libcody/configure" \
-		"${gcc_directory}/libcpp/configure" \
-		"${gcc_directory}/libdecnumber/configure" \
-		"${gcc_directory}/libffi/configure" \
-		"${gcc_directory}/libiberty/configure" \
-		"${gcc_directory}/lto-plugin/configure" \
-		"${gcc_directory}/zlib/configure" \
-		"${gcc_directory}/configure" \
-		"${isl_directory}/configure" \
-		"${mpc_directory}/configure" \
-		"${mpfr_directory}/configure" \
-		"${gmp_directory}/configure" \
-		"${binutils_directory}/configure"
-fi
-
 [ -d "${gmp_directory}/build" ] || mkdir "${gmp_directory}/build"
 
 cd "${gmp_directory}/build"
@@ -749,7 +724,7 @@ for target in "${targets[@]}"; do
 	
 	../configure \
 		--build="${build/unknown-/}" \
-		--host="${host/unknown-/}" \
+		--host="${host}" \
 		--target="${triplet}" \
 		--prefix="${toolchain_directory}" \
 		--with-linker-hash-style="${hash_style}" \
