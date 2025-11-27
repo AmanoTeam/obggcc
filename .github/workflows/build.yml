@@ -24,7 +24,7 @@ jobs:
       id: check-cache
       uses: actions/cache@main
       with:
-        key: gcc-16.0.0
+        key: gcc-15.0.0
         lookup-only: true
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
@@ -55,7 +55,7 @@ jobs:
       if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
       uses: actions/cache@main
       with:
-        key: gcc-16.0.0
+        key: gcc-15.0.0
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
           /tmp/x86_64-linux-gnu.tar.xz.sha256
@@ -132,7 +132,7 @@ jobs:
     - name: Restore from cache
       uses: actions/cache@main
       with:
-        key: gcc-16.0.0
+        key: gcc-15.0.0
         fail-on-cache-miss: true
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
@@ -244,12 +244,6 @@ jobs:
             export PATH="${PINO_HOME}/bin:${PATH}"
             
             source "${PINO_HOME}/usr/local/share/pino/autotools/${{ matrix.target }}.sh"
-            
-            rm \
-                "${PINO_HOME}/include/bionic/"{zconf,zlib}'.h' \
-                "${PINO_HOME}/"*'-unknown-linux-'{androideabi,android}'/include/'{zconf,zlib}'.h' \
-                "${PINO_HOME}/"*'-unknown-linux-android'*'/lib/libz.so' \
-                "${PINO_HOME}/"*'-unknown-linux-android'*'/lib/static/libz.so'
         elif [[ '${{ matrix.target }}' == *'-darwin' ]]; then
             curl \
                 --silent \
@@ -307,12 +301,12 @@ jobs:
       - name: Create release
         uses: softprops/action-gh-release@master
         with:
-          tag_name: 4.0
-          name: OBGGCC v4.0
+          tag_name: gcc-15
+          name: GCC 15.2.0
           files: ./*/*-unknown-*.tar.xz*
           draft: false
           prerelease: true
           fail_on_unmatched_files: true
-          body: "* Update to latest GCC 16 trunk"
+          body: "* Update to GCC 15.2.0"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

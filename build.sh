@@ -50,7 +50,7 @@ declare -r isl_directory="${build_directory}/isl-0.27"
 declare -r binutils_tarball="${build_directory}/binutils.tar.xz"
 declare -r binutils_directory="${build_directory}/binutils"
 
-declare -r gcc_major='16'
+declare -r gcc_major='15'
 
 declare gcc_url='https://github.com/gcc-mirror/gcc/archive/master.tar.gz'
 declare -r gcc_tarball="${build_directory}/gcc.tar.xz"
@@ -621,6 +621,12 @@ if ! (( native )); then
 	readelf="${READELF}"
 fi
 
+sed \
+	--in-place \
+	--regexp-extended \
+	"s/(GCC_MAJOR_VERSION\[\] = )\"[0-9]+\"/\1\"${gcc_major}\"/g" \
+	"${workdir}/tools/gcc-wrapper/gcc.c" \
+
 make \
 	-C "${workdir}/tools/gcc-wrapper" \
 	PREFIX="$(dirname "${gcc_wrapper}")" \
@@ -734,9 +740,7 @@ for target in "${targets[@]}"; do
 		--with-isl="${toolchain_directory}" \
 		--with-zstd="${toolchain_directory}" \
 		--with-system-zlib \
-		--with-bugurl='https://github.com/AmanoTeam/obggcc/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="OBGGCC v4.0-${revision}" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--with-native-system-header-dir='/include' \
 		--with-default-libstdcxx-abi='new' \
