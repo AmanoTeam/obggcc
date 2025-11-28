@@ -301,12 +301,12 @@ jobs:
       - name: Create release
         uses: softprops/action-gh-release@master
         with:
-          tag_name: gcc-15
-          name: GCC 15.2.0
+          tag_name: gcc-16
+          name: GCC 16.0.0
           files: ./*/*-unknown-*.tar.xz*
           draft: false
           prerelease: true
           fail_on_unmatched_files: true
-          body: "* Update to GCC 15.2.0"
+          body: "* Update to GCC 16.0.0"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
