@@ -1,0 +1,41 @@
+# Maintainer: Kartatz <kartatz at amanoteam.com>
+pkgname=obggcc-bin
+pkgver=15.2.0
+pkgrel=20251127
+pkgdesc='Linux C/C++ cross-compiler targeting older glibc versions'
+arch=('x86_64' 'aarch64' 'armv7h')
+url='https://github.com/AmanoTeam/obggcc'
+license=('GPL-3.0-or-later')
+depends=()
+optdepends=()
+provides=('obggcc')
+conflicts=('obggcc')
+options=('!strip' 'staticlibs')
+
+source_x86_64=('https://github.com/AmanoTeam/obggcc/releases/download/gcc-${pkgver%%.*}/x86_64-unknown-linux-gnu.tar.xz')
+source_aarch64=('https://github.com/AmanoTeam/obggcc/releases/download/gcc-${pkgver%%.*}/aarch64-unknown-linux-gnu.tar.xz')
+source_armv7h=('https://github.com/AmanoTeam/obggcc/releases/download/gcc-${pkgver%%.*}/arm-unknown-linux-gnueabihf.tar.xz')
+
+sha256sums_x86_64=('598d8161481aaeeefa2ccca8056dffb5fe995cfe7eeb6090deea7633ec2b3fa2')
+sha256sums_aarch64=('528e7df2f8cfee029f8a572884008279160a22aef3fa65ac270a321c5bcc33c8')
+sha256sums_armv7h=('88626731e8f2290b7e27f15fdf2e58bce4eadf3043360fbbb8824567f541b83e')
+
+package() {
+	
+	mkdir \
+		--parent \
+		"${pkgdir}/opt" \
+		"${pkgdir}/usr/bin"
+	
+	cp \
+		--recursive \
+		"${srcdir}/${pkgname/-bin/}" \
+		"${pkgdir}/opt"
+	
+	ln \
+		--symbolic \
+		--relative \
+		"${pkgdir}/opt/${pkgname/-bin/}/bin/"*'-unknown-linux-gnu'*'2.'* \
+		"${pkgdir}/usr/bin"
+	
+}
