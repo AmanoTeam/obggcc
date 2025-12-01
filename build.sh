@@ -286,7 +286,7 @@ fi
 
 if ! [ -f "${isl_tarball}" ]; then
 	curl \
-		--url 'https://sourceforge.net/projects/libisl/files/isl-0.27.tar.xz' \
+		--url 'https://deb.debian.org/debian/pool/main/i/isl/isl_0.27.orig.tar.xz' \
 		--retry '30' \
 		--retry-all-errors \
 		--retry-delay '0' \
