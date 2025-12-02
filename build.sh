@@ -780,7 +780,6 @@ for target in "${targets[@]}"; do
 		--enable-libgomp \
 		--with-specs="${specs}" \
 		--with-pic \
-		--disable-c++-tools \
 		--disable-libsanitizer \
 		--disable-bootstrap \
 		--disable-libstdcxx-pch \
