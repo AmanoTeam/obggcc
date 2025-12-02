@@ -75,7 +75,6 @@ declare -r cmake_directory="${workdir}/submodules/cmake"
 
 declare -r curl_directory="${workdir}/submodules/curl"
 
-declare -r pieflags='-fPIE'
 declare -r ccflags='-w -O2'
 declare -r linkflags='-Xlinker -s'
 
@@ -552,8 +551,9 @@ fi
 	--with-gmp-prefix="${toolchain_directory}" \
 	--enable-shared \
 	--disable-static \
-	CFLAGS="${pieflags} ${ccflags}" \
-	CXXFLAGS="${pieflags} ${ccflags}" \
+	--with-pic \
+	CFLAGS="${ccflags}" \
+	CXXFLAGS="${ccflags}" \
 	LDFLAGS="${linkflags} ${isl_extra_ldflags}"
 
 make all --jobs
