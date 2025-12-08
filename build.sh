@@ -301,6 +301,10 @@ if ! [ -f "${isl_tarball}" ]; then
 		--file="${isl_tarball}"
 	
 	patch --directory="${isl_directory}" --strip='1' --input="${workdir}/patches/0001-Remove-hardcoded-RPATH-and-versioned-SONAME-from-libisl.patch"
+	
+	for name in "${isl_directory}/isl_test"*; do
+		echo 'int main() {}' > "${name}"
+	done
 fi
 
 if ! [ -f "${binutils_tarball}" ]; then
