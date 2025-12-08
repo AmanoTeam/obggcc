@@ -973,32 +973,29 @@ fi
 if ! (( native )) && [[ "${host}" != *'-darwin'* ]]; then
 	[ -d "${toolchain_directory}/lib" ] || mkdir "${toolchain_directory}/lib"
 	
-	# libstdc++
-	declare name=$(realpath $("${cc}" --print-file-name='libstdc++.so'))
-	
 	# libestdc++
+	declare name=$(realpath $("${cc}" --print-file-name='libestdc++.so'))
+	
+	# libstdc++
 	if ! [ -f "${name}" ]; then
-		declare name=$(realpath $("${cc}" --print-file-name='libestdc++.so'))
+		declare name=$(realpath $("${cc}" --print-file-name='libstdc++.so'))
 	fi
 	
 	declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
 	
 	cp "${name}" "${toolchain_directory}/lib/${soname}"
 	
-	# OpenBSD does not have a libgcc library
-	if [[ "${host}" != *'-openbsd'* ]]; then
+	# libegcc
+	declare name=$(realpath $("${cc}" --print-file-name='libegcc.so'))
+	
+	if ! [ -f "${name}" ]; then
 		# libgcc_s
 		declare name=$(realpath $("${cc}" --print-file-name='libgcc_s.so.1'))
-		
-		# libegcc
-		if ! [ -f "${name}" ]; then
-			declare name=$(realpath $("${cc}" --print-file-name='libegcc.so'))
-		fi
-		
-		declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
-		
-		cp "${name}" "${toolchain_directory}/lib/${soname}"
 	fi
+	
+	declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
+	
+	cp "${name}" "${toolchain_directory}/lib/${soname}"
 	
 	# libatomic
 	declare name=$(realpath $("${cc}" --print-file-name='libatomic.so'))
@@ -1006,6 +1003,22 @@ if ! (( native )) && [[ "${host}" != *'-darwin'* ]]; then
 	declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
 	
 	cp "${name}" "${toolchain_directory}/lib/${soname}"
+	
+	# libiconv
+	declare name=$(realpath $("${cc}" --print-file-name='libiconv.so'))
+	
+	if [ -f "${name}" ]; then
+		declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
+		cp "${name}" "${toolchain_directory}/lib/${soname}"
+	fi
+	
+	# libcharset
+	declare name=$(realpath $("${cc}" --print-file-name='libcharset.so'))
+	
+	if [ -f "${name}" ]; then
+		declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
+		cp "${name}" "${toolchain_directory}/lib/${soname}"
+	fi
 fi
 
 while read item; do
