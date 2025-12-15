@@ -19,12 +19,12 @@ jobs:
     steps:
     - uses: actions/checkout@main
       with:
-        submodules: true
+        submodules: recursive
     - name: Check for cache
       id: check-cache
       uses: actions/cache@main
       with:
-        key: gcc-15git
+        key: gcc-15-git
         lookup-only: true
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
@@ -55,7 +55,7 @@ jobs:
       if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
       uses: actions/cache@main
       with:
-        key: gcc-15git
+        key: gcc-15-git
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
           /tmp/x86_64-linux-gnu.tar.xz.sha256
@@ -121,7 +121,7 @@ jobs:
     steps:
     - uses: actions/checkout@main
       with:
-        submodules: true
+        submodules: recursive
     - name: Free up some space
       run: |
         curl 'https://raw.githubusercontent.com/AmanoTeam/gha-free-space/refs/heads/master/main.sh' -sSf | bash 
@@ -132,7 +132,7 @@ jobs:
     - name: Restore from cache
       uses: actions/cache@main
       with:
-        key: gcc-15git
+        key: gcc-15-git
         fail-on-cache-miss: true
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
@@ -159,6 +159,8 @@ jobs:
             export RAIDEN_HOME='/tmp/raiden'
             export PATH="${RAIDEN_HOME}/bin:${PATH}"
             
+            export CMAKE_TOOLCHAIN_FILE="${RAIDEN_HOME}/usr/local/share/raiden/cmake/${{ matrix.target }}.cmake"
+            
             source "${RAIDEN_HOME}/usr/local/share/raiden/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' == *'-linux-gnu'* ]]; then
             # declare -r OBGGCC_TAG="$(jq --raw-output '.tag_name' <<< "$(curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://api.github.com/repos/AmanoTeam/obggcc/releases/latest')")"
@@ -170,6 +172,8 @@ jobs:
             
             export OBGGCC_HOME='/tmp/obggcc-toolchain'
             export PATH="${OBGGCC_HOME}/bin:${PATH}"
+            
+            export CMAKE_TOOLCHAIN_FILE="${OBGGCC_HOME}/usr/local/share/obggcc/cmake/${{ matrix.target }}.cmake"
             
             source "${OBGGCC_HOME}/usr/local/share/obggcc/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' == *'-freebsd' ]]; then
@@ -183,6 +187,8 @@ jobs:
             export LOKI_HOME='/tmp/loki'
             export PATH="${LOKI_HOME}/bin:${PATH}"
             
+            export CMAKE_TOOLCHAIN_FILE="${LOKI_HOME}/usr/local/share/loki/cmake/${{ matrix.target }}.cmake"
+            
             source "${LOKI_HOME}/usr/local/share/loki/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' == *'-netbsd'* ]]; then
             declare -r DAKINI_TAG="$(jq --raw-output '.tag_name' <<< "$(curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://api.github.com/repos/AmanoTeam/Dakini/releases/latest')")"
@@ -194,6 +200,8 @@ jobs:
             
             export DAKINI_HOME='/tmp/dakini'
             export PATH="${DAKINI_HOME}/bin:${PATH}"
+            
+            export CMAKE_TOOLCHAIN_FILE="${DAKINI_HOME}/usr/local/share/dakini/cmake/${{ matrix.target }}.cmake"
             
             source "${DAKINI_HOME}/usr/local/share/dakini/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' == *'-openbsd'* ]]; then
@@ -207,6 +215,8 @@ jobs:
             export ATAR_HOME='/tmp/atar'
             export PATH="${ATAR_HOME}/bin:${PATH}"
             
+            export CMAKE_TOOLCHAIN_FILE="${ATAR_HOME}/usr/local/share/atar/cmake/${{ matrix.target }}.cmake"
+            
             source "${ATAR_HOME}/usr/local/share/atar/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' == *'-dragonfly' ]]; then
             declare -r VENTI_TAG="$(jq --raw-output '.tag_name' <<< "$(curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://api.github.com/repos/AmanoTeam/Venti/releases/latest')")"
@@ -218,6 +228,8 @@ jobs:
             
             export VENTI_HOME='/tmp/venti'
             export PATH="${VENTI_HOME}/bin:${PATH}"
+            
+            export CMAKE_TOOLCHAIN_FILE="${VENTI_HOME}/usr/local/share/venti/cmake/${{ matrix.target }}.cmake"
             
             source "${VENTI_HOME}/usr/local/share/venti/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' == *'-haiku' ]]; then
@@ -231,6 +243,8 @@ jobs:
             export SIL_HOME='/tmp/sil'
             export PATH="${SIL_HOME}/bin:${PATH}"
             
+            export CMAKE_TOOLCHAIN_FILE="${SIL_HOME}/usr/local/share/sil/cmake/${{ matrix.target }}.cmake"
+            
             source "${SIL_HOME}/usr/local/share/sil/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' == *'-android'* ]]; then
             declare -r PINO_TAG="$(jq --raw-output '.tag_name' <<< "$(curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://api.github.com/repos/AmanoTeam/Pino/releases/latest')")"
@@ -243,6 +257,8 @@ jobs:
             export PINO_HOME='/tmp/pino'
             export PATH="${PINO_HOME}/bin:${PATH}"
             
+            export CMAKE_TOOLCHAIN_FILE="${PINO_HOME}/usr/local/share/pino/cmake/${{ matrix.target }}.cmake"
+            
             source "${PINO_HOME}/usr/local/share/pino/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' == *'-darwin' ]]; then
             curl \
@@ -254,6 +270,10 @@ jobs:
             
             export DARWIN_HOME='/tmp/darwin'
             export PATH="${DARWIN_HOME}/bin:${PATH}"
+            
+            export CMAKE_TOOLCHAIN_FILE="${DARWIN_HOME}/usr/local/share/darwin/cmake/${{ matrix.target }}.cmake"
+            
+            export MACOSX_DEPLOYMENT_TARGET='11.3'
             
             source "${DARWIN_HOME}/usr/local/share/darwin/autotools/${{ matrix.target }}.sh"
         fi
@@ -299,6 +319,7 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@main
       - name: Create release
+        if:  false
         uses: softprops/action-gh-release@master
         with:
           tag_name: gcc-15

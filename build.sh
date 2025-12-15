@@ -62,9 +62,6 @@ declare -r libsanitizer_directory="${build_directory}/libsanitizer"
 declare -r gdb_tarball="${build_directory}/gdb.tar.xz"
 declare -r gdb_directory="${build_directory}/gdb"
 
-declare -r nz_tarball="${build_directory}/nz.tar.xz"
-declare nz_directory=""
-
 declare -r zstd_tarball="${build_directory}/zstd.tar.gz"
 declare -r zstd_directory="${build_directory}/zstd-dev"
 
@@ -74,6 +71,9 @@ declare -r zlib_directory="${build_directory}/zlib-develop"
 declare -r cmake_directory="${workdir}/submodules/cmake"
 
 declare -r curl_directory="${workdir}/submodules/curl"
+
+declare -r nz_directory="${workdir}/submodules/nz"
+declare -r nz_prefix="${build_directory}/nz"
 
 declare -r ccflags='-w -O2'
 declare -r linkflags='-Xlinker -s'
@@ -195,7 +195,7 @@ export PATH="${build_directory}:${build_directory}/bin:${PATH}"
 
 cd "${cmake_directory}"
 
-CC= CXX= \
+CC= CXX= CMAKE_TOOLCHAIN_FILE= \
 	./bootstrap \
 	--prefix="${build_directory}" \
 	--parallel="${max_jobs}"
@@ -203,9 +203,14 @@ CC= CXX= \
 make all --jobs="${max_jobs}"
 make install
 
+sed \
+	--in-place \
+	'/CMAKE_SHARED_LIBRARY_RUNTIME_C_FLAG/d' \
+	"${build_directory}/share/cmake-"*'/Modules/Platform/Android.cmake'
+
 cmake --version
 
-CC= CXX= \
+CC= CXX= CMAKE_TOOLCHAIN_FILE= \
 	cmake \
 	-S "${curl_directory}" \
 	-B "${curl_directory}/build" \
@@ -586,16 +591,9 @@ unlink "${toolchain_directory}/lib/libz.a"
 cd "${zstd_directory}/.build"
 rm --force --recursive ./*
 
-declare cmake_flags=''
-
-if [[ "${host}" = *'-darwin'* ]]; then
-	cmake_flags+=' -DCMAKE_SYSTEM_NAME=Darwin'
-fi
-
 cmake \
 	-S "${zstd_directory}/build/cmake" \
 	-B "${PWD}" \
-	${cmake_flags} \
 	-DCMAKE_C_FLAGS="-DZDICT_QSORT=ZDICT_QSORT_MIN ${ccflags}" \
 	-DCMAKE_INSTALL_PREFIX="${toolchain_directory}" \
 	-DBUILD_SHARED_LIBS=ON \
@@ -606,6 +604,24 @@ cmake \
 
 cmake --build "${PWD}" -- --jobs
 cmake --install "${PWD}" --strip
+
+[ -d "${nz_directory}/build" ] || mkdir "${nz_directory}/build"
+
+cd "${nz_directory}/build"
+rm --force --recursive ./*
+
+cmake \
+	-S "${nz_directory}" \
+	-B "${PWD}" \
+	-DCMAKE_C_FLAGS="${ccflags}" \
+	-DCMAKE_CXX_FLAGS="${ccflags}" \
+	-DCMAKE_INSTALL_PREFIX="${nz_prefix}"
+
+cmake --build "${PWD}" -- --jobs='1'
+cmake --install "${PWD}" --strip
+
+mkdir --parent "${toolchain_directory}/lib/nouzen"
+mv "${nz_prefix}/lib" "${toolchain_directory}/lib/nouzen"
 
 # We prefer symbolic links over hard links.
 cp "${workdir}/tools/ln.sh" "${build_directory}/ln"
@@ -941,32 +957,6 @@ if ! (( native )); then
 		cp --recursive "${gdb_directory}/bin" "${toolchain_directory}"
 		rm --recursive "${gdb_directory}"
 	fi
-	
-	declare url="https://github.com/AmanoTeam/Nouzen/releases/latest/download/${host}.tar.xz"
-	declare nz_directory="${build_directory}/${host}"
-	
-	rm --force --recursive "${nz_directory}"
-	
-	echo "- Fetching data from '${url}'"
-	
-	curl \
-		--url "${url}" \
-		--retry '30' \
-		--retry-all-errors \
-		--retry-delay '0' \
-		--retry-max-time '0' \
-		--location \
-		--silent \
-		--output "${nz_tarball}"
-	
-	tar \
-		--directory="$(dirname "${nz_directory}")" \
-		--extract \
-		--file="${nz_tarball}" 2>/dev/null || nz='0'
-	
-	if (( nz )); then
-		mv "${nz_directory}/lib" "${toolchain_directory}/lib/nouzen"
-	fi
 fi
 
 # Bundle both libstdc++ and libgcc within host tools
@@ -1112,8 +1102,8 @@ while read item; do
 	if (( nz )); then
 		mkdir 'nouzen'
 		
-		if [ -d "${nz_directory}" ]; then
-			cp --recursive "${nz_directory}/"* './nouzen'
+		if [ -d "${nz_prefix}" ]; then
+			cp --recursive "${nz_prefix}/"* './nouzen'
 			
 			ln \
 				--symbolic \
