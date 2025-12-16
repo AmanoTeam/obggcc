@@ -163,10 +163,10 @@ declare -ra deprecated_targets=(
 
 declare -ra targets=(
 	'x86_64-unknown-linux-gnu'
-	'aarch64-unknown-linux-gnu'
-	'arm-unknown-linux-gnueabi'
-	'arm-unknown-linux-gnueabihf'
-	'i386-unknown-linux-gnu'
+	# 'aarch64-unknown-linux-gnu'
+	# 'arm-unknown-linux-gnueabi'
+	# 'arm-unknown-linux-gnueabihf'
+	# 'i386-unknown-linux-gnu'
 )
 
 declare -r PKG_CONFIG_PATH="${toolchain_directory}/lib/pkgconfig"
@@ -812,8 +812,6 @@ for target in "${targets[@]}"; do
 		CXXFLAGS="${ccflags}" \
 		LDFLAGS="-L${toolchain_directory}/lib ${linkflags}"
 	
-	cflags_for_target="${ccflags} ${linkflags}"
-	cxxflags_for_target="${ccflags} ${linkflags}"
 	ldflags_for_target="${linkflags}"
 	
 	declare args=''
@@ -823,8 +821,6 @@ for target in "${targets[@]}"; do
 	fi
 	
 	env ${args} make \
-		CFLAGS_FOR_TARGET="${cflags_for_target}" \
-		CXXFLAGS_FOR_TARGET="${cxxflags_for_target}" \
 		LDFLAGS_FOR_TARGET="${ldflags_for_target}" \
 		gcc_cv_objdump="${host}-objdump" \
 		all \
@@ -1172,20 +1168,16 @@ while read item; do
 	
 	cd '../'
 	
-	if (( nz )); then
-		mkdir 'bin'
-		cd 'bin'
-		
-		ln --symbolic '../lib/nouzen/bin/'* .
-	fi
+	mkdir 'bin'
+	cd 'bin'
+	
+	ln --symbolic '../lib/nouzen/bin/'* .
 	
 	cd "${toolchain_directory}/bin"
 	
-	if (( nz )); then
-		ln --symbolic "../${triplet}${glibc_version}/bin/nz" "./${triplet}${glibc_version}-nz"
-		ln --symbolic "../${triplet}${glibc_version}/bin/apt" "./${triplet}${glibc_version}-apt"
-		ln --symbolic "../${triplet}${glibc_version}/bin/apt-get" "./${triplet}${glibc_version}-apt-get"
-	fi
+	ln --symbolic "../${triplet}${glibc_version}/bin/nz" "./${triplet}${glibc_version}-nz"
+	ln --symbolic "../${triplet}${glibc_version}/bin/apt" "./${triplet}${glibc_version}-apt"
+	ln --symbolic "../${triplet}${glibc_version}/bin/apt-get" "./${triplet}${glibc_version}-apt-get"
 	
 	for name in "${symlink_tools[@]}"; do
 		source="./${triplet}-${name}"
