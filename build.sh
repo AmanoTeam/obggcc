@@ -83,7 +83,6 @@ declare -r gcc_wrapper="${build_directory}/gcc-wrapper"
 declare -r clang_wrapper="${build_directory}/clang-wrapper"
 
 declare gdb='1'
-declare nz='1'
 
 declare -ra plugin_libraries=(
 	'libcc1plugin'
@@ -621,7 +620,7 @@ cmake --build "${PWD}" -- --jobs='1'
 cmake --install "${PWD}" --strip
 
 mkdir --parent "${toolchain_directory}/lib/nouzen"
-mv "${nz_prefix}/lib" "${toolchain_directory}/lib/nouzen"
+mv "${nz_prefix}/lib/"* "${toolchain_directory}/lib/nouzen"
 
 # We prefer symbolic links over hard links.
 cp "${workdir}/tools/ln.sh" "${build_directory}/ln"
@@ -975,6 +974,12 @@ if ! (( native )) && [[ "${host}" != *'-darwin'* ]]; then
 	
 	cp "${name}" "${toolchain_directory}/lib/${soname}"
 	
+	ln \
+		--symbolic \
+		--relative \
+		"${toolchain_directory}/lib/${soname}" \
+		"${toolchain_directory}/lib/nouzen"
+	
 	# libegcc
 	declare name=$(realpath $("${cc}" --print-file-name='libegcc.so'))
 	
@@ -987,6 +992,12 @@ if ! (( native )) && [[ "${host}" != *'-darwin'* ]]; then
 	
 	cp "${name}" "${toolchain_directory}/lib/${soname}"
 	
+	ln \
+		--symbolic \
+		--relative \
+		"${toolchain_directory}/lib/${soname}" \
+		"${toolchain_directory}/lib/nouzen"
+	
 	# libatomic
 	declare name=$(realpath $("${cc}" --print-file-name='libatomic.so'))
 	
@@ -994,12 +1005,24 @@ if ! (( native )) && [[ "${host}" != *'-darwin'* ]]; then
 	
 	cp "${name}" "${toolchain_directory}/lib/${soname}"
 	
+	ln \
+		--symbolic \
+		--relative \
+		"${toolchain_directory}/lib/${soname}" \
+		"${toolchain_directory}/lib/nouzen"
+	
 	# libiconv
 	declare name=$(realpath $("${cc}" --print-file-name='libiconv.so'))
 	
 	if [ -f "${name}" ]; then
 		declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
 		cp "${name}" "${toolchain_directory}/lib/${soname}"
+		
+		ln \
+			--symbolic \
+			--relative \
+			"${toolchain_directory}/lib/${soname}" \
+			"${toolchain_directory}/lib/nouzen"
 	fi
 	
 	# libcharset
@@ -1008,6 +1031,12 @@ if ! (( native )) && [[ "${host}" != *'-darwin'* ]]; then
 	if [ -f "${name}" ]; then
 		declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
 		cp "${name}" "${toolchain_directory}/lib/${soname}"
+		
+		ln \
+			--symbolic \
+			--relative \
+			"${toolchain_directory}/lib/${soname}" \
+			"${toolchain_directory}/lib/nouzen"
 	fi
 fi
 
@@ -1099,23 +1128,19 @@ while read item; do
 		"${toolchain_directory}/lib/gcc/${triplet}/${gcc_major}/"*'.'{a,o} \
 		'./static'
 	
-	if (( nz )); then
-		mkdir 'nouzen'
-		
-		if [ -d "${nz_prefix}" ]; then
-			cp --recursive "${nz_prefix}/"* './nouzen'
-			
-			ln \
-				--symbolic \
-				--relative \
-				"${toolchain_directory}/lib/nouzen" \
-				"${PWD}/nouzen/lib"
-			
-			mkdir --parent './nouzen/etc/nouzen/sources.list'
-			
-			echo -e "repository = ${repository}\nrelease = ${release}\nresource = ${resource}\narchitecture = ${architecture}" > './nouzen/etc/nouzen/sources.list/obggcc.conf'
-		fi
-	fi
+	mkdir 'nouzen'
+	
+	cp --recursive "${nz_prefix}/"* './nouzen'
+	
+	ln \
+		--symbolic \
+		--relative \
+		"${toolchain_directory}/lib/nouzen" \
+		"${PWD}/nouzen/lib"
+	
+	mkdir --parent './nouzen/etc/nouzen/sources.list'
+	
+	echo -e "repository = ${repository}\nrelease = ${release}\nresource = ${resource}\narchitecture = ${architecture}" > './nouzen/etc/nouzen/sources.list/obggcc.conf'
 	
 	for library in "${libraries[@]}"; do
 		for bit in "${bits[@]}"; do
