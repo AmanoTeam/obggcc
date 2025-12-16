@@ -929,7 +929,7 @@ while read triplet; do
 done <<< "$(jq --raw-output --compact-output '.[]' "${workdir}/submodules/libsanitizer/triplets.json")"
 
 if ! (( native )); then
-	declare url="https://github.com/AmanoTeam/GDB-Builds/releases/latest/download/${host}.tar.xz"
+	declare url="https://github.com/AmanoTeam/GDB-Builds/releases/latest/download/${host/-pc-/-unknown-}.tar.xz"
 	
 	echo "- Fetching data from '${url}'"
 	
@@ -1131,7 +1131,7 @@ while read item; do
 	ln \
 		--symbolic \
 		--relative \
-		"${toolchain_directory}/lib/nouzen" \
+		"${toolchain_directory}/lib/nouzen/lib"* \
 		"${PWD}/nouzen/lib"
 	
 	mkdir --parent './nouzen/etc/nouzen/sources.list'
