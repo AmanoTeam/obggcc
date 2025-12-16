@@ -583,6 +583,7 @@ Then, clone the repository with:
 $ git clone https://github.com/AmanoTeam/obggcc
 $ cd obggcc
 $ git submodule update --init --depth=1
+$ git -C submodules/nz submodule update --init --depth=1
 ```
 
 Build the project with:
