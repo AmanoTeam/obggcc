@@ -439,6 +439,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 	fi
 	
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-AArch64-enable-libquadmath.patch"
+	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
 fi
 
 # Follow Debian's approach to remove hardcoded RPATHs from binaries
@@ -621,6 +622,7 @@ cmake --install "${PWD}" --strip
 
 mkdir --parent "${toolchain_directory}/lib/nouzen"
 mv "${nz_prefix}/lib/"* "${toolchain_directory}/lib/nouzen"
+rmdir "${nz_prefix}/lib"
 
 # We prefer symbolic links over hard links.
 cp "${workdir}/tools/ln.sh" "${build_directory}/ln"
@@ -882,6 +884,8 @@ for target in "${targets[@]}"; do
 			--input="${workdir}/patches/0001-Fix-C99-math-functions-availability.patch"
 	fi
 	
+	cat "${workdir}/patches/c++config.h" >> "${toolchain_directory}/${triplet}/include/c++/${gcc_major}/${triplet}/bits/c++config.h"
+	
 	cd "${toolchain_directory}/lib/bfd-plugins"
 	
 	if ! [ -f './liblto_plugin.so' ]; then
@@ -1126,7 +1130,7 @@ while read item; do
 	
 	mkdir 'nouzen'
 	
-	cp --recursive "${nz_prefix}/"* './nouzen'
+	cp --recursive "${nz_prefix}/"* "${PWD}/nouzen"
 	
 	ln \
 		--symbolic \

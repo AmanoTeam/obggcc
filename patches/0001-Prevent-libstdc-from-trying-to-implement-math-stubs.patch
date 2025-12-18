@@ -1,0 +1,57 @@
+From 00ce9c5a803b83d43dc9897cf34b8ab6318acbcc Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Thu, 18 Dec 2025 16:04:50 -0300
+Subject: [PATCH] Prevent libstdc++ from trying to implement math stubs
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+These stubs are meant to provide a working implementation of some math functions on platforms that don’t have a native equivalent. However, the way GCC tests for the existence of these functions is mostly broken.
+
+The test is performed by checking for the existence of all these functions at once in a single test file. This means that if even one of the functions is missing on the platform and the test file fails to compile, the entire set of functions is considered missing, and GCC forces libstdc++ to declare its own implementation for all of them.
+
+This issue was already brought to GCC Bugzilla several times in the past, but nothing was done about it.
+
+By itself, this is not a major issue. The problem arises from how libstdc++ implements these stubs: it uses equivalent standard library functions. For example, for ceilf(), it attempts to use ceil() to provide the implementation:
+
+float ceilf(float x) {
+    return ceil(x);
+}
+
+By default, for most math functions, GCC will try to use a builtin implementation that is more optimized for the current compilation context. As a result, the code above initially becomes something like this:
+
+float ceilf(float x) {
+    return __builtin_ceil(x);
+}
+
+There are several reasons why GCC might give up on using a builtin. These include GCC not having an optimized variant for that specific use case in the current compilation context, or not having a stable implementation for that architecture. When GCC fails to provide a builtin, it falls back to using a standard library function to implement the functionality. However, the fallback function is not always the same function originally referenced (ceil() in this case). For __builtin_ceil(), depending on the architecture, the fallback may instead be ceilf().
+
+When GCC fails to inline the function above using a builtin, the code then effectively becomes:
+
+float ceilf(float x) {
+    return ceilf(x);
+}
+
+GCC will generate a call to ceilf(), which is the same function libstdc++ is trying to declare a stub for. This is obviously not the intended behavior and results in infinite recursion whenever the function is called.
+
+The most appropriate solution to this issue seems to be for libstdc++ to not declare any of these stubs at all.
+---
+ libstdc++-v3/src/c++98/Makefile.in | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libstdc++-v3/src/c++98/Makefile.in b/libstdc++-v3/src/c++98/Makefile.in
+index 95e909b10..57da93ad8 100644
+--- a/libstdc++-v3/src/c++98/Makefile.in
++++ b/libstdc++-v3/src/c++98/Makefile.in
+@@ -139,7 +139,7 @@ am__objects_7 = bitmap_allocator.lo pool_allocator.lo mt_allocator.lo \
+ 	hashtable_tr1.lo ios_failure.lo ios_init.lo ios_locale.lo \
+ 	list.lo list-aux.lo list-aux-2.lo list_associated.lo \
+ 	list_associated-2.lo locale.lo locale_facets.lo \
+-	math_stubs_float.lo math_stubs_long_double.lo stdexcept.lo \
++	stdexcept.lo \
+ 	strstream.lo tree.lo istream.lo istream-string.lo streambuf.lo \
+ 	valarray.lo $(am__objects_1) $(am__objects_3) $(am__objects_4) \
+ 	$(am__objects_5) $(am__objects_6)
+-- 
+2.51.2
+
