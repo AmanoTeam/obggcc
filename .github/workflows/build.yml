@@ -24,7 +24,7 @@ jobs:
       id: check-cache
       uses: actions/cache@main
       with:
-        key: gcc-15-git
+        key: gcc-15.2-git
         lookup-only: true
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
@@ -55,7 +55,7 @@ jobs:
       if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
       uses: actions/cache@main
       with:
-        key: gcc-15-git
+        key: gcc-15.2-git
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
           /tmp/x86_64-linux-gnu.tar.xz.sha256
@@ -132,7 +132,7 @@ jobs:
     - name: Restore from cache
       uses: actions/cache@main
       with:
-        key: gcc-15-git
+        key: gcc-15.2-git
         fail-on-cache-miss: true
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
@@ -325,7 +325,7 @@ jobs:
           name: GCC 15.2.0
           files: ./*/*-unknown-*.tar.xz*
           draft: false
-          prerelease: true
+          prerelease: false
           fail_on_unmatched_files: true
           body: "* Update to GCC 15.2.0"
         env:
