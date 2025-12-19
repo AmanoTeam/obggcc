@@ -213,10 +213,35 @@ OBGGCC allows you to change its behavior in certain scenarios through the use of
 - `OBGGCC_NZ`  
   - Allows you to use libraries and headers installed using OBGGCC’s package manager (nz) during cross-compilation. See [Software availability](#software-availability).
 
-- `OBGGCC_STATIC`  
+- `OBGGCC_STATIC_RUNTIME`  
   - Tells the cross-compiler to prefer linking with the static versions of the GCC runtime libraries rather than the dynamic ones.
 
+- `OBGGCC_VERBOSE`  
+  - Display the GCC subcommand invocation and the current working directory for every compilation process.
+
 You can enable a switch by setting its value to `true` (e.g: `export OBGGCC_NZ=true`), and disable it by setting its value to `false` (e.g: `export OBGGCC_NZ=false`).
+
+For every environment variable, there is a matching command-line flag switch available, which you can check with `--obggcc-help`.
+
+```
+$ arm-unknown-linux-gnueabi2.7-gcc --obggcc-help
+usage: arm-unknown-linux-gnueabi2.7-gcc [-f[no-]builtin-loader] [-f[no-]runtime-rpath] [-f[no-]system-libraries] [-f[no-]nz] [-f[no-]static-runtime] [-f[no-]verbose]
+
+Linux C/C++ cross-compiler for targeting older glibc versions.
+
+options:
+  -f[no-]builtin-loader
+                        Override the default dynamic linker to point to the local glibc installation within OBGGCC.
+  -f[no-]runtime-rpath  Automatically append the path to the directory containing GCC runtime libraries to every executable's DT_RPATH.
+  -f[no-]system-libraries
+                        Allow compilation and linking with libraries and headers from your host machine’s system root alongside the cross-compiler’s system root.
+  -f[no-]nz             Use libraries and headers installed by OBGGCC’s package manager (nz) during cross-compilation.
+  -f[no-]static-runtime
+                        Force linking with static variants of the GCC runtime libraries instead of the dynamic versions.
+  -f[no-]verbose        Display the GCC subcommand invocation and the current working directory.
+
+The flag switches listed above are not guaranteed to be portable and are primarily intended for testing purposes.
+```
 
 ## Software availability
 

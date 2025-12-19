@@ -35,6 +35,7 @@
 #include "query.h"
 #include "strsplit.h"
 #include "kargv.h"
+#include "program_help.h"
 
 #if !defined(AUTO_PICK_LINKER)
 	#define AUTO_PICK_LINKER 1
@@ -1473,6 +1474,7 @@ int main(int argc, char* argv[]) {
 	int stack_protector = 0;
 	int print_version = 0;
 	int verbose = 0;
+	int help = 0;
 	int wants_libcxx = 0;
 	int wants_static_libcxx = 0;
 	int wants_static_libgcc = 0;
@@ -1591,6 +1593,10 @@ int main(int argc, char* argv[]) {
 	
 	wants_force_static = query_get_bool(&query, ENV_STATIC);
 	
+	if (wants_force_static == -1) {
+		wants_force_static = query_get_bool(&query, ENV_STATIC_RUNTIME);
+	}
+	
 	wants_system_libraries = query_get_bool(&query, ENV_SYSTEM_LIBRARIES) == 1;
 	wants_nz = query_get_bool(&query, ENV_NZ) == 1;
 	wants_runtime_rpath = query_get_bool(&query, ENV_RUNTIME_RPATH) == 1;
@@ -1641,6 +1647,49 @@ int main(int argc, char* argv[]) {
 	
 	for (index = 0; index < (size_t) argc; index++) {
 		cur = argv[index];
+		
+		if (strcmp(cur, OBGGCC_OPT_HELP) == 0) {
+			help = 1;
+			continue;
+		#if defined(OBGGCC)
+		} else if (strcmp(cur, OBGGCC_OPT_F_BUILTIN_LOADER) == 0) {
+			wants_builtin_loader = 1;
+			continue;
+		} else if (strcmp(cur, OBGGCC_OPT_F_NO_BUILTIN_LOADER) == 0) {
+			wants_builtin_loader = 0;
+			continue;
+		#endif
+		} else if (strcmp(cur, OBGGCC_OPT_F_RUNTIME_RPATH) == 0) {
+			wants_runtime_rpath = 1;
+			continue;
+		} else if (strcmp(cur, OBGGCC_OPT_F_NO_RUNTIME_RPATH) == 0) {
+			wants_runtime_rpath = 0;
+			continue;
+		} else if (strcmp(cur, OBGGCC_OPT_F_SYSTEM_LIBRARIES) == 0) {
+			wants_system_libraries = 1;
+			continue;
+		} else if (strcmp(cur, OBGGCC_OPT_F_NO_SYSTEM_LIBRARIES) == 0) {
+			wants_system_libraries = 0;
+			continue;
+		} else if (strcmp(cur, OBGGCC_OPT_F_NZ) == 0) {
+			wants_nz = 1;
+			continue;
+		} else if (strcmp(cur, OBGGCC_OPT_F_NO_NZ) == 0) {
+			wants_nz = 0;
+			continue;
+		} else if (strcmp(cur, OBGGCC_OPT_F_STATIC_RUNTIME) == 0) {
+			wants_force_static = 1;
+			continue;
+		} else if (strcmp(cur, OBGGCC_OPT_F_NO_STATIC_RUNTIME) == 0) {
+			wants_force_static = 0;
+			continue;
+		} else if (strcmp(cur, OBGGCC_OPT_F_VERBOSE) == 0) {
+			verbose = 1;
+			continue;
+		} else if (strcmp(cur, OBGGCC_OPT_F_NO_VERBOSE) == 0) {
+			verbose = 0;
+			continue;
+		}
 		
 		if (strncmp(cur, GCC_OPT_ISYSTEM, strlen(GCC_OPT_ISYSTEM)) == 0 || strncmp(cur, GCC_OPT_LIBDIR, strlen(GCC_OPT_LIBDIR)) == 0 || strncmp(cur, GCC_OPT_I, strlen(GCC_OPT_I)) == 0) {
 			pattern = NULL;
@@ -2090,6 +2139,11 @@ int main(int argc, char* argv[]) {
 	
 	if (print_version && known_clang(cc)) {
 		printf(CLANG_VERSION_TEMPLATE, DEFAULT_TARGET, parent_directory);
+		goto end;
+	}
+	
+	if (help) {
+		fprintf(stderr, PROGRAM_HELP, app_filename);
 		goto end;
 	}
 	

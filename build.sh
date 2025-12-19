@@ -1132,6 +1132,8 @@ while read item; do
 	
 	cp --recursive "${nz_prefix}/"* "${PWD}/nouzen"
 	
+	mkdir --parent "${PWD}/nouzen/lib"
+	
 	ln \
 		--symbolic \
 		--relative \
