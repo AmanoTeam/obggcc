@@ -9,7 +9,7 @@ declare -r TRIPLET="${CROSS_COMPILE_TRIPLET/-unknown/}"
 declare -r SYSROOT="${CROSS_COMPILE_SYSROOT}"
 declare -r NZ_SYSROOT="${SYSROOT}/lib/nouzen/sysroot"
 
-if [ "${OBGGCC_NZ}" = '1' ]; then
+if [ "${OBGGCC_NZ}" = '1' ] || [ "${OBGGCC_NZ}" = 'true' ]; then
 	PKG_CONFIG_PATH+="${NZ_SYSROOT}/usr/lib/${TRIPLET}/pkgconfig:"
 	PKG_CONFIG_PATH+="${NZ_SYSROOT}/usr/lib/pkgconfig:"
 	PKG_CONFIG_PATH+="${NZ_SYSROOT}/usr/share/pkgconfig:"
