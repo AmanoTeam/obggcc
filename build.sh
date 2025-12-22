@@ -187,6 +187,8 @@ export \
 	ZSTD_CFLAGS \
 	ZSTD_LIBS
 
+export libat_cv_have_ifunc='no'
+
 rm --force --recursive "${toolchain_directory}"
 mkdir --parent "${build_directory}"
 
@@ -673,7 +675,7 @@ make \
 	LDFLAGS="${linkflags}"
 
 for target in "${targets[@]}"; do
-	declare specs='%{!Qy: -Qn}'
+	declare specs='%{!Qy: -Qn} %{!fgnu-unique: %{!fno-gnu-unique: -fno-gnu-unique}}'
 	declare hash_style='both'
 	
 	source "${workdir}/${target}.sh"
@@ -823,6 +825,8 @@ for target in "${targets[@]}"; do
 	fi
 	
 	env ${args} make \
+		CFLAGS_FOR_TARGET='-fno-gnu-unique' \
+		CXXFLAGS_FOR_TARGET='-fno-gnu-unique' \
 		LDFLAGS_FOR_TARGET="${ldflags_for_target}" \
 		gcc_cv_objdump="${host}-objdump" \
 		all \
