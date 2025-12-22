@@ -4,10 +4,30 @@ declare PKG_CONFIG_PATH=''
 declare PKG_CONFIG_LIBDIR=''
 declare PKG_CONFIG_SYSROOT_DIR=''
 
-declare -r TRIPLET="${CROSS_COMPILE_TRIPLET/-unknown/}"
+declare -r EXECUTABLE_PATH="$([ -n "${BASH_SOURCE}" ] && realpath "${BASH_SOURCE[0]}" || realpath "${0}")"
+declare -r EXECUTABLE_NAME="$(basename "${EXECUTABLE_PATH}")"
 
-declare -r SYSROOT="${CROSS_COMPILE_SYSROOT}"
+declare TRIPLET="${EXECUTABLE_NAME/-pkg-config/}"
+
+declare -r SYSROOT="$(realpath "$(dirname "${EXECUTABLE_PATH}")/../${TRIPLET}")"
 declare -r NZ_SYSROOT="${SYSROOT}/lib/nouzen/sysroot"
+
+declare LIBC_VERSION=''
+
+if [[ "${TRIPLET}" = *'linux-gnu'* ]]; then
+	LIBC_VERSION="$(awk -F  'linux-gnu' '{print $2}' <<< "${TRIPLET}")"
+elif [[ "${TRIPLET}" = *'linux-android'* ]]; then
+	LIBC_VERSION="$(awk -F  'linux-android' '{print $2}' <<< "${TRIPLET}")"
+else
+	echo "unknown target: ${TRIPLET}" >&2
+	exit '1'
+fi
+
+TRIPLET="${TRIPLET/${LIBC_VERSION}/}"
+TRIPLET="${TRIPLET/-unknown/}"
+
+declare -r LIBC_VERSION
+declare -r TRIPLET
 
 if [ "${OBGGCC_NZ}" = '1' ] || [ "${OBGGCC_NZ}" = 'true' ]; then
 	PKG_CONFIG_PATH+="${NZ_SYSROOT}/usr/lib/${TRIPLET}/pkgconfig:"
@@ -29,4 +49,4 @@ export \
 	PKG_CONFIG_LIBDIR \
 	PKG_CONFIG_SYSROOT_DIR
 
-pkg-config ${@}
+exec pkg-config "${@}"

@@ -163,10 +163,10 @@ declare -ra deprecated_targets=(
 
 declare -ra targets=(
 	'x86_64-unknown-linux-gnu'
-	'aarch64-unknown-linux-gnu'
-	'arm-unknown-linux-gnueabi'
-	'arm-unknown-linux-gnueabihf'
-	'i386-unknown-linux-gnu'
+	# 'aarch64-unknown-linux-gnu'
+	# 'arm-unknown-linux-gnueabi'
+	# 'arm-unknown-linux-gnueabihf'
+	# 'i386-unknown-linux-gnu'
 )
 
 declare -r PKG_CONFIG_PATH="${toolchain_directory}/lib/pkgconfig"
@@ -873,8 +873,6 @@ for target in "${targets[@]}"; do
 	
 	unlink './libgcc_s.so' && echo 'GROUP ( libgcc_s.so.1 -lgcc )' > './libgcc_s.so'
 	
-	cp "${workdir}/tools/pkg-config.sh" "${toolchain_directory}/bin/${triplet}-pkg-config"
-	
 	rm "${toolchain_directory}/bin/${triplet}-${triplet}-"* || true
 	
 	if [[ "${triplet}" = 'sparc-'* ]] || [[ "${triplet}" = 's390-'* ]] || [[ "${triplet}" = 'powerpc-'* ]] || [[ "${triplet}" = 'hppa-'* ]] || [[ "${triplet}" = 'alpha-'* ]]; then
@@ -1073,6 +1071,8 @@ while read item; do
 	if [[ "${languages}" = *'fortran'* ]]; then
 		cp "${gcc_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-gfortran"
 	fi
+	
+	cp "${workdir}/tools/pkg-config.sh" "${toolchain_directory}/bin/${triplet}${glibc_version}-pkg-config"
 	
 	echo "- Fetching data from '${sysroot}'"
 	
