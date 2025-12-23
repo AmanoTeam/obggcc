@@ -2855,8 +2855,10 @@ int main(int argc, char* argv[]) {
 		kargv_append(&yargv, directory);
 		
 		if (linking) {
-			kargv_append(&yargv, GCC_OPT_XLINKER);
-			kargv_append(&yargv, LD_OPT_UNRESOLVED_SYMBOLS);
+			if (!linking_shared) {
+				kargv_append(&yargv, GCC_OPT_XLINKER);
+				kargv_append(&yargv, LD_OPT_UNRESOLVED_SYMBOLS);
+			}
 			
 			for (index = 0; index < sizeof(SYSTEM_LIBRARY_PATH) / sizeof(*SYSTEM_LIBRARY_PATH); index++) {
 				cur = SYSTEM_LIBRARY_PATH[index];
@@ -2934,7 +2936,7 @@ int main(int argc, char* argv[]) {
 		}
 		
 		if (linking) {
-			if (host_version < target_version) {
+			if (host_version < target_version && !linking_shared) {
 				/*
 				* Setting this flag is only useful when the host has a system/libc version lower than the target system.
 				*/
@@ -3034,7 +3036,7 @@ int main(int argc, char* argv[]) {
 	}
 	
 	#if defined(OBGGCC)
-		if (linking && address_sanitizer) {
+		if (linking && address_sanitizer && !linking_shared) {
 			kargv_append(&yargv, GCC_OPT_XLINKER);
 			kargv_append(&yargv, LD_OPT_UNRESOLVED_SYMBOLS);
 		}
