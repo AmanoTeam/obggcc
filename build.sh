@@ -162,6 +162,7 @@ declare -ra deprecated_targets=(
 )
 
 declare -ra targets=(
+	'arm-motomagx-linux-gnueabi'
 	'x86_64-unknown-linux-gnu'
 	'aarch64-unknown-linux-gnu'
 	'arm-unknown-linux-gnueabi'
@@ -1133,62 +1134,64 @@ while read item; do
 		"${toolchain_directory}/lib/gcc/${triplet}/${gcc_major}/"*'.'{a,o} \
 		'./static'
 	
-	mkdir 'nouzen'
-	
-	cp --recursive "${nz_prefix}/"* "${PWD}/nouzen"
-	
-	mkdir --parent "${PWD}/nouzen/lib"
-	
-	ln \
-		--symbolic \
-		--relative \
-		"${toolchain_directory}/lib/nouzen/lib"* \
-		"${PWD}/nouzen/lib"
-	
-	mkdir --parent './nouzen/etc/nouzen/sources.list'
-	
-	echo -e "repository = ${repository}\nrelease = ${release}\nresource = ${resource}\narchitecture = ${architecture}" > './nouzen/etc/nouzen/sources.list/obggcc.conf'
-	
-	for library in "${libraries[@]}"; do
-		for bit in "${bits[@]}"; do
-			for file in "../../${triplet}/lib${bit}/${library}"*; do
-				if [[ "${file}" = *'*' ]]; then
-					continue
-				fi
-				
-				if ! ( [[ "${file}" = *'.so'* ]] || [[ "${file}" = *'.a' ]] ); then
-					continue
-				fi
-				
-				echo "- Symlinking '${file}' to '${PWD}'"
-				
-				ln --force --symbolic "${file}" './'
-				
-				echo "- Symlinking '${file}' to '${PWD}/gcc'"
-				
-				ln --force --symbolic --relative "${file}" './gcc'
-				
-				if [[ "${file}" = *'.a' ]]; then
-					echo "- Symlinking '${file}' to '${PWD}/static'"
+	if [ "${repository}" != 'null' ]; then
+		mkdir 'nouzen'
+		
+		cp --recursive "${nz_prefix}/"* "${PWD}/nouzen"
+		
+		mkdir --parent "${PWD}/nouzen/lib"
+		
+		ln \
+			--symbolic \
+			--relative \
+			"${toolchain_directory}/lib/nouzen/lib"* \
+			"${PWD}/nouzen/lib"
+		
+		mkdir --parent './nouzen/etc/nouzen/sources.list'
+		
+		echo -e "repository = ${repository}\nrelease = ${release}\nresource = ${resource}\narchitecture = ${architecture}" > './nouzen/etc/nouzen/sources.list/obggcc.conf'
+		
+		for library in "${libraries[@]}"; do
+			for bit in "${bits[@]}"; do
+				for file in "../../${triplet}/lib${bit}/${library}"*; do
+					if [[ "${file}" = *'*' ]]; then
+						continue
+					fi
 					
-					ln --force --symbolic --relative "${file}" './static'
-				fi
+					if ! ( [[ "${file}" = *'.so'* ]] || [[ "${file}" = *'.a' ]] ); then
+						continue
+					fi
+					
+					echo "- Symlinking '${file}' to '${PWD}'"
+					
+					ln --force --symbolic "${file}" './'
+					
+					echo "- Symlinking '${file}' to '${PWD}/gcc'"
+					
+					ln --force --symbolic --relative "${file}" './gcc'
+					
+					if [[ "${file}" = *'.a' ]]; then
+						echo "- Symlinking '${file}' to '${PWD}/static'"
+						
+						ln --force --symbolic --relative "${file}" './static'
+					fi
+				done
 			done
 		done
-	done
-	
-	cd '../'
-	
-	mkdir 'bin'
-	cd 'bin'
-	
-	ln --symbolic '../lib/nouzen/bin/'* .
-	
-	cd "${toolchain_directory}/bin"
-	
-	ln --symbolic "../${triplet}${glibc_version}/bin/nz" "./${triplet}${glibc_version}-nz"
-	ln --symbolic "../${triplet}${glibc_version}/bin/apt" "./${triplet}${glibc_version}-apt"
-	ln --symbolic "../${triplet}${glibc_version}/bin/apt-get" "./${triplet}${glibc_version}-apt-get"
+		
+		cd '../'
+		
+		mkdir 'bin'
+		cd 'bin'
+		
+		ln --symbolic '../lib/nouzen/bin/'* .
+		
+		cd "${toolchain_directory}/bin"
+		
+		ln --symbolic "../${triplet}${glibc_version}/bin/nz" "./${triplet}${glibc_version}-nz"
+		ln --symbolic "../${triplet}${glibc_version}/bin/apt" "./${triplet}${glibc_version}-apt"
+		ln --symbolic "../${triplet}${glibc_version}/bin/apt-get" "./${triplet}${glibc_version}-apt-get"
+	fi
 	
 	for name in "${symlink_tools[@]}"; do
 		source="./${triplet}-${name}"
