@@ -799,12 +799,12 @@ for target in "${targets[@]}"; do
 		--enable-languages="${languages}" \
 		--enable-plugin \
 		--enable-libstdcxx-time='rt' \
-		--enable-cxx-flags="${linkflags} ${extra_cxx_flags}" \
 		--enable-host-pie \
 		--enable-host-shared \
 		--enable-libgomp \
 		--with-specs="${specs}" \
 		--with-pic \
+		${extra_configure_flags} \
 		--disable-libsanitizer \
 		--disable-bootstrap \
 		--disable-libstdcxx-pch \
@@ -813,7 +813,6 @@ for target in "${targets[@]}"; do
 		--disable-nls \
 		--without-headers \
 		--without-static-standard-libraries \
-		${extra_configure_flags} \
 		CFLAGS="${ccflags}" \
 		CXXFLAGS="${ccflags}" \
 		LDFLAGS="-L${toolchain_directory}/lib ${linkflags}"
@@ -827,8 +826,6 @@ for target in "${targets[@]}"; do
 	fi
 	
 	env ${args} make \
-		CFLAGS_FOR_TARGET='-fno-gnu-unique' \
-		CXXFLAGS_FOR_TARGET='-fno-gnu-unique' \
 		LDFLAGS_FOR_TARGET="${ldflags_for_target}" \
 		gcc_cv_objdump="${host}-objdump" \
 		all \
