@@ -455,7 +455,7 @@ static int get_bitness(const char* const triplet) {
 		}
 		
 		status = (
-			strcmp(triplet, "arm-motomagx-linux-gnueabi") == 0 ||
+			strcmp(triplet, "armv6-unknown-linux-gnueabi") == 0 ||
 			strcmp(triplet, "arm-unknown-linux-gnueabi") == 0 ||
 			strcmp(triplet, "arm-unknown-linux-gnueabihf") == 0 ||
 			strcmp(triplet, "i386-unknown-linux-gnu") == 0
@@ -548,7 +548,7 @@ static int get_arch(const char* const triplet) {
 		
 		status = (
 			strcmp(triplet, "aarch64-unknown-linux-gnu") == 0 ||
-			strcmp(triplet, "arm-motomagx-linux-gnueabi") == 0 ||
+			strcmp(triplet, "armv6-unknown-linux-gnueabi") == 0 ||
 			strcmp(triplet, "arm-unknown-linux-gnueabi") == 0 ||
 			strcmp(triplet, "arm-unknown-linux-gnueabihf") == 0
 		);
@@ -719,7 +719,7 @@ static const char* get_loader(const char* const triplet) {
 		return "ld-linux.so.2";
 	}
 	
-	if (strcmp(triplet, "arm-motomagx-linux-gnueabi") == 0) {
+	if (strcmp(triplet, "armv6-unknown-linux-gnueabi") == 0) {
 		return "ld-linux.so.3";
 	}
 	
@@ -855,10 +855,12 @@ static const char* get_host_triplet(void) {
 			return "x86_64-unknown-linux-gnu";
 		#elif defined(__i386__)
 			return "i386-unknown-linux-gnu";
+		#elif defined(__ARM_ARCH_7A__)
+			return "arm-unknown-linux-gnueabihf";
+		#elif defined(__ARM_ARCH_6__)
+			return "armv6-unknown-linux-gnueabi";
 		#elif defined(__ARM_ARCH_4T__)
 			return "arm-unknown-linux-gnueabi";
-		#elif defined(__ARM_ARCH_7A__)
-			return "armv7-unknown-linux-androideabi";
 		#elif defined(__aarch64__)
 			return "aarch64-unknown-linux-gnu";
 		#endif
