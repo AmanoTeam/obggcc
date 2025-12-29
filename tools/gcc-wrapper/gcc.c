@@ -175,6 +175,8 @@ static const char CLANG_OPT_W_UNGUARDED_AVAILABILITY[] = "-Wunguarded-availabili
 static const char CLANG_OPT_W_UNGUARDED_AVAILABILITY_NEW[] = "-Wunguarded-availability-new";
 static const char CLANG_OPT_W_SHORTEN_64_TO_32[] = "-Wshorten-64-to-32";
 static const char CLANG_OPT_W_MACRO_REDEFINED[] = "-Wmacro-redefined";
+static const char CLANG_OPT_W_UNKNOWN_WARNING_OPTION[] = "-Wunknown-warning-option";
+static const char CLANG_OPT_W_IGNORED_OPTIMIZATION_ARGUMENT[] = "-Wignored-optimization-argument";
 static const char CLANG_OPT_PRINT_RESOURCE_DIR[] = "-print-resource-dir";
 static const char CLANG_OPT_F_NO_LIMIT_DEBUG_INFO[] = "-fno-limit-debug-info";
 static const char CLANG_OPT_GCC_TOOLCHAIN[] = "--gcc-toolchain";
@@ -346,6 +348,14 @@ static clang_option_t CLANG_SPECIFIC_REMOVE[] = {
 	},
 	{
 		.name = CLANG_OPT_F_COLOR_DIAGNOSTICS,
+		.value = 0
+	},
+	{
+		.name = CLANG_OPT_W_UNKNOWN_WARNING_OPTION,
+		.value = 0
+	},
+	{
+		.name = CLANG_OPT_W_IGNORED_OPTIMIZATION_ARGUMENT,
 		.value = 0
 	},
 	{
