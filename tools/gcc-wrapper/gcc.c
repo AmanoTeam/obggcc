@@ -1487,7 +1487,6 @@ int main(int argc, char* argv[]) {
 	int wants_libgcc = 0;
 	int wants_libitm = 0;
 	int wants_libquadmath = 0;
-	int wants_librt = 0;
 	int wants_libssp = 0;
 	int wants_libm = 0;
 	int wants_libiconv = 0;
@@ -1507,8 +1506,6 @@ int main(int argc, char* argv[]) {
 	const char* override_linker = NULL;
 	
 	int cmake_init = 0;
-	
-	int have_rt_library = 0;
 	
 	int linking = argc != 1;
 	int linking_shared = 0;
@@ -1825,8 +1822,6 @@ int main(int argc, char* argv[]) {
 			
 			if (strcmp(cur, STDCXX_LIBRARY) == 0) {
 				wants_libcxx = 1;
-			} else if (strcmp(cur, RT_LIBRARY) == 0) {
-				have_rt_library = 1;
 			} else if (strcmp(cur, ATOMIC_LIBRARY) == 0) {
 				wants_libatomic = 1;
 			} else if (strcmp(cur, GOMP_LIBRARY) == 0) {
@@ -2534,11 +2529,6 @@ int main(int argc, char* argv[]) {
 		#endif
 	}
 	
-	#if defined(OBGGCC)
-		/* Determine whether we need to implicit link with -lrt */
-		wants_librt = wants_libcxx && !have_rt_library && target_version < LIBC_VERSION(2, 17);
-	#endif
-	
 	#if defined(WCLANG)
 		executable = find_exe(cc);
 		
@@ -2822,13 +2812,6 @@ int main(int argc, char* argv[]) {
 		
 		kargv_append(&yargv, GCC_OPT_B);
 		kargv_append(&yargv, sysroot_library_directory);
-		
-		#if defined(OBGGCC)
-			if (wants_librt && !nodefaultlibs) {
-				kargv_append(&yargv, GCC_OPT_L);
-				kargv_append(&yargv, RT_LIBRARY);
-			}
-		#endif
 	}
 	
 	if (wants_nz) {

@@ -1,0 +1,298 @@
+From bbbd53158ec58a23d9924d44a6b14a1c1904db72 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sun, 2 Nov 2025 15:47:24 -0300
+Subject: [PATCH] Enable automatic linking of librt
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+On glibc 2.16 and earlier, the clock-related routines from the C library are implemented in librt rather than libc. Because of this, you must explicitly link against -lrt in order to use them.
+
+While this is usually not a problem for people building their own projects — where they have direct control over the build system and can easily adjust the CFLAGS/LDFLAGS — many third-party projects do not include the necessary logic to link against this library on older glibc versions. Having to patch each of these projects individually to add that support is annoying.
+---
+ gcc/common.opt                |  4 ++++
+ gcc/config.in                 |  5 +++++
+ gcc/config/alpha/linux.h      |  2 +-
+ gcc/config/arm/uclinux-elf.h  |  4 ++--
+ gcc/config/arm/unknown-elf.h  |  2 +-
+ gcc/config/avr/avrlibc.h      |  2 +-
+ gcc/config/bfin/linux.h       |  2 +-
+ gcc/config/darwin.h           |  2 +-
+ gcc/config/gnu-user.h         |  2 +-
+ gcc/config/lm32/uclinux-elf.h |  2 +-
+ gcc/config/rs6000/linux64.h   |  4 ++--
+ gcc/config/rs6000/rtems.h     |  4 ++--
+ gcc/config/sparc/sparc.h      |  4 ++--
+ gcc/configure                 | 23 +++++++++++++++++++++++
+ gcc/configure.ac              | 16 ++++++++++++++++
+ gcc/gcc.cc                    |  7 +++++++
+ 16 files changed, 70 insertions(+), 15 deletions(-)
+
+diff --git a/gcc/common.opt b/gcc/common.opt
+index 487716120..a2e2bfff4 100644
+--- a/gcc/common.opt
++++ b/gcc/common.opt
+@@ -3397,6 +3397,10 @@ flink-libatomic
+ Common Driver Var(flag_link_libatomic) Init(1)
+ Enable linking of libatomic.
+ 
++flink-librt
++Common Driver Var(flag_link_librt) Init(1)
++Enable linking of librt.
++
+ ; Positive if we should track variables, negative if we should run
+ ; the var-tracking pass only to discard debug annotations, zero if
+ ; we're not to run it.
+diff --git a/gcc/config.in b/gcc/config.in
+index e5edc340c..0095502ca 100644
+--- a/gcc/config.in
++++ b/gcc/config.in
+@@ -2613,6 +2613,11 @@
+ #undef TARGET_PROVIDES_LIBATOMIC
+ #endif
+ 
++/* Define if the clock-related functions from the C library are implemented in librt rather than libc. */
++#ifndef USED_FOR_TARGET
++#undef TARGET_AUTOLINK_LIBRT
++#endif
++
+ 
+ /* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
+ #ifndef USED_FOR_TARGET
+diff --git a/gcc/config/alpha/linux.h b/gcc/config/alpha/linux.h
+index 758817a1c..abc817105 100644
+--- a/gcc/config/alpha/linux.h
++++ b/gcc/config/alpha/linux.h
+@@ -110,7 +110,7 @@ along with GCC; see the file COPYING3.  If not see
+    %{shared|pie:crtendS.o%s;:crtend.o%s} crtn.o%s"
+ 
+ #define LINK_GCC_C_SEQUENCE_SPEC \
+-  "%{static|static-pie:--start-group} %G %{!nolibc:" LINK_LIBATOMIC_SPEC "%L} \
++  "%{static|static-pie:--start-group} %G %{!nolibc:" LINK_LIBATOMIC_SPEC LINK_LIBRT_SPEC "%L} \
+    %{static|static-pie:--end-group}%{!static:%{!static-pie:%G}}"
+ 
+ /* Use --as-needed -lgcc_s for eh support.  */
+diff --git a/gcc/config/arm/uclinux-elf.h b/gcc/config/arm/uclinux-elf.h
+index d7b99f5ff..af58f6d8a 100644
+--- a/gcc/config/arm/uclinux-elf.h
++++ b/gcc/config/arm/uclinux-elf.h
+@@ -67,9 +67,9 @@
+ 
+ #undef LINK_GCC_C_SEQUENCE_SPEC
+ #define LINK_GCC_C_SEQUENCE_SPEC \
+-  "%{static|static-pie:--start-group} %G %{!nolibc:" LINK_LIBATOMIC_SPEC "%L} \
++  "%{static|static-pie:--start-group} %G %{!nolibc:" LINK_LIBATOMIC_SPEC LINK_LIBRT_SPEC "%L} \
+    %{static|static-pie:--end-group}%{!static:%{!static-pie:%G %{!nolibc:" \
+-   LINK_LIBATOMIC_SPEC "%L}}}"
++   LINK_LIBATOMIC_SPEC LINK_LIBRT_SPEC "%L}}}"
+ 
+ /* Use --as-needed -lgcc_s for eh support.  */
+ #ifdef HAVE_LD_AS_NEEDED
+diff --git a/gcc/config/arm/unknown-elf.h b/gcc/config/arm/unknown-elf.h
+index a796d8702..986ccdc69 100644
+--- a/gcc/config/arm/unknown-elf.h
++++ b/gcc/config/arm/unknown-elf.h
+@@ -93,4 +93,4 @@
+    udivmoddi4, which will depend on the exception unwind routines,
+    which will depend on abort, which is defined in libc.  */
+ #undef LINK_GCC_C_SEQUENCE_SPEC
+-#define LINK_GCC_C_SEQUENCE_SPEC "--start-group %G %{!nolibc:" LINK_LIBATOMIC_SPEC "%L} --end-group"
++#define LINK_GCC_C_SEQUENCE_SPEC "--start-group %G %{!nolibc:" LINK_LIBATOMIC_SPEC LINK_LIBRT_SPEC "%L} --end-group"
+diff --git a/gcc/config/avr/avrlibc.h b/gcc/config/avr/avrlibc.h
+index 0e87fc4b8..e774a5bb2 100644
+--- a/gcc/config/avr/avrlibc.h
++++ b/gcc/config/avr/avrlibc.h
+@@ -36,4 +36,4 @@ along with GCC; see the file COPYING3.  If not see
+ 
+ #undef  LINK_GCC_C_SEQUENCE_SPEC
+ #define LINK_GCC_C_SEQUENCE_SPEC \
+-  "--start-group %G %{!nolibc:" LINK_LIBATOMIC_SPEC "%L} --end-group"
++  "--start-group %G %{!nolibc:" LINK_LIBATOMIC_SPEC LINK_LIBRT_SPEC "%L} --end-group"
+diff --git a/gcc/config/bfin/linux.h b/gcc/config/bfin/linux.h
+index b75997987..85a41aae7 100644
+--- a/gcc/config/bfin/linux.h
++++ b/gcc/config/bfin/linux.h
+@@ -35,7 +35,7 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
+ 
+ #undef LINK_GCC_C_SEQUENCE_SPEC
+ #define LINK_GCC_C_SEQUENCE_SPEC \
+-  "%{static|static-pie:--start-group} %{mfast-fp:-lbffastfp} %G %{!nolibc:" LINK_LIBATOMIC_SPEC "%L} \
++  "%{static|static-pie:--start-group} %{mfast-fp:-lbffastfp} %G %{!nolibc:" LINK_LIBATOMIC_SPEC LINK_LIBRT_SPEC "%L} \
+    %{static|static-pie:--end-group} \
+    %{!static:%{!static-pie:%{mfast-fp:-lbffastfp} %G}}"
+ 
+diff --git a/gcc/config/darwin.h b/gcc/config/darwin.h
+index bf76b87a3..39b7c5ed4 100644
+--- a/gcc/config/darwin.h
++++ b/gcc/config/darwin.h
+@@ -470,7 +470,7 @@ extern GTY(()) int darwin_ms_struct;
+    depend on libgcc. */
+ #undef  LINK_GCC_C_SEQUENCE_SPEC
+ #define LINK_GCC_C_SEQUENCE_SPEC \
+- "%G %{!nolibc:" LINK_LIBATOMIC_SPEC "%L} "
++ "%G %{!nolibc:" LINK_LIBATOMIC_SPEC LINK_LIBRT_SPEC "%L} "
+ 
+ /* ld64 supports a sysroot, it just has a different name and there's no easy
+    way to check for it at config time.  */
+diff --git a/gcc/config/gnu-user.h b/gcc/config/gnu-user.h
+index 151871540..3f7a50f48 100644
+--- a/gcc/config/gnu-user.h
++++ b/gcc/config/gnu-user.h
+@@ -111,7 +111,7 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
+ 
+ 
+ #define GNU_USER_TARGET_LINK_GCC_C_SEQUENCE_SPEC \
+-  "%{static|static-pie:--start-group} %G %{!nolibc:" LINK_LIBATOMIC_SPEC "%L} \
++  "%{static|static-pie:--start-group} %G %{!nolibc:" LINK_LIBATOMIC_SPEC LINK_LIBRT_SPEC "%L} \
+    %{static|static-pie:--end-group}%{!static:%{!static-pie:%G}}"
+ 
+ #undef LINK_GCC_C_SEQUENCE_SPEC
+diff --git a/gcc/config/lm32/uclinux-elf.h b/gcc/config/lm32/uclinux-elf.h
+index 1926e26ae..7ac153b78 100644
+--- a/gcc/config/lm32/uclinux-elf.h
++++ b/gcc/config/lm32/uclinux-elf.h
+@@ -69,7 +69,7 @@
+ 
+ #undef LINK_GCC_C_SEQUENCE_SPEC
+ #define LINK_GCC_C_SEQUENCE_SPEC \
+-  "%{static|static-pie:--start-group} %G %{!nolibc:" LINK_LIBATOMIC_SPEC "%L} \
++  "%{static|static-pie:--start-group} %G %{!nolibc:" LINK_LIBATOMIC_SPEC LINK_LIBRT_SPEC "%L} \
+    %{static|static-pie:--end-group}%{!static:%{!static-pie:%G}}"
+ 
+ #undef  CC1_SPEC
+diff --git a/gcc/config/rs6000/linux64.h b/gcc/config/rs6000/linux64.h
+index dd4d3f1f2..2d7a7894e 100644
+--- a/gcc/config/rs6000/linux64.h
++++ b/gcc/config/rs6000/linux64.h
+@@ -393,9 +393,9 @@ extern int dot_symbols;
+ /* Use gnu-user.h LINK_GCC_SEQUENCE_SPEC for linux.  */
+ #undef LINK_GCC_C_SEQUENCE_SPEC
+ #define	LINK_GCC_C_SEQUENCE_SPEC \
+-  "%{mads|myellowknife|mmvme|msim:%G" LINK_LIBATOMIC_SPEC "%L %G;" \
++  "%{mads|myellowknife|mmvme|msim:%G" LINK_LIBATOMIC_SPEC LINK_LIBRT_SPEC "%L %G;" \
+   "!mcall-*|mcall-linux:" GNU_USER_TARGET_LINK_GCC_C_SEQUENCE_SPEC ";" \
+-  ":%G" LINK_LIBATOMIC_SPEC "%L %G}"
++  ":%G" LINK_LIBATOMIC_SPEC LINK_LIBRT_SPEC "%L %G}"
+ 
+ #undef  TOC_SECTION_ASM_OP
+ #define TOC_SECTION_ASM_OP \
+diff --git a/gcc/config/rs6000/rtems.h b/gcc/config/rs6000/rtems.h
+index a7b8f0f3c..fc53659ed 100644
+--- a/gcc/config/rs6000/rtems.h
++++ b/gcc/config/rs6000/rtems.h
+@@ -297,9 +297,9 @@
+ /* Use gnu-user.h LINK_GCC_SEQUENCE_SPEC for rtems.  */
+ #undef LINK_GCC_C_SEQUENCE_SPEC
+ #define	LINK_GCC_C_SEQUENCE_SPEC \
+-  "%{mads|myellowknife|mmvme|msim:%G" LINK_LIBATOMIC_SPEC "%L %G;" \
++  "%{mads|myellowknife|mmvme|msim:%G" LINK_LIBATOMIC_SPEC LINK_LIBRT_SPEC "%L %G;" \
+   "!mcall-*|mcall-linux:" GNU_USER_TARGET_LINK_GCC_C_SEQUENCE_SPEC ";" \
+-  ":%G" LINK_LIBATOMIC_SPEC "%L %G}"
++  ":%G" LINK_LIBATOMIC_SPEC LINK_LIBRT_SPEC "%L %G}"
+ 
+ #define RTEMS_STARTFILE_SPEC "ecrti%O%s rtems_crti%O%s crtbegin%O%s"
+ #define RTEMS_ENDFILE_SPEC "crtend%O%s rtems_crtn%O%s ecrtn%O%s"
+diff --git a/gcc/config/sparc/sparc.h b/gcc/config/sparc/sparc.h
+index 48ddb3d96..2c4bb11ed 100644
+--- a/gcc/config/sparc/sparc.h
++++ b/gcc/config/sparc/sparc.h
+@@ -410,8 +410,8 @@ along with GCC; see the file COPYING3.  If not see
+ /* Because libgcc can generate references back to libc (via .umul etc.) we have
+    to list libc again after the second libgcc.  */
+ #define LINK_GCC_C_SEQUENCE_SPEC \
+-  "%G %{!nolibc:" LINK_LIBATOMIC_SPEC "%L} \
+-  %G %{!nolibc:" LINK_LIBATOMIC_SPEC "%L}"
++  "%G %{!nolibc:" LINK_LIBATOMIC_SPEC LINK_LIBRT_SPEC "%L} \
++  %G %{!nolibc:" LINK_LIBATOMIC_SPEC LINK_LIBRT_SPEC "%L}"
+ 
+ 
+ #define PTRDIFF_TYPE (TARGET_ARCH64 ? "long int" : "int")
+diff --git a/gcc/configure b/gcc/configure
+index 0c30c05b5..e46049ccb 100755
+--- a/gcc/configure
++++ b/gcc/configure
+@@ -730,6 +730,7 @@ zlibinc
+ zlibdir
+ HOST_LIBS
+ enable_default_ssp
++enable_autolink_librt
+ thin_archive_support
+ ld_soname_option
+ ld_version_script_option
+@@ -33482,6 +33483,28 @@ $as_echo "#define ENABLE_DEFAULT_SSP 1" >>confdefs.h
+ fi
+ 
+ 
++# Check whether --enable-autolink-librt was given.
++if test "${enable_autolink_librt+set}" = set; then :
++  enableval=$enable_autolink_librt; case "${enableval}" in
++  yes|no)
++    enable_autolink_librt=$enableval
++    ;;
++  *)
++    as_fn_error $? "unknown autolink-librt setting $enableval" "$LINENO" 5
++    ;;
++esac
++else
++  enable_autolink_librt=no
++fi
++
++
++if test x$enable_autolink_librt = xyes ; then
++
++$as_echo "#define TARGET_AUTOLINK_LIBRT 1" >>confdefs.h
++
++fi
++
++
+ if echo " ${TARGET_CONFIGDIRS} " | grep " libatomic " > /dev/null 2>&1 ; then
+ 
+ $as_echo "#define TARGET_PROVIDES_LIBATOMIC 1" >>confdefs.h
+diff --git a/gcc/configure.ac b/gcc/configure.ac
+index e7ffd5372..ee22c8435 100644
+--- a/gcc/configure.ac
++++ b/gcc/configure.ac
+@@ -7015,6 +7015,22 @@ if test x$enable_default_ssp = xyes ; then
+ fi
+ AC_SUBST([enable_default_ssp])
+ 
++AC_ARG_ENABLE(autolink-librt,
++[AS_HELP_STRING([--enable-autolink-librt], [enable automatic linking against librt])],
++[case "${enableval}" in
++  yes|no)
++    enable_autolink_librt=$enableval
++    ;;
++  *)
++    AC_MSG_ERROR([unknown autolink-librt setting $enableval])
++    ;;
++esac], [enable_autolink_librt=no])
++
++if test x$enable_autolink_librt = xyes ; then
++  AC_DEFINE(TARGET_AUTOLINK_LIBRT, 1,
++      [Define if the clock-related functions from the C library are implemented in librt rather than libc.])
++fi
++
+ if echo " ${TARGET_CONFIGDIRS} " | grep " libatomic " > /dev/null 2>&1 ; then
+   AC_DEFINE(TARGET_PROVIDES_LIBATOMIC, 1,
+ 	    [Define if libatomic is built for the target.])
+diff --git a/gcc/gcc.cc b/gcc/gcc.cc
+index fe8109448..10bf67fb7 100644
+--- a/gcc/gcc.cc
++++ b/gcc/gcc.cc
+@@ -991,6 +991,13 @@ proper position among the other output files.  */
+ #define LINK_LIBATOMIC_SPEC ""
+ #endif
+ 
++#if defined(TARGET_AUTOLINK_LIBRT) && defined(USE_LD_AS_NEEDED)
++#define LINK_LIBRT_SPEC "%{!fno-link-librt:" LD_AS_NEEDED_OPTION \
++			    " -lrt " LD_NO_AS_NEEDED_OPTION "} "
++#else
++#define LINK_LIBRT_SPEC ""
++#endif
++
+ /* This is overridable by the target in case they need to specify the
+    -lgcc and -lc order specially, yet not require them to override all
+    of LINK_COMMAND_SPEC.  */
+-- 
+2.51.2
+
