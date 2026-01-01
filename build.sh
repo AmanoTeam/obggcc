@@ -976,7 +976,12 @@ for target in "${targets[@]}"; do
 done
 
 # Delete libtool files and other unnecessary files GCC installs
-rm --force --recursive "${toolchain_directory}/share"
+rm \
+	--force \
+	--recursive \
+	"${toolchain_directory}/share" \
+	"${toolchain_directory}/lib/lib"*'.a' \
+	"${toolchain_directory}/include"
 
 find \
 	"${toolchain_directory}" \
@@ -1035,6 +1040,33 @@ if ! (( native )); then
 		--file="${gdb_tarball}" 2>/dev/null || gdb='0'
 	
 	if (( gdb )); then
+		cd "${gdb_directory}/bin"
+		
+		for name in *-{gdb,gdb-add-index,gstack,run}; do
+			value="${name/-gdb-add-index/}"
+			value="${value/-gstack/}"
+			value="${value/-run/}"
+			value="${value/-gdb/}"
+			
+			status='0'
+			
+			for target in "${targets[@]}"; do
+				if [ "${target}" != "${value}" ]; then
+					continue
+				fi
+				
+				status='1'
+				
+				break
+			done
+			
+			if (( status )); then
+				continue
+			fi
+			
+			unlink "${name}"
+		done
+		
 		cp --recursive "${gdb_directory}/bin" "${toolchain_directory}"
 		rm --recursive "${gdb_directory}"
 	fi
