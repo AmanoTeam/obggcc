@@ -160,6 +160,12 @@ $ ./configure --host="${CROSS_COMPILE_TRIPLET}"
 $ make
 ```
 
+To restore your environment to its original state, run the `deactivate.sh` script from the same directory:
+
+```bash
+$ source ${OBGGCC_HOME}/build/autotools/deactivate.sh
+```
+
 See [Autotools bugs](#native-mode-vs-cross-compilation-mode-in-autotools) for a list of bugs related to Autotools and their workarounds.
 
 ## Portability with C++ programs
