@@ -128,7 +128,7 @@ jobs:
     - name: Install required dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install build-essential || true
+        sudo apt-get install build-essential autoconf
     - name: Restore from cache
       uses: actions/cache@main
       with:
@@ -319,6 +319,7 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@main
       - name: Create release
+        if: false
         uses: softprops/action-gh-release@master
         with:
           tag_name: gcc-15
