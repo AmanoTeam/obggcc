@@ -28,6 +28,7 @@ STRIP="${OBGGCC_HOME}/bin/${CROSS_COMPILE_TRIPLET}-strip"
 OBJCOPY="${OBGGCC_HOME}/bin/${CROSS_COMPILE_TRIPLET}-objcopy"
 READELF="${OBGGCC_HOME}/bin/${CROSS_COMPILE_TRIPLET}-readelf"
 PKG_CONFIG="${OBGGCC_HOME}/bin/${CROSS_COMPILE_TRIPLET}${CROSS_COMPILE_GLIBCVER}-pkg-config"
+YASM="${OBGGCC_HOME}/bin/yasm"
 
 if [[ "${CC}" = *'-clang' ]]; then
 	CMAKE_TOOLCHAIN_FILE="${OBGGCC_HOME}/build/cmake/clang/${CROSS_COMPILE_TRIPLET}${CROSS_COMPILE_GLIBCVER}.cmake"
@@ -52,7 +53,8 @@ export \
 	OBJCOPY \
 	READELF \
 	PKG_CONFIG \
-	CMAKE_TOOLCHAIN_FILE
+	CMAKE_TOOLCHAIN_FILE \
+	YASM
 
 [[ "${kopt}" = *e*  ]] || set +e
 [[ "${kopt}" = *u*  ]] || set +u

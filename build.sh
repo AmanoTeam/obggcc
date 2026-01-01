@@ -68,6 +68,12 @@ declare -r zstd_directory="${build_directory}/zstd-dev"
 declare -r zlib_tarball="${build_directory}/zlib.tar.gz"
 declare -r zlib_directory="${build_directory}/zlib-develop"
 
+declare -r yasm_tarball='/tmp/yasm.tar.gz'
+declare -r yasm_directory='/tmp/yasm-1.3.0'
+
+declare -r ninja_tarball='/tmp/ninja.tar.gz'
+declare -r ninja_directory='/tmp/ninja-1.12.1'
+
 declare -r cmake_directory="${workdir}/submodules/cmake"
 
 declare -r curl_directory="${workdir}/submodules/curl"
@@ -189,6 +195,7 @@ export \
 	ZSTD_LIBS
 
 export libat_cv_have_ifunc='no'
+export ac_cv_header_stdc='yes'
 
 rm --force --recursive "${toolchain_directory}"
 mkdir --parent "${build_directory}"
@@ -378,6 +385,43 @@ if ! [ -f "${zstd_tarball}" ]; then
 		--directory="$(dirname "${zstd_directory}")" \
 		--extract \
 		--file="${zstd_tarball}"
+fi
+
+if ! [ -f "${yasm_tarball}" ]; then
+	curl \
+		--url 'https://deb.debian.org/debian/pool/main/y/yasm/yasm_1.3.0.orig.tar.gz' \
+		--retry '30' \
+		--retry-delay '0' \
+		--retry-all-errors \
+		--retry-max-time '0' \
+		--location \
+		--silent \
+		--output "${yasm_tarball}"
+	
+	tar \
+		--directory="$(dirname "${yasm_directory}")" \
+		--extract \
+		--file="${yasm_tarball}"
+	
+	cd "${yasm_directory}"
+	autoreconf --force --install
+fi
+
+if ! [ -f "${ninja_tarball}" ]; then
+	curl \
+		--url 'https://deb.debian.org/debian/pool/main/n/ninja-build/ninja-build_1.12.1.orig.tar.gz' \
+		--retry '30' \
+		--retry-delay '0' \
+		--retry-all-errors \
+		--retry-max-time '0' \
+		--location \
+		--silent \
+		--output "${ninja_tarball}"
+	
+	tar \
+		--directory="$(dirname "${ninja_directory}")" \
+		--extract \
+		--file="${ninja_tarball}"
 fi
 
 if ! [ -f "${gcc_tarball}" ]; then
@@ -591,6 +635,23 @@ make install
 
 unlink "${toolchain_directory}/lib/libz.a"
 
+[ -d "${yasm_directory}/build" ] || mkdir "${yasm_directory}/build"
+
+cd "${yasm_directory}/build"
+
+../configure \
+	--build="${build}" \
+	--host="${host}" \
+	--prefix="${toolchain_directory}" \
+	--enable-shared \
+	--disable-static \
+	CFLAGS="${ccflags}" \
+	CXXFLAGS="${ccflags}" \
+	LDFLAGS="${linkflags}"
+
+make all --jobs
+make install
+
 [ -d "${zstd_directory}/.build" ] || mkdir "${zstd_directory}/.build"
 
 cd "${zstd_directory}/.build"
@@ -628,6 +689,24 @@ cmake --install "${PWD}" --strip
 mkdir --parent "${toolchain_directory}/lib/nouzen"
 mv "${nz_prefix}/lib/"* "${toolchain_directory}/lib/nouzen"
 rmdir "${nz_prefix}/lib"
+
+[ -d "${ninja_directory}/build" ] || mkdir "${ninja_directory}/build"
+
+cd "${ninja_directory}/build"
+rm --force --recursive ./*
+
+if [[ "${host}" != *'-android'* ]]; then
+	cmake \
+		-S "${ninja_directory}" \
+		-B "${PWD}" \
+		-DBUILD_TESTING='OFF' \
+		-DCMAKE_POLICY_VERSION_MINIMUM='3.5' \
+		-DCMAKE_INSTALL_PREFIX="${toolchain_directory}" \
+		-DCMAKE_INSTALL_RPATH='$ORIGIN/../lib'
+	
+	cmake --build "${PWD}"
+	cmake --install "${PWD}" --strip
+fi
 
 # We prefer symbolic links over hard links.
 cp "${workdir}/tools/ln.sh" "${build_directory}/ln"
