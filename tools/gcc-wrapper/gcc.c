@@ -390,9 +390,7 @@ static clang_option_t CLANG_SPECIFIC_REMOVE[] = {
 
 static int libcv_matches(const char a, const char b) {
 	
-	#if defined(UNVERSIONED_CROSS_COMPILER)
-		
-	#elif defined(OBGGCC) /* Linux glibc (e.g., 2.17) */
+	#if defined(OBGGCC) /* Linux glibc (e.g., 2.17) */
 		if (a == '2' && (b == '.' || b == '-' || b == ZERO)) {
 			return 1;
 		}
@@ -2238,18 +2236,13 @@ int main(int argc, char* argv[]) {
 				break;
 			}
 			
-			#if !defined(UNVERSIONED_CROSS_COMPILER)
-				err = ERR_UNKNOWN_SYSTEM_VERSION;
-				goto end;
-			#else
-				while (*(--ptr) != '-') {}
-				break;
-			#endif
+			err = ERR_UNKNOWN_SYSTEM_VERSION;
+			goto end;
 		}
 		
 		b = *(ptr + 1);
 		
-		if (libcv_matches(a, b)) {
+		if (libcv_matches(a, b) == 1) {
 			break;
 		}
 		
@@ -2404,46 +2397,44 @@ int main(int argc, char* argv[]) {
 		SYSTEM_LIBRARY_PATH[7] = secondary_library_directory;
 	}
 	
-	#if !defined(UNVERSIONED_CROSS_COMPILER)
-		ch = *ptr;
+	ch = *ptr;
+	
+	if (ch == ZERO && override_libcv != NULL) {
+		ptr = (char*) override_libcv;
+	}
+	
+	start = ptr;
+	
+	while (1) {
+		a = *ptr;
 		
-		if (ch == ZERO && override_libcv != NULL) {
-			ptr = (char*) override_libcv;
+		if (a == '-' || a == ZERO) {
+			break;
 		}
 		
-		start = ptr;
-		
-		while (1) {
-			a = *ptr;
-			
-			if (a == '-' || a == ZERO) {
-				break;
-			}
-			
-			ptr++;
-		}
-		
-		size = (size_t) (ptr - start);
-		
-		libc_version = malloc(size + 1);
-		
-		if (libc_version == NULL) {
-			err = ERR_MEM_ALLOC_FAILURE;
-			goto end;
-		}
-		
-		memcpy(libc_version, start, size);
-		libc_version[size] = '\0';
-		
-		#if defined(PINO)
-			android_current_sdk_version = libc_version;
-		#endif
-		
-		get_libc_version_int(libc_version, version);
-		
-		libc_major = version[0];
-		libc_minor = version[1];
+		ptr++;
+	}
+	
+	size = (size_t) (ptr - start);
+	
+	libc_version = malloc(size + 1);
+	
+	if (libc_version == NULL) {
+		err = ERR_MEM_ALLOC_FAILURE;
+		goto end;
+	}
+	
+	memcpy(libc_version, start, size);
+	libc_version[size] = '\0';
+	
+	#if defined(PINO)
+		android_current_sdk_version = libc_version;
 	#endif
+	
+	get_libc_version_int(libc_version, version);
+	
+	libc_major = version[0];
+	libc_minor = version[1];
 	
 	target_version = LIBC_VERSION(libc_major, libc_minor);
 	
@@ -2566,17 +2557,6 @@ int main(int argc, char* argv[]) {
 		} else {
 			strcat(executable, cc);
 		}
-	#endif
-	
-	#if defined(UNVERSIONED_CROSS_COMPILER)
-		libc_version = malloc(1);
-		
-		if (libc_version == NULL) {
-			err = ERR_MEM_ALLOC_FAILURE;
-			goto end;
-		}
-		
-		libc_version[0] = '\0';
 	#endif
 	
 	get_parent_path(app_filename, parent_directory, 2);

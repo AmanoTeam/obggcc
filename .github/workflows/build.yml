@@ -325,7 +325,6 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@main
       - name: Create release
-        if: false
         uses: softprops/action-gh-release@master
         with:
           tag_name: gcc-15
