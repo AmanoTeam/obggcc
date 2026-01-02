@@ -1338,3 +1338,29 @@ for target in "${deprecated_targets[@]}"; do
 	rm --force "${share_directory}/"*"/${target}"*
 	rm --force "${share_directory}/"*"/clang/${target}"*
 done
+
+for filename in "${toolchain_directory}/build/"*'/'*'.'{cmake,sh} "${toolchain_directory}/build/"*'/'*'/'*'.'{cmake,sh}; do
+	value="$(awk -F '2.' '{print $1}' <<< "$(basename "${filename}")")"
+	value="${value/.sh/}"
+	value="${value/.cmake/}"
+	
+	status='0'
+	
+	for target in "${targets[@]}"; do
+		if [ "${target}" != "${value}" ]; then
+			continue
+		fi
+		
+		status='1'
+		
+		break
+	done
+	
+	if (( status )); then
+		continue
+	fi
+	
+	echo "- Removing ${filename}"
+	
+	unlink "${filename}"
+done
