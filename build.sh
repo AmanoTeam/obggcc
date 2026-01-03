@@ -1042,11 +1042,12 @@ if ! (( native )); then
 	if (( gdb )); then
 		cd "${gdb_directory}/bin"
 		
-		for name in *-{gdb,gdb-add-index,gstack,run}; do
+		for name in *-{gdb,gdb-add-index,gstack,run,gcore}; do
 			value="${name/-gdb-add-index/}"
 			value="${value/-gstack/}"
 			value="${value/-run/}"
 			value="${value/-gdb/}"
+			value="${value/-gcore/}"
 			
 			status='0'
 			
@@ -1064,7 +1065,7 @@ if ! (( native )); then
 				continue
 			fi
 			
-			unlink "${name}"
+			rm --force "${name}"
 		done
 		
 		cp --recursive "${gdb_directory}/bin" "${toolchain_directory}"
@@ -1333,16 +1334,14 @@ ln \
 	"${share_directory}/"* \
 	"${toolchain_directory}/build"
 
-for target in "${deprecated_targets[@]}"; do
-	rm --force "${toolchain_directory}/bin/${target}"*
-	rm --force "${share_directory}/"*"/${target}"*
-	rm --force "${share_directory}/"*"/clang/${target}"*
-done
-
 for filename in "${toolchain_directory}/build/"*'/'*'.'{cmake,sh} "${toolchain_directory}/build/"*'/'*'/'*'.'{cmake,sh}; do
 	value="$(awk -F '2.' '{print $1}' <<< "$(basename "${filename}")")"
 	value="${value/.sh/}"
 	value="${value/.cmake/}"
+	
+	if [ "${value}" = 'deactivate' ]; then
+		continue
+	fi
 	
 	status='0'
 	
