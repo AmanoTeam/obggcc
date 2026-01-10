@@ -90,6 +90,10 @@ declare -r clang_wrapper="${build_directory}/clang-wrapper"
 
 declare gdb='1'
 
+declare build_cmake='0'
+declare build_curl='0'
+declare build_nz='1'
+
 declare -ra plugin_libraries=(
 	'libcc1plugin'
 	'libcp1plugin'
@@ -197,43 +201,51 @@ export \
 export libat_cv_have_ifunc='no'
 export ac_cv_header_stdc='yes'
 
+if [[ "${host}" = *'-mingw32'* ]]; then
+	build_nz='0'
+fi
+
 rm --force --recursive "${toolchain_directory}"
 mkdir --parent "${build_directory}"
 
 export PATH="${build_directory}:${build_directory}/bin:${PATH}"
 
-cd "${cmake_directory}"
-
-CC= CXX= CMAKE_TOOLCHAIN_FILE= \
-	./bootstrap \
-	--prefix="${build_directory}" \
-	--parallel="${max_jobs}"
-
-make all --jobs="${max_jobs}"
-make install
-
-sed \
-	--in-place \
-	'/CMAKE_SHARED_LIBRARY_RUNTIME_C_FLAG/d' \
-	"${build_directory}/share/cmake-"*'/Modules/Platform/Android.cmake'
+if (( build_cmake )); then
+	cd "${cmake_directory}"
+	
+	CC= CXX= CMAKE_TOOLCHAIN_FILE= \
+		./bootstrap \
+		--prefix="${build_directory}" \
+		--parallel="${max_jobs}"
+	
+	make all --jobs="${max_jobs}"
+	make install
+	
+	sed \
+		--in-place \
+		'/CMAKE_SHARED_LIBRARY_RUNTIME_C_FLAG/d' \
+		"${build_directory}/share/cmake-"*'/Modules/Platform/Android.cmake'
+fi
 
 cmake --version
 
-CC= CXX= CMAKE_TOOLCHAIN_FILE= \
+if (( build_curl )); then
+	CC= CXX= CMAKE_TOOLCHAIN_FILE= \
 	cmake \
-	-S "${curl_directory}" \
-	-B "${curl_directory}/build" \
-	-D CMAKE_INSTALL_PREFIX="${build_directory}" \
-	-D CURL_USE_LIBPSL=OFF \
-	-D CURL_ENABLE_SSL=ON \
-	-D CURL_USE_OPENSSL=ON \
-	-D BUILD_SHARED_LIBS=OFF \
-	-D BUILD_STATIC_LIBS=ON
-
-make \
-	-C "${curl_directory}/build" \
-	--jobs="${max_jobs}" \
-	install
+		-S "${curl_directory}" \
+		-B "${curl_directory}/build" \
+		-D CMAKE_INSTALL_PREFIX="${build_directory}" \
+		-D CURL_USE_LIBPSL=OFF \
+		-D CURL_ENABLE_SSL=ON \
+		-D CURL_USE_OPENSSL=ON \
+		-D BUILD_SHARED_LIBS=OFF \
+		-D BUILD_STATIC_LIBS=ON
+	
+	make \
+		-C "${curl_directory}/build" \
+		--jobs="${max_jobs}" \
+		install
+fi
 
 curl --version
 
@@ -319,6 +331,13 @@ if ! [ -f "${isl_tarball}" ]; then
 	for name in "${isl_directory}/isl_test"*; do
 		echo 'int main() {}' > "${name}"
 	done
+	
+	sed \
+		--in-place \
+		--regexp-extended \
+		's/(allow_undefined)=.*$/\1=no/' \
+		"${isl_directory}/ltmain.sh" \
+		"${isl_directory}/interface/ltmain.sh"
 fi
 
 if ! [ -f "${binutils_tarball}" ]; then
@@ -366,7 +385,10 @@ if ! [ -f "${zlib_tarball}" ]; then
 		--extract \
 		--file="${zlib_tarball}"
 	
-	patch --directory="${zlib_directory}" --strip='1' --input="${workdir}/patches/0001-Remove-versioned-SONAME-from-libz.patch"
+	sed \
+		--in-place \
+		's/(UNIX)/(1)/g; s/(NOT APPLE)/(0)/g' \
+		"${zlib_directory}/CMakeLists.txt"
 fi
 
 if ! [ -f "${zstd_tarball}" ]; then
@@ -385,6 +407,11 @@ if ! [ -f "${zstd_tarball}" ]; then
 		--directory="$(dirname "${zstd_directory}")" \
 		--extract \
 		--file="${zstd_tarball}"
+	
+	sed \
+		--in-place \
+		's/LANGUAGES C   # M/LANGUAGES C CXX  # M/g' \
+		"${zstd_directory}/build/cmake/CMakeLists.txt"
 fi
 
 if ! [ -f "${yasm_tarball}" ]; then
@@ -622,18 +649,17 @@ make install
 cd "${zlib_directory}/build"
 rm --force --recursive ./*
 
-../configure \
-	--build="${build}" \
-	--host="${host}" \
-	--prefix="${toolchain_directory}" \
-	CFLAGS="${ccflags}" \
-	CXXFLAGS="${ccflags}" \
-	LDFLAGS="${linkflags}"
+cmake \
+	-S "${zlib_directory}" \
+	-B "${PWD}" \
+	-DCMAKE_INSTALL_PREFIX="${toolchain_directory}" \
+	-DCMAKE_PLATFORM_NO_VERSIONED_SONAME=ON
+
+cmake --build "${PWD}" -- --jobs
+cmake --install "${PWD}" --strip
 
 make all --jobs
 make install
-
-unlink "${toolchain_directory}/lib/libz.a"
 
 [ -d "${yasm_directory}/build" ] || mkdir "${yasm_directory}/build"
 
@@ -671,24 +697,26 @@ cmake \
 cmake --build "${PWD}" -- --jobs
 cmake --install "${PWD}" --strip
 
-[ -d "${nz_directory}/build" ] || mkdir "${nz_directory}/build"
-
-cd "${nz_directory}/build"
-rm --force --recursive ./*
-
-cmake \
-	-S "${nz_directory}" \
-	-B "${PWD}" \
-	-DCMAKE_C_FLAGS="${ccflags}" \
-	-DCMAKE_CXX_FLAGS="${ccflags}" \
-	-DCMAKE_INSTALL_PREFIX="${nz_prefix}"
-
-cmake --build "${PWD}" -- --jobs='1'
-cmake --install "${PWD}" --strip
-
-mkdir --parent "${toolchain_directory}/lib/nouzen"
-mv "${nz_prefix}/lib/"* "${toolchain_directory}/lib/nouzen"
-rmdir "${nz_prefix}/lib"
+if (( build_nz )); then
+	[ -d "${nz_directory}/build" ] || mkdir "${nz_directory}/build"
+	
+	cd "${nz_directory}/build"
+	rm --force --recursive ./*
+	
+	cmake \
+		-S "${nz_directory}" \
+		-B "${PWD}" \
+		-DCMAKE_C_FLAGS="${ccflags}" \
+		-DCMAKE_CXX_FLAGS="${ccflags}" \
+		-DCMAKE_INSTALL_PREFIX="${nz_prefix}"
+	
+	cmake --build "${PWD}" -- --jobs='1'
+	cmake --install "${PWD}" --strip
+	
+	mkdir --parent "${toolchain_directory}/lib/nouzen"
+	mv "${nz_prefix}/lib/"* "${toolchain_directory}/lib/nouzen"
+	rmdir "${nz_prefix}/lib"
+fi
 
 [ -d "${ninja_directory}/build" ] || mkdir "${ninja_directory}/build"
 

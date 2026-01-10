@@ -32,7 +32,8 @@ SOURCES = biggestint.c \
 	fs/stripsep.c \
 	fs/rm.c \
 	fs/cwd.c \
-	os/find_exe.c
+	os/find_exe.c \
+	os/execve.c
 
 GCC_SOURCES = $(SOURCES) gcc.c
 STRIP_SOURCES = $(SOURCES) binutils.c

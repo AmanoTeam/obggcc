@@ -148,9 +148,13 @@ int copy_file(const char* const source, const char* const destination) {
 	#if defined(_WIN32) && defined(_UNICODE)
 		free(wsource);
 		free(wdestination);
-	#elif defined(__APPLE__)
+	#endif
+	
+	#if defined(__APPLE__)
 		copyfile_state_free(state);
-	#else
+	#endif
+	
+	#if !(defined(_WIN32) || defined(__APPLE__))
 		fstream_close(input);
 		fstream_close(output);
 	#endif

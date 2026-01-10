@@ -28,6 +28,7 @@
 #include "fs/exists.h"
 #include "fs/basename.h"
 #include "os/find_exe.h"
+#include "os/execve.h"
 #include "biggestint.h"
 #include "clang_option.h"
 #include "errors.h"
@@ -3202,7 +3203,7 @@ int main(int argc, char* argv[]) {
 		}
 	#endif
 	
-	if (execv(executable, args) == -1) {
+	if (execute_command(executable, args) == -1) {
 		err = ERR_EXECVE_FAILURE;
 		goto end;
 	}
