@@ -71,6 +71,10 @@ jobs:
     strategy:
       matrix:
         target: [
+          # Windows
+          'x86_64-w64-mingw32',
+          'i686-w64-mingw32',
+          
           # macOS
           'aarch64-unknown-apple-darwin',
           'x86_64-unknown-apple-darwin',
@@ -266,6 +270,20 @@ jobs:
             export CMAKE_TOOLCHAIN_FILE="${PINO_HOME}/usr/local/share/pino/cmake/${{ matrix.target }}.cmake"
             
             source "${PINO_HOME}/usr/local/share/pino/autotools/${{ matrix.target }}.sh"
+        elif [[ '${{ matrix.target }}' == *'-mingw32' ]]; then
+            declare -r MINGW_TAG="$(jq --raw-output '.tag_name' <<< "$(curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://api.github.com/repos/AmanoTeam/MinGW-w64/releases/latest')")"
+            declare -r MINGW_TARBALL='/tmp/toolchain.tar.xz'
+            declare -r MINGW_URL="https://github.com/AmanoTeam/MinGW-w64/releases/download/${MINGW_TAG}/x86_64-unknown-linux-gnu.tar.xz"
+            
+            curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --location --url "${MINGW_URL}" --output "${MINGW_TARBALL}"
+            tar --directory="$(dirname "${MINGW_TARBALL}")" --extract --file="${MINGW_TARBALL}"
+            
+            export MINGW_HOME='/tmp/mingw-w64'
+            export PATH="${MINGW_HOME}/bin:${PATH}"
+            
+            export CMAKE_TOOLCHAIN_FILE="${MINGW_HOME}/usr/local/share/mingw/cmake/${{ matrix.target }}.cmake"
+            
+            source "${MINGW_HOME}/usr/local/share/mingw/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' == *'-darwin' ]]; then
             curl \
                 --silent \
@@ -305,8 +323,14 @@ jobs:
             /tmp/logs.tar.xz
     - name: Generate tarball
       run: |
-        declare tarball_filename='/tmp/${{ matrix.target }}.tar.xz'
-        tar --directory='/tmp' --create --file=- 'obggcc' | xz --threads='0' --extreme --memlimit-compress='100%' --compress -9 > "${tarball_filename}"
+        if [[ '${{ matrix.target }}' = *'-mingw32' ]]; then
+            declare tarball_filename='/tmp/${{ matrix.target }}.zip'
+            cd '/tmp'
+            zip --recurse-paths -9 "${tarball_filename}" 'obggcc'
+        else
+            declare tarball_filename='/tmp/${{ matrix.target }}.tar.xz'
+            tar --directory='/tmp' --create --file=- 'obggcc' | xz --threads='0' --extreme --memlimit-compress='100%' --compress -9 > "${tarball_filename}"
+        fi
         sha256sum "${tarball_filename}" | sed 's|/tmp/||' > "${tarball_filename}.sha256"
     - name: Upload artifact
       uses: actions/upload-artifact@main
@@ -329,7 +353,7 @@ jobs:
         with:
           tag_name: gcc-16
           name: GCC 16.0.0
-          files: ./*/*-unknown-*.tar.xz*
+          files: ./*/*-{unknown,w64}-*.{tar.xz,zip}*
           draft: false
           prerelease: true
           fail_on_unmatched_files: true

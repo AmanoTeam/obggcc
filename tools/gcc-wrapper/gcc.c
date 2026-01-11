@@ -236,6 +236,8 @@ static const char CMAKE_FILES_DIRECTORY[] = "CMakeFiles";
 
 static const char HYPHEN[] = "-";
 
+static const char EXE[] = ".exe";
+
 static char* SYSTEM_LIBRARY_PATH[] = {
 	PATHSEP_M "usr" PATHSEP_M "local" PATHSEP_M "lib64",
 	PATHSEP_M "usr" PATHSEP_M "local" PATHSEP_M "lib",
@@ -2078,6 +2080,11 @@ int main(int argc, char* argv[]) {
 	
 	file_name = basename(app_filename);
 	
+	#if defined(_WIN32)
+		cur = strstr(file_name, EXE);
+		*(char*) cur = '\0';
+	#endif
+	
 	parent_directory = malloc(strlen(app_filename) + 1);
 	
 	if (parent_directory == NULL) {
@@ -2539,7 +2546,7 @@ int main(int argc, char* argv[]) {
 			goto end;
 		}
 	#else
-		executable = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(triplet) + 1 + strlen(cc) + 1);
+		executable = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(triplet) + 1 + strlen(cc) + strlen(EXE) + 1);
 		
 		if (executable == NULL) {
 			err = ERR_MEM_ALLOC_FAILURE;
@@ -2558,6 +2565,10 @@ int main(int argc, char* argv[]) {
 		} else {
 			strcat(executable, cc);
 		}
+		
+		#if defined(_WIN32)
+			strcat(executable, EXE);
+		#endif
 	#endif
 	
 	get_parent_path(app_filename, parent_directory, 2);

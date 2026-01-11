@@ -97,7 +97,7 @@ int execute_command(const char* const cmd, char** arg) {
 	#if defined(_WIN32)
 		char* qarg = NULL;
 		
-		const int flags = NORMAL_PRIORITY_CLASS | CREATE_UNICODE_ENVIRONMENT | CREATE_NO_WINDOW;
+		const int flags = NORMAL_PRIORITY_CLASS;
 		BOOL status = FALSE;
 		
 		PROCESS_INFORMATION info = {0};
@@ -117,6 +117,7 @@ int execute_command(const char* const cmd, char** arg) {
 		startup.hStdError = GetStdHandle(STD_ERROR_HANDLE);
 		startup.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
 		startup.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+		startup.dwFlags = STARTF_USESTDHANDLES;
 		
 		qarg = quote(arg);
 		
@@ -169,6 +170,11 @@ int execute_command(const char* const cmd, char** arg) {
 		#endif
 		
 		if (status == FALSE) {
+			err = -1;
+			goto end;
+		}
+		
+		if (WaitForSingleObject(info.hProcess, INFINITE) == WAIT_FAILED) {
 			err = -1;
 			goto end;
 		}
