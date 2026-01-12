@@ -210,6 +210,22 @@ if [[ "${host}" = *'-mingw32' ]]; then
 	dll='.dll'
 fi
 
+function replace_symlinks() {
+	
+	while read source; do
+		destination="$(readlink "${source}")"
+		rm --force "${source}"
+		echo "INPUT(${destination})" > "${source}"
+	done <<< "$(find "${1}/lib" -type 'l')"
+	
+	while read source; do
+		destination="$(readlink "${source}")"
+		rm --force "${source}"
+		cp "${destination}" "${source}"
+	done <<< "$(find "${1}/include" -type 'l')"
+	
+}
+
 rm --force --recursive "${toolchain_directory}"
 mkdir --parent "${build_directory}"
 
@@ -932,6 +948,7 @@ for target in "${targets[@]}"; do
 		--disable-multilib \
 		--disable-nls \
 		--disable-canonical-system-headers \
+		--disable-win32-utf8-manifest \
 		--without-headers \
 		--without-static-standard-libraries \
 		CFLAGS="${ccflags}" \
@@ -1347,11 +1364,7 @@ while read item; do
 		'./static'
 	
 	if [[ "${host}" = *'-mingw32' ]]; then
-		while read source; do
-			destination="$(readlink "${source}")"
-			rm --force "${source}"
-			echo "INPUT(${destination})" > "${source}"
-		done <<< "$(find "${PWD}" -type 'l')"
+		replace_symlinks "${toolchain_directory}/${triplet}${glibc_version}"
 	fi
 	
 	if [ "${repository}" != 'null' ] && (( build_nz )); then
@@ -1426,6 +1439,8 @@ while read item; do
 		ln --symbolic "${source}" "${destination}"
 	done
 done <<< "$(jq --compact-output '.[]' "${workdir}/submodules/debian-sysroot/dist.json")"
+
+replace_symlinks "${toolchain_directory}/${triplet}"
 
 for triplet in "${targets[@]}"; do
 	python3 -B "${workdir}/tools/include-missing/main.py" "${toolchain_directory}" "${triplet}"
