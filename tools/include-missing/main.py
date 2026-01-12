@@ -69,7 +69,7 @@ for version in GLIBC_VERSIONS:
 		if os.path.exists(path = broken_header):
 			continue
 		
-		print("- The header '%s' does not exists in GLIBC %s; creating a broken one at '%s'" % (header, version, broken_header))
+		# print("- The header '%s' does not exists in GLIBC %s; creating a broken one at '%s'" % (header, version, broken_header))
 		
 		path = os.path.dirname(p = broken_header)
 		

@@ -85,8 +85,6 @@ declare -r ccflags='-w -O2'
 declare -r linkflags='-Xlinker -s'
 
 declare -r sysroot_tarball="${build_directory}/sysroot.tar.xz"
-declare -r gcc_wrapper="${build_directory}/gcc-wrapper"
-declare -r clang_wrapper="${build_directory}/clang-wrapper"
 
 declare gdb='1'
 
@@ -177,10 +175,10 @@ declare -ra deprecated_targets=(
 
 declare -ra targets=(
 	'x86_64-unknown-linux-gnu'
-	# 'aarch64-unknown-linux-gnu'
-	# 'arm-unknown-linux-gnueabi'
-	# 'arm-unknown-linux-gnueabihf'
-	# 'i386-unknown-linux-gnu'
+	'aarch64-unknown-linux-gnu'
+	'arm-unknown-linux-gnueabi'
+	'arm-unknown-linux-gnueabihf'
+	'i386-unknown-linux-gnu'
 )
 
 declare -r PKG_CONFIG_PATH="${toolchain_directory}/lib/pkgconfig"
@@ -210,17 +208,29 @@ if [[ "${host}" = *'-mingw32' ]]; then
 	dll='.dll'
 fi
 
+declare -r gcc_wrapper="${build_directory}/gcc-wrapper${exe}"
+declare -r binutils_wrapper="${build_directory}/binutils-gnu-wrapper${exe}"
+declare -r clang_wrapper="${build_directory}/clang-wrapper${exe}"
+
 function replace_symlinks() {
+	
+	echo "Removing symlinks from '${1}'"
 	
 	while read source; do
 		destination="$(readlink "${source}")"
-		rm --force "${source}"
+		
+		echo "Replacing symlink at '${source}' with a linker script"
+		
+		unlink "${source}"
 		echo "INPUT(${destination})" > "${source}"
 	done <<< "$(find "${1}/lib" -type 'l')"
 	
 	while read source; do
-		destination="$(readlink "${source}")"
-		rm --force "${source}"
+		destination="$(realpath "${source}")"
+		
+		echo "Replacing symlink at '${source}' with the actual file"
+		
+		unlink "${source}"
 		cp "${destination}" "${source}"
 	done <<< "$(find "${1}/include" -type 'l')"
 	
@@ -674,7 +684,8 @@ cmake \
 	-S "${zlib_directory}" \
 	-B "${PWD}" \
 	-DCMAKE_INSTALL_PREFIX="${toolchain_directory}" \
-	-DCMAKE_PLATFORM_NO_VERSIONED_SONAME=ON
+	-DCMAKE_PLATFORM_NO_VERSIONED_SONAME='ON' \
+	-DZLIB_BUILD_TESTING='OFF'
 
 cmake --build "${PWD}" -- --jobs
 cmake --install "${PWD}" --strip
@@ -796,7 +807,7 @@ make \
 	LDFLAGS="${linkflags}"  \
 	gcc
 
-cp "${gcc_wrapper}${exe}" "${clang_wrapper}${exe}"
+cp "${gcc_wrapper}" "${clang_wrapper}"
 
 make \
 	-C "${workdir}/tools/gcc-wrapper" \
@@ -805,6 +816,14 @@ make \
 	CXXFLAGS="${ccflags}" \
 	LDFLAGS="${linkflags}" \
 	gcc
+
+make \
+	-C "${workdir}/tools/gcc-wrapper" \
+	PREFIX="$(dirname "${gcc_wrapper}")" \
+	CFLAGS="${ccflags}" \
+	CXXFLAGS="${ccflags}" \
+	LDFLAGS="${linkflags}" \
+	binutils-gnu
 
 for target in "${targets[@]}"; do
 	declare specs='%{!Qy: -Qn} %{!fgnu-unique: %{!fno-gnu-unique: -fno-gnu-unique}}'
@@ -866,6 +885,11 @@ for target in "${targets[@]}"; do
 	
 	make all --jobs
 	make install
+	
+	for bin in "${toolchain_directory}/${triplet}/bin/"*; do
+		unlink "${bin}"
+		cp "${binutils_wrapper}" "${bin}"
+	done
 	
 	rm --force --recursive "${PWD}" &
 	
@@ -1014,7 +1038,17 @@ for target in "${targets[@]}"; do
 	
 	unlink './libgcc_s.so' && echo 'GROUP ( libgcc_s.so.1 -lgcc )' > './libgcc_s.so'
 	
-	rm "${toolchain_directory}/bin/${triplet}-${triplet}-"* || true
+	rm \
+		--force \
+		"${toolchain_directory}/bin/${triplet}-${triplet}-"* \
+		"${toolchain_directory}/bin/${triplet}-gcc-${gcc_major}${exe}"
+	
+	if [[ "${host}" = *'-mingw32' ]]; then
+		unlink "${toolchain_directory}/bin/${triplet}-ld${exe}"
+		unlink "${toolchain_directory}/bin/${triplet}-c++${exe}"
+		cp "${toolchain_directory}/bin/${triplet}-ld.bfd${exe}" "${toolchain_directory}/bin/${triplet}-ld${exe}"
+		cp "${toolchain_directory}/bin/${triplet}-g++${exe}" "${toolchain_directory}/bin/${triplet}-c++${exe}"
+	fi
 	
 	if [[ "${triplet}" = 'sparc-'* ]] || [[ "${triplet}" = 's390-'* ]] || [[ "${triplet}" = 'powerpc-'* ]] || [[ "${triplet}" = 'hppa-'* ]] || [[ "${triplet}" = 'alpha-'* ]]; then
 		patch \
@@ -1025,10 +1059,21 @@ for target in "${targets[@]}"; do
 	
 	cat "${workdir}/patches/c++config.h" >> "${toolchain_directory}/${triplet}/include/c++/${gcc_major}/${triplet}/bits/c++config.h"
 	
-	cd "${toolchain_directory}/lib/bfd-plugins"
+	if [[ "${host}" = *'-mingw32' ]]; then
+		cp \
+			"${toolchain_directory}/libexec/gcc/${triplet}/${gcc_major}/liblto_plugin${dll}" \
+			"${toolchain_directory}/lib/bfd-plugins"
+	else
+		ln \
+			--symbolic \
+			--relative \
+			--force \
+			"${toolchain_directory}/libexec/gcc/${triplet}/${gcc_major}/liblto_plugin${dll}" \
+			"${toolchain_directory}/lib/bfd-plugins"
+	fi
 	
-	if ! [ -f './liblto_plugin.so' ]; then
-		ln --symbolic "../../libexec/gcc/${triplet}/${gcc_major}/liblto_plugin.so" './'
+	if [[ "${host}" = *'-mingw32' ]]; then
+		replace_symlinks "${toolchain_directory}/${triplet}" || true
 	fi
 done
 
@@ -1269,7 +1314,7 @@ if ! (( native )) && [[ "${host}" != *'-darwin'* ]]; then
 	
 	if [[ "${host}" = *'-mingw32' ]]; then
 		cp "${toolchain_directory}/"{bin,lib}"/lib"*'.dll' "${toolchain_directory}/libexec/gcc/"*"/${gcc_major}" || true
-		cp "${toolchain_directory}/"{bin,lib}"/lib"*'.dll' "${toolchain_directory}/"*"/bin" || true
+		rm "${toolchain_directory}/lib/lib"*'.dll'
 	fi
 fi
 
@@ -1292,19 +1337,19 @@ while read item; do
 		continue
 	fi
 	
-	cp "${gcc_wrapper}${exe}" "${toolchain_directory}/bin/${triplet}${glibc_version}-gcc${exe}"
-	cp "${gcc_wrapper}${exe}" "${toolchain_directory}/bin/${triplet}${glibc_version}-g++${exe}"
-	cp "${gcc_wrapper}${exe}" "${toolchain_directory}/bin/${triplet}${glibc_version}-c++${exe}"
+	cp "${gcc_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-gcc${exe}"
+	cp "${gcc_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-g++${exe}"
+	cp "${gcc_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-c++${exe}"
 	
-	cp "${clang_wrapper}${exe}" "${toolchain_directory}/bin/${triplet}${glibc_version}-clang${exe}"
-	cp "${clang_wrapper}${exe}" "${toolchain_directory}/bin/${triplet}${glibc_version}-clang++${exe}"
+	cp "${clang_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-clang${exe}"
+	cp "${clang_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-clang++${exe}"
 	
 	if [[ "${languages}" = *'m2'* ]]; then
-		cp "${gcc_wrapper}${exe}" "${toolchain_directory}/bin/${triplet}${glibc_version}-gm2${exe}"
+		cp "${gcc_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-gm2${exe}"
 	fi
 	
 	if [[ "${languages}" = *'fortran'* ]]; then
-		cp "${gcc_wrapper}${exe}" "${toolchain_directory}/bin/${triplet}${glibc_version}-gfortran${exe}"
+		cp "${gcc_wrapper}" "${toolchain_directory}/bin/${triplet}${glibc_version}-gfortran${exe}"
 	fi
 	
 	cp "${workdir}/tools/pkg-config.sh" "${toolchain_directory}/bin/${triplet}${glibc_version}-pkg-config"
@@ -1363,10 +1408,6 @@ while read item; do
 		"${toolchain_directory}/lib/gcc/${triplet}/${gcc_major}/"*'.'{a,o} \
 		'./static'
 	
-	if [[ "${host}" = *'-mingw32' ]]; then
-		replace_symlinks "${toolchain_directory}/${triplet}${glibc_version}"
-	fi
-	
 	if [ "${repository}" != 'null' ] && (( build_nz )); then
 		mkdir 'nouzen'
 		
@@ -1384,34 +1425,6 @@ while read item; do
 		
 		echo -e "repository = ${repository}\nrelease = ${release}\nresource = ${resource}\narchitecture = ${architecture}" > './nouzen/etc/nouzen/sources.list/obggcc.conf'
 		
-		for library in "${libraries[@]}"; do
-			for bit in "${bits[@]}"; do
-				for file in "../../${triplet}/lib${bit}/${library}"*; do
-					if [[ "${file}" = *'*' ]]; then
-						continue
-					fi
-					
-					if ! ( [[ "${file}" = *'.so'* ]] || [[ "${file}" = *'.a' ]] ); then
-						continue
-					fi
-					
-					echo "- Symlinking '${file}' to '${PWD}'"
-					
-					ln --force --symbolic "${file}" './'
-					
-					echo "- Symlinking '${file}' to '${PWD}/gcc'"
-					
-					ln --force --symbolic --relative "${file}" './gcc'
-					
-					if [[ "${file}" = *'.a' ]]; then
-						echo "- Symlinking '${file}' to '${PWD}/static'"
-						
-						ln --force --symbolic --relative "${file}" './static'
-					fi
-				done
-			done
-		done
-		
 		cd '../'
 		
 		mkdir 'bin'
@@ -1426,6 +1439,43 @@ while read item; do
 		ln --symbolic "../${triplet}${glibc_version}/bin/apt-get" "./${triplet}${glibc_version}-apt-get"
 	fi
 	
+	for library in "${libraries[@]}"; do
+		for bit in "${bits[@]}"; do
+			for file in "${toolchain_directory}/${triplet}/lib${bit}/${library}"*; do
+				if [[ "${file}" = *'*' ]]; then
+					continue
+				fi
+				
+				if ! ( [[ "${file}" = *'.so'* ]] || [[ "${file}" = *'.a' ]] ); then
+					continue
+				fi
+				
+				ln \
+					--force \
+					--symbolic \
+					--relative \
+					"${file}" \
+					"${toolchain_directory}/${triplet}${glibc_version}/lib"
+				
+				ln \
+					--force \
+					--symbolic \
+					--relative \
+					"${file}" \
+					"${toolchain_directory}/${triplet}${glibc_version}/lib/gcc"
+				
+				if [[ "${file}" = *'.a' ]]; then
+					ln \
+						--force \
+						--symbolic \
+						--relative \
+						"${file}" \
+						"${toolchain_directory}/${triplet}${glibc_version}/lib/static"
+				fi
+			done
+		done
+	done
+	
 	for name in "${symlink_tools[@]}"; do
 		source="./${triplet}-${name}"
 		destination="./${triplet}${glibc_version}-${name}"
@@ -1438,9 +1488,11 @@ while read item; do
 		
 		ln --symbolic "${source}" "${destination}"
 	done
+	
+	if [[ "${host}" = *'-mingw32' ]]; then
+		replace_symlinks "${toolchain_directory}/${triplet}${glibc_version}"
+	fi
 done <<< "$(jq --compact-output '.[]' "${workdir}/submodules/debian-sysroot/dist.json")"
-
-replace_symlinks "${toolchain_directory}/${triplet}"
 
 for triplet in "${targets[@]}"; do
 	python3 -B "${workdir}/tools/include-missing/main.py" "${toolchain_directory}" "${triplet}"
@@ -1487,3 +1539,13 @@ for filename in "${toolchain_directory}/build/"*'/'*'.'{cmake,sh} "${toolchain_d
 	
 	unlink "${filename}"
 done
+
+if [[ "${host}" = *'-mingw32' ]]; then
+	while read name; do
+		if [ -f "${name}" ]; then
+			chmod 644 "${name}"
+		elif [ -d "${name}" ]; then
+			chmod 755 "${name}"
+ 		fi
+	done <<< "$(find "${toolchain_directory}")"
+fi

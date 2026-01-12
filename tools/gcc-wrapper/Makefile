@@ -36,12 +36,16 @@ SOURCES = biggestint.c \
 	os/execve.c
 
 GCC_SOURCES = $(SOURCES) gcc.c
-STRIP_SOURCES = $(SOURCES) binutils.c
+BINUTILS_LLVM_SOURCES = $(SOURCES) binutils.c
+BINUTILS_GNU_SOURCES = $(SOURCES) binutils-gnu.c
 
 gcc:
 	$(CC) -Wno-discarded-qualifiers -D $(FLAVOR) -I $(SOURCE_DIRECTORY) $(CFLAGS) $(LDFLAGS) $(CPPFLAGS) $(GCC_SOURCES) -o $(PREFIX)/gcc-wrapper
 
 binutils:
-	$(CC) -Wno-discarded-qualifiers -D $(FLAVOR) -I $(SOURCE_DIRECTORY) $(CFLAGS) $(LDFLAGS) $(CPPFLAGS) $(STRIP_SOURCES) -o $(PREFIX)/binutils-wrapper
+	$(CC) -Wno-discarded-qualifiers -D $(FLAVOR) -I $(SOURCE_DIRECTORY) $(CFLAGS) $(LDFLAGS) $(CPPFLAGS) $(BINUTILS_LLVM_SOURCES) -o $(PREFIX)/binutils-wrapper
+
+binutils-gnu:
+	$(CC) -Wno-discarded-qualifiers -D $(FLAVOR) -I $(SOURCE_DIRECTORY) $(CFLAGS) $(LDFLAGS) $(CPPFLAGS) $(BINUTILS_GNU_SOURCES) -o $(PREFIX)/binutils-gnu-wrapper
 
 all: gcc binutils
