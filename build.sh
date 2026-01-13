@@ -973,6 +973,7 @@ for target in "${targets[@]}"; do
 		--disable-nls \
 		--disable-canonical-system-headers \
 		--disable-win32-utf8-manifest \
+		--disable-libstdcxx-verbose \
 		--without-headers \
 		--without-static-standard-libraries \
 		CFLAGS="${ccflags}" \
