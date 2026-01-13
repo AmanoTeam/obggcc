@@ -1084,7 +1084,9 @@ rm \
 	--recursive \
 	"${toolchain_directory}/share" \
 	"${toolchain_directory}/lib/lib"*'.a' \
-	"${toolchain_directory}/include"
+	"${toolchain_directory}/include" \
+	"${toolchain_directory}/lib/pkgconfig" \
+	"${toolchain_directory}/lib/cmake"
 
 find \
 	"${toolchain_directory}" \
