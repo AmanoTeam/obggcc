@@ -226,6 +226,10 @@ function replace_symlinks() {
 	done <<< "$(find "${1}/lib" -type 'l')"
 	
 	while read source; do
+		if [ -z "${source}" ]; then
+			break
+		fi
+		
 		destination="$(realpath "${source}")"
 		
 		echo "Replacing symlink at '${source}' with the actual file"
@@ -1316,8 +1320,13 @@ if ! (( native )) && [[ "${host}" != *'-darwin'* ]]; then
 	fi
 	
 	if [[ "${host}" = *'-mingw32' ]]; then
-		cp "${toolchain_directory}/"{bin,lib}"/lib"*'.dll' "${toolchain_directory}/libexec/gcc/"*"/${gcc_major}" || true
-		rm "${toolchain_directory}/lib/lib"*'.dll'
+		for target in "${targets[@]}"; do
+			for source in "${toolchain_directory}/"{bin,lib}"/lib"*'.dll'; do
+				cp "${source}" "${toolchain_directory}/libexec/gcc/${target}/${gcc_major}"
+			done
+		done
+		
+		rm "${toolchain_directory}/lib/lib"*'.'{dll,lib}
 	fi
 fi
 
