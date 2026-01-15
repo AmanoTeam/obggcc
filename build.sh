@@ -392,6 +392,13 @@ if ! [ -f "${binutils_tarball}" ]; then
 		--extract \
 		--file="${binutils_tarball}"
 	
+	if [[ "${host}" = *'bsd'* ]] || [[ "${host}" = *'dragonfly' ]] then
+		sed \
+			--in-place \
+			's/-Xlinker -rpath/-Xlinker -z -Xlinker origin -Xlinker -rpath/g' \
+			"${workdir}/patches//0001-Add-relative-RPATHs-to-binutils-host-tools.patch"
+	fi
+	
 	if [[ "${host}" = *'-darwin'* ]]; then
 		sed \
 			--in-place \
@@ -507,6 +514,13 @@ if ! [ -f "${gcc_tarball}" ]; then
 		--directory="$(dirname "${gcc_directory}")" \
 		--extract \
 		--file="${gcc_tarball}"
+	
+	if [[ "${host}" = *'bsd'* ]] || [[ "${host}" = *'dragonfly' ]] then
+		sed \
+			--in-place \
+			's/-Xlinker -rpath/-Xlinker -z -Xlinker origin -Xlinker -rpath/g' \
+			"${workdir}/patches/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
+	fi
 	
 	if [[ "${host}" = *'-darwin'* ]]; then
 		sed \
