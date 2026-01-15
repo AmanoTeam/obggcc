@@ -1182,6 +1182,10 @@ if ! (( native )); then
 	fi
 fi
 
+if [[ "${host}" = *'-mingw32' ]] && [[ "$(file --mime-type --brief "${gmp_directory}/build/.libs/libgmp.dll")" = 'application/x-archive' ]]; then
+	"${CC}" -shared "${gmp_directory}/build/.libs/libgmp.dll" -o "${toolchain_directory}/lib/libgmp.dll"
+fi
+
 # Bundle both libstdc++ and libgcc within host tools
 if ! (( native )) && [[ "${host}" != *'-darwin'* ]]; then
 	[ -d "${toolchain_directory}/lib" ] || mkdir "${toolchain_directory}/lib"
