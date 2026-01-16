@@ -27,7 +27,7 @@ jobs:
       id: check-cache
       uses: actions/cache@main
       with:
-        key: gcc-16.0.1.1
+        key: gcc-15.2.1.1
         lookup-only: true
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
@@ -58,7 +58,7 @@ jobs:
       if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
       uses: actions/cache@main
       with:
-        key: gcc-16.0.1.1
+        key: gcc-15.2.1.1
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
           /tmp/x86_64-linux-gnu.tar.xz.sha256
@@ -142,7 +142,7 @@ jobs:
     - name: Restore from cache
       uses: actions/cache@main
       with:
-        key: gcc-16.0.1.1
+        key: gcc-15.2.1.1
         fail-on-cache-miss: true
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
@@ -350,12 +350,12 @@ jobs:
       - name: Create release
         uses: softprops/action-gh-release@master
         with:
-          tag_name: gcc-16
-          name: GCC 16.0.1
+          tag_name: gcc-15
+          name: GCC 15.2.1
           files: ./*/*-{unknown,w64}-*.{tar.xz,zip}*
           draft: false
           prerelease: true
           fail_on_unmatched_files: true
-          body: "* Update to GCC 16.0.1"
+          body: "* Update to GCC 15.2.1"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

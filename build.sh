@@ -50,7 +50,7 @@ declare -r isl_directory="${build_directory}/isl-0.27"
 declare -r binutils_tarball="${build_directory}/binutils.tar.xz"
 declare -r binutils_directory="${build_directory}/binutils"
 
-declare -r gcc_major='16'
+declare -r gcc_major='15'
 
 declare gcc_url='https://github.com/gcc-mirror/gcc/archive/master.tar.gz'
 declare -r gcc_tarball="${build_directory}/gcc.tar.xz"
@@ -559,6 +559,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 	
 	if [ "${gcc_major}" = '15' ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-15/0001-Enable-automatic-linking-of-libatomic.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-15/0001-Use-latomic_asneeded-or-lgcc_s_asneeded-to-workaround-libtool-issues-PR123396.patch"
 	fi
 	
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-AArch64-enable-libquadmath.patch"

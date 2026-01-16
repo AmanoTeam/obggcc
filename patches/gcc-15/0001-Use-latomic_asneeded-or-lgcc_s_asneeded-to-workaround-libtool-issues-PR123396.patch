@@ -1,0 +1,476 @@
+From 8d37d666125dfdf411e67f6d5b0e67711ac1bbd7 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Fri, 16 Jan 2026 16:46:48 -0300
+Subject: [PATCH] Use -latomic_asneeded or -lgcc_s_asneeded to workaround
+ libtool issues [PR123396]
+
+---
+ gcc/config.in                   |  6 +++++
+ gcc/configure                   | 10 +++++++
+ gcc/configure.ac                |  9 +++++++
+ gcc/gcc.cc                      | 15 +++++++++++
+ libatomic/Makefile.am           |  7 +++++
+ libatomic/Makefile.in           | 47 +++++++++++++++++++++++++++------
+ libatomic/acinclude.m4          |  6 +++++
+ libatomic/configure             | 19 +++++++++++++
+ libatomic/libatomic_asneeded.a  |  3 +++
+ libatomic/libatomic_asneeded.so |  3 +++
+ libgcc/config/t-slibgcc         | 15 +++++++++--
+ 11 files changed, 130 insertions(+), 10 deletions(-)
+ create mode 100644 libatomic/libatomic_asneeded.a
+ create mode 100644 libatomic/libatomic_asneeded.so
+
+diff --git a/gcc/config.in b/gcc/config.in
+index e5edc340c..b2aa816fb 100644
+--- a/gcc/config.in
++++ b/gcc/config.in
+@@ -2640,6 +2640,12 @@
+ #endif
+ 
+ 
++/* Define if your linker supports AS_NEEDED in linker scripts. */
++#ifndef USED_FOR_TARGET
++#undef USE_LD_AS_NEEDED_LDSCRIPT
++#endif
++
++
+ /* Define to 1 if the 'long long' type is wider than 'long' but still
+    efficiently supported by the host hardware. */
+ #ifndef USED_FOR_TARGET
+diff --git a/gcc/configure b/gcc/configure
+index 0c30c05b5..2f6d0f349 100755
+--- a/gcc/configure
++++ b/gcc/configure
+@@ -32913,10 +32913,12 @@ else
+   gcc_cv_ld_as_needed=no
+ gcc_cv_ld_as_needed_option='--as-needed'
+ gcc_cv_ld_no_as_needed_option='--no-as-needed'
++gcc_cv_ld_use_as_needed_ldscript=no
+ if test $in_tree_ld = yes ; then
+   if test "$gcc_cv_gld_major_version" -eq 2 -a "$gcc_cv_gld_minor_version" -ge 16 -o "$gcc_cv_gld_major_version" -gt 2 \
+      && test $in_tree_ld_is_elf = yes; then
+     gcc_cv_ld_as_needed=yes
++    gcc_cv_ld_use_as_needed_ldscript=yes
+     if test "$gcc_cv_gld_major_version" -eq 2 -a "$gcc_cv_gld_minor_version" -ge 28; then
+       gcc_cv_ld_as_needed_option='--push-state --as-needed'
+       gcc_cv_ld_no_as_needed_option='--pop-state'
+@@ -32926,6 +32928,7 @@ elif test x$gcc_cv_ld != x; then
+   # Check if linker supports --as-needed and --no-as-needed options
+   if $gcc_cv_ld --help 2>&1 | grep as-needed > /dev/null; then
+     gcc_cv_ld_as_needed=yes
++    gcc_cv_ld_use_as_needed_ldscript=yes
+     if $gcc_cv_ld --help 2>&1 | grep push-state > /dev/null \
+        && $gcc_cv_ld --help 2>&1 | grep pop-state > /dev/null \
+        && echo "$ld_ver" | grep GNU > /dev/null \
+@@ -32944,6 +32947,7 @@ elif test x$gcc_cv_ld != x; then
+       gcc_cv_ld_as_needed=yes
+       gcc_cv_ld_as_needed_option="-z ignore"
+       gcc_cv_ld_no_as_needed_option="-z record"
++      gcc_cv_ld_use_as_needed_ldscript=no
+       ;;
+   esac
+ fi
+@@ -32956,6 +32960,7 @@ case "$target" in
+       if echo "$ld_ver" | grep GNU > /dev/null; then
+         # Doesn't work with gld on Solaris/x86 due to PR ld/12320.
+         gcc_cv_ld_as_needed=no
++        gcc_cv_ld_use_as_needed_ldscript=no
+       fi
+       ;;
+     esac
+@@ -32982,6 +32987,11 @@ cat >>confdefs.h <<_ACEOF
+ #define LD_NO_AS_NEEDED_OPTION "$gcc_cv_ld_no_as_needed_option"
+ _ACEOF
+ 
++fi
++if test x"$gcc_cv_ld_use_as_needed_ldscript" = xyes; then
++
++$as_echo "#define USE_LD_AS_NEEDED_LDSCRIPT 1" >>confdefs.h
++
+ fi
+ 
+ { $as_echo "$as_me:${as_lineno-$LINENO}: checking linker mapfile support for clearing hardware capabilities" >&5
+diff --git a/gcc/configure.ac b/gcc/configure.ac
+index e7ffd5372..06fa6078d 100644
+--- a/gcc/configure.ac
++++ b/gcc/configure.ac
+@@ -6562,10 +6562,12 @@ gcc_cv_ld_as_needed,
+ [gcc_cv_ld_as_needed=no
+ gcc_cv_ld_as_needed_option='--as-needed'
+ gcc_cv_ld_no_as_needed_option='--no-as-needed'
++gcc_cv_ld_use_as_needed_ldscript=no
+ if test $in_tree_ld = yes ; then
+   if test "$gcc_cv_gld_major_version" -eq 2 -a "$gcc_cv_gld_minor_version" -ge 16 -o "$gcc_cv_gld_major_version" -gt 2 \
+      && test $in_tree_ld_is_elf = yes; then
+     gcc_cv_ld_as_needed=yes
++    gcc_cv_ld_use_as_needed_ldscript=yes
+     if test "$gcc_cv_gld_major_version" -eq 2 -a "$gcc_cv_gld_minor_version" -ge 28; then
+       gcc_cv_ld_as_needed_option='--push-state --as-needed'
+       gcc_cv_ld_no_as_needed_option='--pop-state'
+@@ -6575,6 +6577,7 @@ elif test x$gcc_cv_ld != x; then
+   # Check if linker supports --as-needed and --no-as-needed options
+   if $gcc_cv_ld --help 2>&1 | grep as-needed > /dev/null; then
+     gcc_cv_ld_as_needed=yes
++    gcc_cv_ld_use_as_needed_ldscript=yes
+     if $gcc_cv_ld --help 2>&1 | grep push-state > /dev/null \
+        && $gcc_cv_ld --help 2>&1 | grep pop-state > /dev/null \
+        && echo "$ld_ver" | grep GNU > /dev/null \
+@@ -6593,6 +6596,7 @@ elif test x$gcc_cv_ld != x; then
+       gcc_cv_ld_as_needed=yes
+       gcc_cv_ld_as_needed_option="-z ignore"
+       gcc_cv_ld_no_as_needed_option="-z record"
++      gcc_cv_ld_use_as_needed_ldscript=no
+       ;;
+   esac
+ fi
+@@ -6605,6 +6609,7 @@ case "$target" in
+       if echo "$ld_ver" | grep GNU > /dev/null; then
+         # Doesn't work with gld on Solaris/x86 due to PR ld/12320.
+         gcc_cv_ld_as_needed=no
++        gcc_cv_ld_use_as_needed_ldscript=no
+       fi
+       ;;
+     esac
+@@ -6622,6 +6627,10 @@ if test x"$gcc_cv_ld_as_needed" = xyes; then
+ 	AC_DEFINE_UNQUOTED(LD_NO_AS_NEEDED_OPTION, "$gcc_cv_ld_no_as_needed_option",
+ [Define to the linker option to keep unused dependencies.])
+ fi
++if test x"$gcc_cv_ld_use_as_needed_ldscript" = xyes; then
++	AC_DEFINE(USE_LD_AS_NEEDED_LDSCRIPT, 1,
++[Define if your linker supports AS_NEEDED in linker scripts.])
++fi
+ 
+ AC_MSG_CHECKING(linker mapfile support for clearing hardware capabilities)
+ saved_LDFLAGS="$LDFLAGS"
+diff --git a/gcc/gcc.cc b/gcc/gcc.cc
+index fe8109448..4a804ba96 100644
+--- a/gcc/gcc.cc
++++ b/gcc/gcc.cc
+@@ -985,8 +985,12 @@ proper position among the other output files.  */
+ /* Here is the spec for running the linker, after compiling all files.  */
+ 
+ #if defined(TARGET_PROVIDES_LIBATOMIC) && defined(USE_LD_AS_NEEDED)
++#ifdef USE_LD_AS_NEEDED_LDSCRIPT
++#define LINK_LIBATOMIC_SPEC "%{!fno-link-libatomic:-latomic_asneeded} "
++#else
+ #define LINK_LIBATOMIC_SPEC "%{!fno-link-libatomic:" LD_AS_NEEDED_OPTION \
+ 			    " -latomic " LD_NO_AS_NEEDED_OPTION "} "
++#endif
+ #else
+ #define LINK_LIBATOMIC_SPEC ""
+ #endif
+@@ -1826,6 +1830,16 @@ init_gcc_specs (struct obstack *obstack, const char *shared_name,
+   char *buf;
+ 
+ #if USE_LD_AS_NEEDED
++#if defined(USE_LD_AS_NEEDED_LDSCRIPT) && !defined(USE_LIBUNWIND_EXCEPTIONS)
++  buf = concat ("%{static|static-libgcc|static-pie:", static_name, " ", eh_name, "}"
++		"%{!static:%{!static-libgcc:%{!static-pie:"
++		"%{!shared-libgcc:",
++		static_name, " ",
++		shared_name, "_asneeded}"
++		"%{shared-libgcc:",
++		shared_name, "%{!shared: ", static_name, "}"
++		"}}"
++#else
+   buf = concat ("%{static|static-libgcc|static-pie:", static_name, " ", eh_name, "}"
+ 		"%{!static:%{!static-libgcc:%{!static-pie:"
+ 		"%{!shared-libgcc:",
+@@ -1835,6 +1849,7 @@ init_gcc_specs (struct obstack *obstack, const char *shared_name,
+ 		"%{shared-libgcc:",
+ 		shared_name, "%{!shared: ", static_name, "}"
+ 		"}}"
++#endif
+ #else
+   buf = concat ("%{static|static-libgcc:", static_name, " ", eh_name, "}"
+ 		"%{!static:%{!static-libgcc:"
+diff --git a/libatomic/Makefile.am b/libatomic/Makefile.am
+index 1a41f6d4e..a887970f9 100644
+--- a/libatomic/Makefile.am
++++ b/libatomic/Makefile.am
+@@ -40,6 +40,9 @@ AM_CCASFLAGS = $(XCFLAGS)
+ AM_LDFLAGS = $(XLDFLAGS) $(SECTION_LDFLAGS) $(OPT_LDFLAGS)
+ 
+ toolexeclib_LTLIBRARIES = libatomic.la
++if LIBAT_BUILD_ASNEEDED_SOLINK
++toolexeclib_DATA = libatomic_asneeded.so libatomic_asneeded.a
++endif
+ noinst_LTLIBRARIES = libatomic_convenience.la
+ 
+ if LIBAT_BUILD_VERSIONED_SHLIB
+@@ -173,6 +176,10 @@ all-multi: $(libatomic_la_LIBADD)
+ gcc_objdir = `pwd`/$(MULTIBUILDTOP)../../gcc/
+ all-local: libatomic.la
+ 	$(LIBTOOL) --mode=install $(INSTALL_DATA) libatomic.la $(gcc_objdir)$(MULTISUBDIR)/
++if LIBAT_BUILD_ASNEEDED_SOLINK
++	$(INSTALL_DATA) $(top_srcdir)/libatomic_asneeded.so $(gcc_objdir)$(MULTISUBDIR)/
++	$(INSTALL_DATA) $(top_srcdir)/libatomic_asneeded.a $(gcc_objdir)$(MULTISUBDIR)/
++endif
+ 	rm $(gcc_objdir)$(MULTISUBDIR)/libatomic.la
+ 
+ # target overrides
+diff --git a/libatomic/Makefile.in b/libatomic/Makefile.in
+index 1fadeb895..3a9188f24 100644
+--- a/libatomic/Makefile.in
++++ b/libatomic/Makefile.in
+@@ -14,6 +14,7 @@
+ 
+ @SET_MAKE@
+ 
++
+ VPATH = @srcdir@
+ am__is_gnu_make = { \
+   if test -z '$(MAKELEVEL)'; then \
+@@ -154,7 +155,8 @@ am__uninstall_files_from_dir = { \
+     || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
+          $(am__cd) "$$dir" && rm -f $$files; }; \
+   }
+-am__installdirs = "$(DESTDIR)$(toolexeclibdir)"
++am__installdirs = "$(DESTDIR)$(toolexeclibdir)" \
++	"$(DESTDIR)$(toolexeclibdir)"
+ LTLIBRARIES = $(noinst_LTLIBRARIES) $(toolexeclib_LTLIBRARIES)
+ @ARCH_AARCH64_LINUX_TRUE@am__objects_1 = atomic_16.lo
+ am_libatomic_la_OBJECTS = gload.lo gstore.lo gcas.lo gexch.lo \
+@@ -232,6 +234,7 @@ am__can_run_installinfo = \
+     n|no|NO) false;; \
+     *) (install-info --version) >/dev/null 2>&1;; \
+   esac
++DATA = $(toolexeclib_DATA)
+ RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
+   distclean-recursive maintainer-clean-recursive
+ am__recursive_targets = \
+@@ -409,6 +412,7 @@ AM_CFLAGS = $(XCFLAGS)
+ AM_CCASFLAGS = $(XCFLAGS)
+ AM_LDFLAGS = $(XLDFLAGS) $(SECTION_LDFLAGS) $(OPT_LDFLAGS)
+ toolexeclib_LTLIBRARIES = libatomic.la
++@LIBAT_BUILD_ASNEEDED_SOLINK_TRUE@toolexeclib_DATA = libatomic_asneeded.so libatomic_asneeded.a
+ noinst_LTLIBRARIES = libatomic_convenience.la
+ @LIBAT_BUILD_VERSIONED_SHLIB_FALSE@libatomic_version_script = 
+ @LIBAT_BUILD_VERSIONED_SHLIB_GNU_TRUE@@LIBAT_BUILD_VERSIONED_SHLIB_TRUE@libatomic_version_script = -Wl,--version-script,$(top_srcdir)/libatomic.map
+@@ -648,6 +652,27 @@ clean-libtool:
+ 
+ distclean-libtool:
+ 	-rm -f libtool config.lt
++install-toolexeclibDATA: $(toolexeclib_DATA)
++	@$(NORMAL_INSTALL)
++	@list='$(toolexeclib_DATA)'; test -n "$(toolexeclibdir)" || list=; \
++	if test -n "$$list"; then \
++	  echo " $(MKDIR_P) '$(DESTDIR)$(toolexeclibdir)'"; \
++	  $(MKDIR_P) "$(DESTDIR)$(toolexeclibdir)" || exit 1; \
++	fi; \
++	for p in $$list; do \
++	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
++	  echo "$$d$$p"; \
++	done | $(am__base_list) | \
++	while read files; do \
++	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(toolexeclibdir)'"; \
++	  $(INSTALL_DATA) $$files "$(DESTDIR)$(toolexeclibdir)" || exit $$?; \
++	done
++
++uninstall-toolexeclibDATA:
++	@$(NORMAL_UNINSTALL)
++	@list='$(toolexeclib_DATA)'; test -n "$(toolexeclibdir)" || list=; \
++	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
++	dir='$(DESTDIR)$(toolexeclibdir)'; $(am__uninstall_files_from_dir)
+ 
+ # This directory's subdirectories are mostly independent; you can cd
+ # into them and run 'make' without going through this Makefile.
+@@ -756,10 +781,10 @@ distclean-tags:
+ 	-rm -f cscope.out cscope.in.out cscope.po.out cscope.files
+ check-am: all-am
+ check: check-recursive
+-all-am: Makefile $(LTLIBRARIES) auto-config.h all-local
++all-am: Makefile $(LTLIBRARIES) $(DATA) auto-config.h all-local
+ installdirs: installdirs-recursive
+ installdirs-am:
+-	for dir in "$(DESTDIR)$(toolexeclibdir)"; do \
++	for dir in "$(DESTDIR)$(toolexeclibdir)" "$(DESTDIR)$(toolexeclibdir)"; do \
+ 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
+ 	done
+ install: install-recursive
+@@ -823,7 +848,8 @@ install-dvi: install-dvi-recursive
+ 
+ install-dvi-am:
+ 
+-install-exec-am: install-exec-local install-toolexeclibLTLIBRARIES
++install-exec-am: install-exec-local install-toolexeclibDATA \
++	install-toolexeclibLTLIBRARIES
+ 
+ install-html: install-html-recursive
+ 
+@@ -866,7 +892,8 @@ ps: ps-recursive
+ 
+ ps-am:
+ 
+-uninstall-am: uninstall-toolexeclibLTLIBRARIES
++uninstall-am: uninstall-toolexeclibDATA \
++	uninstall-toolexeclibLTLIBRARIES
+ 
+ .MAKE: $(am__recursive_targets) all install-am install-strip
+ 
+@@ -881,12 +908,14 @@ uninstall-am: uninstall-toolexeclibLTLIBRARIES
+ 	install-exec install-exec-am install-exec-local install-html \
+ 	install-html-am install-info install-info-am install-man \
+ 	install-pdf install-pdf-am install-ps install-ps-am \
+-	install-strip install-toolexeclibLTLIBRARIES installcheck \
+-	installcheck-am installdirs installdirs-am maintainer-clean \
++	install-strip install-toolexeclibDATA \
++	install-toolexeclibLTLIBRARIES installcheck installcheck-am \
++	installdirs installdirs-am maintainer-clean \
+ 	maintainer-clean-generic maintainer-clean-local mostlyclean \
+ 	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
+ 	mostlyclean-local pdf pdf-am ps ps-am tags tags-am uninstall \
+-	uninstall-am uninstall-toolexeclibLTLIBRARIES
++	uninstall-am uninstall-toolexeclibDATA \
++	uninstall-toolexeclibLTLIBRARIES
+ 
+ .PRECIOUS: Makefile
+ 
+@@ -912,6 +941,8 @@ vpath % $(strip $(search_path))
+ all-multi: $(libatomic_la_LIBADD)
+ all-local: libatomic.la
+ 	$(LIBTOOL) --mode=install $(INSTALL_DATA) libatomic.la $(gcc_objdir)$(MULTISUBDIR)/
++@LIBAT_BUILD_ASNEEDED_SOLINK_TRUE@	$(INSTALL_DATA) $(top_srcdir)/libatomic_asneeded.so $(gcc_objdir)$(MULTISUBDIR)/
++@LIBAT_BUILD_ASNEEDED_SOLINK_TRUE@	$(INSTALL_DATA) $(top_srcdir)/libatomic_asneeded.a $(gcc_objdir)$(MULTISUBDIR)/
+ 	rm $(gcc_objdir)$(MULTISUBDIR)/libatomic.la
+ 
+ # target overrides
+diff --git a/libatomic/acinclude.m4 b/libatomic/acinclude.m4
+index f35ab5b60..784b77faf 100644
+--- a/libatomic/acinclude.m4
++++ b/libatomic/acinclude.m4
+@@ -341,9 +341,14 @@ AC_DEFUN([LIBAT_CHECK_LINKER_FEATURES], [
+   changequote(,)
+   ldver=`$LD --version 2>/dev/null |
+          sed -e 's/[. ][0-9]\{8\}$//;s/.* \([^ ]\{1,\}\)$/\1/; q'`
++  ldasneeded=`$LD --help 2>/dev/null | grep as-needed`
+   changequote([,])
+   libat_gnu_ld_version=`echo $ldver | \
+          $AWK -F. '{ if (NF<3) [$]3=0; print ([$]1*100+[$]2)*100+[$]3 }'`
++  libat_ld_asneeded=no
++  if test -n "$ldasneeded"; then
++    libat_ld_asneeded=yes
++  fi
+ 
+   # Set --gc-sections.
+   if test "$with_gnu_ld" = "notbroken"; then
+@@ -390,6 +395,7 @@ AC_DEFUN([LIBAT_CHECK_LINKER_FEATURES], [
+ 
+   AC_SUBST(SECTION_LDFLAGS)
+   AC_SUBST(OPT_LDFLAGS)
++  AM_CONDITIONAL(LIBAT_BUILD_ASNEEDED_SOLINK, test $libat_ld_asneeded != no)
+ ])
+ 
+ 
+diff --git a/libatomic/configure b/libatomic/configure
+index 5bc44f5f0..3917b2daf 100755
+--- a/libatomic/configure
++++ b/libatomic/configure
+@@ -654,6 +654,8 @@ LIBAT_BUILD_VERSIONED_SHLIB_GNU_FALSE
+ LIBAT_BUILD_VERSIONED_SHLIB_GNU_TRUE
+ LIBAT_BUILD_VERSIONED_SHLIB_FALSE
+ LIBAT_BUILD_VERSIONED_SHLIB_TRUE
++LIBAT_BUILD_ASNEEDED_SOLINK_FALSE
++LIBAT_BUILD_ASNEEDED_SOLINK_TRUE
+ OPT_LDFLAGS
+ SECTION_LDFLAGS
+ SYSROOT_CFLAGS_FOR_TARGET
+@@ -15308,9 +15310,14 @@ with_gnu_ld=$lt_cv_prog_gnu_ld
+ 
+   ldver=`$LD --version 2>/dev/null |
+          sed -e 's/[. ][0-9]\{8\}$//;s/.* \([^ ]\{1,\}\)$/\1/; q'`
++  ldasneeded=`$LD --help 2>/dev/null | grep as-needed`
+ 
+   libat_gnu_ld_version=`echo $ldver | \
+          $AWK -F. '{ if (NF<3) $3=0; print ($1*100+$2)*100+$3 }'`
++  libat_ld_asneeded=no
++  if test -n "$ldasneeded"; then
++    libat_ld_asneeded=yes
++  fi
+ 
+   # Set --gc-sections.
+   if test "$with_gnu_ld" = "notbroken"; then
+@@ -15374,6 +15381,14 @@ $as_echo "$ac_sectionLDflags" >&6; }
+ 
+ 
+ 
++   if test $libat_ld_asneeded != no; then
++  LIBAT_BUILD_ASNEEDED_SOLINK_TRUE=
++  LIBAT_BUILD_ASNEEDED_SOLINK_FALSE='#'
++else
++  LIBAT_BUILD_ASNEEDED_SOLINK_TRUE='#'
++  LIBAT_BUILD_ASNEEDED_SOLINK_FALSE=
++fi
++
+ 
+ 
+ 
+@@ -16005,6 +16020,10 @@ if test -z "${ENABLE_DARWIN_AT_RPATH_TRUE}" && test -z "${ENABLE_DARWIN_AT_RPATH
+ Usually this means the macro was only invoked conditionally." "$LINENO" 5
+ fi
+ 
++if test -z "${LIBAT_BUILD_ASNEEDED_SOLINK_TRUE}" && test -z "${LIBAT_BUILD_ASNEEDED_SOLINK_FALSE}"; then
++  as_fn_error $? "conditional \"LIBAT_BUILD_ASNEEDED_SOLINK\" was never defined.
++Usually this means the macro was only invoked conditionally." "$LINENO" 5
++fi
+ if test -z "${LIBAT_BUILD_VERSIONED_SHLIB_TRUE}" && test -z "${LIBAT_BUILD_VERSIONED_SHLIB_FALSE}"; then
+   as_fn_error $? "conditional \"LIBAT_BUILD_VERSIONED_SHLIB\" was never defined.
+ Usually this means the macro was only invoked conditionally." "$LINENO" 5
+diff --git a/libatomic/libatomic_asneeded.a b/libatomic/libatomic_asneeded.a
+new file mode 100644
+index 000000000..0190b40b9
+--- /dev/null
++++ b/libatomic/libatomic_asneeded.a
+@@ -0,0 +1,3 @@
++/* GNU ld script
++   Just link in libatomic.a.  */
++INPUT ( libatomic.a )
+diff --git a/libatomic/libatomic_asneeded.so b/libatomic/libatomic_asneeded.so
+new file mode 100644
+index 000000000..3263af4b4
+--- /dev/null
++++ b/libatomic/libatomic_asneeded.so
+@@ -0,0 +1,3 @@
++/* GNU ld script
++   Add DT_NEEDED entry for -latomic only if needed.  */
++INPUT ( AS_NEEDED ( -latomic ) )
+diff --git a/libgcc/config/t-slibgcc b/libgcc/config/t-slibgcc
+index 68cb3b31e..6617b7e1f 100644
+--- a/libgcc/config/t-slibgcc
++++ b/libgcc/config/t-slibgcc
+@@ -30,6 +30,15 @@ SHLIB_LC = -lc
+ SHLIB_MAKE_SOLINK = $(LN_S) $(SHLIB_SONAME) $(SHLIB_DIR)/$(SHLIB_SOLINK)
+ SHLIB_INSTALL_SOLINK = $(LN_S) $(SHLIB_SONAME) \
+ 	$(DESTDIR)$(slibdir)$(SHLIB_SLIBDIR_QUAL)/$(SHLIB_SOLINK)
++SHLIB_ASNEEDED_SOLINK = @shlib_base_name@_asneeded.so
++SHLIB_MAKE_ASNEEDED_SOLINK = \
++        (echo "/* GNU ld script"; \
++         echo "   Add DT_NEEDED entry for libgcc_s.so only if needed.  */"; \
++         echo "INPUT ( AS_NEEDED ( -lgcc_s ) )" \
++        ) > $(SHLIB_DIR)/$(SHLIB_ASNEEDED_SOLINK)
++SHLIB_INSTALL_ASNEEDED_SOLINK = \
++        $(INSTALL_DATA) $(SHLIB_DIR)/$(SHLIB_ASNEEDED_SOLINK) \
++          $(DESTDIR)$(slibdir)$(SHLIB_SLIBDIR_QUAL)/$(SHLIB_ASNEEDED_SOLINK)
+ 
+ SHLIB_LINK = $(CC) $(LIBGCC2_CFLAGS) -shared -nodefaultlibs \
+ 	$(SHLIB_LDFLAGS) $(LDFLAGS) \
+@@ -41,7 +50,8 @@ SHLIB_LINK = $(CC) $(LIBGCC2_CFLAGS) -shared -nodefaultlibs \
+ 		$(SHLIB_DIR)/$(SHLIB_SONAME).backup; \
+ 	else true; fi && \
+ 	mv $(SHLIB_DIR)/$(SHLIB_SONAME).tmp $(SHLIB_DIR)/$(SHLIB_SONAME) && \
+-	$(SHLIB_MAKE_SOLINK)
++	$(SHLIB_MAKE_SOLINK) && \
++	$(SHLIB_MAKE_ASNEEDED_SOLINK)
+ 
+ INSTALL_SHLIB = $(INSTALL_DATA)
+ 
+@@ -50,4 +60,5 @@ SHLIB_INSTALL = \
+ 	$(INSTALL_SHLIB) $(SHLIB_DIR)/$(SHLIB_SONAME) \
+ 	  $(DESTDIR)$(slibdir)$(SHLIB_SLIBDIR_QUAL)/$(SHLIB_SONAME); \
+ 	rm -f $(DESTDIR)$(slibdir)$(SHLIB_SLIBDIR_QUAL)/$(SHLIB_SOLINK); \
+-	$(SHLIB_INSTALL_SOLINK)
++	$(SHLIB_INSTALL_SOLINK); \
++	$(SHLIB_INSTALL_ASNEEDED_SOLINK)
+-- 
+2.52.0
+
