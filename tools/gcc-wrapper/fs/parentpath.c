@@ -2,7 +2,7 @@
 #include <string.h>
 
 #include "fs/sep.h"
-#include "fs/absoluteness.h"
+#include "fs/absrel.h"
 #include "fs/parentpath.h"
 
 size_t get_parent_path(const char* const source, char* const destination, const size_t maxdepth) {

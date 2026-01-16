@@ -12,7 +12,7 @@
 #endif
 
 #if defined(_WIN32)
-	#include "fs/absoluteness.h"
+	#include "fs/absrel.h"
 	#include "fs/sep.h"
 #endif
 

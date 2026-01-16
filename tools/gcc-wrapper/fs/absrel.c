@@ -3,7 +3,7 @@
 #endif
 
 #include "fs/sep.h"
-#include "fs/absoluteness.h"
+#include "fs/absrel.h"
 
 int isabsolute(const char* const path) {
 	

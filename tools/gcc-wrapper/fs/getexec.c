@@ -31,7 +31,7 @@
 #if defined(__OpenBSD__)
 	#include "fs/sep.h"
 	#include "fs/exists.h"
-	#include "fs/absoluteness.h"
+	#include "fs/absrel.h"
 	#include "fs/realpath.h"
 	#include "os/find_exe.h"
 #endif

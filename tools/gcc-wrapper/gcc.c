@@ -20,7 +20,7 @@
 #endif
 
 #include "fs/getexec.h"
-#include "fs/ext.h"
+#include "fs/splitext.h"
 #include "fs/dirname.h"
 #include "fs/parentpath.h"
 #include "fs/sep.h"
@@ -52,7 +52,6 @@ static const char LDSCRIPTS_DIR[] = PATHSEP_M "ldscripts";
 
 static const char GCC_LIBRARY_DIR[] = PATHSEP_M "lib" PATHSEP_M "gcc";
 
-static const char RT_LIBRARY[] = "rt";
 static const char STDCXX_LIBRARY[] = "stdc++";
 static const char ATOMIC_LIBRARY[] = "atomic";
 static const char GOMP_LIBRARY[] = "gomp";
@@ -236,7 +235,11 @@ static const char CMAKE_FILES_DIRECTORY[] = "CMakeFiles";
 
 static const char HYPHEN[] = "-";
 
-static const char EXE[] = ".exe";
+#if defined(_WIN32)
+	static const char EXECUTABLE_SUFFIX[] = ".exe";
+#else
+	static const char EXECUTABLE_SUFFIX[] = "";
+#endif
 
 static char* SYSTEM_LIBRARY_PATH[] = {
 	PATHSEP_M "usr" PATHSEP_M "local" PATHSEP_M "lib64",
@@ -900,6 +903,14 @@ static const char* get_host_triplet(void) {
 			return "hppa-unknown-openbsd";
 		#elif defined(__alpha__)
 			return "alpha-unknown-openbsd";
+		#endif
+	#elif defined(_WIN32)
+		#if defined(__x86_64__)
+			return "x86_64-w64-mingw32";
+		#elif defined(__i386__)
+			return "i686-w64-mingw32";
+		#elif defined(__aarch64__)
+			return "aarch64-w64-mingw32";
 		#endif
 	#endif
 	
@@ -1874,7 +1885,7 @@ int main(int argc, char* argv[]) {
 				cmake_init += (strncmp(file_name, CMAKE_C_COMPILER_TEST, strlen(CMAKE_C_COMPILER_TEST)) == 0 || strncmp(file_name, CMAKE_CXX_COMPILER_TEST, strlen(CMAKE_CXX_COMPILER_TEST)) == 0);
 			}
 		} else if (prev != NULL && strcmp(prev, GCC_OPT_O) == 0 && output_directory == NULL) {
-			file_extension = getext(cur);
+			file_extension = splitext_get(cur);
 			
 			if (file_extension != NULL && strcmp(file_extension, "so") == 0) {
 				output_directory = dirname(cur);
@@ -2081,7 +2092,7 @@ int main(int argc, char* argv[]) {
 	file_name = basename(app_filename);
 	
 	#if defined(_WIN32)
-		cur = strstr(file_name, EXE);
+		cur = strstr(file_name, EXECUTABLE_SUFFIX);
 		*(char*) cur = '\0';
 	#endif
 	
@@ -2546,7 +2557,7 @@ int main(int argc, char* argv[]) {
 			goto end;
 		}
 	#else
-		executable = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(triplet) + 1 + strlen(cc) + strlen(EXE) + 1);
+		executable = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(triplet) + 1 + strlen(cc) + strlen(EXECUTABLE_SUFFIX) + 1);
 		
 		if (executable == NULL) {
 			err = ERR_MEM_ALLOC_FAILURE;
@@ -2567,7 +2578,7 @@ int main(int argc, char* argv[]) {
 		}
 		
 		#if defined(_WIN32)
-			strcat(executable, EXE);
+			strcat(executable, EXECUTABLE_SUFFIX);
 		#endif
 	#endif
 	

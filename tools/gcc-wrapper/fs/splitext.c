@@ -3,10 +3,11 @@
 #include <ctype.h>
 
 #include "fs/basename.h"
+#include "fs/splitext.h"
 
-char* getext(const char* const filename) {
+char* splitext_get(const char* const filename) {
 	/*
-	Returns the extension of a filename.
+	Gets the extension of a filename.
 	*/
 	
 	size_t index = 0;
@@ -60,15 +61,15 @@ char* getext(const char* const filename) {
 	
 }
 
-char* delext(char* const filename) {
+char* splitext_remove(char* const filename) {
 	/*
-	Removes extension of the filename.
+	Removes the extension of the filename.
 	*/
 	
 	char* file_extension = NULL;
 	
 	while (1) {
-		file_extension = getext(filename);
+		file_extension = splitext_get(filename);
 		
 		if (file_extension == NULL) {
 			break;

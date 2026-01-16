@@ -20,12 +20,12 @@ SOURCES = biggestint.c \
 	urlencode.c \
 	walkdir.c \
 	kargv.c \
-	fs/absoluteness.c \
+	fs/absrel.c \
 	fs/basename.c \
 	fs/cp.c \
 	fs/dirname.c \
 	fs/exists.c \
-	fs/ext.c \
+	fs/splitext.c \
 	fs/getexec.c \
 	fs/parentpath.c \
 	fs/realpath.c \

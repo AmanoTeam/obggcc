@@ -11,7 +11,7 @@
 #endif
 
 #if defined(_WIN32)
-	#include "fs/absoluteness.h"
+	#include "fs/absrel.h"
 #endif
 
 #if !(defined(_WIN32) || defined(__APPLE__))
