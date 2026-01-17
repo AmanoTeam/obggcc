@@ -176,10 +176,10 @@ declare -ra deprecated_targets=(
 
 declare -ra targets=(
 	'x86_64-unknown-linux-gnu'
-	'aarch64-unknown-linux-gnu'
-	'arm-unknown-linux-gnueabi'
-	'arm-unknown-linux-gnueabihf'
-	'i386-unknown-linux-gnu'
+	# 'aarch64-unknown-linux-gnu'
+	# 'arm-unknown-linux-gnueabi'
+	# 'arm-unknown-linux-gnueabihf'
+	# 'i386-unknown-linux-gnu'
 )
 
 declare -r PKG_CONFIG_PATH="${toolchain_directory}/lib/pkgconfig"
@@ -303,6 +303,11 @@ if ! [ -f "${gmp_tarball}" ]; then
 		--file="${gmp_tarball}"
 	
 	patch --directory="${gmp_directory}" --strip='1' --input="${workdir}/patches/0001-Remove-hardcoded-RPATH-and-versioned-SONAME-from-libgmp.patch"
+	
+	sed \
+		--in-place \
+		's/-Xlinker --out-implib -Xlinker $lib/-Xlinker --out-implib -Xlinker $lib.a/g' \
+		"${gmp_directory}/configure"
 fi
 
 if ! [ -f "${mpfr_tarball}" ]; then

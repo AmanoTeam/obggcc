@@ -127,6 +127,7 @@ jobs:
       run: |
         git -C submodules/nz submodule update --init --depth=1
     - name: Free up some space
+      if: false
       run: |
         curl 'https://raw.githubusercontent.com/AmanoTeam/gha-free-space/refs/heads/master/main.sh' -sSf | bash 
     - name: Install required dependencies
