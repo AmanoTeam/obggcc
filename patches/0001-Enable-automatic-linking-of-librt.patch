@@ -1,4 +1,4 @@
-From bbbd53158ec58a23d9924d44a6b14a1c1904db72 Mon Sep 17 00:00:00 2001
+From 2e94d2a84deffde54205ae0dec3eebfb7cf3c264 Mon Sep 17 00:00:00 2001
 From: Kartatz <105828205+Kartatz@users.noreply.github.com>
 Date: Sun, 2 Nov 2025 15:47:24 -0300
 Subject: [PATCH] Enable automatic linking of librt
@@ -25,8 +25,8 @@ While this is usually not a problem for people building their own projects — w
  gcc/config/sparc/sparc.h      |  4 ++--
  gcc/configure                 | 23 +++++++++++++++++++++++
  gcc/configure.ac              | 16 ++++++++++++++++
- gcc/gcc.cc                    |  7 +++++++
- 16 files changed, 70 insertions(+), 15 deletions(-)
+ gcc/gcc.cc                    | 11 +++++++++++
+ 16 files changed, 74 insertions(+), 15 deletions(-)
 
 diff --git a/gcc/common.opt b/gcc/common.opt
 index 487716120..a2e2bfff4 100644
@@ -44,7 +44,7 @@ index 487716120..a2e2bfff4 100644
  ; the var-tracking pass only to discard debug annotations, zero if
  ; we're not to run it.
 diff --git a/gcc/config.in b/gcc/config.in
-index e5edc340c..0095502ca 100644
+index b2aa816fb..bd289fd8f 100644
 --- a/gcc/config.in
 +++ b/gcc/config.in
 @@ -2613,6 +2613,11 @@
@@ -208,7 +208,7 @@ index 48ddb3d96..2c4bb11ed 100644
  
  #define PTRDIFF_TYPE (TARGET_ARCH64 ? "long int" : "int")
 diff --git a/gcc/configure b/gcc/configure
-index 0c30c05b5..e46049ccb 100755
+index 2f6d0f349..7b3946c39 100755
 --- a/gcc/configure
 +++ b/gcc/configure
 @@ -730,6 +730,7 @@ zlibinc
@@ -219,7 +219,7 @@ index 0c30c05b5..e46049ccb 100755
  thin_archive_support
  ld_soname_option
  ld_version_script_option
-@@ -33482,6 +33483,28 @@ $as_echo "#define ENABLE_DEFAULT_SSP 1" >>confdefs.h
+@@ -33492,6 +33493,28 @@ $as_echo "#define ENABLE_DEFAULT_SSP 1" >>confdefs.h
  fi
  
  
@@ -249,10 +249,10 @@ index 0c30c05b5..e46049ccb 100755
  
  $as_echo "#define TARGET_PROVIDES_LIBATOMIC 1" >>confdefs.h
 diff --git a/gcc/configure.ac b/gcc/configure.ac
-index e7ffd5372..ee22c8435 100644
+index 06fa6078d..25a9c57e6 100644
 --- a/gcc/configure.ac
 +++ b/gcc/configure.ac
-@@ -7015,6 +7015,22 @@ if test x$enable_default_ssp = xyes ; then
+@@ -7024,6 +7024,22 @@ if test x$enable_default_ssp = xyes ; then
  fi
  AC_SUBST([enable_default_ssp])
  
@@ -276,16 +276,20 @@ index e7ffd5372..ee22c8435 100644
    AC_DEFINE(TARGET_PROVIDES_LIBATOMIC, 1,
  	    [Define if libatomic is built for the target.])
 diff --git a/gcc/gcc.cc b/gcc/gcc.cc
-index fe8109448..10bf67fb7 100644
+index 4a804ba96..89e54d0f6 100644
 --- a/gcc/gcc.cc
 +++ b/gcc/gcc.cc
-@@ -991,6 +991,13 @@ proper position among the other output files.  */
+@@ -995,6 +995,17 @@ proper position among the other output files.  */
  #define LINK_LIBATOMIC_SPEC ""
  #endif
  
 +#if defined(TARGET_AUTOLINK_LIBRT) && defined(USE_LD_AS_NEEDED)
++#if defined(USE_LD_AS_NEEDED_LDSCRIPT)
++#define LINK_LIBRT_SPEC "%{!fno-link-librt: -lrt_asneeded } "
++#else
 +#define LINK_LIBRT_SPEC "%{!fno-link-librt:" LD_AS_NEEDED_OPTION \
 +			    " -lrt " LD_NO_AS_NEEDED_OPTION "} "
++#endif
 +#else
 +#define LINK_LIBRT_SPEC ""
 +#endif
@@ -294,5 +298,5 @@ index fe8109448..10bf67fb7 100644
     -lgcc and -lc order specially, yet not require them to override all
     of LINK_COMMAND_SPEC.  */
 -- 
-2.51.2
+2.52.0
 

@@ -149,6 +149,7 @@ declare -ra libraries=(
 	'libtsan'
 	'libubsan'
 	'libquadmath'
+	'librt_asneeded'
 )
 
 declare -ra bits=(
@@ -861,6 +862,9 @@ for target in "${targets[@]}"; do
 		--file="${sysroot_file}"
 	
 	mv "${sysroot_directory}" "${toolchain_directory}/${triplet}"
+	
+	cp "${workdir}/patches/librt_asneeded.so" "${toolchain_directory}/${triplet}/lib"
+	cp "${workdir}/patches/librt_asneeded.so" "${toolchain_directory}/${triplet}/lib/librt_asneeded.a"
 	
 	rm --force --recursive "${PWD}"
 	
