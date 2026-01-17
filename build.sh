@@ -50,7 +50,7 @@ declare -r isl_directory="${build_directory}/isl-0.27"
 declare -r binutils_tarball="${build_directory}/binutils.tar.xz"
 declare -r binutils_directory="${build_directory}/binutils"
 
-declare -r gcc_major='15'
+declare -r gcc_major='16'
 
 declare gcc_url='https://github.com/gcc-mirror/gcc/archive/master.tar.gz'
 declare -r gcc_tarball="${build_directory}/gcc.tar.xz"
@@ -1191,7 +1191,7 @@ if ! (( native )); then
 fi
 
 if [[ "${host}" = *'-mingw32' ]] && [[ "$(file --mime-type --brief "${gmp_directory}/build/.libs/libgmp.dll")" = 'application/x-archive' ]]; then
-	"${CC}" -shared "${gmp_directory}/build/.libs/libgmp.dll" -o "${toolchain_directory}/lib/libgmp.dll"
+	"${CC}" -Xlinker --export-all-symbols -shared "${gmp_directory}/build/.libs/libgmp.dll" -o "${toolchain_directory}/lib/libgmp.dll"
 fi
 
 # Bundle both libstdc++ and libgcc within host tools
