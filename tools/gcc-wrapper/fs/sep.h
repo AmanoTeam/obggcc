@@ -7,7 +7,7 @@ static const char PATHSEP_POSIX_S[] = {PATHSEP_POSIX, '\0'};
 
 static const unsigned char PATHSEP_DOS = '\\';
 static const char PATHSEP_DOS_S[] = {PATHSEP_DOS, '\0'};
-#define PATHSEP_DOS_M "/"
+#define PATHSEP_DOS_M "\\"
 
 #if defined(_WIN32)
 	static const unsigned char PATHSEP = PATHSEP_DOS;
