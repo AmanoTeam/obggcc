@@ -176,10 +176,10 @@ declare -ra deprecated_targets=(
 
 declare -ra targets=(
 	'x86_64-unknown-linux-gnu'
-	# 'aarch64-unknown-linux-gnu'
-	# 'arm-unknown-linux-gnueabi'
-	# 'arm-unknown-linux-gnueabihf'
-	# 'i386-unknown-linux-gnu'
+	'aarch64-unknown-linux-gnu'
+	'arm-unknown-linux-gnueabi'
+	'arm-unknown-linux-gnueabihf'
+	'i386-unknown-linux-gnu'
 )
 
 declare -r PKG_CONFIG_PATH="${toolchain_directory}/lib/pkgconfig"
@@ -1156,22 +1156,6 @@ for target in "${targets[@]}"; do
 	fi
 done
 
-# Delete libtool files and other unnecessary files GCC installs
-rm \
-	--force \
-	--recursive \
-	"${toolchain_directory}/share" \
-	"${toolchain_directory}/lib/lib"*'.a' \
-	"${toolchain_directory}/include" \
-	"${toolchain_directory}/lib/pkgconfig" \
-	"${toolchain_directory}/lib/cmake"
-
-find \
-	"${toolchain_directory}" \
-	-name '*.la' -delete -o \
-	-name '*.py' -delete -o \
-	-name '*.json' -delete
-
 while read triplet; do
 	if ! [ -d "${toolchain_directory}/${triplet}" ]; then
 		continue
@@ -1256,9 +1240,21 @@ if ! (( native )); then
 	fi
 fi
 
-if [[ "${host}" = *'-mingw32' ]] && [[ "$(file --mime-type --brief "${gmp_directory}/build/.libs/libgmp.dll")" = 'application/x-archive' ]]; then
-	"${CC}" -Xlinker --export-all-symbols -shared "${gmp_directory}/build/.libs/libgmp.dll" -o "${toolchain_directory}/lib/libgmp.dll"
-fi
+# Delete libtool files and other unnecessary files GCC installs
+rm \
+	--force \
+	--recursive \
+	"${toolchain_directory}/share" \
+	"${toolchain_directory}/lib/lib"*'.a' \
+	"${toolchain_directory}/include" \
+	"${toolchain_directory}/lib/pkgconfig" \
+	"${toolchain_directory}/lib/cmake"
+
+find \
+	"${toolchain_directory}" \
+	-name '*.la' -delete -o \
+	-name '*.py' -delete -o \
+	-name '*.json' -delete
 
 # Bundle both libstdc++ and libgcc within host tools
 if ! (( native )) && [[ "${host}" != *'-darwin'* ]]; then
