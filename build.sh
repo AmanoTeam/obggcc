@@ -241,6 +241,65 @@ function replace_symlinks() {
 	
 }
 
+function rename_soname_libraries() {
+	
+	declare -A mapping=()
+	
+	while read file; do
+		readelf -d "${file}" 1>/dev/null 2>/dev/null || continue
+		
+		directory="$(dirname "${file}")"
+		
+		source="$(basename "${file}")"
+		destination="$(readelf -d "${file}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')"
+		
+		if [ -z "${destination}" ]; then
+			continue
+		fi
+		
+		if [ "${source}" = "${destination}" ]; then
+			continue
+		fi
+		
+		mapping["${source}"]="${destination}"
+		
+		a="${directory}/${source}"
+		b="${directory}/${destination}"
+		
+		echo "- Renaming '${a}' to '${b}'"
+		
+		unlink "${b}"
+		mv "${a}" "${b}"
+	done <<< "$(find "${1}/lib" -maxdepth '1' -type 'f' -name '*.so*')"
+	
+	while read file; do
+		directory="$(dirname "${file}")"
+		
+		name="$(basename "$(readlink "${file}")")"
+		
+		if [ -z "${name}" ]; then
+			continue
+		fi
+		
+		destination="${mapping["${name}"]:-}"
+		
+		if [ -z "${destination}" ]; then
+			continue
+		fi
+		
+		unlink "${file}"
+		
+		a="${directory}/${destination}"
+		b="${file}"
+		
+		echo "- Symlinking '${a}' to '${b}'"
+		
+		ln --symbolic --relative --force "${a}" "${b}"
+		
+	done <<< "$(find "${1}/lib" -maxdepth '1' -type 'l')"
+	
+}
+
 rm --force --recursive "${toolchain_directory}"
 mkdir --parent "${build_directory}"
 
@@ -1090,6 +1149,8 @@ for target in "${targets[@]}"; do
 			"${toolchain_directory}/lib/bfd-plugins"
 	fi
 	
+	rename_soname_libraries "${toolchain_directory}/${triplet}"
+	
 	if [[ "${host}" = *'-mingw32' ]]; then
 		replace_symlinks "${toolchain_directory}/${triplet}" || true
 	fi
@@ -1517,6 +1578,8 @@ while read item; do
 		
 		ln --symbolic "${source}" "${destination}"
 	done
+	
+	rename_soname_libraries "${toolchain_directory}/${triplet}${glibc_version}"
 	
 	if [[ "${host}" = *'-mingw32' ]]; then
 		replace_symlinks "${toolchain_directory}/${triplet}${glibc_version}"
