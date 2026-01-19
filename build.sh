@@ -149,7 +149,6 @@ declare -ra libraries=(
 	'libtsan'
 	'libubsan'
 	'libquadmath'
-	'librt_asneeded'
 )
 
 declare -ra bits=(
@@ -622,7 +621,6 @@ if ! [ -f "${gcc_tarball}" ]; then
 	
 	if [ "${gcc_major}" = '15' ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-15/0001-Enable-automatic-linking-of-libatomic.patch"
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-15/0001-Use-latomic_asneeded-or-lgcc_s_asneeded-to-workaround-libtool-issues-PR123396.patch"
 	fi
 	
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-AArch64-enable-libquadmath.patch"
@@ -928,7 +926,12 @@ for target in "${targets[@]}"; do
 	mv "${sysroot_directory}" "${toolchain_directory}/${triplet}"
 	
 	cp "${workdir}/patches/librt_asneeded.so" "${toolchain_directory}/${triplet}/lib"
-	cp "${workdir}/patches/librt_asneeded.so" "${toolchain_directory}/${triplet}/lib/librt_asneeded.a"
+	
+	ln \
+		--symbolic \
+		--relative \
+		"${toolchain_directory}/${triplet}/lib/librt.a" \
+		"${toolchain_directory}/${triplet}/lib/librt_asneeded.a"
 	
 	rm --force --recursive "${PWD}"
 	
@@ -1493,6 +1496,25 @@ while read item; do
 		--relative \
 		"${toolchain_directory}/lib/gcc/${triplet}/${gcc_major}/"*'.'{a,o} \
 		'./static'
+	
+	# We need to manually symlink these librt things
+	ln \
+		--symbolic \
+		--relative \
+		"${toolchain_directory}/${triplet}${glibc_version}/lib/librt.a" \
+		"${toolchain_directory}/${triplet}${glibc_version}/lib/librt_asneeded.a"
+	
+	ln \
+		--symbolic \
+		--relative \
+		"${toolchain_directory}/${triplet}${glibc_version}/lib/librt_asneeded.a" \
+		"${toolchain_directory}/${triplet}${glibc_version}/lib/static"
+	
+	ln \
+		--symbolic \
+		--relative \
+		"${toolchain_directory}/${triplet}/lib/librt_asneeded.so" \
+		"${toolchain_directory}/${triplet}${glibc_version}/lib/librt_asneeded.so"
 	
 	if [ "${repository}" != 'null' ] && (( build_nz )); then
 		mkdir 'nouzen'

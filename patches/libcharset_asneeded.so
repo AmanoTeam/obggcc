@@ -1,3 +1,3 @@
 /* GNU ld script
-   Add DT_NEEDED entry for libcharset.so only if needed.  */
+   Add DT_NEEDED entry for -lcharset only if needed.  */
 INPUT ( AS_NEEDED ( -lcharset ) )

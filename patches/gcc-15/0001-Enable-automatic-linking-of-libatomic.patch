@@ -1,4 +1,4 @@
-From 1ee06710ec77a4fc5a9a0c2ad84476bea867cb93 Mon Sep 17 00:00:00 2001
+From 01297d1648ae31a696d8b6bfa30e777fc8062b20 Mon Sep 17 00:00:00 2001
 From: Kartatz <105828205+Kartatz@users.noreply.github.com>
 Date: Sun, 2 Nov 2025 15:07:56 -0300
 Subject: [PATCH] Enable automatic linking of libatomic
@@ -11,7 +11,7 @@ Subject: [PATCH] Enable automatic linking of libatomic
  configure.ac                  |    5 +
  gcc/common.opt                |    4 +
  gcc/common.opt.urls           |    3 +
- gcc/config.in                 |    6 +
+ gcc/config.in                 |   12 +
  gcc/config/alpha/linux.h      |    2 +-
  gcc/config/arm/uclinux-elf.h  |    5 +-
  gcc/config/arm/unknown-elf.h  |    2 +-
@@ -23,15 +23,17 @@ Subject: [PATCH] Enable automatic linking of libatomic
  gcc/config/rs6000/linux64.h   |    4 +-
  gcc/config/rs6000/rtems.h     |    4 +-
  gcc/config/sparc/sparc.h      |    4 +-
- gcc/configure                 |    6 +
- gcc/configure.ac              |    5 +
+ gcc/configure                 |   16 +
+ gcc/configure.ac              |   14 +
  gcc/doc/invoke.texi           |    8 +-
- gcc/gcc.cc                    |    7 +
- libatomic/Makefile.am         |   15 +-
- libatomic/Makefile.in         |   14 +-
- libatomic/configure           |   33 +-
+ gcc/gcc.cc                    |   22 +
+ libatomic/Makefile.am         |   38 +-
+ libatomic/Makefile.in         |   35 +-
+ libatomic/acinclude.m4        |    6 +
+ libatomic/configure           |   52 +-
  libatomic/configure.ac        |   33 +-
- 27 files changed, 3443 insertions(+), 40 deletions(-)
+ libgcc/config/t-slibgcc       |   15 +-
+ 29 files changed, 3564 insertions(+), 43 deletions(-)
 
 diff --git a/Makefile.def b/Makefile.def
 index 3f980bce8..13cc54869 100644
@@ -3507,7 +3509,7 @@ index 00775118e..abc39a3ce 100644
  UrlSuffix(gcc/Debugging-Options.html#index-fvar-tracking)
  
 diff --git a/gcc/config.in b/gcc/config.in
-index a79c51adb..e5edc340c 100644
+index a79c51adb..b2aa816fb 100644
 --- a/gcc/config.in
 +++ b/gcc/config.in
 @@ -2608,6 +2608,12 @@
@@ -3523,6 +3525,19 @@ index a79c51adb..e5edc340c 100644
  /* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
  #ifndef USED_FOR_TARGET
  #undef TIME_WITH_SYS_TIME
+@@ -2634,6 +2640,12 @@
+ #endif
+ 
+ 
++/* Define if your linker supports AS_NEEDED in linker scripts. */
++#ifndef USED_FOR_TARGET
++#undef USE_LD_AS_NEEDED_LDSCRIPT
++#endif
++
++
+ /* Define to 1 if the 'long long' type is wider than 'long' but still
+    efficiently supported by the host hardware. */
+ #ifndef USED_FOR_TARGET
 diff --git a/gcc/config/alpha/linux.h b/gcc/config/alpha/linux.h
 index c4e843ff6..758817a1c 100644
 --- a/gcc/config/alpha/linux.h
@@ -3674,10 +3689,59 @@ index 68aba0788..48ddb3d96 100644
  
  #define PTRDIFF_TYPE (TARGET_ARCH64 ? "long int" : "int")
 diff --git a/gcc/configure b/gcc/configure
-index 16965953f..0c30c05b5 100755
+index 16965953f..2f6d0f349 100755
 --- a/gcc/configure
 +++ b/gcc/configure
-@@ -33482,6 +33482,12 @@ $as_echo "#define ENABLE_DEFAULT_SSP 1" >>confdefs.h
+@@ -32913,10 +32913,12 @@ else
+   gcc_cv_ld_as_needed=no
+ gcc_cv_ld_as_needed_option='--as-needed'
+ gcc_cv_ld_no_as_needed_option='--no-as-needed'
++gcc_cv_ld_use_as_needed_ldscript=no
+ if test $in_tree_ld = yes ; then
+   if test "$gcc_cv_gld_major_version" -eq 2 -a "$gcc_cv_gld_minor_version" -ge 16 -o "$gcc_cv_gld_major_version" -gt 2 \
+      && test $in_tree_ld_is_elf = yes; then
+     gcc_cv_ld_as_needed=yes
++    gcc_cv_ld_use_as_needed_ldscript=yes
+     if test "$gcc_cv_gld_major_version" -eq 2 -a "$gcc_cv_gld_minor_version" -ge 28; then
+       gcc_cv_ld_as_needed_option='--push-state --as-needed'
+       gcc_cv_ld_no_as_needed_option='--pop-state'
+@@ -32926,6 +32928,7 @@ elif test x$gcc_cv_ld != x; then
+   # Check if linker supports --as-needed and --no-as-needed options
+   if $gcc_cv_ld --help 2>&1 | grep as-needed > /dev/null; then
+     gcc_cv_ld_as_needed=yes
++    gcc_cv_ld_use_as_needed_ldscript=yes
+     if $gcc_cv_ld --help 2>&1 | grep push-state > /dev/null \
+        && $gcc_cv_ld --help 2>&1 | grep pop-state > /dev/null \
+        && echo "$ld_ver" | grep GNU > /dev/null \
+@@ -32944,6 +32947,7 @@ elif test x$gcc_cv_ld != x; then
+       gcc_cv_ld_as_needed=yes
+       gcc_cv_ld_as_needed_option="-z ignore"
+       gcc_cv_ld_no_as_needed_option="-z record"
++      gcc_cv_ld_use_as_needed_ldscript=no
+       ;;
+   esac
+ fi
+@@ -32956,6 +32960,7 @@ case "$target" in
+       if echo "$ld_ver" | grep GNU > /dev/null; then
+         # Doesn't work with gld on Solaris/x86 due to PR ld/12320.
+         gcc_cv_ld_as_needed=no
++        gcc_cv_ld_use_as_needed_ldscript=no
+       fi
+       ;;
+     esac
+@@ -32982,6 +32987,11 @@ cat >>confdefs.h <<_ACEOF
+ #define LD_NO_AS_NEEDED_OPTION "$gcc_cv_ld_no_as_needed_option"
+ _ACEOF
+ 
++fi
++if test x"$gcc_cv_ld_use_as_needed_ldscript" = xyes; then
++
++$as_echo "#define USE_LD_AS_NEEDED_LDSCRIPT 1" >>confdefs.h
++
+ fi
+ 
+ { $as_echo "$as_me:${as_lineno-$LINENO}: checking linker mapfile support for clearing hardware capabilities" >&5
+@@ -33482,6 +33492,12 @@ $as_echo "#define ENABLE_DEFAULT_SSP 1" >>confdefs.h
  fi
  
  
@@ -3691,10 +3755,58 @@ index 16965953f..0c30c05b5 100755
  
  { $as_echo "$as_me:${as_lineno-$LINENO}: checking sys/sdt.h in the target C library" >&5
 diff --git a/gcc/configure.ac b/gcc/configure.ac
-index 9f67e6295..e7ffd5372 100644
+index 9f67e6295..06fa6078d 100644
 --- a/gcc/configure.ac
 +++ b/gcc/configure.ac
-@@ -7015,6 +7015,11 @@ if test x$enable_default_ssp = xyes ; then
+@@ -6562,10 +6562,12 @@ gcc_cv_ld_as_needed,
+ [gcc_cv_ld_as_needed=no
+ gcc_cv_ld_as_needed_option='--as-needed'
+ gcc_cv_ld_no_as_needed_option='--no-as-needed'
++gcc_cv_ld_use_as_needed_ldscript=no
+ if test $in_tree_ld = yes ; then
+   if test "$gcc_cv_gld_major_version" -eq 2 -a "$gcc_cv_gld_minor_version" -ge 16 -o "$gcc_cv_gld_major_version" -gt 2 \
+      && test $in_tree_ld_is_elf = yes; then
+     gcc_cv_ld_as_needed=yes
++    gcc_cv_ld_use_as_needed_ldscript=yes
+     if test "$gcc_cv_gld_major_version" -eq 2 -a "$gcc_cv_gld_minor_version" -ge 28; then
+       gcc_cv_ld_as_needed_option='--push-state --as-needed'
+       gcc_cv_ld_no_as_needed_option='--pop-state'
+@@ -6575,6 +6577,7 @@ elif test x$gcc_cv_ld != x; then
+   # Check if linker supports --as-needed and --no-as-needed options
+   if $gcc_cv_ld --help 2>&1 | grep as-needed > /dev/null; then
+     gcc_cv_ld_as_needed=yes
++    gcc_cv_ld_use_as_needed_ldscript=yes
+     if $gcc_cv_ld --help 2>&1 | grep push-state > /dev/null \
+        && $gcc_cv_ld --help 2>&1 | grep pop-state > /dev/null \
+        && echo "$ld_ver" | grep GNU > /dev/null \
+@@ -6593,6 +6596,7 @@ elif test x$gcc_cv_ld != x; then
+       gcc_cv_ld_as_needed=yes
+       gcc_cv_ld_as_needed_option="-z ignore"
+       gcc_cv_ld_no_as_needed_option="-z record"
++      gcc_cv_ld_use_as_needed_ldscript=no
+       ;;
+   esac
+ fi
+@@ -6605,6 +6609,7 @@ case "$target" in
+       if echo "$ld_ver" | grep GNU > /dev/null; then
+         # Doesn't work with gld on Solaris/x86 due to PR ld/12320.
+         gcc_cv_ld_as_needed=no
++        gcc_cv_ld_use_as_needed_ldscript=no
+       fi
+       ;;
+     esac
+@@ -6622,6 +6627,10 @@ if test x"$gcc_cv_ld_as_needed" = xyes; then
+ 	AC_DEFINE_UNQUOTED(LD_NO_AS_NEEDED_OPTION, "$gcc_cv_ld_no_as_needed_option",
+ [Define to the linker option to keep unused dependencies.])
+ fi
++if test x"$gcc_cv_ld_use_as_needed_ldscript" = xyes; then
++	AC_DEFINE(USE_LD_AS_NEEDED_LDSCRIPT, 1,
++[Define if your linker supports AS_NEEDED in linker scripts.])
++fi
+ 
+ AC_MSG_CHECKING(linker mapfile support for clearing hardware capabilities)
+ saved_LDFLAGS="$LDFLAGS"
+@@ -7015,6 +7024,11 @@ if test x$enable_default_ssp = xyes ; then
  fi
  AC_SUBST([enable_default_ssp])
  
@@ -3707,7 +3819,7 @@ index 9f67e6295..e7ffd5372 100644
  GCC_TARGET_TEMPLATE([HAVE_SYS_SDT_H])
  AC_CACHE_CHECK([sys/sdt.h in the target C library], [gcc_cv_sys_sdt_h], [
 diff --git a/gcc/doc/invoke.texi b/gcc/doc/invoke.texi
-index 4f4313151..fc72611d0 100644
+index cf4f2b211..3ad3440e5 100644
 --- a/gcc/doc/invoke.texi
 +++ b/gcc/doc/invoke.texi
 @@ -721,7 +721,7 @@ Objective-C and Objective-C++ Dialects}.
@@ -3719,7 +3831,7 @@ index 4f4313151..fc72611d0 100644
  -nostartfiles  -nodefaultlibs  -nolibc  -nostdlib  -nostdlib++
  -e @var{entry}  --entry=@var{entry}
  -pie  -pthread  -r  -rdynamic
-@@ -19092,6 +19092,12 @@ If any of these options is used, then the linker is not run, and
+@@ -19096,6 +19096,12 @@ If any of these options is used, then the linker is not run, and
  object file names should not be used as arguments.  @xref{Overall
  Options}.
  
@@ -3733,16 +3845,20 @@ index 4f4313151..fc72611d0 100644
  @item -flinker-output=@var{type}
  This option controls code generation of the link-time optimizer.  By
 diff --git a/gcc/gcc.cc b/gcc/gcc.cc
-index 4fd87f2c4..fe8109448 100644
+index 4fd87f2c4..4a804ba96 100644
 --- a/gcc/gcc.cc
 +++ b/gcc/gcc.cc
-@@ -984,6 +984,13 @@ proper position among the other output files.  */
+@@ -984,6 +984,17 @@ proper position among the other output files.  */
  
  /* Here is the spec for running the linker, after compiling all files.  */
  
 +#if defined(TARGET_PROVIDES_LIBATOMIC) && defined(USE_LD_AS_NEEDED)
++#ifdef USE_LD_AS_NEEDED_LDSCRIPT
++#define LINK_LIBATOMIC_SPEC "%{!fno-link-libatomic:-latomic_asneeded} "
++#else
 +#define LINK_LIBATOMIC_SPEC "%{!fno-link-libatomic:" LD_AS_NEEDED_OPTION \
 +			    " -latomic " LD_NO_AS_NEEDED_OPTION "} "
++#endif
 +#else
 +#define LINK_LIBATOMIC_SPEC ""
 +#endif
@@ -3750,8 +3866,33 @@ index 4fd87f2c4..fe8109448 100644
  /* This is overridable by the target in case they need to specify the
     -lgcc and -lc order specially, yet not require them to override all
     of LINK_COMMAND_SPEC.  */
+@@ -1819,6 +1830,16 @@ init_gcc_specs (struct obstack *obstack, const char *shared_name,
+   char *buf;
+ 
+ #if USE_LD_AS_NEEDED
++#if defined(USE_LD_AS_NEEDED_LDSCRIPT) && !defined(USE_LIBUNWIND_EXCEPTIONS)
++  buf = concat ("%{static|static-libgcc|static-pie:", static_name, " ", eh_name, "}"
++		"%{!static:%{!static-libgcc:%{!static-pie:"
++		"%{!shared-libgcc:",
++		static_name, " ",
++		shared_name, "_asneeded}"
++		"%{shared-libgcc:",
++		shared_name, "%{!shared: ", static_name, "}"
++		"}}"
++#else
+   buf = concat ("%{static|static-libgcc|static-pie:", static_name, " ", eh_name, "}"
+ 		"%{!static:%{!static-libgcc:%{!static-pie:"
+ 		"%{!shared-libgcc:",
+@@ -1828,6 +1849,7 @@ init_gcc_specs (struct obstack *obstack, const char *shared_name,
+ 		"%{shared-libgcc:",
+ 		shared_name, "%{!shared: ", static_name, "}"
+ 		"}}"
++#endif
+ #else
+   buf = concat ("%{static|static-libgcc:", static_name, " ", eh_name, "}"
+ 		"%{!static:%{!static-libgcc:"
 diff --git a/libatomic/Makefile.am b/libatomic/Makefile.am
-index 0f1a71560..1a41f6d4e 100644
+index 0f1a71560..8fcedc2ef 100644
 --- a/libatomic/Makefile.am
 +++ b/libatomic/Makefile.am
 @@ -69,7 +69,7 @@ libatomic_darwin_rpath += -Wl,-rpath,@loader_path
@@ -3763,7 +3904,7 @@ index 0f1a71560..1a41f6d4e 100644
  libatomic_la_SOURCES = gload.c gstore.c gcas.c gexch.c glfree.c lock.c init.c \
  	fenv.c fence.c flag.c
  
-@@ -162,6 +162,19 @@ libatomic_convenience_la_LIBADD = $(libatomic_la_LIBADD)
+@@ -162,6 +162,42 @@ libatomic_convenience_la_LIBADD = $(libatomic_la_LIBADD)
  # when it is reloaded during the build of all-multi.
  all-multi: $(libatomic_la_LIBADD)
  
@@ -3778,13 +3919,36 @@ index 0f1a71560..1a41f6d4e 100644
 +gcc_objdir = `pwd`/$(MULTIBUILDTOP)../../gcc/
 +all-local: libatomic.la
 +	$(LIBTOOL) --mode=install $(INSTALL_DATA) libatomic.la $(gcc_objdir)$(MULTISUBDIR)/
++if LIBAT_BUILD_ASNEEDED_SOLINK
++	cd $(gcc_objdir)$(MULTISUBDIR) || exit 1; \
++	(echo "/* GNU ld script"; \
++	 echo "   Add DT_NEEDED entry for -latomic only if needed.  */"; \
++	 echo "INPUT ( AS_NEEDED ( -latomic ) )" \
++	) > libatomic_asneeded.so; \
++	rm -f libatomic_asneeded.a; \
++	$(LN_S) libatomic.a libatomic_asneeded.a
++endif
 +	rm $(gcc_objdir)$(MULTISUBDIR)/libatomic.la
++
++if LIBAT_BUILD_ASNEEDED_SOLINK
++install-data-am: install-asneeded
++
++install-asneeded: install-toolexeclibLTLIBRARIES
++	$(MKDIR_P) "$(DESTDIR)$(toolexeclibdir)" || exit 1; \
++	cd "$(DESTDIR)$(toolexeclibdir)" || exit 1; \
++	(echo "/* GNU ld script"; \
++	 echo "   Add DT_NEEDED entry for -latomic only if needed.  */"; \
++	 echo "INPUT ( AS_NEEDED ( -latomic ) )" \
++	) > libatomic_asneeded.so; \
++	rm -f libatomic_asneeded.a; \
++	$(LN_S) libatomic.a libatomic_asneeded.a
++endif
 +
  # target overrides
  -include $(tmake_file)
  
 diff --git a/libatomic/Makefile.in b/libatomic/Makefile.in
-index 9798e7c09..1fadeb895 100644
+index 9798e7c09..f554205e3 100644
 --- a/libatomic/Makefile.in
 +++ b/libatomic/Makefile.in
 @@ -421,7 +421,7 @@ libatomic_version_info = -version-info $(libtool_VERSION)
@@ -3812,21 +3976,85 @@ index 9798e7c09..1fadeb895 100644
  MULTISRCTOP = 
  MULTIBUILDTOP = 
  MULTIDIRS = 
-@@ -901,6 +910,9 @@ vpath % $(strip $(search_path))
+@@ -808,7 +817,7 @@ info: info-recursive
+ 
+ info-am:
+ 
+-install-data-am:
++@LIBAT_BUILD_ASNEEDED_SOLINK_FALSE@install-data-am:
+ 
+ install-dvi: install-dvi-recursive
+ 
+@@ -901,6 +910,28 @@ vpath % $(strip $(search_path))
  # makefile fragments to avoid broken *.Ppo getting included into the Makefile
  # when it is reloaded during the build of all-multi.
  all-multi: $(libatomic_la_LIBADD)
 +all-local: libatomic.la
 +	$(LIBTOOL) --mode=install $(INSTALL_DATA) libatomic.la $(gcc_objdir)$(MULTISUBDIR)/
++@LIBAT_BUILD_ASNEEDED_SOLINK_TRUE@	cd $(gcc_objdir)$(MULTISUBDIR) || exit 1; \
++@LIBAT_BUILD_ASNEEDED_SOLINK_TRUE@	(echo "/* GNU ld script"; \
++@LIBAT_BUILD_ASNEEDED_SOLINK_TRUE@	 echo "   Add DT_NEEDED entry for -latomic only if needed.  */"; \
++@LIBAT_BUILD_ASNEEDED_SOLINK_TRUE@	 echo "INPUT ( AS_NEEDED ( -latomic ) )" \
++@LIBAT_BUILD_ASNEEDED_SOLINK_TRUE@	) > libatomic_asneeded.so; \
++@LIBAT_BUILD_ASNEEDED_SOLINK_TRUE@	rm -f libatomic_asneeded.a; \
++@LIBAT_BUILD_ASNEEDED_SOLINK_TRUE@	$(LN_S) libatomic.a libatomic_asneeded.a
 +	rm $(gcc_objdir)$(MULTISUBDIR)/libatomic.la
++
++@LIBAT_BUILD_ASNEEDED_SOLINK_TRUE@install-data-am: install-asneeded
++
++@LIBAT_BUILD_ASNEEDED_SOLINK_TRUE@install-asneeded: install-toolexeclibLTLIBRARIES
++@LIBAT_BUILD_ASNEEDED_SOLINK_TRUE@	$(MKDIR_P) "$(DESTDIR)$(toolexeclibdir)" || exit 1; \
++@LIBAT_BUILD_ASNEEDED_SOLINK_TRUE@	cd "$(DESTDIR)$(toolexeclibdir)" || exit 1; \
++@LIBAT_BUILD_ASNEEDED_SOLINK_TRUE@	(echo "/* GNU ld script"; \
++@LIBAT_BUILD_ASNEEDED_SOLINK_TRUE@	 echo "   Add DT_NEEDED entry for -latomic only if needed.  */"; \
++@LIBAT_BUILD_ASNEEDED_SOLINK_TRUE@	 echo "INPUT ( AS_NEEDED ( -latomic ) )" \
++@LIBAT_BUILD_ASNEEDED_SOLINK_TRUE@	) > libatomic_asneeded.so; \
++@LIBAT_BUILD_ASNEEDED_SOLINK_TRUE@	rm -f libatomic_asneeded.a; \
++@LIBAT_BUILD_ASNEEDED_SOLINK_TRUE@	$(LN_S) libatomic.a libatomic_asneeded.a
  
  # target overrides
  -include $(tmake_file)
+diff --git a/libatomic/acinclude.m4 b/libatomic/acinclude.m4
+index f35ab5b60..784b77faf 100644
+--- a/libatomic/acinclude.m4
++++ b/libatomic/acinclude.m4
+@@ -341,9 +341,14 @@ AC_DEFUN([LIBAT_CHECK_LINKER_FEATURES], [
+   changequote(,)
+   ldver=`$LD --version 2>/dev/null |
+          sed -e 's/[. ][0-9]\{8\}$//;s/.* \([^ ]\{1,\}\)$/\1/; q'`
++  ldasneeded=`$LD --help 2>/dev/null | grep as-needed`
+   changequote([,])
+   libat_gnu_ld_version=`echo $ldver | \
+          $AWK -F. '{ if (NF<3) [$]3=0; print ([$]1*100+[$]2)*100+[$]3 }'`
++  libat_ld_asneeded=no
++  if test -n "$ldasneeded"; then
++    libat_ld_asneeded=yes
++  fi
+ 
+   # Set --gc-sections.
+   if test "$with_gnu_ld" = "notbroken"; then
+@@ -390,6 +395,7 @@ AC_DEFUN([LIBAT_CHECK_LINKER_FEATURES], [
+ 
+   AC_SUBST(SECTION_LDFLAGS)
+   AC_SUBST(OPT_LDFLAGS)
++  AM_CONDITIONAL(LIBAT_BUILD_ASNEEDED_SOLINK, test $libat_ld_asneeded != no)
+ ])
+ 
+ 
 diff --git a/libatomic/configure b/libatomic/configure
-index d579bab96..5bc44f5f0 100755
+index d579bab96..3917b2daf 100755
 --- a/libatomic/configure
 +++ b/libatomic/configure
-@@ -3415,6 +3415,26 @@ esac
+@@ -654,6 +654,8 @@ LIBAT_BUILD_VERSIONED_SHLIB_GNU_FALSE
+ LIBAT_BUILD_VERSIONED_SHLIB_GNU_TRUE
+ LIBAT_BUILD_VERSIONED_SHLIB_FALSE
+ LIBAT_BUILD_VERSIONED_SHLIB_TRUE
++LIBAT_BUILD_ASNEEDED_SOLINK_FALSE
++LIBAT_BUILD_ASNEEDED_SOLINK_TRUE
+ OPT_LDFLAGS
+ SECTION_LDFLAGS
+ SYSROOT_CFLAGS_FOR_TARGET
+@@ -3415,6 +3417,26 @@ esac
  # the wrong, non-multilib-adjusted value will be used in multilibs.
  # As a side effect, we have to subst CFLAGS ourselves.
  
@@ -3853,7 +4081,7 @@ index d579bab96..5bc44f5f0 100755
  
  
  ac_ext=c
-@@ -4593,11 +4613,6 @@ fi
+@@ -4593,11 +4615,6 @@ fi
  
  
  
@@ -3865,7 +4093,7 @@ index d579bab96..5bc44f5f0 100755
  # Find other programs we need.
  if test -n "$ac_tool_prefix"; then
    # Extract the first word of "${ac_tool_prefix}ar", so it can be a program name with args.
-@@ -11946,7 +11961,7 @@ _ACEOF
+@@ -11946,7 +11963,7 @@ _ACEOF
  
  # Disable fallbacks to __sync routines from libgcc.  Otherwise we'll
  # make silly decisions about what the cpu can do.
@@ -3874,7 +4102,7 @@ index d579bab96..5bc44f5f0 100755
  
  # Check header files.
  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ANSI C header files" >&5
-@@ -14967,7 +14982,7 @@ _ACEOF
+@@ -14967,7 +14984,7 @@ _ACEOF
  if ac_fn_c_try_link "$LINENO"; then :
    XPCFLAGS=" -pthread"
  else
@@ -3883,7 +4111,7 @@ index d579bab96..5bc44f5f0 100755
       cat confdefs.h - <<_ACEOF >conftest.$ac_ext
  /* end confdefs.h.  */
  #include <pthread.h>
-@@ -14990,7 +15005,7 @@ rm -f core conftest.err conftest.$ac_objext \
+@@ -14990,7 +15007,7 @@ rm -f core conftest.err conftest.$ac_objext \
  fi
  rm -f core conftest.err conftest.$ac_objext \
      conftest$ac_exeext conftest.$ac_ext
@@ -3892,7 +4120,37 @@ index d579bab96..5bc44f5f0 100755
    ;;
  esac
  
-@@ -15565,7 +15580,7 @@ $as_echo "$as_me: versioning on shared library symbols is $enable_symvers" >&6;}
+@@ -15293,9 +15310,14 @@ with_gnu_ld=$lt_cv_prog_gnu_ld
+ 
+   ldver=`$LD --version 2>/dev/null |
+          sed -e 's/[. ][0-9]\{8\}$//;s/.* \([^ ]\{1,\}\)$/\1/; q'`
++  ldasneeded=`$LD --help 2>/dev/null | grep as-needed`
+ 
+   libat_gnu_ld_version=`echo $ldver | \
+          $AWK -F. '{ if (NF<3) $3=0; print ($1*100+$2)*100+$3 }'`
++  libat_ld_asneeded=no
++  if test -n "$ldasneeded"; then
++    libat_ld_asneeded=yes
++  fi
+ 
+   # Set --gc-sections.
+   if test "$with_gnu_ld" = "notbroken"; then
+@@ -15359,6 +15381,14 @@ $as_echo "$ac_sectionLDflags" >&6; }
+ 
+ 
+ 
++   if test $libat_ld_asneeded != no; then
++  LIBAT_BUILD_ASNEEDED_SOLINK_TRUE=
++  LIBAT_BUILD_ASNEEDED_SOLINK_FALSE='#'
++else
++  LIBAT_BUILD_ASNEEDED_SOLINK_TRUE='#'
++  LIBAT_BUILD_ASNEEDED_SOLINK_FALSE=
++fi
++
+ 
+ 
+ 
+@@ -15565,7 +15595,7 @@ $as_echo "$as_me: versioning on shared library symbols is $enable_symvers" >&6;}
  
  
  # Cleanup and exit.
@@ -3901,6 +4159,17 @@ index d579bab96..5bc44f5f0 100755
  cat >confcache <<\_ACEOF
  # This file is a shell script that caches the results of configure
  # tests run on this system so they can be shared between configure
+@@ -15990,6 +16020,10 @@ if test -z "${ENABLE_DARWIN_AT_RPATH_TRUE}" && test -z "${ENABLE_DARWIN_AT_RPATH
+ Usually this means the macro was only invoked conditionally." "$LINENO" 5
+ fi
+ 
++if test -z "${LIBAT_BUILD_ASNEEDED_SOLINK_TRUE}" && test -z "${LIBAT_BUILD_ASNEEDED_SOLINK_FALSE}"; then
++  as_fn_error $? "conditional \"LIBAT_BUILD_ASNEEDED_SOLINK\" was never defined.
++Usually this means the macro was only invoked conditionally." "$LINENO" 5
++fi
+ if test -z "${LIBAT_BUILD_VERSIONED_SHLIB_TRUE}" && test -z "${LIBAT_BUILD_VERSIONED_SHLIB_FALSE}"; then
+   as_fn_error $? "conditional \"LIBAT_BUILD_VERSIONED_SHLIB\" was never defined.
+ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 diff --git a/libatomic/configure.ac b/libatomic/configure.ac
 index aafae7102..fa7e36713 100644
 --- a/libatomic/configure.ac
@@ -3980,6 +4249,43 @@ index aafae7102..fa7e36713 100644
  AC_CACHE_SAVE
  
  AC_ARG_ENABLE([werror],
+diff --git a/libgcc/config/t-slibgcc b/libgcc/config/t-slibgcc
+index 68cb3b31e..6617b7e1f 100644
+--- a/libgcc/config/t-slibgcc
++++ b/libgcc/config/t-slibgcc
+@@ -30,6 +30,15 @@ SHLIB_LC = -lc
+ SHLIB_MAKE_SOLINK = $(LN_S) $(SHLIB_SONAME) $(SHLIB_DIR)/$(SHLIB_SOLINK)
+ SHLIB_INSTALL_SOLINK = $(LN_S) $(SHLIB_SONAME) \
+ 	$(DESTDIR)$(slibdir)$(SHLIB_SLIBDIR_QUAL)/$(SHLIB_SOLINK)
++SHLIB_ASNEEDED_SOLINK = @shlib_base_name@_asneeded.so
++SHLIB_MAKE_ASNEEDED_SOLINK = \
++        (echo "/* GNU ld script"; \
++         echo "   Add DT_NEEDED entry for libgcc_s.so only if needed.  */"; \
++         echo "INPUT ( AS_NEEDED ( -lgcc_s ) )" \
++        ) > $(SHLIB_DIR)/$(SHLIB_ASNEEDED_SOLINK)
++SHLIB_INSTALL_ASNEEDED_SOLINK = \
++        $(INSTALL_DATA) $(SHLIB_DIR)/$(SHLIB_ASNEEDED_SOLINK) \
++          $(DESTDIR)$(slibdir)$(SHLIB_SLIBDIR_QUAL)/$(SHLIB_ASNEEDED_SOLINK)
+ 
+ SHLIB_LINK = $(CC) $(LIBGCC2_CFLAGS) -shared -nodefaultlibs \
+ 	$(SHLIB_LDFLAGS) $(LDFLAGS) \
+@@ -41,7 +50,8 @@ SHLIB_LINK = $(CC) $(LIBGCC2_CFLAGS) -shared -nodefaultlibs \
+ 		$(SHLIB_DIR)/$(SHLIB_SONAME).backup; \
+ 	else true; fi && \
+ 	mv $(SHLIB_DIR)/$(SHLIB_SONAME).tmp $(SHLIB_DIR)/$(SHLIB_SONAME) && \
+-	$(SHLIB_MAKE_SOLINK)
++	$(SHLIB_MAKE_SOLINK) && \
++	$(SHLIB_MAKE_ASNEEDED_SOLINK)
+ 
+ INSTALL_SHLIB = $(INSTALL_DATA)
+ 
+@@ -50,4 +60,5 @@ SHLIB_INSTALL = \
+ 	$(INSTALL_SHLIB) $(SHLIB_DIR)/$(SHLIB_SONAME) \
+ 	  $(DESTDIR)$(slibdir)$(SHLIB_SLIBDIR_QUAL)/$(SHLIB_SONAME); \
+ 	rm -f $(DESTDIR)$(slibdir)$(SHLIB_SLIBDIR_QUAL)/$(SHLIB_SOLINK); \
+-	$(SHLIB_INSTALL_SOLINK)
++	$(SHLIB_INSTALL_SOLINK); \
++	$(SHLIB_INSTALL_ASNEEDED_SOLINK)
 -- 
-2.51.1
+2.52.0
 
