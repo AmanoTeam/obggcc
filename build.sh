@@ -88,8 +88,8 @@ declare -r sysroot_tarball="${build_directory}/sysroot.tar.xz"
 
 declare gdb='1'
 
-declare build_cmake='0'
-declare build_curl='0'
+declare build_cmake='1'
+declare build_curl='1'
 declare build_nz='1'
 
 declare exe=''
