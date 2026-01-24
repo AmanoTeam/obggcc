@@ -335,7 +335,7 @@ jobs:
           name: GCC 15.2.1
           files: ./*/*-{unknown,w64}-*.{tar.xz,zip}*
           draft: false
-          prerelease: true
+          prerelease: false
           fail_on_unmatched_files: true
           body: "* Update to GCC 15.2.1"
         env:
