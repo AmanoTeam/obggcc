@@ -1460,7 +1460,10 @@ while read item; do
 		--extract \
 		--file="${sysroot_tarball}"
 	
+	rename_soname_libraries "${toolchain_directory}/${triplet}${glibc_version}"
+	
 	cd "${toolchain_directory}/${triplet}${glibc_version}/lib"
+	
 	mkdir 'gcc' 'static'
 	
 	ln --symbolic './lib'*'.'{so,a}* './static'
@@ -1596,8 +1599,6 @@ while read item; do
 		
 		ln --symbolic "${source}" "${destination}"
 	done
-	
-	rename_soname_libraries "${toolchain_directory}/${triplet}${glibc_version}"
 	
 	if [[ "${host}" = *'-mingw32' ]]; then
 		replace_symlinks "${toolchain_directory}/${triplet}${glibc_version}"
