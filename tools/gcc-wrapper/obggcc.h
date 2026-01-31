@@ -1,7 +1,7 @@
 #if !defined(OBGGCC_H)
 #define OBGGCC_H
 
-#if !(defined(OBGGCC) || defined(PINO) || defined(ATAR))
+#if !(defined(OBGGCC) || defined(PINO) || defined(ATAR) || defined(RAIDEN))
 	#error "Please define the cross-compiler flavor for which we will be a wrapper"
 #endif
 
@@ -11,6 +11,8 @@
 	#define WRAPPER_FLAVOR_NAME "PINO"
 #elif defined(ATAR)
 	#define WRAPPER_FLAVOR_NAME "ATAR"
+#elif defined(RAIDEN)
+	#define WRAPPER_FLAVOR_NAME "RAIDEN"
 #else
 	#error "I don't know how to handle this"
 #endif
@@ -30,6 +32,8 @@ static const char DEFAULT_TARGET[] =
 	"x86_64-unknown-linux-android21";
 #elif defined(ATAR)
 	"x86_64-unknown-openbsd";
+#elif defined(RAIDEN)
+	 "x86_64-unknown-linux-musl1.2";
 #else
 	#error "I don't know how to handle this"
 #endif

@@ -19,6 +19,10 @@
 	#include <sys/sysctl.h>
 #endif
 
+#if defined(__linux__) && !defined(__ANDROID__) && !defined(__GLIBC__)
+	#define __musl__
+#endif
+
 #include "fs/getexec.h"
 #include "fs/splitext.h"
 #include "fs/dirname.h"
@@ -206,6 +210,8 @@ static const char CLANG_OPT_XCLANG[] = "-Xclang";
 #define ARCH_SPEC_HPPA 0x06
 #define ARCH_SPEC_PPC 0x07
 #define ARCH_SPEC_SPARC 0x08
+#define ARCH_SPEC_S390 0x09
+#define ARCH_SPEC_LOONGSON 0x10
 
 static const char LD_OPT_DYNAMIC_LINKER[] = "-dynamic-linker";
 static const char LD_OPT_RPATH_LINK[] = "-rpath-link";
@@ -404,6 +410,10 @@ static int libcv_matches(const char a, const char b) {
 		if ((a >= '1' && a <= '3') && (b >= '0' && b <= '9')) {
 			return 1;
 		}
+	#elif defined(RAIDEN) /* Linux musl (e.g., 1.2) */
+		if (a == '1' && b == '.') {
+			return 1;
+		}
 	#else
 		#error "I don't know how to handle this"
 	#endif
@@ -499,6 +509,30 @@ static int get_bitness(const char* const triplet) {
 			strcmp(triplet, "arm-unknown-openbsd") == 0 ||
 			strcmp(triplet, "hppa-unknown-openbsd") == 0 ||
 			strcmp(triplet, "i386-unknown-openbsd") == 0
+		);
+		
+		if (status) {
+			return ARCH_ABI_32;
+		}
+	#elif defined(RAIDEN)
+		status = (
+			strcmp(triplet, "x86_64-unknown-linux-musl") == 0 ||
+			strcmp(triplet, "aarch64-unknown-linux-musl") == 0 ||
+			strcmp(triplet, "loongarch64-unknown-linux-musl") == 0 ||
+			strcmp(triplet, "powerpc64le-unknown-linux-musl") == 0 ||
+			strcmp(triplet, "s390x-unknown-linux-musl") == 0 ||
+			strcmp(triplet, "mips64-unknown-linux-musl") == 0 ||
+			strcmp(triplet, "riscv64-unknown-linux-musl") == 0
+		);
+		
+		if (status) {
+			return ARCH_ABI_64;
+		}
+		
+		status = (
+			strcmp(triplet, "i386-unknown-linux-musl") == 0 ||
+			strcmp(triplet, "armv6-unknown-linux-musleabihf") == 0 ||
+			strcmp(triplet, "armv7-unknown-linux-musleabihf") == 0
 		);
 		
 		if (status) {
@@ -648,6 +682,65 @@ static int get_arch(const char* const triplet) {
 		if (status) {
 			return ARCH_SPEC_HPPA;
 		}
+	#elif defined(RAIDEN)
+		status = (
+			strcmp(triplet, "i386-unknown-linux-musl") == 0 ||
+			strcmp(triplet, "x86_64-unknown-linux-musl") == 0
+		);
+		
+		if (status) {
+			return ARCH_SPEC_X86;
+		}
+		
+		status = (
+			strcmp(triplet, "aarch64-unknown-linux-musl") == 0 ||
+			strcmp(triplet, "arm-unknown-linux-musl") == 0 ||
+			strcmp(triplet, "armv7-unknown-linux-musleabihf") == 0
+		);
+		
+		if (status) {
+			return ARCH_SPEC_ARM;
+		}
+		
+		status = (
+			strcmp(triplet, "mips64-unknown-linux-musl") == 0
+		);
+		
+		if (status) {
+			return ARCH_SPEC_MIPS;
+		}
+		
+		status = (
+			strcmp(triplet, "powerpc64le-unknown-linux-musl") == 0
+		);
+		
+		if (status) {
+			return ARCH_SPEC_PPC;
+		}
+		
+		status = (
+			strcmp(triplet, "riscv64-unknown-linux-musl") == 0
+		);
+		
+		if (status) {
+			return ARCH_SPEC_RISCV;
+		}
+		
+		status = (
+			strcmp(triplet, "s390x-unknown-linux-musl") == 0
+		);
+		
+		if (status) {
+			return ARCH_SPEC_S390;
+		}
+		
+		status = (
+			strcmp(triplet, "loongarch64-unknown-linux-musl") == 0
+		);
+		
+		if (status) {
+			return ARCH_SPEC_LOONGSON;
+		}
 	#else
 		#error "I don't know how to handle this"
 	#endif
@@ -668,6 +761,10 @@ static int target_supports_neon(const char* const name) {
 		}
 	#elif defined(ATAR)
 		if (strcmp(name, "arm-unknown-openbsd") == 0) {
+			return 1;
+		}
+	#elif defined(RAIDEN)
+		if (strcmp(name, "armv7-unknown-linux-musleabihf") == 0) {
 			return 1;
 		}
 	#else
@@ -700,6 +797,9 @@ static int target_supports_relr(const char* const name, const char* const linker
 		/* Not handled */
 	#elif defined(ATAR)
 		/* OpenBSD has supported DT_RELR since the 7.1 release. */
+		return 1;
+	#elif defined(RAIDEN)
+		/* musl has supported DT_RELR since the 1.2.4 release. */
 		return 1;
 	#else
 		#error "I don't know how to handle this"
@@ -828,9 +928,15 @@ static int get_host_version(void) {
 		if (sysctl(call, sizeof(call) / sizeof(*call), string, &size, NULL, 0) == -1) {
 			return 0;
 		}
+	#elif defined(__musl__)
+		/*
+		* musl provides no reliable way to detect the C library version,
+		* so we have to make an assumption here.
+		*/
+		const char* string = "1.2";
 	#endif
 	
-	#if defined(__GLIBC__) || defined(__OpenBSD__)
+	#if defined(__GLIBC__) || defined(__OpenBSD__) || defined(__musl__)
 		get_libc_version_int(string, version);
 		
 		libc_major = version[0];
@@ -911,6 +1017,28 @@ static const char* get_host_triplet(void) {
 			return "i686-w64-mingw32";
 		#elif defined(__aarch64__)
 			return "aarch64-w64-mingw32";
+		#endif
+	#elif defined(__musl__)
+		#if defined(__x86_64__)
+			return "x86_64-unknown-linux-musl";
+		#elif defined(__i386__)
+			return "i386-unknown-linux-musl";
+		#elif defined(__ARM_ARCH_7A__)
+			return "armv7-unknown-linux-musleabihf";
+		#elif defined(__ARM_ARCH_6__)
+			return "armv6-unknown-linux-musleabihf";
+		#elif defined(__aarch64__)
+			return "aarch64-unknown-linux-musl";
+		#elif defined(__riscv)
+			return "riscv64-unknown-linux-musl";
+		#elif defined(__mips64)
+			return "mips64-unknown-linux-musl";
+		#elif defined(__powerpc64__)
+			return "powerpc64le-unknown-linux-musl";
+		#elif defined(__s390x__)
+			return "s390x-unknown-linux-musl";
+		#elif defined(__loongarch64)
+			return "loongarch64-unknown-linux-musl";
 		#endif
 	#endif
 	
@@ -1610,7 +1738,7 @@ int main(int argc, char* argv[]) {
 	
 	query_load_environ(&query);
 	
-	#if defined(OBGGCC)
+	#if defined(OBGGCC) || defined(RAIDEN)
 		wants_builtin_loader = query_get_bool(&query, ENV_BUILTIN_LOADER) == 1;
 	#endif
 	
@@ -1674,7 +1802,7 @@ int main(int argc, char* argv[]) {
 		if (strcmp(cur, OBGGCC_OPT_HELP) == 0) {
 			help = 1;
 			continue;
-		#if defined(OBGGCC)
+		#if defined(OBGGCC) || defined(RAIDEN)
 		} else if (strcmp(cur, OBGGCC_OPT_F_BUILTIN_LOADER) == 0) {
 			wants_builtin_loader = 1;
 			continue;

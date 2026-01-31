@@ -1109,7 +1109,8 @@ for target in "${targets[@]}"; do
 		"${gcc_include_dir}/"*'.h' \
 		"${clang_include_dir}"
 	
-	rm --force \
+	rm \
+		--force \
 		"${clang_include_dir}/"*'intrin'*'.h' \
 		"${clang_include_dir}/arm"*'.h' \
 		"${clang_include_dir}/stdatomic.h"
