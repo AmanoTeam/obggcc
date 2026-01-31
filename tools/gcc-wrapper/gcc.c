@@ -825,73 +825,95 @@ static const char* get_simd(const char* const name) {
 
 static const char* get_loader(const char* const triplet) {
 	
-	if (strcmp(triplet, "aarch64-unknown-linux-gnu") == 0) {
-		return "ld-linux-aarch64.so.1";
-	}
-	
-	if (strcmp(triplet, "alpha-unknown-linux-gnu") == 0) {
-		return "ld-linux.so.2";
-	}
-	
-	if (strcmp(triplet, "armv6-unknown-linux-gnueabi") == 0) {
-		return "ld-linux.so.3";
-	}
-	
-	if (strcmp(triplet, "arm-unknown-linux-gnueabi") == 0) {
-		return "ld-linux.so.3";
-	}
-	
-	if (strcmp(triplet, "arm-unknown-linux-gnueabihf") == 0) {
-		return "ld-linux-armhf.so.3";
-	}
-	
-	if (strcmp(triplet, "hppa-unknown-linux-gnu") == 0) {
-		return "ld.so.1";
-	}
-	
-	if (strcmp(triplet, "i386-unknown-linux-gnu") == 0) {
-		return "ld-linux.so.2";
-	}
-	
-	if (strcmp(triplet, "ia64-unknown-linux-gnu") == 0) {
-		return "ld-linux-ia64.so.2";
-	}
-	
-	if (strcmp(triplet, "mips64el-unknown-linux-gnuabi64") == 0) {
-		return "ld.so.1";
-	}
-	
-	if (strcmp(triplet, "mipsel-unknown-linux-gnu") == 0) {
-		return "ld.so.1";
-	}
-	
-	if (strcmp(triplet, "mips-unknown-linux-gnu") == 0) {
-		return "ld.so.1";
-	}
-	
-	if (strcmp(triplet, "powerpc64le-unknown-linux-gnu") == 0) {
-		return "ld64.so.2";
-	}
-	
-	if (strcmp(triplet, "powerpc-unknown-linux-gnu") == 0) {
-		return "ld.so.1";
-	}
-	
-	if (strcmp(triplet, "s390-unknown-linux-gnu") == 0) {
-		return "ld.so.1";
-	}
-	
-	if (strcmp(triplet, "s390x-unknown-linux-gnu") == 0) {
-		return "ld64.so.1";
-	}
-	
-	if (strcmp(triplet, "sparc-unknown-linux-gnu") == 0) {
-		return "ld-linux.so.2";
-	}
-	
-	if (strcmp(triplet, "x86_64-unknown-linux-gnu") == 0) {
-		return "ld-linux-x86-64.so.2";
-	}
+	#if defined(OBGGCC)
+		if (strcmp(triplet, "aarch64-unknown-linux-gnu") == 0) {
+			return "ld-linux-aarch64.so.1";
+		}
+		
+		if (strcmp(triplet, "alpha-unknown-linux-gnu") == 0) {
+			return "ld-linux.so.2";
+		}
+		
+		if (strcmp(triplet, "armv6-unknown-linux-gnueabi") == 0) {
+			return "ld-linux.so.3";
+		}
+		
+		if (strcmp(triplet, "arm-unknown-linux-gnueabi") == 0) {
+			return "ld-linux.so.3";
+		}
+		
+		if (strcmp(triplet, "arm-unknown-linux-gnueabihf") == 0) {
+			return "ld-linux-armhf.so.3";
+		}
+		
+		if (strcmp(triplet, "hppa-unknown-linux-gnu") == 0) {
+			return "ld.so.1";
+		}
+		
+		if (strcmp(triplet, "i386-unknown-linux-gnu") == 0) {
+			return "ld-linux.so.2";
+		}
+		
+		if (strcmp(triplet, "ia64-unknown-linux-gnu") == 0) {
+			return "ld-linux-ia64.so.2";
+		}
+		
+		if (strcmp(triplet, "mips64el-unknown-linux-gnuabi64") == 0) {
+			return "ld.so.1";
+		}
+		
+		if (strcmp(triplet, "mipsel-unknown-linux-gnu") == 0) {
+			return "ld.so.1";
+		}
+		
+		if (strcmp(triplet, "mips-unknown-linux-gnu") == 0) {
+			return "ld.so.1";
+		}
+		
+		if (strcmp(triplet, "powerpc64le-unknown-linux-gnu") == 0) {
+			return "ld64.so.2";
+		}
+		
+		if (strcmp(triplet, "powerpc-unknown-linux-gnu") == 0) {
+			return "ld.so.1";
+		}
+		
+		if (strcmp(triplet, "s390-unknown-linux-gnu") == 0) {
+			return "ld.so.1";
+		}
+		
+		if (strcmp(triplet, "s390x-unknown-linux-gnu") == 0) {
+			return "ld64.so.1";
+		}
+		
+		if (strcmp(triplet, "sparc-unknown-linux-gnu") == 0) {
+			return "ld-linux.so.2";
+		}
+		
+		if (strcmp(triplet, "x86_64-unknown-linux-gnu") == 0) {
+			return "ld-linux-x86-64.so.2";
+		}
+	#elif defined(RAIDEN)
+		if (strcmp(triplet, "aarch64-unknown-linux-musl") == 0) {
+			return "ld-musl-aarch64.so.1";
+		}
+		
+		if (strcmp(triplet, "armv6-unknown-linux-musleabihf") == 0) {
+			return "ld-musl-armhf.so.1";
+		}
+		
+		if (strcmp(triplet, "armv7-unknown-linux-musleabihf") == 0) {
+			return "ld-musl-armhf.so.1";
+		}
+		
+		if (strcmp(triplet, "i386-unknown-linux-musl") == 0) {
+			return "ld-musl-i386.so.1";
+		}
+		
+		if (strcmp(triplet, "x86_64-unknown-linux-musl") == 0) {
+			return "ld-musl-x86_64.so.1";
+		}
+	#endif
 	
 	return NULL;
 	
