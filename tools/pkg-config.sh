@@ -18,6 +18,8 @@ if [[ "${TRIPLET}" = *'linux-gnu'* ]]; then
 	LIBC_VERSION="$(awk -F  'linux-gnu' '{print $2}' <<< "${TRIPLET}")"
 elif [[ "${TRIPLET}" = *'linux-android'* ]]; then
 	LIBC_VERSION="$(awk -F  'linux-android' '{print $2}' <<< "${TRIPLET}")"
+elif [[ "${TRIPLET}" = *'linux-musl'* ]]; then
+	LIBC_VERSION="$(awk -F  'linux-musl' '{print $2}' <<< "${TRIPLET}")"
 else
 	echo "unknown target: ${TRIPLET}" >&2
 	exit '1'
