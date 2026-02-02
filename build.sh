@@ -926,12 +926,7 @@ for target in "${targets[@]}"; do
 	mv "${sysroot_directory}" "${toolchain_directory}/${triplet}"
 	
 	cp "${workdir}/patches/librt_asneeded.so" "${toolchain_directory}/${triplet}/lib"
-	
-	ln \
-		--symbolic \
-		--relative \
-		"${toolchain_directory}/${triplet}/lib/librt.a" \
-		"${toolchain_directory}/${triplet}/lib/librt_asneeded.a"
+	cp "${workdir}/patches/librt_asneeded.a" "${toolchain_directory}/${triplet}/lib"
 	
 	rm --force --recursive "${PWD}"
 	
@@ -1505,20 +1500,20 @@ while read item; do
 	ln \
 		--symbolic \
 		--relative \
-		"${toolchain_directory}/${triplet}${glibc_version}/lib/librt.a" \
+		"${toolchain_directory}/${triplet}/lib/librt_asneeded.so" \
+		"${toolchain_directory}/${triplet}${glibc_version}/lib/librt_asneeded.so"
+	
+	ln \
+		--symbolic \
+		--relative \
+		"${toolchain_directory}/${triplet}/lib/librt_asneeded.a" \
 		"${toolchain_directory}/${triplet}${glibc_version}/lib/librt_asneeded.a"
 	
 	ln \
 		--symbolic \
 		--relative \
-		"${toolchain_directory}/${triplet}${glibc_version}/lib/librt_asneeded.a" \
-		"${toolchain_directory}/${triplet}${glibc_version}/lib/static"
-	
-	ln \
-		--symbolic \
-		--relative \
 		"${toolchain_directory}/${triplet}/lib/librt_asneeded.so" \
-		"${toolchain_directory}/${triplet}${glibc_version}/lib/librt_asneeded.so"
+		"${toolchain_directory}/${triplet}${glibc_version}/lib/static/librt_asneeded.so"
 	
 	if [ "${repository}" != 'null' ] && (( build_nz )); then
 		mkdir 'nouzen'
