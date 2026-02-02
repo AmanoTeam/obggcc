@@ -2213,9 +2213,11 @@ int main(int argc, char* argv[]) {
 		}
 	}
 	
-	if (wants_force_static == -1) {
-		wants_force_static = (wants_static_libcxx || wants_static_libgcc);
-	}
+	#if defined(PINO)
+		if (wants_force_static == -1) {
+			wants_force_static = (wants_static_libcxx || wants_static_libgcc);
+		}
+	#endif
 	
 	if (address_sanitizer) {
 		wants_libcxx = 1;
