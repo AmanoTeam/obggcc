@@ -2746,7 +2746,10 @@ int main(int argc, char* argv[]) {
 	strcpy(sysroot_directory, parent_directory);
 	strcat(sysroot_directory, PATHSEP_S);
 	strcat(sysroot_directory, triplet);
-	strcat(sysroot_directory, libc_version);
+	
+	#if !defined(RAIDEN)
+		strcat(sysroot_directory, libc_version);
+	#endif
 	
 	kargv_append(&xargv, NULL);
 	
