@@ -345,7 +345,7 @@ curl --version
 
 if ! [ -f "${gmp_tarball}" ]; then
 	curl \
-		--url 'https://mirrors.kernel.org/gnu/gmp/gmp-6.3.0.tar.xz' \
+		--url 'https://gnu.mirror.constant.com/gmp/gmp-6.3.0.tar.xz' \
 		--retry '30' \
 		--retry-all-errors \
 		--retry-delay '0' \
@@ -370,7 +370,7 @@ fi
 
 if ! [ -f "${mpfr_tarball}" ]; then
 	curl \
-		--url 'https://mirrors.kernel.org/gnu/mpfr/mpfr-4.2.2.tar.xz' \
+		--url 'https://gnu.mirror.constant.com/mpfr/mpfr-4.2.2.tar.xz' \
 		--retry '30' \
 		--retry-all-errors \
 		--retry-delay '0' \
@@ -390,7 +390,7 @@ fi
 
 if ! [ -f "${mpc_tarball}" ]; then
 	curl \
-		--url 'https://mirrors.kernel.org/gnu/mpc/mpc-1.3.1.tar.gz' \
+		--url 'https://gnu.mirror.constant.com/mpc/mpc-1.3.1.tar.gz' \
 		--retry '30' \
 		--retry-all-errors \
 		--retry-delay '0' \
