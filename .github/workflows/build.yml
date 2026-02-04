@@ -82,9 +82,9 @@ jobs:
           # Linux (musl)
           'aarch64-unknown-linux-musl',
           'x86_64-unknown-linux-musl',
-          'arm-unknown-linux-musleabihf',
+          'armv6-unknown-linux-musleabihf',
+          'armv7-unknown-linux-musleabihf',
           'i386-unknown-linux-musl',
-          'armv7l-unknown-linux-musleabihf',
           
           # Linux (glibc)
           'x86_64-unknown-linux-gnu',
@@ -101,6 +101,7 @@ jobs:
           # NetBSD
           'i386-unknown-netbsdelf',
           'x86_64-unknown-netbsd',
+          'aarch64-unknown-netbsd',
           
           # DragonFly BSD
           'x86_64-unknown-dragonfly',
@@ -153,8 +154,8 @@ jobs:
       run: |
         source './tools/setup_toolchain.sh'
         
-        if [[ '${{ matrix.target }}' == *'-linux-musl'* ]]; then
-            declare -r RAIDEN_TAG="$(jq --raw-output '.tag_name' <<< "$(curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://api.github.com/repos/AmanoTeam/Raiden/releases/latest')")"
+        if [[ '${{ matrix.target }}' = *'-linux-musl'* ]]; then
+            declare -r RAIDEN_TAG='gcc-15'
             declare -r RAIDEN_TARBALL='/tmp/toolchain.tar.xz'
             declare -r RAIDEN_URL="https://github.com/AmanoTeam/Raiden/releases/download/${RAIDEN_TAG}/x86_64-unknown-linux-gnu.tar.xz"
             
@@ -167,8 +168,8 @@ jobs:
             export CMAKE_TOOLCHAIN_FILE="${RAIDEN_HOME}/usr/local/share/raiden/cmake/${{ matrix.target }}.cmake"
             
             source "${RAIDEN_HOME}/usr/local/share/raiden/autotools/${{ matrix.target }}.sh"
-        elif [[ '${{ matrix.target }}' == *'-linux-gnu'* ]]; then
-            # declare -r OBGGCC_TAG="$(jq --raw-output '.tag_name' <<< "$(curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://api.github.com/repos/AmanoTeam/obggcc/releases/latest')")"
+        elif [[ '${{ matrix.target }}' = *'-linux-gnu'* ]]; then
+            # declare -r OBGGCC_TAG='gcc-15'
             # declare -r OBGGCC_TARBALL='/tmp/toolchain.tar.xz'
             # declare -r OBGGCC_URL="https://github.com/AmanoTeam/obggcc/releases/download/${OBGGCC_TAG}/x86_64-unknown-linux-gnu.tar.xz"
             
@@ -181,8 +182,8 @@ jobs:
             export CMAKE_TOOLCHAIN_FILE="${OBGGCC_HOME}/usr/local/share/obggcc/cmake/${{ matrix.target }}.cmake"
             
             source "${OBGGCC_HOME}/usr/local/share/obggcc/autotools/${{ matrix.target }}.sh"
-        elif [[ '${{ matrix.target }}' == *'-freebsd' ]]; then
-            declare -r LOKI_TAG="$(jq --raw-output '.tag_name' <<< "$(curl  --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://api.github.com/repos/AmanoTeam/Loki/releases/latest')")"
+        elif [[ '${{ matrix.target }}' = *'-freebsd' ]]; then
+            declare -r LOKI_TAG='gcc-15'
             declare -r LOKI_TARBALL='/tmp/toolchain.tar.xz'
             declare -r LOKI_URL="https://github.com/AmanoTeam/Loki/releases/download/${LOKI_TAG}/x86_64-unknown-linux-gnu.tar.xz"
             
@@ -195,8 +196,8 @@ jobs:
             export CMAKE_TOOLCHAIN_FILE="${LOKI_HOME}/usr/local/share/loki/cmake/${{ matrix.target }}.cmake"
             
             source "${LOKI_HOME}/usr/local/share/loki/autotools/${{ matrix.target }}.sh"
-        elif [[ '${{ matrix.target }}' == *'-netbsd'* ]]; then
-            declare -r DAKINI_TAG="$(jq --raw-output '.tag_name' <<< "$(curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://api.github.com/repos/AmanoTeam/Dakini/releases/latest')")"
+        elif [[ '${{ matrix.target }}' = *'-netbsd'* ]]; then
+            declare -r DAKINI_TAG='gcc-15'
             declare -r DAKINI_TARBALL='/tmp/toolchain.tar.xz'
             declare -r DAKINI_URL="https://github.com/AmanoTeam/Dakini/releases/download/${DAKINI_TAG}/x86_64-unknown-linux-gnu.tar.xz"
             
@@ -209,8 +210,8 @@ jobs:
             export CMAKE_TOOLCHAIN_FILE="${DAKINI_HOME}/usr/local/share/dakini/cmake/${{ matrix.target }}.cmake"
             
             source "${DAKINI_HOME}/usr/local/share/dakini/autotools/${{ matrix.target }}.sh"
-        elif [[ '${{ matrix.target }}' == *'-dragonfly' ]]; then
-            declare -r VENTI_TAG="$(jq --raw-output '.tag_name' <<< "$(curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://api.github.com/repos/AmanoTeam/Venti/releases/latest')")"
+        elif [[ '${{ matrix.target }}' = *'-dragonfly' ]]; then
+            declare -r VENTI_TAG='gcc-15'
             declare -r VENTI_TARBALL='/tmp/toolchain.tar.xz'
             declare -r VENTI_URL="https://github.com/AmanoTeam/Venti/releases/download/${VENTI_TAG}/x86_64-unknown-linux-gnu.tar.xz"
             
@@ -223,8 +224,8 @@ jobs:
             export CMAKE_TOOLCHAIN_FILE="${VENTI_HOME}/usr/local/share/venti/cmake/${{ matrix.target }}.cmake"
             
             source "${VENTI_HOME}/usr/local/share/venti/autotools/${{ matrix.target }}.sh"
-        elif [[ '${{ matrix.target }}' == *'-haiku' ]]; then
-            declare -r SIL_TAG="$(jq --raw-output '.tag_name' <<< "$(curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://api.github.com/repos/AmanoTeam/Sil/releases/latest')")"
+        elif [[ '${{ matrix.target }}' = *'-haiku' ]]; then
+            declare -r SIL_TAG='gcc-15'
             declare -r SIL_TARBALL='/tmp/toolchain.tar.xz'
             declare -r SIL_URL="https://github.com/AmanoTeam/Sil/releases/download/${SIL_TAG}/x86_64-unknown-linux-gnu.tar.xz"
             
@@ -237,8 +238,8 @@ jobs:
             export CMAKE_TOOLCHAIN_FILE="${SIL_HOME}/usr/local/share/sil/cmake/${{ matrix.target }}.cmake"
             
             source "${SIL_HOME}/usr/local/share/sil/autotools/${{ matrix.target }}.sh"
-        elif [[ '${{ matrix.target }}' == *'-android'* ]]; then
-            declare -r PINO_TAG="$(jq --raw-output '.tag_name' <<< "$(curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://api.github.com/repos/AmanoTeam/Pino/releases/latest')")"
+        elif [[ '${{ matrix.target }}' = *'-android'* ]]; then
+            declare -r PINO_TAG='gcc-15'
             declare -r PINO_TARBALL='/tmp/toolchain.tar.xz'
             declare -r PINO_URL="https://github.com/AmanoTeam/Pino/releases/download/${PINO_TAG}/x86_64-unknown-linux-gnu.tar.xz"
             
@@ -251,8 +252,8 @@ jobs:
             export CMAKE_TOOLCHAIN_FILE="${PINO_HOME}/usr/local/share/pino/cmake/${{ matrix.target }}.cmake"
             
             source "${PINO_HOME}/usr/local/share/pino/autotools/${{ matrix.target }}.sh"
-        elif [[ '${{ matrix.target }}' == *'-mingw32' ]]; then
-            declare -r MINGW_TAG="$(jq --raw-output '.tag_name' <<< "$(curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://api.github.com/repos/AmanoTeam/MinGW-w64/releases/latest')")"
+        elif [[ '${{ matrix.target }}' = *'-mingw32' ]]; then
+            declare -r MINGW_TAG='gcc-15'
             declare -r MINGW_TARBALL='/tmp/toolchain.tar.xz'
             declare -r MINGW_URL="https://github.com/AmanoTeam/MinGW-w64/releases/download/${MINGW_TAG}/x86_64-unknown-linux-gnu.tar.xz"
             
@@ -265,7 +266,7 @@ jobs:
             export CMAKE_TOOLCHAIN_FILE="${MINGW_HOME}/usr/local/share/mingw/cmake/${{ matrix.target }}.cmake"
             
             source "${MINGW_HOME}/usr/local/share/mingw/autotools/${{ matrix.target }}.sh"
-        elif [[ '${{ matrix.target }}' == *'-darwin' ]]; then
+        elif [[ '${{ matrix.target }}' = *'-darwin' ]]; then
             curl \
                 --silent \
                 --show-error \
