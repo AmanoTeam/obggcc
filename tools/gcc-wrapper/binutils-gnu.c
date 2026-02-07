@@ -24,6 +24,8 @@ static const char* const BINUTILS[] = {
 	"as" EXECUTABLE_SUFFIX,
 	"ld" EXECUTABLE_SUFFIX,
 	"ld.bfd" EXECUTABLE_SUFFIX,
+	"ld.gold" EXECUTABLE_SUFFIX,
+	"dwp" EXECUTABLE_SUFFIX,
 	"nm" EXECUTABLE_SUFFIX,
 	"objcopy" EXECUTABLE_SUFFIX,
 	"objdump" EXECUTABLE_SUFFIX,

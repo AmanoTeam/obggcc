@@ -50,6 +50,9 @@ declare -r isl_directory="${build_directory}/isl-0.27"
 declare -r binutils_tarball="${build_directory}/binutils.tar.xz"
 declare -r binutils_directory="${build_directory}/binutils"
 
+declare -r gold_tarball="${build_directory}/gold.tar.xz"
+declare -r gold_directory="${build_directory}/gold"
+
 declare -r gcc_major='16'
 
 declare gcc_url='https://github.com/gcc-mirror/gcc/archive/master.tar.gz'
@@ -201,6 +204,7 @@ export \
 
 export libat_cv_have_ifunc='no'
 export ac_cv_header_stdc='yes'
+export ac_cv_func_ffsll='yes'
 
 if [[ "${host}" = *'-mingw32' ]]; then
 	build_nz='0'
@@ -472,6 +476,40 @@ if ! [ -f "${binutils_tarball}" ]; then
 	
 	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Add-relative-RPATHs-to-binutils-host-tools.patch"
 	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Don-t-warn-about-local-symbols-within-the-globals.patch"
+fi
+
+if ! [ -f "${gold_tarball}" ]; then
+	curl \
+		--url 'https://github.com/AmanoTeam/binutils-snapshots/releases/latest/download/gold.tar.xz' \
+		--retry '30' \
+		--retry-all-errors \
+		--retry-delay '0' \
+		--retry-max-time '0' \
+		--show-error \
+		--location \
+		--silent \
+		--output "${gold_tarball}"
+	
+	tar \
+		--directory="$(dirname "${gold_directory}")" \
+		--extract \
+		--file="${gold_tarball}"
+	
+	if [[ "${host}" = *'bsd'* ]] || [[ "${host}" = *'dragonfly' ]] then
+		sed \
+			--in-place \
+			's/-Xlinker -rpath/-Xlinker -z -Xlinker origin -Xlinker -rpath/g' \
+			"${workdir}/patches/0001-Add-relative-RPATHs-to-gold-host-tools.patch"
+	fi
+	
+	if [[ "${host}" = *'-darwin'* ]]; then
+		sed \
+			--in-place \
+			's/$$ORIGIN/@loader_path/g' \
+			"${workdir}/patches/0001-Add-relative-RPATHs-to-gold-host-tools.patch"
+	fi
+	
+	patch --directory="${gold_directory}" --strip='1' --input="${workdir}/patches/0001-Revert-gold-Use-char16_t-char32_t-instead-of-uint16_t-uint32_t-as-character-types.patch"
 fi
 
 if ! [ -f "${zlib_tarball}" ]; then
@@ -839,6 +877,38 @@ if [[ "${host}" != *'-android'* ]]; then
 	cmake --install "${PWD}" --strip
 fi
 
+[ -d "${gold_directory}/build" ] || mkdir "${gold_directory}/build"
+
+cd "${gold_directory}/build"
+
+../configure \
+	--build="${build}" \
+	--host="${host}" \
+	--target='arm-linux-gnueabi' \
+	--prefix="${toolchain_directory}" \
+	--enable-gold \
+	--enable-lto \
+	--enable-separate-code \
+	--enable-rosegment \
+	--enable-relro \
+	--enable-compressed-debug-sections='all' \
+	--enable-default-compressed-debug-sections-algorithm='zstd' \
+	--disable-binutils \
+	--disable-gas \
+	--without-static-standard-libraries \
+	--with-zstd="${toolchain_directory}" \
+	--with-system-zlib \
+	CFLAGS="-I${toolchain_directory}/include ${ccflags}" \
+	CXXFLAGS="-I${toolchain_directory}/include ${ccflags}" \
+	LDFLAGS="-L${toolchain_directory}/lib ${linkflags}"
+
+make all --jobs
+
+mkdir --parent "${toolchain_directory}/bin"
+
+mv "${PWD}/gold/ld-new${exe}" "${toolchain_directory}/bin/ld.gold${exe}"
+mv "${PWD}/gold/dwp${exe}" "${toolchain_directory}/bin/dwp${exe}"
+
 # We prefer symbolic links over hard links.
 cp "${workdir}/tools/ln.sh" "${build_directory}/ln"
 
@@ -959,6 +1029,24 @@ for target in "${targets[@]}"; do
 	
 	make all --jobs
 	make install
+	
+	ln \
+		--symbolic \
+		--relative \
+		--force \
+		"${toolchain_directory}/bin/ld.gold${exe}" \
+		"${toolchain_directory}/bin/${triplet}-ld.gold${exe}"
+	
+	ln \
+		--symbolic \
+		--relative \
+		--force \
+		"${toolchain_directory}/bin/dwp${exe}" \
+		"${toolchain_directory}/bin/${triplet}-dwp${exe}"
+	
+	touch \
+		"${toolchain_directory}/${triplet}/bin/ld.gold${exe}" \
+		"${toolchain_directory}/${triplet}/bin/dwp${exe}"
 	
 	for bin in "${toolchain_directory}/${triplet}/bin/"*; do
 		unlink "${bin}"

@@ -1,0 +1,52 @@
+From cbc0da210b92c128321285dccc56719c0636909e Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sat, 7 Feb 2026 17:51:56 -0300
+Subject: [PATCH] Add relative RPATHs to gold host tools
+
+---
+ gold/Makefile.in | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/gold/Makefile.in b/gold/Makefile.in
+index 22d78f9db..f1d2de595 100644
+--- a/gold/Makefile.in
++++ b/gold/Makefile.in
+@@ -192,7 +192,7 @@ PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS)
+ am_dwp_OBJECTS = dwp.$(OBJEXT)
+ dwp_OBJECTS = $(am_dwp_OBJECTS)
+ am__DEPENDENCIES_1 =
+-dwp_LINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(dwp_LDFLAGS) \
++dwp_LINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(dwp_LDFLAGS) \
+ 	$(LDFLAGS) -o $@
+ am_incremental_dump_OBJECTS = incremental-dump.$(OBJEXT)
+ incremental_dump_OBJECTS = $(am_incremental_dump_OBJECTS)
+@@ -241,7 +241,7 @@ am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
+ am__v_CC_0 = @echo "  CC      " $@;
+ am__v_CC_1 = 
+ CCLD = $(CC)
+-LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
++LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) -o $@
+ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
+ am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
+ am__v_CCLD_0 = @echo "  CCLD    " $@;
+@@ -253,7 +253,7 @@ am__v_CXX_ = $(am__v_CXX_@AM_DEFAULT_V@)
+ am__v_CXX_0 = @echo "  CXX     " $@;
+ am__v_CXX_1 = 
+ CXXLD = $(CXX)
+-CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
++CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) \
+ 	-o $@
+ AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
+ am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
+@@ -1039,7 +1039,7 @@ incremental-dump$(EXEEXT): $(incremental_dump_OBJECTS) $(incremental_dump_DEPEND
+ 
+ ld-new$(EXEEXT): $(ld_new_OBJECTS) $(ld_new_DEPENDENCIES) $(EXTRA_ld_new_DEPENDENCIES) 
+ 	@rm -f ld-new$(EXEEXT)
+-	$(AM_V_CXXLD)$(ld_new_LINK) $(ld_new_OBJECTS) $(ld_new_LDADD) $(LIBS)
++	$(AM_V_CXXLD)$(ld_new_LINK) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(ld_new_OBJECTS) $(ld_new_LDADD) $(LIBS)
+ 
+ ld1$(EXEEXT): $(ld1_OBJECTS) $(ld1_DEPENDENCIES) $(EXTRA_ld1_DEPENDENCIES) 
+ 	@rm -f ld1$(EXEEXT)
+-- 
+2.52.0
+
