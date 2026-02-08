@@ -38,14 +38,14 @@ declare -r autotools_directory="${share_directory}/autotools"
 declare -r gmp_tarball="${build_directory}/gmp.tar.xz"
 declare -r gmp_directory="${build_directory}/gmp-6.3.0"
 
-declare -r mpfr_tarball="${build_directory}/mpfr.tar.xz"
-declare -r mpfr_directory="${build_directory}/mpfr-4.2.2"
+declare -r mpfr_tarball="${build_directory}/mpfr.tar.gz"
+declare -r mpfr_directory="${build_directory}/mpfr-master"
 
 declare -r mpc_tarball="${build_directory}/mpc.tar.gz"
-declare -r mpc_directory="${build_directory}/mpc-1.3.1"
+declare -r mpc_directory="${build_directory}/mpc-master"
 
-declare -r isl_tarball="${build_directory}/isl.tar.xz"
-declare -r isl_directory="${build_directory}/isl-0.27"
+declare -r isl_tarball="${build_directory}/isl.tar.gz"
+declare -r isl_directory="${build_directory}/isl-master"
 
 declare -r binutils_tarball="${build_directory}/binutils.tar.xz"
 declare -r binutils_directory="${build_directory}/binutils"
@@ -204,7 +204,10 @@ export \
 
 export libat_cv_have_ifunc='no'
 export ac_cv_header_stdc='yes'
-export ac_cv_func_ffsll='yes'
+
+if [[ "${host}" = *'-android'* ]]; then
+	export ac_cv_func_ffsll='yes'
+fi
 
 if [[ "${host}" = *'-mingw32' ]]; then
 	build_nz='0'
@@ -374,7 +377,7 @@ fi
 
 if ! [ -f "${mpfr_tarball}" ]; then
 	curl \
-		--url 'https://gnu.mirror.constant.com/mpfr/mpfr-4.2.2.tar.xz' \
+		--url 'https://github.com/AmanoTeam/mpfr/archive/master.tar.gz' \
 		--retry '30' \
 		--retry-all-errors \
 		--retry-delay '0' \
@@ -389,12 +392,15 @@ if ! [ -f "${mpfr_tarball}" ]; then
 		--extract \
 		--file="${mpfr_tarball}"
 	
+	cd "${mpfr_directory}"
+	autoreconf --force --install
+	
 	patch --directory="${mpfr_directory}" --strip='1' --input="${workdir}/patches/0001-Remove-hardcoded-RPATH-and-versioned-SONAME-from-libmpfr.patch"
 fi
 
 if ! [ -f "${mpc_tarball}" ]; then
 	curl \
-		--url 'https://gnu.mirror.constant.com/mpc/mpc-1.3.1.tar.gz' \
+		--url 'https://github.com/AmanoTeam/mpc/archive/master.tar.gz' \
 		--retry '30' \
 		--retry-all-errors \
 		--retry-delay '0' \
@@ -409,12 +415,15 @@ if ! [ -f "${mpc_tarball}" ]; then
 		--extract \
 		--file="${mpc_tarball}"
 	
+	cd "${mpc_directory}"
+	autoreconf --force --install
+	
 	patch --directory="${mpc_directory}" --strip='1' --input="${workdir}/patches/0001-Remove-hardcoded-RPATH-and-versioned-SONAME-from-libmpc.patch"
 fi
 
 if ! [ -f "${isl_tarball}" ]; then
 	curl \
-		--url 'https://deb.debian.org/debian/pool/main/i/isl/isl_0.27.orig.tar.xz' \
+		--url 'https://github.com/AmanoTeam/isl/archive/master.tar.gz' \
 		--retry '30' \
 		--retry-all-errors \
 		--retry-delay '0' \
@@ -428,6 +437,9 @@ if ! [ -f "${isl_tarball}" ]; then
 		--directory="$(dirname "${isl_directory}")" \
 		--extract \
 		--file="${isl_tarball}"
+	
+	cd "${isl_directory}"
+	autoreconf --force --install
 	
 	patch --directory="${isl_directory}" --strip='1' --input="${workdir}/patches/0001-Remove-hardcoded-RPATH-and-versioned-SONAME-from-libisl.patch"
 	
