@@ -166,6 +166,7 @@ jobs:
             export PATH="${RAIDEN_HOME}/bin:${PATH}"
             
             export CMAKE_TOOLCHAIN_FILE="${RAIDEN_HOME}/usr/local/share/raiden/cmake/${{ matrix.target }}.cmake"
+            export RAIDEN_LTO='full'
             
             source "${RAIDEN_HOME}/usr/local/share/raiden/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' = *'-linux-gnu'* ]]; then
@@ -180,6 +181,7 @@ jobs:
             export PATH="${OBGGCC_HOME}/bin:${PATH}"
             
             export CMAKE_TOOLCHAIN_FILE="${OBGGCC_HOME}/usr/local/share/obggcc/cmake/${{ matrix.target }}.cmake"
+            export OBGGCC_LTO='full'
             
             source "${OBGGCC_HOME}/usr/local/share/obggcc/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' = *'-freebsd' ]]; then
