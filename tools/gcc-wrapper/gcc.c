@@ -1882,7 +1882,7 @@ int main(int argc, char* argv[]) {
 			ch = *cur;
 			
 			if (ch == ZERO) {
-				if ((index + ++offset) > (size_t) argc) {
+				if ((index + ++offset) >= (size_t) argc) {
 					goto next;
 				}
 				
@@ -1924,7 +1924,7 @@ int main(int argc, char* argv[]) {
 			ch = *cur;
 			
 			if (ch == ZERO) {
-				if ((index + ++offset) > (size_t) argc) {
+				if ((index + ++offset) >= (size_t) argc) {
 					goto next;
 				}
 				
@@ -1985,7 +1985,7 @@ int main(int argc, char* argv[]) {
 			ch = *cur;
 			
 			if (ch == ZERO) {
-				if ((index + 1) > (size_t) argc) {
+				if ((index + 1) >= (size_t) argc) {
 					goto next;
 				}
 				
