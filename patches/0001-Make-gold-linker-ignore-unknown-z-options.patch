@@ -1,0 +1,58 @@
+From 11a3950dead1bfd121aa5fedffd4b3ce7a7554ac Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Mon, 9 Feb 2026 14:56:22 -0300
+Subject: [PATCH] Make gold linker ignore unknown -z options
+
+This makes it consistent with the BFD implementation.
+---
+ gold/options.cc | 20 ++++++++++++++++----
+ 1 file changed, 16 insertions(+), 4 deletions(-)
+
+diff --git a/gold/options.cc b/gold/options.cc
+index 446f06bb6..c75b58b5d 100644
+--- a/gold/options.cc
++++ b/gold/options.cc
+@@ -40,6 +40,8 @@
+ #include "options.h"
+ #include "plugin.h"
+ 
++static gold::options::One_option* Z_OPT_IGNORE = reinterpret_cast<gold::options::One_option*>((char*) "z-ignore");
++
+ namespace gold
+ {
+ 
+@@ -995,8 +997,10 @@ parse_short_option(int argc, const char** argv, int pos_in_argv_i,
+       int dummy_i = 0;
+       const char* dash_z_arg = *arg;
+       retval = parse_long_option(1, arg, true, arg, &dummy_i);
+-      if (retval == NULL)
+-	usage(_("unknown -z option"), dash_z_arg);
++      if (retval == NULL) {
++      	gold::gold_warning("-z %s ignored", dash_z_arg);
++		  return Z_OPT_IGNORE;
++	  }
+     }
+ 
+   return retval;
+@@ -1610,8 +1614,16 @@ Command_line::process_one_option(int argc, const char** argv, int i,
+   while (new_i == i)
+     {
+       option = parse_short_option(argc, argv, pos_in_argv_i, &arg, &new_i);
+-      if (!option)
+-	break;
++      
++      if (option == Z_OPT_IGNORE) {
++      	++pos_in_argv_i;
++      	continue;
++     }
++     
++      if (!option) {
++      	break;
++      }
++		
+       option->reader->parse_to_value(argv[i], arg, this, &this->options_);
+       ++pos_in_argv_i;
+     }
+-- 
+2.52.0
+

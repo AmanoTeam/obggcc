@@ -1764,10 +1764,14 @@ int main(int argc, char* argv[]) {
 		wants_builtin_loader = query_get_bool(&query, ENV_BUILTIN_LOADER) == 1;
 	#endif
 	
-	wants_force_static = query_get_bool(&query, ENV_STATIC);
+	wants_force_static = query_get_bool(&query, ENV_STATIC_RUNTIME);
 	
 	if (wants_force_static == -1) {
-		wants_force_static = query_get_bool(&query, ENV_STATIC_RUNTIME);
+		#if defined(PINO)
+			wants_force_static = query_get_bool(&query, ENV_STATIC);
+		#else
+			wants_force_static = query_get_bool(&query, ENV_STATIC) == 1;
+		#endif
 	}
 	
 	wants_system_libraries = query_get_bool(&query, ENV_SYSTEM_LIBRARIES) == 1;
