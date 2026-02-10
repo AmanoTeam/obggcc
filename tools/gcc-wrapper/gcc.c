@@ -42,10 +42,6 @@
 #include "kargv.h"
 #include "program_help.h"
 
-#if !defined(AUTO_PICK_LINKER)
-	#define AUTO_PICK_LINKER 1
-#endif
-
 static const char GCC_MAJOR_VERSION[] = "15";
 
 static const char INCLUDE_DIR[] = PATHSEP_M "include";
@@ -145,8 +141,6 @@ static const char GCC_OPT_F_PIC[] = "-fPIC";
 static const char GCC_OPT_NO_PIE[] = "-no-pie";
 static const char GCC_OPT_PIE[] = "-pie";
 static const char GCC_OPT_M_FPU[] = "-mfpu=";
-static const char GCC_OPT_M_SSE3[] = "-msse3";
-static const char GCC_OPT_M_SSE4_2[] = "-msse4.2";
 static const char GCC_OPT_M_ARM[] = "-marm";
 
 static const char GCC_OPT_DFORTIFY_SOURCE[] = "-D_FORTIFY_SOURCE=";
@@ -296,14 +290,6 @@ static const char EQUAL_S[] = "=";
 
 static const char LD_LLD[] = "ld.lld";
 static const char LD[] = "ld";
-
-#if AUTO_PICK_LINKER && !defined(WCLANG)
-static const char* const FASTER_LINKERS[] = {
-	"mold",
-	"lld",
-	"gold"
-};
-#endif
 
 static const char CLANG_VERSION_TEMPLATE[] = 
 	"clang version 22.0.0\n"
@@ -775,15 +761,6 @@ static int target_supports_neon(const char* const name) {
 	
 }
 
-static int check_linker_lld(const char* const name) {
-	return name != NULL && strcmp(name, "lld") == 0;
-}
-
-static int check_linker_mold(const char* const name) {
-	return name != NULL && strcmp(name, "mold") == 0;
-}
-
-
 static int target_supports_relr(const char* const name, const char* const linker, const int version) {
 	
 	#if defined(OBGGCC)
@@ -806,20 +783,6 @@ static int target_supports_relr(const char* const name, const char* const linker
 	#endif
 	
 	return 0;
-	
-}
-
-static const char* get_simd(const char* const name) {
-	
-	if (strcmp(name, "i686-unknown-linux-android") == 0 || strcmp(name, "i386-unknown-linux-gnu") == 0) {
-		return GCC_OPT_M_SSE3;
-	}
-	
-	if (strcmp(name, "x86_64-unknown-linux-android") == 0 || strcmp(name, "x86_64-unknown-linux-gnu") == 0) {
-		return GCC_OPT_M_SSE4_2;
-	}
-	
-	return NULL;
 	
 }
 
@@ -1479,81 +1442,6 @@ static int clang_specific_replace(
 	
 }
 
-#if AUTO_PICK_LINKER && !defined(WCLANG)
-static const char* get_fast_linker(
-	const char* const directory,
-	const char* const triplet
-) {
-	/*
-	Pick a faster linker if available in the current bin directory.
-	*/
-	
-	size_t index = 0;
-	
-	char* executable = NULL;
-	char* end = NULL;
-	
-	const char* linker = NULL;
-	
-	if (get_arch(triplet) == ARCH_SPEC_MIPS) {
-		return linker;
-	}
-	
-	for (index = 0; index < sizeof(FASTER_LINKERS) / sizeof(*FASTER_LINKERS); index++) {
-		linker = FASTER_LINKERS[index];
-		
-		executable = malloc(
-			strlen(directory) +
-			strlen(PATHSEP_S) +
-			strlen(triplet) + 
-			strlen(HYPHEN) +
-			strlen(LD_PREFIX) +
-			strlen(linker) +
-			1
-		);
-		
-		if (executable == NULL) {
-			goto end;
-		}
-		
-		strcpy(executable, directory);
-		strcat(executable, PATHSEP_S);
-		
-		end = strchr(executable, '\0');
-		
-		/* Try the triplet-prefixed executable (<triplet>-<ld.<linker>) */
-		strcat(executable, triplet);
-		strcat(executable, HYPHEN);
-		strcat(executable, LD_PREFIX);
-		strcat(executable, linker);
-		
-		if (file_exists(executable) == 1) {
-			goto end;
-		}
-		
-		/* Try the non-triplet-prefixed executable (<ld.<linker>) */
-		strcpy(end, LD_PREFIX);
-		strcat(end, linker);
-		
-		if (file_exists(executable) == 1) {
-			goto end;
-		}
-		
-		free(executable);
-		executable = NULL;
-		
-		linker = NULL;
-	}
-	
-	end:;
-	
-	free(executable);
-	
-	return linker;
-	
-}
-#endif
-
 #if defined(PINO)
 int copy_shared_library(
 	const char* const source_directory,
@@ -1642,7 +1530,6 @@ int main(int argc, char* argv[]) {
 	int wants_nz = 0;
 	int wants_neon = 0;
 	int wants_arm_mode = 0;
-	int wants_simd = 0;
 	int wants_lto = LTO_NONE;
 	
 	int nodefaultlibs = 0;
@@ -1780,7 +1667,6 @@ int main(int argc, char* argv[]) {
 	verbose = query_get_bool(&query, ENV_VERBOSE) == 1;
 	wants_neon = query_get_bool(&query, ENV_NEON) == 1;
 	wants_arm_mode = query_get_bool(&query, ENV_ARM_MODE) == 1;
-	wants_simd = query_get_bool(&query, ENV_SIMD) == 1;
 	
 	cur = query_get_string(&query, ENV_LTO);
 	
@@ -2461,30 +2347,9 @@ int main(int argc, char* argv[]) {
 		kargv_append(&xargv, floating_point_unit);
 	}
 	
-	if (wants_simd && (cur = get_simd(triplet)) != NULL) {
-		kargv_append(&xargv, cur);
-	}
-	
 	if (wants_arm_mode && (arch == ARCH_SPEC_ARM && bitness == ARCH_ABI_32)) {
 		kargv_append(&xargv, GCC_OPT_M_ARM);
 	}
-	
-	#if AUTO_PICK_LINKER && !defined(WCLANG)
-		/* Pick a fast linker if available. */
-		if (!override_linker && (cur = get_fast_linker(parent_directory, triplet)) != NULL) {
-			linker = malloc(strlen(GCC_OPT_F_USE_LD) + strlen(cur) + 1);
-			
-			if (linker == NULL) {
-				err = ERR_MEM_ALLOC_FAILURE;
-				goto end;
-			}
-			
-			strcpy(linker, GCC_OPT_F_USE_LD);
-			strcat(linker, cur);
-			
-			kargv_append(&xargv, linker);
-		}
-	#endif
 	
 	#if defined(ATAR) && defined(WCLANG)
 		/* GCC already uses these options by default, but Clang doesn't. */
