@@ -1180,6 +1180,8 @@ for target in "${targets[@]}"; do
 		cd '../lib'
 	fi
 	
+	patch --directory="${PWD}" --strip='1' --input="${workdir}/patches/0001-Workaround-mold-linker-issue.patch"
+	
 	env ${args} make \
 		-C "${workdir}/tools/libblocksruntime" \
 		PREFIX="${toolchain_directory}/${triplet}" \
