@@ -605,7 +605,7 @@ done <<< "$(find '.' -type 'f' -name 'configure')"
 Start by installing the dependencies with:
 
 ```
-$ sudo apt-get install build-essential autoconf jq python3-minimal
+$ sudo apt-get install build-essential autoconf libtool jq python3-minimal
 ```
 
 Then, clone the repository with:
