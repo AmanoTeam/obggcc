@@ -523,6 +523,7 @@ if ! [ -f "${gold_tarball}" ]; then
 	
 	patch --directory="${gold_directory}" --strip='1' --input="${workdir}/patches/0001-Revert-gold-Use-char16_t-char32_t-instead-of-uint16_t-uint32_t-as-character-types.patch"
 	patch --directory="${gold_directory}" --strip='1' --input="${workdir}/patches/0001-Make-gold-linker-ignore-unknown-z-options.patch"
+	patch --directory="${gold_directory}" --strip='1' --input="${workdir}/patches/0001-Add-relative-RPATHs-to-gold-host-tools.patch"
 fi
 
 if ! [ -f "${zlib_tarball}" ]; then
