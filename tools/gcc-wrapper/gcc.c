@@ -58,8 +58,6 @@ static const char GOMP_LIBRARY[] = "gomp";
 static const char ITM_LIBRARY[] = "itm";
 static const char QUADMATH_LIBRARY[] = "quadmath";
 static const char MATH_LIBRARY[] = "m";
-static const char ICONV_LIBRARY[] = "iconv";
-static const char CHARSET_LIBRARY[] = "charset";
 static const char GFORTRAN_LIBRARY[] = "gfortran";
 static const char OBJC_LIBRARY[] = "objc";
 static const char GCOBOL_LIBRARY[] = "gcobol";
@@ -84,9 +82,6 @@ static const char LIBHWASAN_SHARED[] = "libhwasan.so";
 static const char LIBLSAN_SHARED[] = "liblsan.so";
 static const char LIBTSAN_SHARED[] = "libtsan.so";
 static const char LIBUBSAN_SHARED[] = "libubsan.so";
-
-static const char LIBICONV_SHARED[] = "libiconv.so";
-static const char LIBCHARSET_SHARED[] = "libcharset.so";
 
 static const char LIBGFORTRAN_SHARED[] = "libgfortran.so";
 static const char LIBOBJC_SHARED[] = "libobjc.so";
@@ -1548,8 +1543,6 @@ int main(int argc, char* argv[]) {
 	int wants_libquadmath = 0;
 	int wants_libssp = 0;
 	int wants_libm = 0;
-	int wants_libiconv = 0;
-	int wants_libcharset = 0;
 	int wants_libgfortran = 0;
 	int wants_libobjc = 0;
 	int wants_libgcobol = 0;
@@ -1894,10 +1887,6 @@ int main(int argc, char* argv[]) {
 				wants_libquadmath = 1;
 			} else if (strcmp(cur, MATH_LIBRARY) == 0) {
 				wants_libm = 1;
-			} else if (strcmp(cur, ICONV_LIBRARY) == 0) {
-				wants_libiconv = 1;
-			} else if (strcmp(cur, CHARSET_LIBRARY) == 0) {
-				wants_libcharset = 1;
 			} else if (strcmp(cur, GFORTRAN_LIBRARY) == 0) {
 				wants_libgfortran = 1;
 			} else if (strcmp(cur, OBJC_LIBRARY) == 0) {
@@ -2112,8 +2101,6 @@ int main(int argc, char* argv[]) {
 	if (address_sanitizer) {
 		wants_libcxx = 1;
 		wants_libgcc = 1;
-		wants_libiconv = 1;
-		wants_libcharset = 1;
 	}
 	
 	if (wants_libcxx || wants_libitm || wants_libgomp || wants_libobjc || wants_libgfortran) {
@@ -2229,8 +2216,6 @@ int main(int argc, char* argv[]) {
 	
 	if (wants_libcxx) {
 		wants_libgcc = 1;
-		wants_libiconv = 1;
-		wants_libcharset = 1;
 	}
 	
 	if (linking && wants_force_static) {
@@ -3196,24 +3181,6 @@ int main(int argc, char* argv[]) {
 			/* libssp */
 			if (wants_libssp) {
 				err = copy_shared_library(sysroot_library_directory, output_directory, LIBSSP_SHARED, LIBSSP_SHARED);
-				
-				if (err != ERR_SUCCESS) {
-					goto end;
-				}
-			}
-			
-			/* libiconv */
-			if (wants_libiconv) {
-				err = copy_shared_library(sysroot_library_directory, output_directory, LIBICONV_SHARED, LIBICONV_SHARED);
-				
-				if (err != ERR_SUCCESS) {
-					goto end;
-				}
-			}
-			
-			/* libcharset */
-			if (wants_libcharset) {
-				err = copy_shared_library(sysroot_library_directory, output_directory, LIBCHARSET_SHARED, LIBCHARSET_SHARED);
 				
 				if (err != ERR_SUCCESS) {
 					goto end;
