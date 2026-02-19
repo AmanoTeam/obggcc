@@ -1264,7 +1264,7 @@ while read triplet; do
 		continue
 	fi
 	
-	declare url="https://github.com/AmanoTeam/libsanitizer/releases/latest/download/${triplet}.tar.xz"
+	declare url="https://github.com/AmanoTeam/libsanitizer/releases/download/gcc-${gcc_major}/${triplet}.tar.xz"
 	
 	echo "- Fetching data from '${url}'"
 	
