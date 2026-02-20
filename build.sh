@@ -668,7 +668,6 @@ if ! [ -f "${gcc_tarball}" ]; then
 	
 	if [ "${gcc_major}" = '16' ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0011-Revert-configure-Always-add-pre-installed-header-directories-to-search-path.patch"
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Revert-x86-Fixes-for-AMD-znver5-enablement.patch"
 	fi
 	
 	if [ "${gcc_major}" = '15' ]; then
@@ -1168,7 +1167,7 @@ for target in "${targets[@]}"; do
 		LDFLAGS_FOR_TARGET="${ldflags_for_target}" \
 		gcc_cv_objdump="${host}-objdump" \
 		all \
-		--jobs="${max_jobs}"
+		--jobs=1 #"${max_jobs}"
 	make install
 	
 	rm --force --recursive "${PWD}"
