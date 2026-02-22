@@ -36,7 +36,7 @@ declare -r environment="LD_LIBRARY_PATH=${toolchain_directory}/lib PATH=${PATH}:
 declare -r autotools_directory="${share_directory}/autotools"
 
 declare -r gmp_tarball="${build_directory}/gmp.tar.xz"
-declare -r gmp_directory="${build_directory}/gmp-6.3.0"
+declare -r gmp_directory="${build_directory}/gmp"
 
 declare -r mpfr_tarball="${build_directory}/mpfr.tar.gz"
 declare -r mpfr_directory="${build_directory}/mpfr-master"
@@ -341,7 +341,7 @@ curl --version
 
 if ! [ -f "${gmp_tarball}" ]; then
 	curl \
-		--url 'https://gnu.mirror.constant.com/gmp/gmp-6.3.0.tar.xz' \
+		--url 'https://github.com/AmanoTeam/gmplib-snapshots/releases/latest/download/gmp.tar.xz' \
 		--retry '30' \
 		--retry-all-errors \
 		--retry-delay '0' \
