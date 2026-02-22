@@ -162,17 +162,6 @@ declare -ra bits=(
 declare -r languages='c,c++'
 
 declare -ra deprecated_targets=(
-	'ia64-unknown-linux-gnu'
-	'mips-unknown-linux-gnu'
-	'mips64el-unknown-linux-gnuabi64'
-	'mipsel-unknown-linux-gnu'
-	'powerpc-unknown-linux-gnu'
-	'powerpc64le-unknown-linux-gnu'
-	's390-unknown-linux-gnu'
-	's390x-unknown-linux-gnu'
-	'sparc-unknown-linux-gnu'
-	'alpha-unknown-linux-gnu'
-	'hppa-unknown-linux-gnu'
 	'armv6-unknown-linux-gnueabi'
 )
 
@@ -1167,7 +1156,7 @@ for target in "${targets[@]}"; do
 		LDFLAGS_FOR_TARGET="${ldflags_for_target}" \
 		gcc_cv_objdump="${host}-objdump" \
 		all \
-		--jobs=1 #"${max_jobs}"
+		--jobs="${max_jobs}"
 	make install
 	
 	rm --force --recursive "${PWD}"
@@ -1227,13 +1216,6 @@ for target in "${targets[@]}"; do
 		unlink "${toolchain_directory}/bin/${triplet}-c++${exe}"
 		cp "${toolchain_directory}/bin/${triplet}-ld.bfd${exe}" "${toolchain_directory}/bin/${triplet}-ld${exe}"
 		cp "${toolchain_directory}/bin/${triplet}-g++${exe}" "${toolchain_directory}/bin/${triplet}-c++${exe}"
-	fi
-	
-	if [[ "${triplet}" = 'sparc-'* ]] || [[ "${triplet}" = 's390-'* ]] || [[ "${triplet}" = 'powerpc-'* ]] || [[ "${triplet}" = 'hppa-'* ]] || [[ "${triplet}" = 'alpha-'* ]]; then
-		patch \
-			--directory="${toolchain_directory}/${triplet}/include/c++/${gcc_major}/${triplet}" \
-			--strip='1' \
-			--input="${workdir}/patches/0001-Fix-C99-math-functions-availability.patch"
 	fi
 	
 	cat "${workdir}/patches/c++config.h" >> "${toolchain_directory}/${triplet}/include/c++/${gcc_major}/${triplet}/bits/c++config.h"
