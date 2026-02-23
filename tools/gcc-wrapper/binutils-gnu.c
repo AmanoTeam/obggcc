@@ -7,7 +7,7 @@
 #include "fs/basename.h"
 #include "fs/getexec.h"
 #include "fs/parentpath.h"
-#include "os/execve.h"
+#include "os/execv.h"
 #include "errors.h"
 
 static const char BIN_DIR[] = PATHSEP_M "bin";

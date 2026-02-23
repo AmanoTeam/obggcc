@@ -205,7 +205,8 @@ if [[ "${host}" = *'-mingw32' ]]; then
 fi
 
 declare -r gcc_wrapper="${build_directory}/gcc-wrapper${exe}"
-declare -r binutils_wrapper="${build_directory}/binutils-gnu-wrapper${exe}"
+declare -r binutils_gnu_wrapper="${build_directory}/binutils-gnu-wrapper${exe}"
+declare -r binutils_llvm_wrapper="${build_directory}/binutils-llvm-wrapper${exe}"
 declare -r clang_wrapper="${build_directory}/clang-wrapper${exe}"
 
 function replace_symlinks() {
@@ -958,15 +959,7 @@ make \
 	CFLAGS="${ccflags}" \
 	CXXFLAGS="${ccflags}" \
 	LDFLAGS="${linkflags}" \
-	gcc
-
-make \
-	-C "${workdir}/tools/gcc-wrapper" \
-	PREFIX="$(dirname "${gcc_wrapper}")" \
-	CFLAGS="${ccflags}" \
-	CXXFLAGS="${ccflags}" \
-	LDFLAGS="${linkflags}" \
-	binutils-gnu
+	all
 
 for target in "${targets[@]}"; do
 	declare specs='%{!Qy: -Qn} %{!fgnu-unique: %{!fno-gnu-unique: -fno-gnu-unique}}'
@@ -1052,7 +1045,7 @@ for target in "${targets[@]}"; do
 	
 	for bin in "${toolchain_directory}/${triplet}/bin/"*; do
 		unlink "${bin}"
-		cp "${binutils_wrapper}" "${bin}"
+		cp "${binutils_gnu_wrapper}" "${bin}"
 	done
 	
 	rm --force --recursive "${PWD}" &
@@ -1487,6 +1480,9 @@ if ! (( native )) && [[ "${host}" != *'-darwin'* ]]; then
 		rm "${toolchain_directory}/lib/lib"*'.'{dll,lib}
 	fi
 fi
+
+cp "${binutils_llvm_wrapper}" "${toolchain_directory}/bin/llvm-objcopy${exe}"
+cp "${binutils_llvm_wrapper}" "${toolchain_directory}/bin/llvm-strip${exe}"
 
 while read item; do
 	declare glibc_version="$(jq '.glibc_version' <<< "${item}")"

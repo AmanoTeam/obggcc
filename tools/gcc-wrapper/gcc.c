@@ -32,7 +32,7 @@
 #include "fs/exists.h"
 #include "fs/basename.h"
 #include "os/find_exe.h"
-#include "os/execve.h"
+#include "os/execv.h"
 #include "biggestint.h"
 #include "clang_option.h"
 #include "errors.h"

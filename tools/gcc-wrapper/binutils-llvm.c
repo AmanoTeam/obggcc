@@ -4,15 +4,13 @@
 #include <ctype.h>
 #include <errno.h>
 
-#include <unistd.h>
-#include <sys/wait.h>
-
 #include "fs/getexec.h"
 #include "fs/parentpath.h"
 #include "fs/basename.h"
 #include "fs/exists.h"
 #include "fs/sep.h"
 #include "fs/rm.h"
+#include "os/posix_spawn.h"
 #include "fstream.h"
 #include "errors.h"
 #include "obggcc.h"
@@ -100,7 +98,7 @@ static const struct binfmt binfmts[] = {
 
 static const struct binfmt* binfmt_guess(const char* const filename) {
 	
-	unsigned char chunk[BINFMT_SIZE];
+	char chunk[BINFMT_SIZE];
 	
 	unsigned char a[BINFMT_SIZE];
 	unsigned char b[BINFMT_SIZE];
@@ -111,8 +109,6 @@ static const struct binfmt* binfmt_guess(const char* const filename) {
 	size_t offset = 0;
 	
 	fstream_t* stream = NULL;
-	
-	int status = 0;
 	
 	memset(chunk, '\0', sizeof(chunk));
 	memset(a, '\0', sizeof(a));
@@ -303,7 +299,6 @@ int main(int argc, char* argv[], char* envp[]) {
 	
 	hquery_t query = {0};
 	
-	pid_t pid = 0;
 	int wstatus = 0;
 	
 	int verbose = 0;
@@ -490,25 +485,8 @@ int main(int argc, char* argv[], char* envp[]) {
 			obggcc_print_args(args);
 		}
 		
-		pid = fork();
-		
-		if (pid == 0) {
-			if (execve(executable, args, environ) == -1) {
-				fprintf(stderr, "fatal error: %s: %s\n", obggcc_strerror(ERR_EXECVE_FAILURE), strerror(errno));
-				_exit(EXIT_FAILURE);
-			}
-			
-			_exit(EXIT_SUCCESS);
-		} else if (pid > 0) {
-			wait(&wstatus);
-			wstatus = WIFSIGNALED(wstatus) ? 128 + WTERMSIG(wstatus) : WEXITSTATUS(wstatus);
-			
-			if (wstatus != EXIT_SUCCESS) {
-				err = ERR_EXECVE_SUBPROCESS_FAILURE;
-				goto end;
-			}
-		} else {
-			err = ERR_FORK_FAILURE;
+		if (spawn_command(executable, args) == -1) {
+			err = ERR_EXECVE_SUBPROCESS_FAILURE;
 			goto end;
 		}
 		

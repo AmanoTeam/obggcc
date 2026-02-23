@@ -10,8 +10,11 @@
 
 #if !defined(_WIN32)
 	#include <unistd.h>
+	#include <spawn.h>
+	#include <sys/wait.h>
 #endif
 
+#if defined(_WIN32)
 static int quotable(const char* value) {
 	
 	size_t index = 0;
@@ -88,9 +91,22 @@ static char* quote(char** arguments) {
 	return string;
 	
 }
-	
+#endif
 
-int execute_command(const char* const cmd, char** arg) {
+#if !defined(_WIN32)
+static int __waitpid() {
+	
+	int wstatus = 0;
+	
+	wait(&wstatus);
+	wstatus = WIFSIGNALED(wstatus) ? 128 + WTERMSIG(wstatus) : WEXITSTATUS(wstatus);
+	
+	return wstatus;
+	
+}
+#endif
+
+int spawn_command(const char* const cmd, char** arg) {
 	
 	int err = 0;
 	
@@ -179,10 +195,42 @@ int execute_command(const char* const cmd, char** arg) {
 			goto end;
 		}
 	#else
-		if (execv(cmd, arg) == -1) {
-			err = -1;
-			goto end;
-		}
+		pid_t pid = 0;
+		int wstatus = 0;
+		
+		#if defined(__ANDROID__) && __ANDROID_API__ < 28
+			pid = fork();
+			
+			if (pid == 0) {
+				if (execv(cmd, arg) == -1) {
+					_exit(EXIT_FAILURE);
+				}
+				
+				_exit(EXIT_SUCCESS);
+			} else if (pid > 0) {
+				wstatus = __waitpid();
+				
+				if (wstatus != EXIT_SUCCESS) {
+					err = -1;
+					goto end;
+				}
+			} else {
+				err = -1;
+				goto end;
+			}
+		#else
+			if (posix_spawn(&pid, cmd, NULL, NULL, arg, NULL) != 0) {
+				err = -1;
+				goto end;
+			}
+			
+			wstatus = __waitpid();
+			
+			if (wstatus != EXIT_SUCCESS) {
+				err = -1;
+				goto end;
+			}
+		#endif
 	#endif
 	
 	end:;

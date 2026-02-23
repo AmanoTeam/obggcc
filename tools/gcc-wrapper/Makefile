@@ -33,19 +33,20 @@ SOURCES = biggestint.c \
 	fs/rm.c \
 	fs/cwd.c \
 	os/find_exe.c \
-	os/execve.c
+	os/execv.c \
+	os/posix_spawn.c
 
 GCC_SOURCES = $(SOURCES) gcc.c
-BINUTILS_LLVM_SOURCES = $(SOURCES) binutils.c
+BINUTILS_LLVM_SOURCES = $(SOURCES) binutils-llvm.c
 BINUTILS_GNU_SOURCES = $(SOURCES) binutils-gnu.c
 
 gcc:
 	$(CC) -Wno-discarded-qualifiers -D $(FLAVOR) -I $(SOURCE_DIRECTORY) $(CFLAGS) $(LDFLAGS) $(CPPFLAGS) $(GCC_SOURCES) -o $(PREFIX)/gcc-wrapper
 
-binutils:
-	$(CC) -Wno-discarded-qualifiers -D $(FLAVOR) -I $(SOURCE_DIRECTORY) $(CFLAGS) $(LDFLAGS) $(CPPFLAGS) $(BINUTILS_LLVM_SOURCES) -o $(PREFIX)/binutils-wrapper
+binutils-llvm:
+	$(CC) -Wno-discarded-qualifiers -D $(FLAVOR) -I $(SOURCE_DIRECTORY) $(CFLAGS) $(LDFLAGS) $(CPPFLAGS) $(BINUTILS_LLVM_SOURCES) -o $(PREFIX)/binutils-llvm-wrapper
 
 binutils-gnu:
 	$(CC) -Wno-discarded-qualifiers -D $(FLAVOR) -I $(SOURCE_DIRECTORY) $(CFLAGS) $(LDFLAGS) $(CPPFLAGS) $(BINUTILS_GNU_SOURCES) -o $(PREFIX)/binutils-gnu-wrapper
 
-all: gcc binutils
+all: gcc binutils-llvm binutils-gnu
