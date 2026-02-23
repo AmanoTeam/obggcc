@@ -21,9 +21,6 @@ extern char** environ;
 static const char HYPHEN[] = "-";
 static const char BINUTILS_STRIP[] = "strip";
 
-static const char LLVM_STRIP[] = "llvm-strip";
-static const char LLVM_OBJCOPY[] = "llvm-objcopy";
-
 static const char LLVM_COMMAND_PREFIX[] = "llvm-";
 
 static const char LIBCXX_SHARED[] = "libc++_shared.so";
@@ -35,6 +32,9 @@ static const char LIBCXX_SHARED_DBG[] = "libc++_shared.so.dbg";
 #else
 	#define EXE ""
 #endif
+
+static const char LLVM_STRIP[] = "llvm-strip" EXE;
+static const char LLVM_OBJCOPY[] = "llvm-objcopy" EXE;
 
 #define BINFMT_X86_64 (0x01)
 #define BINFMT_i386 (0x02)
@@ -470,7 +470,7 @@ int main(int argc, char* argv[], char* envp[]) {
 		
 		free(executable);
 		
-		executable = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(triplet) + strlen(HYPHEN) + strlen(file_name) + strlen(EXE) + 1);
+		executable = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(triplet) + strlen(HYPHEN) + strlen(file_name) + 1);
 		
 		if (executable == NULL) {
 			err = ERR_MEM_ALLOC_FAILURE;
@@ -482,10 +482,6 @@ int main(int argc, char* argv[], char* envp[]) {
 		strcat(executable, triplet);
 		strcat(executable, HYPHEN);
 		strcat(executable, file_name);
-		
-		#if defined(_WIN32)
-			strcat(executable, EXE);
-		#endif
 		
 		args[0] = executable;
 		args[1] = input;

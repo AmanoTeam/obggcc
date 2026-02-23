@@ -1386,6 +1386,12 @@ if ! (( native )) && [[ "${host}" != *'-darwin'* ]]; then
 	fi
 	
 	if [[ "${host}" = *'-mingw32' ]]; then
+		# libwinpthread
+		declare name=$(realpath $("${cc}" --print-file-name="libwinpthread-1${dll}"))
+		cp "${name}" "${toolchain_directory}/bin/${soname}"
+	fi
+	
+	if [[ "${host}" = *'-mingw32' ]]; then
 		for target in "${targets[@]}"; do
 			for source in "${toolchain_directory}/"{bin,lib}"/lib"*'.dll'; do
 				cp "${source}" "${toolchain_directory}/libexec/gcc/${target}/${gcc_major}"

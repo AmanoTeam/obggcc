@@ -17,23 +17,6 @@ function replace_symlinks() {
 		echo "INPUT(${destination})" > "${source}"
 	done <<< "$(find "${1}/lib" -type 'l')"
 	
-	if [  -h "${1}/include" ]; then
-		return
-	fi
-	
-	while read source; do
-		if [ -z "${source}" ]; then
-			break
-		fi
-		
-		destination="$(realpath "${source}")"
-		
-		echo "Replacing symlink at '${source}' with the actual file"
-		
-		unlink "${source}"
-		cp "${destination}" "${source}"
-	done <<< "$(find "${1}/include" -type 'l')"
-	
 }
 
 function rename_soname_libraries() {
