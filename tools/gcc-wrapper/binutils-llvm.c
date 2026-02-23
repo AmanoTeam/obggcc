@@ -30,6 +30,12 @@ static const char LIBCXX_SHARED[] = "libc++_shared.so";
 static const char LIBCXX_SHARED_SYM[] = "libc++_shared.so.sym";
 static const char LIBCXX_SHARED_DBG[] = "libc++_shared.so.dbg";
 
+#if defined(_WIN32)
+	#define EXE ".exe"
+#else
+	#define EXE ""
+#endif
+
 #define BINFMT_X86_64 (0x01)
 #define BINFMT_i386 (0x02)
 #define BINFMT_MIPS64EL (0x03)
@@ -464,7 +470,7 @@ int main(int argc, char* argv[], char* envp[]) {
 		
 		free(executable);
 		
-		executable = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(triplet) + strlen(HYPHEN) + strlen(file_name) + 1);
+		executable = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(triplet) + strlen(HYPHEN) + strlen(file_name) + strlen(EXE) + 1);
 		
 		if (executable == NULL) {
 			err = ERR_MEM_ALLOC_FAILURE;
@@ -476,6 +482,10 @@ int main(int argc, char* argv[], char* envp[]) {
 		strcat(executable, triplet);
 		strcat(executable, HYPHEN);
 		strcat(executable, file_name);
+		
+		#if defined(_WIN32)
+			strcat(executable, EXE);
+		#endif
 		
 		args[0] = executable;
 		args[1] = input;

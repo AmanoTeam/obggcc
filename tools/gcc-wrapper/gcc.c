@@ -231,9 +231,9 @@ static const char CMAKE_FILES_DIRECTORY[] = "CMakeFiles";
 static const char HYPHEN[] = "-";
 
 #if defined(_WIN32)
-	static const char EXECUTABLE_SUFFIX[] = ".exe";
+	static const char EXE[] = ".exe";
 #else
-	static const char EXECUTABLE_SUFFIX[] = "";
+	static const char EXE[] = "";
 #endif
 
 static char* SYSTEM_LIBRARY_PATH[] = {
@@ -2121,7 +2121,7 @@ int main(int argc, char* argv[]) {
 	file_name = basename(app_filename);
 	
 	#if defined(_WIN32)
-		cur = strstr(file_name, EXECUTABLE_SUFFIX);
+		cur = strstr(file_name, EXE);
 		*(char*) cur = '\0';
 	#endif
 	
@@ -2563,7 +2563,7 @@ int main(int argc, char* argv[]) {
 			goto end;
 		}
 	#else
-		executable = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(triplet) + 1 + strlen(cc) + strlen(EXECUTABLE_SUFFIX) + 1);
+		executable = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(triplet) + 1 + strlen(cc) + strlen(EXE) + 1);
 		
 		if (executable == NULL) {
 			err = ERR_MEM_ALLOC_FAILURE;
@@ -2584,7 +2584,7 @@ int main(int argc, char* argv[]) {
 		}
 		
 		#if defined(_WIN32)
-			strcat(executable, EXECUTABLE_SUFFIX);
+			strcat(executable, EXE);
 		#endif
 	#endif
 	

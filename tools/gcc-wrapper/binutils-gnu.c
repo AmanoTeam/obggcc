@@ -14,24 +14,24 @@ static const char BIN_DIR[] = PATHSEP_M "bin";
 static const char HYPHEN[] = "-";
 
 #if defined(_WIN32)
-	#define EXECUTABLE_SUFFIX ".exe"
+	#define EXE ".exe"
 #else
-	#define EXECUTABLE_SUFFIX ""
+	#define EXE ""
 #endif
 
 static const char* const BINUTILS[] = {
-	"ar" EXECUTABLE_SUFFIX,
-	"as" EXECUTABLE_SUFFIX,
-	"ld" EXECUTABLE_SUFFIX,
-	"ld.bfd" EXECUTABLE_SUFFIX,
-	"ld.gold" EXECUTABLE_SUFFIX,
-	"dwp" EXECUTABLE_SUFFIX,
-	"nm" EXECUTABLE_SUFFIX,
-	"objcopy" EXECUTABLE_SUFFIX,
-	"objdump" EXECUTABLE_SUFFIX,
-	"ranlib" EXECUTABLE_SUFFIX,
-	"readelf" EXECUTABLE_SUFFIX,
-	"strip" EXECUTABLE_SUFFIX
+	"ar" EXE,
+	"as" EXE,
+	"ld" EXE,
+	"ld.bfd" EXE,
+	"ld.gold" EXE,
+	"dwp" EXE,
+	"nm" EXE,
+	"objcopy" EXE,
+	"objdump" EXE,
+	"ranlib" EXE,
+	"readelf" EXE,
+	"strip" EXE
 };
 
 static int binutils_matches(const char* const name) {
