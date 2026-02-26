@@ -639,6 +639,13 @@ $ export OBGGCC_BUILD_PARALLEL_LEVEL=$(nproc)
 $ ./build.sh
 ```
 
+The GCC version can be selected using `OBGGCC_RELEASE`. The currently supported values are `15` and `16`:
+
+```
+$ export OBGGCC_RELEASE=15
+$ ./build.sh
+```
+
 ## Releases
 
 You can obtain OBGGCC releases from the [releases](https://github.com/AmanoTeam/obggcc/releases) page.

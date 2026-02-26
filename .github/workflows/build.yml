@@ -12,6 +12,11 @@ on:
 
 permissions: write-all
 
+env: 
+    OBGGCC_BUILD_PARALLEL_LEVEL: 40
+    OBGGCC_BUILD_DIRECTORY: /tmp
+    OBGGCC_RELEASE: 16
+
 jobs:
   native-build:
     name: 'Native build'
@@ -34,9 +39,6 @@ jobs:
           /tmp/x86_64-linux-gnu.tar.xz.sha256
     - name: Build OBGGCC
       if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
-      env: 
-        OBGGCC_BUILD_PARALLEL_LEVEL: 40
-        OBGGCC_BUILD_DIRECTORY: /tmp
       run: |
         bash './build.sh'
     - name: Generate tarball
@@ -147,9 +149,6 @@ jobs:
         tar --directory='/tmp' --extract --file='/tmp/x86_64-linux-gnu.tar.xz'
         mv '/tmp/obggcc' '/tmp/obggcc-toolchain'
     - name: Cross-compile OBGGCC to ${{ matrix.target }}
-      env: 
-        OBGGCC_BUILD_PARALLEL_LEVEL: 40
-        OBGGCC_BUILD_DIRECTORY: /tmp
       run: |
         source './tools/setup_toolchain.sh'
         
@@ -331,12 +330,12 @@ jobs:
       - name: Create release
         uses: softprops/action-gh-release@master
         with:
-          tag_name: gcc-16
-          name: GCC 16.0.1
+          tag_name: 'gcc-${{ env.OBGGCC_RELEASE }}'
+          name: 'GCC ${{ env.OBGGCC_RELEASE }}'
           files: ./*/*-{unknown,w64}-*.{tar.xz,zip}*
           draft: false
           prerelease: true
           fail_on_unmatched_files: true
-          body: "* Update to GCC 16.0.1"
+          body: "* Update to GCC ${{ env.OBGGCC_RELEASE }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -24,6 +24,12 @@ else
 	declare -r build_directory="${OBGGCC_BUILD_DIRECTORY}"
 fi
 
+if [ -z "${OBGGCC_RELEASE}" ]; then
+	declare -r gcc_major='16'
+else
+	declare -r gcc_major="${OBGGCC_RELEASE}"
+fi
+
 set -eu
 
 declare -r revision="$(git rev-parse --short HEAD)"
@@ -52,8 +58,6 @@ declare -r binutils_directory="${build_directory}/binutils"
 
 declare -r gold_tarball="${build_directory}/gold.tar.xz"
 declare -r gold_directory="${build_directory}/gold"
-
-declare -r gcc_major='16'
 
 declare gcc_url='https://github.com/gcc-mirror/gcc/archive/master.tar.gz'
 declare -r gcc_tarball="${build_directory}/gcc.tar.xz"
