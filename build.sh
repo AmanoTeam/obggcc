@@ -30,6 +30,12 @@ else
 	declare -r gcc_major="${OBGGCC_RELEASE}"
 fi
 
+if [ -z "${OBGGCC_TARGETS}" ]; then
+	declare -r gcc_targets='*'
+else
+	declare -r gcc_targets="${OBGGCC_TARGETS}"
+fi
+
 set -eu
 
 declare -r revision="$(git rev-parse --short HEAD)"
@@ -881,6 +887,8 @@ make \
 	all
 
 for target in "${targets[@]}"; do
+	check_target_exists "${gcc_targets}" "${target}" || continue
+	
 	declare specs='%{!Qy: -Qn} %{!fgnu-unique: %{!fno-gnu-unique: -fno-gnu-unique}}'
 	declare hash_style='both'
 	
@@ -1182,58 +1190,45 @@ while read triplet; do
 	rm --recursive "${libsanitizer_directory}"
 done <<< "$(jq --raw-output --compact-output '.[]' "${workdir}/submodules/libsanitizer/triplets.json")"
 
-if ! (( native )); then
-	declare url="https://github.com/AmanoTeam/GDB-Builds/releases/latest/download/${host/-pc-/-unknown-}.tar.xz"
+declare url="https://github.com/AmanoTeam/GDB-Builds/releases/latest/download/${host/-pc-/-unknown-}.tar.xz"
+
+echo "- Fetching data from '${url}'"
+
+curl \
+	--url "${url}" \
+	--retry '30' \
+	--retry-all-errors \
+	--retry-delay '0' \
+	--retry-max-time '0' \
+	--location \
+	--silent \
+	--output "${gdb_tarball}"
+
+tar \
+	--directory="$(dirname "${gdb_directory}")" \
+	--extract \
+	--file="${gdb_tarball}" 2>/dev/null || gdb='0'
+
+if (( gdb )); then
+	cd "${gdb_directory}/bin"
 	
-	echo "- Fetching data from '${url}'"
-	
-	curl \
-		--url "${url}" \
-		--retry '30' \
-		--retry-all-errors \
-		--retry-delay '0' \
-		--retry-max-time '0' \
-		--location \
-		--silent \
-		--output "${gdb_tarball}"
-	
-	tar \
-		--directory="$(dirname "${gdb_directory}")" \
-		--extract \
-		--file="${gdb_tarball}" 2>/dev/null || gdb='0'
-	
-	if (( gdb )); then
-		cd "${gdb_directory}/bin"
+	for name in *-{gdb,gdb-add-index,gstack,run,gcore}; do
+		value="${name/-gdb-add-index/}"
+		value="${value/-gstack/}"
+		value="${value/-run/}"
+		value="${value/-gdb/}"
+		value="${value/-gcore/}"
 		
-		for name in *-{gdb,gdb-add-index,gstack,run,gcore}; do
-			value="${name/-gdb-add-index/}"
-			value="${value/-gstack/}"
-			value="${value/-run/}"
-			value="${value/-gdb/}"
-			value="${value/-gcore/}"
-			
-			status='0'
-			
-			for target in "${targets[@]}"; do
-				if [ "${target}" != "${value}" ]; then
-					continue
-				fi
-				
-				status='1'
-				
-				break
-			done
-			
-			if (( status )); then
-				continue
-			fi
-			
-			rm --force "${name}"
-		done
+		if check_target_exists "${gcc_targets}" "${value}"; then
+			continue
+		fi
 		
-		cp --recursive "${gdb_directory}/bin" "${toolchain_directory}"
-		rm --recursive "${gdb_directory}"
-	fi
+		echo "- Removing ${name}"
+		unlink "${name}"
+	done
+	
+	cp --recursive "${gdb_directory}/bin" "${toolchain_directory}"
+	rm --recursive "${gdb_directory}"
 fi
 
 # Delete libtool files and other unnecessary files GCC installs
@@ -1412,6 +1407,8 @@ cp "${binutils_llvm_wrapper}" "${toolchain_directory}/bin/llvm-strip${exe}"
 while read item; do
 	declare glibc_version="$(jq '.glibc_version' <<< "${item}")"
 	declare triplet="$(jq --raw-output '.triplet' <<< "${item}")"
+	
+	check_target_exists "${gcc_targets}" "${triplet}${glibc_version}" || continue
 	
 	declare repository="$(jq --raw-output '.repository.url' <<< "${item}")"
 	declare release="$(jq --raw-output '.repository.release' <<< "${item}")"
@@ -1624,32 +1621,15 @@ ln \
 	"${toolchain_directory}/build"
 
 for filename in "${toolchain_directory}/build/"*'/'*'.'{cmake,sh} "${toolchain_directory}/build/"*'/'*'/'*'.'{cmake,sh}; do
-	value="$(awk -F '2.' '{print $1}' <<< "$(basename "${filename}")")"
-	value="${value/.sh/}"
-	value="${value/.cmake/}"
+	target="$(basename "${filename}")"
+	target="${target/.sh/}"
+	target="${target/.cmake/}"
 	
-	if [ "${value}" = 'deactivate' ]; then
-		continue
-	fi
-	
-	status='0'
-	
-	for target in "${targets[@]}"; do
-		if [ "${target}" != "${value}" ]; then
-			continue
-		fi
-		
-		status='1'
-		
-		break
-	done
-	
-	if (( status )); then
+	if check_target_exists "${gcc_targets}" "${target}"; then
 		continue
 	fi
 	
 	echo "- Removing ${filename}"
-	
 	unlink "${filename}"
 done
 

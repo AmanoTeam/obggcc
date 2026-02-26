@@ -646,6 +646,16 @@ $ export OBGGCC_RELEASE=15
 $ ./build.sh
 ```
 
+You can also customize which targets the toolchain will support for cross-compilation using `OBGGCC_TARGETS`. For a minimal build with support for a single architecture and a specific glibc version, you can do something like:
+
+```
+# Build a cross-compiler targeting glibc 2.17 on x86_64.
+$ export OBGGCC_TARGETS='x86_64-unknown-linux-gnu,x86_64-unknown-linux-gnu2.17'
+$ ./build.sh
+```
+
+You can find the list of supported target triplets [here](#system-architectures) and the list of supported glibc versions [here](#distributions). 
+
 ## Releases
 
 You can obtain OBGGCC releases from the [releases](https://github.com/AmanoTeam/obggcc/releases) page.

@@ -16,6 +16,7 @@ env:
     OBGGCC_BUILD_PARALLEL_LEVEL: 40
     OBGGCC_BUILD_DIRECTORY: /tmp
     OBGGCC_RELEASE: 16
+    OBGGCC_TARGETS: '*'
 
 jobs:
   native-build:

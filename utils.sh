@@ -77,3 +77,25 @@ function rename_soname_libraries() {
 	done <<< "$(find "${1}/lib" -maxdepth '1' -type 'l')"
 	
 }
+
+function check_target_exists() {
+	
+	if [ "${1}" = '*' ]; then
+		return 0
+	fi
+	
+	IFS=',' read -ra items <<< "${1}"
+	
+	declare -r value="${2}"
+	
+	for item in "${items[@]}"; do
+		if [ "${item}" != "${value}" ]; then
+			continue
+		fi
+		
+		return 0
+	done
+	
+	return 1
+	
+}
