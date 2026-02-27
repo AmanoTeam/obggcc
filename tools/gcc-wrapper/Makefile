@@ -2,6 +2,7 @@ CC ?= cc
 CFLAGS ?= -O2
 LDFLAGS ?= -Xlinker -s
 CPPFLAGS ?= 
+HOST ?= 
 
 FLAVOR ?= OBGGCC
 
@@ -39,6 +40,11 @@ SOURCES = biggestint.c \
 GCC_SOURCES = $(SOURCES) gcc.c
 BINUTILS_LLVM_SOURCES = $(SOURCES) binutils-llvm.c
 BINUTILS_GNU_SOURCES = $(SOURCES) binutils-gnu.c
+
+ifneq (,$(filter %-mingw32,$(HOST)))
+	override CFLAGS += -D_WIN32_WINNT=0x600
+	override LDFLAGS += -lkernel32
+endif
 
 gcc:
 	$(CC) -Wno-discarded-qualifiers -D $(FLAVOR) -I $(SOURCE_DIRECTORY) $(CFLAGS) $(LDFLAGS) $(CPPFLAGS) $(GCC_SOURCES) -o $(PREFIX)/gcc-wrapper
