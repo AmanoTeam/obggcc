@@ -52,9 +52,11 @@ char* get_app_filename(void) {
 	char* app_filename = NULL;
 	
 	#if defined(_WIN32)
+		HANDLE handle = 0;
+		DWORD filenames = 0;
+		
 		#if defined(_UNICODE)
 			wchar_t* wfilename = NULL;
-			DWORD filenames = 0;
 			
 			filenames = GetModuleFileNameW(0, NULL, 0);
 			
@@ -73,6 +75,57 @@ char* get_app_filename(void) {
 			}
 			
 			filenames = GetModuleFileNameW(0, wfilename, filenames);
+			
+			if (filenames == 0) {
+				err = -1;
+				goto end;
+			}
+			
+			handle = CreateFileW(
+				wfilename,
+				0,
+				FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+				NULL,
+				OPEN_EXISTING,
+				0,
+				NULL
+			);
+			
+			free(wfilename);
+			wfilename = NULL;
+			
+			if (handle == INVALID_HANDLE_VALUE) {
+				err = -1;
+				goto end;
+			}
+			
+			filenames = GetFinalPathNameByHandleW(
+				handle,
+				NULL,
+				0,
+				VOLUME_NAME_DOS | FILE_NAME_NORMALIZED
+			);
+			
+			if (filenames == 0) {
+				err = -1;
+				goto end;
+			}
+			
+			filenames++;
+			
+			wfilename = malloc(((size_t) filenames) * sizeof(*wfilename));
+			
+			if (wfilename == NULL) {
+				err = -1;
+				goto end;
+			}
+			
+			filenames = GetFinalPathNameByHandleW(
+				handle,
+				wfilename,
+				filenames,
+				VOLUME_NAME_DOS | FILE_NAME_NORMALIZED
+			);
 			
 			if (filenames == 0) {
 				err = -1;
@@ -99,6 +152,57 @@ char* get_app_filename(void) {
 			}
 			
 			if (GetModuleFileNameA(0, app_filename, PATH_MAX) == 0) {
+				err = -1;
+				goto end;
+			}
+			
+			handle = CreateFileA(
+				app_filename,
+				0,
+				FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+				NULL,
+				OPEN_EXISTING,
+				0,
+				NULL
+			);
+			
+			free(app_filename);
+			app_filename = NULL;
+			
+			if (handle == INVALID_HANDLE_VALUE) {
+				err = -1;
+				goto end;
+			}
+			
+			filenames = GetFinalPathNameByHandleA(
+				handle,
+				NULL,
+				0,
+				VOLUME_NAME_DOS | FILE_NAME_NORMALIZED
+			);
+			
+			if (filenames == 0) {
+				err = -1;
+				goto end;
+			}
+			
+			filenames++;
+			
+			app_filename = malloc((size_t) filenames);
+			
+			if (app_filename == NULL) {
+				err = -1;
+				goto end;
+			}
+			
+			filenames = GetFinalPathNameByHandleA(
+				handle,
+				app_filename,
+				filenames,
+				VOLUME_NAME_DOS | FILE_NAME_NORMALIZED
+			);
+			
+			if (filenames == 0) {
 				err = -1;
 				goto end;
 			}
@@ -231,6 +335,10 @@ char* get_app_filename(void) {
 	#endif
 	
 	end:;
+	
+	#if defined(_WIN32)
+		CloseHandle(handle);
+	#endif
 	
 	#if defined(_WIN32) && defined(_UNICODE)
 		free(wfilename);
