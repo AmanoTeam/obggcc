@@ -2,7 +2,7 @@ CC ?= cc
 CFLAGS ?= -O2
 LDFLAGS ?= -Xlinker -s
 CPPFLAGS ?= 
-HOST ?= 
+CROSS_COMPILE_TRIPLET ?= 
 
 FLAVOR ?= OBGGCC
 
@@ -41,7 +41,7 @@ GCC_SOURCES = $(SOURCES) gcc.c
 BINUTILS_LLVM_SOURCES = $(SOURCES) binutils-llvm.c
 BINUTILS_GNU_SOURCES = $(SOURCES) binutils-gnu.c
 
-ifneq (,$(filter %-mingw32,$(HOST)))
+ifneq (,$(filter %-mingw32,$(CROSS_COMPILE_TRIPLET)))
 	override CFLAGS += -D_WIN32_WINNT=0x600
 	override LDFLAGS += -lkernel32
 endif

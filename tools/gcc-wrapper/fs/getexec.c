@@ -29,11 +29,14 @@
 #endif
 
 #if defined(__OpenBSD__)
-	#include "fs/sep.h"
 	#include "fs/exists.h"
 	#include "fs/absrel.h"
 	#include "fs/realpath.h"
 	#include "os/find_exe.h"
+#endif
+
+#if defined(__OpenBSD__) || defined(_WIN32)
+	#include "fs/sep.h"
 #endif
 
 #include "fs/getexec.h"
@@ -54,6 +57,8 @@ char* get_app_filename(void) {
 	#if defined(_WIN32)
 		HANDLE handle = 0;
 		DWORD filenames = 0;
+		
+		size_t size = 0;
 		
 		#if defined(_UNICODE)
 			wchar_t* wfilename = NULL;
@@ -207,6 +212,12 @@ char* get_app_filename(void) {
 				goto end;
 			}
 		#endif
+		
+		size = strlen(WIN10_LONG_PATH_PREFIX);
+		
+		if (strncmp(app_filename, WIN10_LONG_PATH_PREFIX, size) == 0) {
+			memmove(app_filename, app_filename + size, strlen(app_filename + size) + 1);
+		}
 	#elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(__DragonFly__)
 		#if defined(__NetBSD__)
 			const int call[] = {
