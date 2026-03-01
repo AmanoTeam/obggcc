@@ -15,7 +15,7 @@ permissions: write-all
 env: 
     OBGGCC_BUILD_PARALLEL_LEVEL: 40
     OBGGCC_BUILD_DIRECTORY: /tmp
-    OBGGCC_RELEASE: 16
+    OBGGCC_RELEASE: 15
     OBGGCC_TARGETS: '*'
 
 jobs:
@@ -33,7 +33,7 @@ jobs:
       id: check-cache
       uses: actions/cache@main
       with:
-        key: gcc-16.0.1.1.1.1.1
+        key: 'cache-${{ env.OBGGCC_RELEASE }}'
         lookup-only: true
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
@@ -61,7 +61,7 @@ jobs:
       if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
       uses: actions/cache@main
       with:
-        key: gcc-16.0.1.1.1.1.1
+        key: 'cache-${{ env.OBGGCC_RELEASE }}'
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
           /tmp/x86_64-linux-gnu.tar.xz.sha256
@@ -137,7 +137,7 @@ jobs:
     - name: Restore from cache
       uses: actions/cache@main
       with:
-        key: gcc-16.0.1.1.1.1.1
+        key: 'cache-${{ env.OBGGCC_RELEASE }}'
         fail-on-cache-miss: true
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
@@ -161,8 +161,6 @@ jobs:
             export RAIDEN_HOME='/tmp/raiden'
             export PATH="${RAIDEN_HOME}/bin:${PATH}"
             
-            export CMAKE_TOOLCHAIN_FILE="${RAIDEN_HOME}/usr/local/share/raiden/cmake/${{ matrix.target }}.cmake"
-            
             source "${RAIDEN_HOME}/usr/local/share/raiden/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' = *'-linux-gnu'* ]]; then
             # declare -r OBGGCC_TAG='gcc-15'
@@ -174,8 +172,6 @@ jobs:
             
             export OBGGCC_HOME='/tmp/obggcc-toolchain'
             export PATH="${OBGGCC_HOME}/bin:${PATH}"
-            
-            export CMAKE_TOOLCHAIN_FILE="${OBGGCC_HOME}/usr/local/share/obggcc/cmake/${{ matrix.target }}.cmake"
             
             source "${OBGGCC_HOME}/usr/local/share/obggcc/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' = *'-freebsd' ]]; then
@@ -189,8 +185,6 @@ jobs:
             export LOKI_HOME='/tmp/loki'
             export PATH="${LOKI_HOME}/bin:${PATH}"
             
-            export CMAKE_TOOLCHAIN_FILE="${LOKI_HOME}/usr/local/share/loki/cmake/${{ matrix.target }}.cmake"
-            
             source "${LOKI_HOME}/usr/local/share/loki/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' = *'-netbsd'* ]]; then
             declare -r DAKINI_TAG='gcc-15'
@@ -202,8 +196,6 @@ jobs:
             
             export DAKINI_HOME='/tmp/dakini'
             export PATH="${DAKINI_HOME}/bin:${PATH}"
-            
-            export CMAKE_TOOLCHAIN_FILE="${DAKINI_HOME}/usr/local/share/dakini/cmake/${{ matrix.target }}.cmake"
             
             source "${DAKINI_HOME}/usr/local/share/dakini/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' = *'-dragonfly' ]]; then
@@ -217,8 +209,6 @@ jobs:
             export VENTI_HOME='/tmp/venti'
             export PATH="${VENTI_HOME}/bin:${PATH}"
             
-            export CMAKE_TOOLCHAIN_FILE="${VENTI_HOME}/usr/local/share/venti/cmake/${{ matrix.target }}.cmake"
-            
             source "${VENTI_HOME}/usr/local/share/venti/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' = *'-haiku' ]]; then
             declare -r SIL_TAG='gcc-15'
@@ -230,8 +220,6 @@ jobs:
             
             export SIL_HOME='/tmp/sil'
             export PATH="${SIL_HOME}/bin:${PATH}"
-            
-            export CMAKE_TOOLCHAIN_FILE="${SIL_HOME}/usr/local/share/sil/cmake/${{ matrix.target }}.cmake"
             
             source "${SIL_HOME}/usr/local/share/sil/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' = *'-android'* ]]; then
@@ -245,8 +233,6 @@ jobs:
             export PINO_HOME='/tmp/pino'
             export PATH="${PINO_HOME}/bin:${PATH}"
             
-            export CMAKE_TOOLCHAIN_FILE="${PINO_HOME}/usr/local/share/pino/cmake/${{ matrix.target }}.cmake"
-            
             source "${PINO_HOME}/usr/local/share/pino/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' = *'-mingw32' ]]; then
             declare -r MINGW_TAG='gcc-15'
@@ -259,8 +245,6 @@ jobs:
             export MINGW_HOME='/tmp/mingw-w64'
             export PATH="${MINGW_HOME}/bin:${PATH}"
             
-            export CMAKE_TOOLCHAIN_FILE="${MINGW_HOME}/usr/local/share/mingw/cmake/${{ matrix.target }}.cmake"
-            
             source "${MINGW_HOME}/usr/local/share/mingw/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' = *'-darwin' ]]; then
             curl \
@@ -272,10 +256,6 @@ jobs:
             
             export DARWIN_HOME='/tmp/darwin'
             export PATH="${DARWIN_HOME}/bin:${PATH}"
-            
-            export CMAKE_TOOLCHAIN_FILE="${DARWIN_HOME}/usr/local/share/darwin/cmake/${{ matrix.target }}.cmake"
-            
-            export MACOSX_DEPLOYMENT_TARGET='11.3'
             
             source "${DARWIN_HOME}/usr/local/share/darwin/autotools/${{ matrix.target }}.sh"
         fi
@@ -332,7 +312,7 @@ jobs:
           name: 'GCC ${{ env.OBGGCC_RELEASE }}'
           files: ./*/*-{unknown,w64}-*.{tar.xz,zip}*
           draft: false
-          prerelease: true
+          prerelease: false
           fail_on_unmatched_files: true
           body: "* Update to GCC ${{ env.OBGGCC_RELEASE }}"
         env:
