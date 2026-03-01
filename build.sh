@@ -1058,7 +1058,7 @@ for target in "${targets[@]}"; do
 		--disable-canonical-system-headers \
 		--disable-win32-utf8-manifest \
 		--disable-libstdcxx-verbose \
-		--without-headers \
+		--disable-c++-tools \
 		--without-static-standard-libraries \
 		CFLAGS="${ccflags}" \
 		CXXFLAGS="${ccflags}" \
@@ -1246,6 +1246,8 @@ find \
 	-name '*.la' -delete -o \
 	-name '*.py' -delete -o \
 	-name '*.json' -delete
+
+cd "${workdir}"
 
 # Bundle both libstdc++ and libgcc within host tools
 if ! (( native )) && [[ "${host}" != *'-darwin'* ]]; then
