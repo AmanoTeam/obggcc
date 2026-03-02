@@ -1535,7 +1535,7 @@ while read item; do
 		
 		mkdir --parent './nouzen/etc/nouzen/sources.list'
 		
-		echo -e "repository = ${repository}\nrelease = ${release}\nresource = ${resource}\narchitecture = ${architecture}" > './nouzen/etc/nouzen/sources.list/obggcc.conf'
+		echo -e "repository = ${repository}\nrelease = ${release}\nresource = ${resource}\narchitecture = ${architecture}\nformat = apt" > './nouzen/etc/nouzen/sources.list/obggcc.conf'
 		
 		cd '../'
 		
