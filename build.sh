@@ -938,6 +938,7 @@ for target in "${targets[@]}"; do
 		--enable-relro \
 		--enable-compressed-debug-sections='all' \
 		--enable-default-compressed-debug-sections-algorithm='zstd' \
+		--enable-leak-check \
 		--disable-gprofng \
 		--disable-gold \
 		--disable-default-execstack \
