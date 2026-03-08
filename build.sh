@@ -1288,6 +1288,11 @@ if ! (( native )) && [[ "${host}" != *'-darwin'* ]]; then
 	declare name=$(realpath $("${cc}" --print-file-name="libegcc${dll}"))
 	
 	if ! [ -f "${name}" ]; then
+		# libgcc_s.so.1
+		declare name=$(realpath $("${cc}" --print-file-name="libgcc_s${dll}.1"))
+	fi
+	
+	if ! [ -f "${name}" ]; then
 		# libgcc_s
 		declare name=$(realpath $("${cc}" --print-file-name="libgcc_s${dll}"))
 	fi
