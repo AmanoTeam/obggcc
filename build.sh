@@ -1038,6 +1038,7 @@ for target in "${targets[@]}"; do
 		--enable-lto \
 		--enable-shared \
 		--enable-threads='posix' \
+		--enable-libstdcxx-debug \
 		--enable-libstdcxx-threads \
 		--enable-libssp \
 		--enable-languages="${languages}" \
@@ -1045,6 +1046,7 @@ for target in "${targets[@]}"; do
 		--enable-libstdcxx-time='rt' \
 		--enable-autolink-librt \
 		--enable-libgomp \
+		--enable-libstdcxx-verbose \
 		--with-specs="${specs}" \
 		--with-pic \
 		--with-gnu-as \
@@ -1058,7 +1060,6 @@ for target in "${targets[@]}"; do
 		--disable-nls \
 		--disable-canonical-system-headers \
 		--disable-win32-utf8-manifest \
-		--disable-libstdcxx-verbose \
 		--disable-c++-tools \
 		--without-static-standard-libraries \
 		CFLAGS="${ccflags}" \
@@ -1074,7 +1075,6 @@ for target in "${targets[@]}"; do
 	fi
 	
 	env ${args} make \
-		LDFLAGS_FOR_TARGET="${ldflags_for_target}" \
 		gcc_cv_objdump="${host}-objdump" \
 		all \
 		--jobs="${max_jobs}"
@@ -1089,6 +1089,8 @@ for target in "${targets[@]}"; do
 		rmdir "${PWD}"
 		cd '../lib'
 	fi
+	
+	"${triplet}-strip" "${PWD}/lib"*'.so' 2>/dev/null || true
 	
 	patch --directory="${PWD}" --strip='1' --input="${workdir}/patches/0001-Workaround-mold-linker-issue.patch"
 	
@@ -1473,7 +1475,7 @@ while read item; do
 	
 	cd "${toolchain_directory}/${triplet}${glibc_version}/lib"
 	
-	mkdir 'gcc' 'static'
+	mkdir 'gcc' 'static' 'debug'
 	
 	ln --symbolic './lib'*'.'{so,a}* './static'
 	ln --symbolic './ld-'*'.so'* './static'
@@ -1496,6 +1498,12 @@ while read item; do
 		--relative \
 		"${toolchain_directory}/${triplet}/lib/libBlocksRuntime.a" \
 		'./static'
+	
+	ln \
+		--symbolic \
+		--relative \
+		"${toolchain_directory}/${triplet}/lib/debug/"* \
+		'./debug'
 	
 	ln \
 		--symbolic \
