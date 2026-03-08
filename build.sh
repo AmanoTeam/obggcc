@@ -1228,6 +1228,8 @@ if (( gdb )); then
 		unlink "${name}"
 	done
 	
+	rm --force "${gdb_directory}/bin/"*'android'*
+	
 	cp --recursive "${gdb_directory}/bin" "${toolchain_directory}"
 	rm --recursive "${gdb_directory}"
 fi
