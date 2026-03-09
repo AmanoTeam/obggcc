@@ -222,6 +222,9 @@ OBGGCC allows you to change its behavior in certain scenarios through the use of
 - `OBGGCC_STATIC_RUNTIME`  
   - Tells the cross-compiler to prefer linking with the static versions of the GCC runtime libraries rather than the dynamic ones.
 
+- `OBGGCC_ARM_MODE`  
+  - Tells the cross-compiler to generate code in ARM mode rather than Thumb-1/Thumb-2 mode.
+
 - `OBGGCC_VERBOSE`  
   - Display the GCC subcommand invocation and the current working directory for every compilation process.
 

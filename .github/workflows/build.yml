@@ -33,7 +33,7 @@ jobs:
       id: check-cache
       uses: actions/cache@main
       with:
-        key: 'cache-${{ env.OBGGCC_RELEASE }}.1'
+        key: 'cache-${{ env.OBGGCC_RELEASE }}.2'
         lookup-only: true
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
@@ -61,7 +61,7 @@ jobs:
       if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
       uses: actions/cache@main
       with:
-        key: 'cache-${{ env.OBGGCC_RELEASE }}.1'
+        key: 'cache-${{ env.OBGGCC_RELEASE }}.2'
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
           /tmp/x86_64-linux-gnu.tar.xz.sha256
@@ -137,7 +137,7 @@ jobs:
     - name: Restore from cache
       uses: actions/cache@main
       with:
-        key: 'cache-${{ env.OBGGCC_RELEASE }}.1'
+        key: 'cache-${{ env.OBGGCC_RELEASE }}.2'
         fail-on-cache-miss: true
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
@@ -169,6 +169,8 @@ jobs:
             
             # curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --location --url "${OBGGCC_URL}" --output "${OBGGCC_TARBALL}"
             # tar --directory="$(dirname "${OBGGCC_TARBALL}")" --extract --file="${OBGGCC_TARBALL}"
+            
+            export OBGGCC_ARM_MODE='true'
             
             export OBGGCC_HOME='/tmp/obggcc-toolchain'
             export PATH="${OBGGCC_HOME}/bin:${PATH}"
