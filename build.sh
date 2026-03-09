@@ -1038,7 +1038,6 @@ for target in "${targets[@]}"; do
 		--enable-lto \
 		--enable-shared \
 		--enable-threads='posix' \
-		--enable-libstdcxx-debug \
 		--enable-libstdcxx-threads \
 		--enable-libssp \
 		--enable-languages="${languages}" \
@@ -1055,6 +1054,7 @@ for target in "${targets[@]}"; do
 		--disable-libsanitizer \
 		--disable-bootstrap \
 		--disable-libstdcxx-pch \
+		--disable-libstdcxx-debug \
 		--disable-werror \
 		--disable-multilib \
 		--disable-nls \
@@ -1498,12 +1498,6 @@ while read item; do
 		--relative \
 		"${toolchain_directory}/${triplet}/lib/libBlocksRuntime.a" \
 		'./static'
-	
-	ln \
-		--symbolic \
-		--relative \
-		"${toolchain_directory}/${triplet}/lib/debug/"* \
-		'./debug'
 	
 	ln \
 		--symbolic \
