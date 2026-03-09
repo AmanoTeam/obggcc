@@ -1,0 +1,63 @@
+From d8aa5feebb30228a6a12ab42ba9b36bb7458369c Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Tue, 10 Mar 2026 01:04:24 +0100
+Subject: [PATCH] Ignore header files under (prefix)/(system-root)/include-missing
+
+---
+ libcpp/files.cc | 26 ++++++++++++++++++++++----
+ 1 file changed, 22 insertions(+), 4 deletions(-)
+
+diff --git a/libcpp/files.cc b/libcpp/files.cc
+index 12de69e5c..c7b5ff2ed 100644
+--- a/libcpp/files.cc
++++ b/libcpp/files.cc
+@@ -428,8 +428,15 @@ find_file_in_dir (cpp_reader *pfile, _cpp_file *file, bool *invalid_pch,
+       if (pch_open_file (pfile, file, invalid_pch))
+ 	return true;
+ 
+-      if (open_file (file))
+-	return true;
++      if (open_file (file)) {
++        if (strstr(path, "include-missing") != NULL) {
++          close(file->fd);
++          file->err_no = 676767;
++          return false;
++        }
++        
++        return true;
++      }
+ 
+       if (file->err_no != ENOENT)
+ 	{
+@@ -515,6 +522,8 @@ _cpp_find_file (cpp_reader *pfile, const char *fname, cpp_dir *start_dir,
+   bool saw_bracket_include = false;
+   bool saw_quote_include = false;
+   struct cpp_dir *found_in_cache = NULL;
++  
++  bool ignore = false;
+ 
+   /* Ensure we get no confusion between cached files and directories.  */
+   if (start_dir == NULL)
+@@ -548,8 +557,17 @@ _cpp_find_file (cpp_reader *pfile, const char *fname, cpp_dir *start_dir,
+     /* Try each path in the include chain.  */
+     for (;;)
+       {
+-	if (find_file_in_dir (pfile, file, &invalid_pch, loc))
+-	  break;
++      if (!ignore) {
++        if (find_file_in_dir (pfile, file, &invalid_pch, loc)) {
++            break;
++        }
++        
++    	ignore = (file->err_no == 676767);
++      }
++
++    if (ignore) {
++        file->err_no = ENOENT;
++    }
+ 
+ 	file->dir = file->dir->next;
+ 	if (file->dir == NULL)
+-- 
+2.53.0
+

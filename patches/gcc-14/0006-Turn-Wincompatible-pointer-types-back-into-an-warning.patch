@@ -1,0 +1,107 @@
+From 1c8a07b10ac31a2dbb3a0b50eac07b55991bd7ea Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Mon, 9 Mar 2026 23:07:19 +0100
+Subject: [PATCH] Turn -Wincompatible-pointer-types back into an warning
+
+---
+ gcc/c/c-typeck.cc | 62 +++++++++++++++++++++--------------------------
+ 1 file changed, 27 insertions(+), 35 deletions(-)
+
+diff --git a/gcc/c/c-typeck.cc b/gcc/c/c-typeck.cc
+index e1c35cdcd..d1342fca1 100644
+--- a/gcc/c/c-typeck.cc
++++ b/gcc/c/c-typeck.cc
+@@ -5922,15 +5922,8 @@ build_conditional_expr (location_t colon_loc, tree ifexp, bool ifexp_bcp,
+       else
+ 	{
+ 	  int qual = ENCODE_QUAL_ADDR_SPACE (as_common);
+-	  diagnostic_t kind = DK_PERMERROR;
+-	  if (!flag_isoc99)
+-	    /* This downgrade to a warning ensures that -std=gnu89
+-	       -pedantic-errors does not flag these mismatches between
+-	       builtins as errors (as DK_PERMERROR would).  ISO C99
+-	       and later do not have implicit function declarations,
+-	       so the mismatch cannot occur naturally there.  */
+-	    kind = bltin1 && bltin2 ? DK_WARNING : DK_PEDWARN;
+-	  if (emit_diagnostic (kind, colon_loc, OPT_Wincompatible_pointer_types,
++	  if (emit_diagnostic (bltin1 && bltin2 ? DK_WARNING : DK_PEDWARN,
++			       colon_loc, OPT_Wincompatible_pointer_types,
+ 			       "pointer type mismatch "
+ 			       "in conditional expression"))
+ 	    {
+@@ -8085,47 +8078,46 @@ convert_for_assignment (location_t location, location_t expr_loc, tree type,
+ 		auto_diagnostic_group d;
+ 		range_label_for_type_mismatch rhs_label (rhstype, type);
+ 		gcc_rich_location richloc (expr_loc, &rhs_label);
+-		if (permerror_opt (&richloc, OPT_Wincompatible_pointer_types,
+-				   "passing argument %d of %qE from "
+-				   "incompatible pointer type",
+-				   parmnum, rname))
++		if (pedwarn (&richloc, OPT_Wincompatible_pointer_types,
++			     "passing argument %d of %qE from incompatible "
++			     "pointer type", parmnum, rname))
+ 		  inform_for_arg (fundecl, expr_loc, parmnum, type, rhstype);
+ 	      }
+ 	      break;
+ 	    case ic_assign:
+ 	      if (bltin)
+-		permerror_opt (location, OPT_Wincompatible_pointer_types,
+-			       "assignment to %qT from pointer to "
+-			       "%qD with incompatible type %qT",
+-			       type, bltin, rhstype);
++		pedwarn (location, OPT_Wincompatible_pointer_types,
++			 "assignment to %qT from pointer to "
++			 "%qD with incompatible type %qT",
++			 type, bltin, rhstype);
+ 	      else
+-		permerror_opt (location, OPT_Wincompatible_pointer_types,
+-			       "assignment to %qT from incompatible pointer "
+-			       "type %qT", type, rhstype);
++		pedwarn (location, OPT_Wincompatible_pointer_types,
++			 "assignment to %qT from incompatible pointer type %qT",
++			 type, rhstype);
+ 	      break;
+ 	    case ic_init:
+ 	    case ic_init_const:
+ 	      if (bltin)
+-		permerror_init (location, OPT_Wincompatible_pointer_types,
+-				"initialization of %qT from pointer to "
+-				"%qD with incompatible type %qT",
+-				type, bltin, rhstype);
++		pedwarn_init (location, OPT_Wincompatible_pointer_types,
++			      "initialization of %qT from pointer to "
++			      "%qD with incompatible type %qT",
++			      type, bltin, rhstype);
+ 	      else
+-		permerror_init (location, OPT_Wincompatible_pointer_types,
+-				"initialization of %qT from incompatible "
+-				"pointer type %qT",
+-				type, rhstype);
++		pedwarn_init (location, OPT_Wincompatible_pointer_types,
++			      "initialization of %qT from incompatible "
++			      "pointer type %qT",
++			      type, rhstype);
+ 	      break;
+ 	    case ic_return:
+ 	      if (bltin)
+-		permerror_opt (location, OPT_Wincompatible_pointer_types,
+-			       "returning pointer to %qD of type %qT from "
+-			       "a function with incompatible type %qT",
+-			       bltin, rhstype, type);
++		pedwarn (location, OPT_Wincompatible_pointer_types,
++			 "returning pointer to %qD of type %qT from "
++			 "a function with incompatible type %qT",
++			 bltin, rhstype, type);
+ 	      else
+-		permerror_opt (location, OPT_Wincompatible_pointer_types,
+-			       "returning %qT from a function with "
+-			       "incompatible return type %qT", rhstype, type);
++		pedwarn (location, OPT_Wincompatible_pointer_types,
++			 "returning %qT from a function with incompatible "
++			 "return type %qT", rhstype, type);
+ 	      break;
+ 	    default:
+ 	      gcc_unreachable ();
+-- 
+2.53.0
+

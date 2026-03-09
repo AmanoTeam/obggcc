@@ -1,0 +1,25 @@
+From e7a9dfaa51ebc52e51cffbf41c4a9b4e432818a1 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Tue, 10 Mar 2026 18:08:08 +0100
+Subject: [PATCH] Prevent libstdc++ from trying to implement math stubs
+
+---
+ libstdc++-v3/src/c++98/Makefile.in | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libstdc++-v3/src/c++98/Makefile.in b/libstdc++-v3/src/c++98/Makefile.in
+index cf9cda5f4..a0039890b 100644
+--- a/libstdc++-v3/src/c++98/Makefile.in
++++ b/libstdc++-v3/src/c++98/Makefile.in
+@@ -86,7 +86,7 @@ am__objects_5 = bitmap_allocator.lo pool_allocator.lo mt_allocator.lo \
+ 	ios_locale.lo list.lo list-aux.lo list-aux-2.lo \
+ 	list_associated.lo list_associated-2.lo locale.lo \
+ 	locale_init.lo locale_facets.lo localename.lo \
+-	math_stubs_float.lo math_stubs_long_double.lo stdexcept.lo \
++	stdexcept.lo \
+ 	strstream.lo tree.lo istream.lo streambuf.lo valarray.lo \
+ 	$(am__objects_1) $(am__objects_4)
+ am_libc__98convenience_la_OBJECTS = $(am__objects_5)
+-- 
+2.53.0
+

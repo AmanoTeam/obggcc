@@ -1,8 +1,7 @@
 From 3fb0b30a7cdfe6dcdf7553e82fa9f58375a5ee39 Mon Sep 17 00:00:00 2001
 From: Kartatz <105828205+Kartatz@users.noreply.github.com>
 Date: Mon, 22 Dec 2025 23:40:06 -0300
-Subject: [PATCH] Ignore header files under
- (prefix)/(system-root)/include-missing
+Subject: [PATCH] Ignore header files under (prefix)/(system-root)/include-missing
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

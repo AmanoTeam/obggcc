@@ -10,10 +10,6 @@ Subject: [PATCH 10/11] Prefer DT_RPATH over DT_RUNPATH
  gcc/config/i386/gnu-user.h         | 2 +-
  gcc/config/i386/gnu-user64.h       | 1 +
  gcc/config/ia64/linux.h            | 2 +-
- gcc/config/loongarch/gnu-user.h    | 2 +-
- gcc/config/mips/gnu-user.h         | 1 +
- gcc/config/riscv/linux.h           | 1 +
- gcc/config/rs6000/linux64.h        | 4 ++--
  gcc/config/rs6000/sysv4.h          | 2 +-
  gcc/config/s390/linux.h            | 2 +-
  gcc/config/sparc/linux.h           | 2 +-
@@ -94,63 +90,6 @@ index a2494c214..739e2bcb4 100644
    %{shared:-shared} \
    %{!shared: \
      %{!static: \
-diff --git a/gcc/config/loongarch/gnu-user.h b/gcc/config/loongarch/gnu-user.h
-index fbc75a90a..0de408450 100644
---- a/gcc/config/loongarch/gnu-user.h
-+++ b/gcc/config/loongarch/gnu-user.h
-@@ -44,7 +44,7 @@ along with GCC; see the file COPYING3.  If not see
- 
- #undef GNU_USER_TARGET_LINK_SPEC
- #define GNU_USER_TARGET_LINK_SPEC \
--  "%{G*} %{shared} -m " GNU_USER_LINK_EMULATION \
-+  "%{G*} %{shared} --disable-new-dtags -m " GNU_USER_LINK_EMULATION \
-   "%{!shared: %{static} " \
-   "%{!static: %{!static-pie: %{rdynamic:-export-dynamic} " \
-   "-dynamic-linker " GNU_USER_DYNAMIC_LINKER "}} " \
-diff --git a/gcc/config/mips/gnu-user.h b/gcc/config/mips/gnu-user.h
-index 5a82508c1..6289c83ae 100644
---- a/gcc/config/mips/gnu-user.h
-+++ b/gcc/config/mips/gnu-user.h
-@@ -55,6 +55,7 @@ along with GCC; see the file COPYING3.  If not see
- #undef GNU_USER_TARGET_LINK_SPEC
- #define GNU_USER_TARGET_LINK_SPEC "\
-   %{G*} %{EB} %{EL} %{mips*} %{shared} \
-+ --disable-new-dtags \
-   %{!shared: \
-     %{!static: \
-       %{rdynamic:-export-dynamic} \
-diff --git a/gcc/config/riscv/linux.h b/gcc/config/riscv/linux.h
-index 9060c940a..21eca9202 100644
---- a/gcc/config/riscv/linux.h
-+++ b/gcc/config/riscv/linux.h
-@@ -48,6 +48,7 @@ along with GCC; see the file COPYING3.  If not see
-   "%{mabi=ilp32:_ilp32}"
- 
- #define LINK_SPEC "\
-+--disable-new-dtags \
- -melf" XLEN_SPEC DEFAULT_ENDIAN_SPEC "riscv" LD_EMUL_SUFFIX " \
- %{mno-relax:--no-relax} \
- -X \
-diff --git a/gcc/config/rs6000/linux64.h b/gcc/config/rs6000/linux64.h
-index 0316d8cb6..10dee7e8e 100644
---- a/gcc/config/rs6000/linux64.h
-+++ b/gcc/config/rs6000/linux64.h
-@@ -378,13 +378,13 @@ extern int dot_symbols;
- 					   " -m elf64ppc")
- #endif
- 
--#define LINK_OS_LINUX_SPEC32 LINK_OS_LINUX_EMUL32 " %{!shared: %{!static: \
-+#define LINK_OS_LINUX_SPEC32 LINK_OS_LINUX_EMUL32 " --disable-new-dtags %{!shared: %{!static: \
-   %{!static-pie: \
-     %{rdynamic:-export-dynamic} \
-     -dynamic-linker " GNU_USER_DYNAMIC_LINKER32 "}}} \
-   %(link_os_extra_spec32)"
- 
--#define LINK_OS_LINUX_SPEC64 LINK_OS_LINUX_EMUL64 " %{!shared: %{!static: \
-+#define LINK_OS_LINUX_SPEC64 LINK_OS_LINUX_EMUL64 " --disable-new-dtags %{!shared: %{!static: \
-   %{!static-pie: \
-     %{rdynamic:-export-dynamic} \
-     -dynamic-linker " GNU_USER_DYNAMIC_LINKER64 "}}} \
 diff --git a/gcc/config/rs6000/sysv4.h b/gcc/config/rs6000/sysv4.h
 index afb5c6ad8..de7002603 100644
 --- a/gcc/config/rs6000/sysv4.h

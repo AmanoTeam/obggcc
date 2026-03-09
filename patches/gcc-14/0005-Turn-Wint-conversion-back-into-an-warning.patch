@@ -1,0 +1,176 @@
+From 034a4e5d8f15e064cf9336fa366841872be478d6 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Tue, 10 Mar 2026 00:31:23 +0100
+Subject: [PATCH] Turn -Wint-conversion back into an warning
+
+---
+ gcc/c/c-typeck.cc | 97 ++++++++++++++++++-----------------------------
+ 1 file changed, 37 insertions(+), 60 deletions(-)
+
+diff --git a/gcc/c/c-typeck.cc b/gcc/c/c-typeck.cc
+index d1342fca1..5261075c6 100644
+--- a/gcc/c/c-typeck.cc
++++ b/gcc/c/c-typeck.cc
+@@ -5938,9 +5938,8 @@ build_conditional_expr (location_t colon_loc, tree ifexp, bool ifexp_bcp,
+ 	   && (code2 == INTEGER_TYPE || code2 == BITINT_TYPE))
+     {
+       if (!null_pointer_constant_p (orig_op2))
+-	permerror_opt (colon_loc, OPT_Wint_conversion,
+-		       "pointer/integer type mismatch "
+-		       "in conditional expression");
++	pedwarn (colon_loc, OPT_Wint_conversion,
++		 "pointer/integer type mismatch in conditional expression");
+       else
+ 	{
+ 	  op2 = null_pointer_node;
+@@ -5951,9 +5950,8 @@ build_conditional_expr (location_t colon_loc, tree ifexp, bool ifexp_bcp,
+ 	   && (code1 == INTEGER_TYPE || code1 == BITINT_TYPE))
+     {
+       if (!null_pointer_constant_p (orig_op1))
+-	permerror_opt (colon_loc, OPT_Wint_conversion,
+-		       "pointer/integer type mismatch "
+-		       "in conditional expression");
++	pedwarn (colon_loc, OPT_Wint_conversion,
++		 "pointer/integer type mismatch in conditional expression");
+       else
+ 	{
+ 	  op1 = null_pointer_node;
+@@ -7083,23 +7081,6 @@ error_init (location_t loc, const char *gmsgid, ...)
+     inform (loc, "(near initialization for %qs)", ofwhat);
+ }
+ 
+-/* Used to implement pedwarn_init and permerror_init.  */
+-
+-static void ATTRIBUTE_GCC_DIAG (3,0)
+-pedwarn_permerror_init (location_t loc, int opt, const char *gmsgid,
+-			va_list *ap, diagnostic_t kind)
+-{
+-  /* Use the location where a macro was expanded rather than where
+-     it was defined to make sure macros defined in system headers
+-     but used incorrectly elsewhere are diagnosed.  */
+-  location_t exploc = expansion_point_location_if_in_system_header (loc);
+-  auto_diagnostic_group d;
+-  bool warned = emit_diagnostic_valist (kind, exploc, opt, gmsgid, ap);
+-  char *ofwhat = print_spelling ((char *) alloca (spelling_length () + 1));
+-  if (*ofwhat && warned)
+-    inform (exploc, "(near initialization for %qs)", ofwhat);
+-}
+-
+ /* Issue a pedantic warning for a bad initializer component.  OPT is
+    the option OPT_* (from options.h) controlling this warning or 0 if
+    it is unconditionally given.  GMSGID identifies the message.  The
+@@ -7108,21 +7089,18 @@ pedwarn_permerror_init (location_t loc, int opt, const char *gmsgid,
+ static void ATTRIBUTE_GCC_DIAG (3,0)
+ pedwarn_init (location_t loc, int opt, const char *gmsgid, ...)
+ {
++  /* Use the location where a macro was expanded rather than where
++     it was defined to make sure macros defined in system headers
++     but used incorrectly elsewhere are diagnosed.  */
++  location_t exploc = expansion_point_location_if_in_system_header (loc);
++  auto_diagnostic_group d;
+   va_list ap;
+   va_start (ap, gmsgid);
+-  pedwarn_permerror_init (loc, opt, gmsgid, &ap, DK_PEDWARN);
+-  va_end (ap);
+-}
+-
+-/* Like pedwarn_init, but issue a permerror.  */
+-
+-static void ATTRIBUTE_GCC_DIAG (3,0)
+-permerror_init (location_t loc, int opt, const char *gmsgid, ...)
+-{
+-  va_list ap;
+-  va_start (ap, gmsgid);
+-  pedwarn_permerror_init (loc, opt, gmsgid, &ap, DK_PERMERROR);
++  bool warned = emit_diagnostic_valist (DK_PEDWARN, exploc, opt, gmsgid, &ap);
+   va_end (ap);
++  char *ofwhat = print_spelling ((char *) alloca (spelling_length () + 1));
++  if (*ofwhat && warned)
++    inform (exploc, "(near initialization for %qs)", ofwhat);
+ }
+ 
+ /* Issue a warning for a bad initializer component.
+@@ -8159,28 +8137,27 @@ convert_for_assignment (location_t location, location_t expr_loc, tree type,
+ 	      auto_diagnostic_group d;
+ 	      range_label_for_type_mismatch rhs_label (rhstype, type);
+ 	      gcc_rich_location richloc (expr_loc, &rhs_label);
+-	      if (permerror_opt (&richloc, OPT_Wint_conversion,
+-				 "passing argument %d of %qE makes pointer "
+-				 "from integer without a cast", parmnum, rname))
++	      if (pedwarn (&richloc, OPT_Wint_conversion,
++			   "passing argument %d of %qE makes pointer from "
++			   "integer without a cast", parmnum, rname))
+ 		inform_for_arg (fundecl, expr_loc, parmnum, type, rhstype);
+ 	    }
+ 	    break;
+ 	  case ic_assign:
+-	    permerror_opt (location, OPT_Wint_conversion,
+-			   "assignment to %qT from %qT makes pointer from "
+-			   "integer without a cast", type, rhstype);
++	    pedwarn (location, OPT_Wint_conversion,
++		     "assignment to %qT from %qT makes pointer from integer "
++		     "without a cast", type, rhstype);
+ 	    break;
+ 	  case ic_init:
+ 	  case ic_init_const:
+-	    permerror_init (location, OPT_Wint_conversion,
+-			    "initialization of %qT from %qT makes pointer "
+-			    "from integer without a cast", type, rhstype);
++	    pedwarn_init (location, OPT_Wint_conversion,
++			  "initialization of %qT from %qT makes pointer from "
++			  "integer without a cast", type, rhstype);
+ 	    break;
+ 	  case ic_return:
+-	    permerror_init (location, OPT_Wint_conversion,
+-			    "returning %qT from a function with return type "
+-			    "%qT makes pointer from integer without a cast",
+-			    rhstype, type);
++	    pedwarn (location, OPT_Wint_conversion, "returning %qT from a "
++		     "function with return type %qT makes pointer from "
++		     "integer without a cast", rhstype, type);
+ 	    break;
+ 	  default:
+ 	    gcc_unreachable ();
+@@ -8198,27 +8175,27 @@ convert_for_assignment (location_t location, location_t expr_loc, tree type,
+ 	    auto_diagnostic_group d;
+ 	    range_label_for_type_mismatch rhs_label (rhstype, type);
+ 	    gcc_rich_location richloc (expr_loc, &rhs_label);
+-	    if (permerror_opt (&richloc, OPT_Wint_conversion,
+-			       "passing argument %d of %qE makes integer from "
+-			       "pointer without a cast", parmnum, rname))
++	    if (pedwarn (&richloc, OPT_Wint_conversion,
++			 "passing argument %d of %qE makes integer from "
++			 "pointer without a cast", parmnum, rname))
+ 	      inform_for_arg (fundecl, expr_loc, parmnum, type, rhstype);
+ 	  }
+ 	  break;
+ 	case ic_assign:
+-	  permerror_opt (location, OPT_Wint_conversion,
+-			 "assignment to %qT from %qT makes integer from "
+-			 "pointer without a cast", type, rhstype);
++	  pedwarn (location, OPT_Wint_conversion,
++		   "assignment to %qT from %qT makes integer from pointer "
++		   "without a cast", type, rhstype);
+ 	  break;
+ 	case ic_init:
+ 	case ic_init_const:
+-	  permerror_init (location, OPT_Wint_conversion,
+-			  "initialization of %qT from %qT makes integer "
+-			  "from pointer without a cast", type, rhstype);
++	  pedwarn_init (location, OPT_Wint_conversion,
++			"initialization of %qT from %qT makes integer from "
++			"pointer without a cast", type, rhstype);
+ 	  break;
+ 	case ic_return:
+-	  permerror_opt (location, OPT_Wint_conversion, "returning %qT from a "
+-			 "function with return type %qT makes integer from "
+-			 "pointer without a cast", rhstype, type);
++	  pedwarn (location, OPT_Wint_conversion, "returning %qT from a "
++		   "function with return type %qT makes integer from "
++		   "pointer without a cast", rhstype, type);
+ 	  break;
+ 	default:
+ 	  gcc_unreachable ();
+-- 
+2.53.0
+

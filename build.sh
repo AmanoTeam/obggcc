@@ -2,7 +2,8 @@
 
 declare -r workdir="${PWD}"
 
-declare -r build="$("${workdir}/tools/config.guess")"
+declare build="$("${workdir}/tools/config.guess")"
+build="${build/-unknown-/-pc-}"
 
 if [ -z "${CROSS_COMPILE_TRIPLET}" ]; then
 	declare -r host="${build}"
@@ -162,6 +163,10 @@ declare -ra libraries=(
 	'libtsan'
 	'libubsan'
 	'libquadmath'
+	'libcilkrts'
+	'libvtv'
+	'libgcov'
+	'libmpx'
 )
 
 declare -ra bits=(
@@ -176,11 +181,11 @@ declare -ra deprecated_targets=(
 )
 
 declare -ra targets=(
-	'x86_64-unknown-linux-gnu'
-	'aarch64-unknown-linux-gnu'
+	'i386-unknown-linux-gnu'
 	'arm-unknown-linux-gnueabi'
 	'arm-unknown-linux-gnueabihf'
-	'i386-unknown-linux-gnu'
+	'aarch64-unknown-linux-gnu'
+	'x86_64-unknown-linux-gnu'
 )
 
 declare -r PKG_CONFIG_PATH="${toolchain_directory}/lib/pkgconfig"
@@ -214,6 +219,17 @@ if [[ "${host}" = *'-mingw32' ]]; then
 	dll='.dll'
 fi
 
+declare __gcc_major="${gcc_major}"
+
+if [ "${gcc_major}" = '4' ]; then
+	__gcc_major='4.9'
+fi
+
+if [ "${gcc_major}" != '16' ]; then
+	gcc_url="https://github.com/gcc-mirror/gcc/archive/releases/gcc-${__gcc_major}.tar.gz"
+	gcc_directory="${build_directory}/gcc-releases-gcc-${__gcc_major}"
+fi
+	
 declare -r gcc_wrapper="${build_directory}/gcc-wrapper${exe}"
 declare -r binutils_gnu_wrapper="${build_directory}/binutils-gnu-wrapper${exe}"
 declare -r binutils_llvm_wrapper="${build_directory}/binutils-llvm-wrapper${exe}"
@@ -525,11 +541,6 @@ if ! [ -f "${ninja_tarball}" ]; then
 fi
 
 if ! [ -f "${gcc_tarball}" ]; then
-	if [ "${gcc_major}" != '16' ]; then
-		gcc_url='https://github.com/gcc-mirror/gcc/archive/releases/gcc-15.tar.gz'
-		gcc_directory="${build_directory}/gcc-releases-gcc-${gcc_major}"
-	fi
-	
 	curl \
 		--url "${gcc_url}" \
 		--retry '30' \
@@ -551,6 +562,11 @@ if ! [ -f "${gcc_tarball}" ]; then
 			--in-place \
 			's/-Xlinker -rpath/-Xlinker -z -Xlinker origin -Xlinker -rpath/g' \
 			"${workdir}/patches/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
+		
+		sed \
+			--in-place \
+			's/-Xlinker -rpath/-Xlinker -z -Xlinker origin -Xlinker -rpath/g' \
+			"${workdir}/patches/gcc-"*"/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
 	fi
 	
 	if [[ "${host}" = *'-darwin'* ]]; then
@@ -558,41 +574,107 @@ if ! [ -f "${gcc_tarball}" ]; then
 			--in-place \
 			's/$$ORIGIN/@loader_path/g' \
 			"${workdir}/patches/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
+		
+		sed \
+			--in-place \
+			's/$$ORIGIN/@loader_path/g' \
+			"${workdir}/patches/gcc-"*"/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
 	fi
 	
-	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Turn-Wimplicit-function-declaration-back-into-an-warning.patch"
-	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0002-Fix-libsanitizer-build-on-older-platforms.patch"
-	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0003-Change-the-default-language-version-for-C-compilation-from-std-gnu23-to-std-gnu17.patch"
+	if (( gcc_major >= 11 && gcc_major <= 12 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-11/0001-Fix-missing-definition-of-PTR-macro.patch"
+	fi
+	
+	if (( gcc_major <= 7 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4/0001-Build-libcilkrts-with-D_GNU_SOURCE.patch"
+	fi
+	
+	if (( gcc_major >= 4 && gcc_major <= 5 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4/0001-Fix-wrong-usage-of-bool.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4/0001-Prevent-use-of-_unlocked-functions-and-disable-inclusion-of-malloc.h.patch"
+	elif (( gcc_major >= 6 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-6/0001-Prevent-use-of-_unlocked-functions.patch"
+	fi
+	
+	if (( gcc_major == 6 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-6/0001-PR-libstdc-87822-fix-layout-change-for-nested-std-pair.patch"
+	fi
+	
+	if (( gcc_major >= 14 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Turn-Wimplicit-function-declaration-back-into-an-warning.patch"
+	fi
+	
+	if (( gcc_major >= 13 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0002-Fix-libsanitizer-build-on-older-platforms.patch"
+	fi
+	
+	if (( gcc_major >= 15 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0003-Change-the-default-language-version-for-C-compilation-from-std-gnu23-to-std-gnu17.patch"
+	fi
 	
 	if [ "${gcc_major}" = '16' ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0004-Turn-Wimplicit-int-back-into-an-warning.patch"
-	else
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-15/0004-Turn-Wimplicit-int-back-into-an-warning.patch"
+	elif (( gcc_major >= 14 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0004-Turn-Wimplicit-int-back-into-an-warning.patch"
 	fi
 	
-	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0005-Turn-Wint-conversion-back-into-an-warning.patch"
+	if (( gcc_major >= 15 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0005-Turn-Wint-conversion-back-into-an-warning.patch"
+	elif (( gcc_major >= 14 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0005-Turn-Wint-conversion-back-into-an-warning.patch"
+	fi
 	
-	if [ "${gcc_major}" = '16' ]; then
+	if (( gcc_major >= 16 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0006-Turn-Wincompatible-pointer-types-back-into-an-warning.patch"
-	else
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-15/0006-Turn-Wincompatible-pointer-types-back-into-an-warning.patch"
+	elif (( gcc_major >= 14 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0006-Turn-Wincompatible-pointer-types-back-into-an-warning.patch"
 	fi
 	
-	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
+	if (( gcc_major >= 15 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
+	elif (( gcc_major >= 6 && gcc_major <= 7 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-6/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
+	else
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
+	fi
+	
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
 	
-	if [ "${gcc_major}" = '16' ]; then
+	if (( gcc_major >= 16 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0011-Revert-configure-Always-add-pre-installed-header-directories-to-search-path.patch"
 	fi
 	
-	if [ "${gcc_major}" = '15' ]; then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-15/0001-Enable-automatic-linking-of-libatomic.patch"
+	if (( gcc_major >= 13 && gcc_major <= 15 )); then
+		# Could be backported to GCC < 13, but it's not worth the effort
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0001-Enable-automatic-linking-of-libatomic.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Enable-automatic-linking-of-librt.patch"
 	fi
 	
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-AArch64-enable-libquadmath.patch"
-	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
-	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
-	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Enable-automatic-linking-of-librt.patch"
+	
+	if (( gcc_major >= 14 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
+	elif (( gcc_major >= 5 && gcc_major <= 13 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-5/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
+	elif (( gcc_major >= 4 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
+	else
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
+	fi
+	
+	if (( gcc_major >= 15 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
+	elif (( gcc_major >= 12 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-12/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
+	elif (( gcc_major >= 10 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-10/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
+	elif (( gcc_major >= 7 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-7/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
+	elif (( gcc_major >= 4 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
+	else
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-vvv/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
+	fi
 fi
 
 # Follow Debian's approach to remove hardcoded RPATHs from binaries
@@ -917,8 +999,10 @@ for target in "${targets[@]}"; do
 	
 	mv "${sysroot_directory}" "${toolchain_directory}/${triplet}"
 	
-	cp "${workdir}/patches/librt_asneeded.so" "${toolchain_directory}/${triplet}/lib"
-	cp "${workdir}/patches/librt_asneeded.a" "${toolchain_directory}/${triplet}/lib"
+	if (( gcc_major >= 13 && gcc_major <= 15 )); then
+		cp "${workdir}/patches/librt_asneeded.so" "${toolchain_directory}/${triplet}/lib"
+		cp "${workdir}/patches/librt_asneeded.a" "${toolchain_directory}/${triplet}/lib"
+	fi
 	
 	rm --force --recursive "${PWD}"
 	
@@ -978,7 +1062,7 @@ for target in "${targets[@]}"; do
 	
 	rm --force --recursive "${PWD}" &
 	
-	if [ "${triplet}" = 'x86_64-unknown-linux-gnu' ] || [ "${triplet}" = 'i386-unknown-linux-gnu' ]; then
+	if (( gcc_major >= 6 )) && ( [ "${triplet}" = 'x86_64-unknown-linux-gnu' ] || [ "${triplet}" = 'i386-unknown-linux-gnu' ] ); then
 		specs+=' %{!fno-plt: %{!fplt: -fno-plt}}'
 	fi
 	
@@ -998,6 +1082,13 @@ for target in "${targets[@]}"; do
 	if ! (( native )); then
 		extra_configure_flags+=" --with-cross-host=${host}"
 		extra_configure_flags+=" --with-toolexeclibdir=${toolchain_directory}/${triplet}/lib/"
+	fi
+	
+	if (( gcc_major <= 6 )); then
+		# GCC 6 and earlier use isl_multi_val_set_val(), which was removed in
+		# newer versions of isl. Using an outdated isl version just to make
+		# the build succeed is not worth it.
+		extra_configure_flags+=' --without-isl'
 	fi
 	
 	[ -d "${gcc_directory}/build" ] || mkdir "${gcc_directory}/build"
@@ -1080,6 +1171,35 @@ for target in "${targets[@]}"; do
 		--jobs="${max_jobs}"
 	make install
 	
+	if (( gcc_major <= 6 )); then
+		# There was no --with-gcc-major-version-only back then
+		ln \
+			--symbolic \
+			--relative \
+			"${toolchain_directory}/lib/gcc/${triplet}/${gcc_major}."* \
+			"${toolchain_directory}/lib/gcc/${triplet}/${gcc_major}"
+		
+		ln \
+			--symbolic \
+			--relative \
+			"${toolchain_directory}/${triplet}/include/c++/${gcc_major}."* \
+			"${toolchain_directory}/${triplet}/include/c++/${gcc_major}"
+	fi
+	
+	if (( gcc_major <= 11 )); then
+		ln \
+			--symbolic \
+			--relative \
+			"${toolchain_directory}/lib/gcc/${triplet}/${gcc_major}/install-tools/include/limits.h" \
+			"${toolchain_directory}/lib/gcc/${triplet}/${gcc_major}/include"
+		
+		ln \
+			--symbolic \
+			--relative \
+			"${toolchain_directory}/lib/gcc/${triplet}/${gcc_major}/install-tools/gsyslimits.h" \
+			"${toolchain_directory}/lib/gcc/${triplet}/${gcc_major}/include/syslimits.h"
+	fi
+	
 	rm --force --recursive "${PWD}"
 	
 	cd "${toolchain_directory}/${triplet}/lib64" 2>/dev/null || cd "${toolchain_directory}/${triplet}/lib"
@@ -1092,7 +1212,9 @@ for target in "${targets[@]}"; do
 	
 	"${triplet}-strip" "${PWD}/lib"*'.so' 2>/dev/null || true
 	
-	patch --directory="${PWD}" --strip='1' --input="${workdir}/patches/0001-Workaround-mold-linker-issue.patch"
+	if (( gcc_major >= 13 && gcc_major <= 15 )); then
+		patch --directory="${PWD}" --strip='1' --input="${workdir}/patches/0001-Workaround-mold-linker-issue.patch"
+	fi
 	
 	env ${args} make \
 		-C "${workdir}/tools/libblocksruntime" \
@@ -1185,7 +1307,7 @@ while read triplet; do
 	tar \
 		--directory="$(dirname "${libsanitizer_directory}")" \
 		--extract \
-		--file="${libsanitizer_tarball}"
+		--file="${libsanitizer_tarball}" || continue
 	
 	cp --recursive "${libsanitizer_directory}/lib/gcc" "${toolchain_directory}/lib"
 	cp --recursive "${libsanitizer_directory}/lib/lib"* "${toolchain_directory}/${triplet}/lib"
@@ -1231,6 +1353,7 @@ if (( gdb )); then
 	done
 	
 	rm --force "${gdb_directory}/bin/"*'android'*
+	rm --force "${gdb_directory}/bin/armv"*
 	
 	cp --recursive "${gdb_directory}/bin" "${toolchain_directory}"
 	rm --recursive "${gdb_directory}"
@@ -1511,24 +1634,25 @@ while read item; do
 		"${toolchain_directory}/lib/gcc/${triplet}/${gcc_major}/"*'.'{a,o} \
 		'./static'
 	
-	# We need to manually symlink these librt things
-	ln \
-		--symbolic \
-		--relative \
-		"${toolchain_directory}/${triplet}/lib/librt_asneeded.so" \
-		"${toolchain_directory}/${triplet}${glibc_version}/lib/librt_asneeded.so"
-	
-	ln \
-		--symbolic \
-		--relative \
-		"${toolchain_directory}/${triplet}/lib/librt_asneeded.a" \
-		"${toolchain_directory}/${triplet}${glibc_version}/lib/librt_asneeded.a"
-	
-	ln \
-		--symbolic \
-		--relative \
-		"${toolchain_directory}/${triplet}/lib/librt_asneeded.so" \
-		"${toolchain_directory}/${triplet}${glibc_version}/lib/static/librt_asneeded.so"
+	if (( gcc_major >= 13 && gcc_major <= 15 )); then
+		ln \
+			--symbolic \
+			--relative \
+			"${toolchain_directory}/${triplet}/lib/librt_asneeded.so" \
+			"${toolchain_directory}/${triplet}${glibc_version}/lib/librt_asneeded.so"
+		
+		ln \
+			--symbolic \
+			--relative \
+			"${toolchain_directory}/${triplet}/lib/librt_asneeded.a" \
+			"${toolchain_directory}/${triplet}${glibc_version}/lib/librt_asneeded.a"
+		
+		ln \
+			--symbolic \
+			--relative \
+			"${toolchain_directory}/${triplet}/lib/librt_asneeded.so" \
+			"${toolchain_directory}/${triplet}${glibc_version}/lib/static/librt_asneeded.so"
+	fi
 	
 	if [ "${repository}" != 'null' ] && (( build_nz )); then
 		mkdir 'nouzen'

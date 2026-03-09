@@ -1,0 +1,195 @@
+From 7a20d470e64e954ba165f6fa4c276dd4ec3c6602 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Tue, 10 Mar 2026 17:13:24 +0100
+Subject: [PATCH] Add relative RPATHs to GCC host tools
+
+---
+ gcc/Makefile.in          | 20 ++++++++++----------
+ gcc/c/Make-lang.in       |  2 +-
+ gcc/cp/Make-lang.in      |  4 ++--
+ gcc/fortran/Make-lang.in |  4 ++--
+ gcc/lto/Make-lang.in     |  2 +-
+ gcc/objc/Make-lang.in    |  2 +-
+ gcc/objcp/Make-lang.in   |  2 +-
+ 7 files changed, 18 insertions(+), 18 deletions(-)
+
+diff --git a/gcc/Makefile.in b/gcc/Makefile.in
+index 4e72d89b3..dda31e4ac 100644
+--- a/gcc/Makefile.in
++++ b/gcc/Makefile.in
+@@ -1824,7 +1824,7 @@ libcommon.a: $(OBJS-libcommon)
+ # and CC is `gcc'.  It is renamed to `gcc' when it is installed.
+ xgcc$(exeext): $(GCC_OBJS) c/gccspec.o libcommon-target.a $(LIBDEPS) \
+ 	$(EXTRA_GCC_OBJS)
+-	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) -o $@ $(GCC_OBJS) \
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) -o $@ $(GCC_OBJS) \
+ 	  c/gccspec.o $(EXTRA_GCC_OBJS) libcommon-target.a \
+ 	  $(EXTRA_GCC_LIBS) $(LIBS)
+ 
+@@ -1833,7 +1833,7 @@ xgcc$(exeext): $(GCC_OBJS) c/gccspec.o libcommon-target.a $(LIBDEPS) \
+ # and only contain c-family extensions (see known_suffixes).
+ cpp$(exeext): $(GCC_OBJS) c-family/cppspec.o libcommon-target.a $(LIBDEPS) \
+ 	$(EXTRA_GCC_OBJS)
+-	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) -o $@ $(GCC_OBJS) \
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) -o $@ $(GCC_OBJS) \
+ 	  c-family/cppspec.o $(EXTRA_GCC_OBJS) libcommon-target.a \
+ 	  $(EXTRA_GCC_LIBS) $(LIBS)
+ 
+@@ -1908,15 +1908,15 @@ AR_OBJS = file-find.o
+ AR_LIBS = @COLLECT2_LIBS@
+ 
+ gcc-ar$(exeext): gcc-ar.o $(AR_OBJS) $(LIBDEPS)
+-	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) gcc-ar.o -o $@ \
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) gcc-ar.o -o $@ \
+ 		$(AR_OBJS) $(LIBS) $(AR_LIBS)
+ 
+ gcc-nm$(exeext): gcc-nm.o $(AR_OBJS) $(LIBDEPS)
+-	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) gcc-nm.o -o $@ \
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) gcc-nm.o -o $@ \
+ 		$(AR_OBJS) $(LIBS) $(AR_LIBS)
+ 
+ gcc-ranlib$(exeext): gcc-ranlib.o $(AR_OBJS) $(LIBDEPS)
+-	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) gcc-ranlib.o -o $@ \
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) gcc-ranlib.o -o $@ \
+ 		$(AR_OBJS) $(LIBS) $(AR_LIBS)
+ 
+ CFLAGS-gcc-ar.o += $(DRIVER_DEFINES) \
+@@ -1944,7 +1944,7 @@ COLLECT2_OBJS = collect2.o collect2-aix.o tlink.o vec.o ggc-none.o \
+ COLLECT2_LIBS = @COLLECT2_LIBS@
+ collect2$(exeext): $(COLLECT2_OBJS) $(LIBDEPS)
+ # Don't try modifying collect2 (aka ld) in place--it might be linking this.
+-	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) -o T$@ \
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) -o T$@ \
+ 		$(COLLECT2_OBJS) $(LIBS) $(COLLECT2_LIBS)
+ 	mv -f T$@ $@
+ 
+@@ -1953,7 +1953,7 @@ CFLAGS-collect2.o += -DTARGET_MACHINE=\"$(target_noncanonical)\" \
+ 
+ LTO_WRAPPER_OBJS = lto-wrapper.o collect-utils.o ggc-none.o
+ lto-wrapper$(exeext): $(LTO_WRAPPER_OBJS) libcommon-target.a $(LIBDEPS)
+-	+$(LINKER) $(ALL_COMPILERFLAGS) $(LDFLAGS) -o T$@ \
++	+$(LINKER) $(ALL_COMPILERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) -o T$@ \
+ 	   $(LTO_WRAPPER_OBJS) libcommon-target.a $(LIBS)
+ 	mv -f T$@ $@
+ 
+@@ -2650,10 +2650,10 @@ s-iov: build/gcov-iov$(build_exeext) $(BASEVER) $(DEVPHASE)
+ 
+ GCOV_OBJS = gcov.o
+ gcov$(exeext): $(GCOV_OBJS) $(LIBDEPS)
+-	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) $(GCOV_OBJS) $(LIBS) -o $@
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) $(GCOV_OBJS) $(LIBS) -o $@
+ GCOV_DUMP_OBJS = gcov-dump.o
+ gcov-dump$(exeext): $(GCOV_DUMP_OBJS) $(LIBDEPS)
+-	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) $(GCOV_DUMP_OBJS) \
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) $(GCOV_DUMP_OBJS) \
+ 		$(LIBS) -o $@
+ 
+ GCOV_TOOL_DEP_FILES = $(srcdir)/../libgcc/libgcov-util.c gcov-io.c $(GCOV_IO_H) \
+@@ -2670,7 +2670,7 @@ libgcov-merge-tool.o: $(srcdir)/../libgcc/libgcov-merge.c $(GCOV_TOOL_DEP_FILES)
+ 	  -DIN_GCOV_TOOL=1 -o $@ $<
+ GCOV_TOOL_OBJS = gcov-tool.o libgcov-util.o libgcov-driver-tool.o libgcov-merge-tool.o
+ gcov-tool$(exeext): $(GCOV_TOOL_OBJS) $(LIBDEPS)
+-	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) $(GCOV_TOOL_OBJS) $(LIBS) -o $@
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) $(GCOV_TOOL_OBJS) $(LIBS) -o $@
+ #
+ # Build the include directories.  The stamp files are stmp-* rather than
+ # s-* so that mostlyclean does not force the include directory to
+diff --git a/gcc/c/Make-lang.in b/gcc/c/Make-lang.in
+index 64285d9d6..4fe5535f1 100644
+--- a/gcc/c/Make-lang.in
++++ b/gcc/c/Make-lang.in
+@@ -68,7 +68,7 @@ cc1-checksum.c : build/genchecksum$(build_exeext) checksum-options \
+ 	$(srcdir)/../move-if-change cc1-checksum.c.tmp cc1-checksum.c
+ 
+ cc1$(exeext): $(C_OBJS) cc1-checksum.o $(BACKEND) $(LIBDEPS)
+-	+$(LLINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) -o $@ $(C_OBJS) \
++	+$(LLINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) -o $@ $(C_OBJS) \
+ 	  cc1-checksum.o $(BACKEND) $(LIBS) $(BACKENDLIBS)
+ #
+ # Build hooks:
+diff --git a/gcc/cp/Make-lang.in b/gcc/cp/Make-lang.in
+index b09fb02bb..eae62f0a2 100644
+--- a/gcc/cp/Make-lang.in
++++ b/gcc/cp/Make-lang.in
+@@ -56,7 +56,7 @@ CFLAGS-cp/g++spec.o += $(DRIVER_DEFINES)
+ # Create the compiler driver for g++.
+ GXX_OBJS = $(GCC_OBJS) cp/g++spec.o
+ xg++$(exeext): $(GXX_OBJS) $(EXTRA_GCC_OBJS) libcommon-target.a $(LIBDEPS)
+-	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) -o $@ \
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) -o $@ \
+ 	  $(GXX_OBJS) $(EXTRA_GCC_OBJS) libcommon-target.a \
+ 	  $(EXTRA_GCC_LIBS) $(LIBS)
+ 
+@@ -96,7 +96,7 @@ cc1plus-checksum.c : build/genchecksum$(build_exeext) checksum-options \
+ 	$(srcdir)/../move-if-change cc1plus-checksum.c.tmp cc1plus-checksum.c
+ 
+ cc1plus$(exeext): $(CXX_OBJS) cc1plus-checksum.o $(BACKEND) $(LIBDEPS)
+-	+$(LLINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) -o $@ \
++	+$(LLINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) -o $@ \
+ 	      $(CXX_OBJS) cc1plus-checksum.o $(BACKEND) $(LIBS) $(BACKENDLIBS)
+ 
+ ifeq ($(ENABLE_MAINTAINER_RULES), true)
+diff --git a/gcc/fortran/Make-lang.in b/gcc/fortran/Make-lang.in
+index ed74a5ced..cc0eee7f3 100644
+--- a/gcc/fortran/Make-lang.in
++++ b/gcc/fortran/Make-lang.in
+@@ -82,7 +82,7 @@ CFLAGS-fortran/gfortranspec.o += $(DRIVER_DEFINES)
+ GFORTRAN_D_OBJS = $(GCC_OBJS) fortran/gfortranspec.o
+ gfortran$(exeext): $(GFORTRAN_D_OBJS) $(EXTRA_GCC_OBJS) libcommon-target.a \
+ 	$(LIBDEPS)
+-	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) -o $@ \
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) -o $@ \
+ 	  $(GFORTRAN_D_OBJS) $(EXTRA_GCC_OBJS) libcommon-target.a \
+ 	  $(EXTRA_GCC_LIBS) $(LIBS)
+ 
+@@ -94,7 +94,7 @@ gfortran-cross$(exeext): gfortran$(exeext)
+ # The compiler itself is called f951.
+ f951$(exeext): $(F95_OBJS) \
+ 		$(BACKEND) $(LIBDEPS) attribs.o
+-	+$(LLINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) -o $@ \
++	+$(LLINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) -o $@ \
+ 		$(F95_OBJS) $(BACKEND) $(ZLIB) $(LIBS) attribs.o \
+ 		$(BACKENDLIBS)
+ 
+diff --git a/gcc/lto/Make-lang.in b/gcc/lto/Make-lang.in
+index f5267c8a6..12c4619bb 100644
+--- a/gcc/lto/Make-lang.in
++++ b/gcc/lto/Make-lang.in
+@@ -68,7 +68,7 @@ lto.stagefeedback:
+ lto-warn = $(STRICT_WARN)
+ 
+ $(LTO_EXE): $(LTO_OBJS) $(BACKEND) $(LIBDEPS)
+-	+$(LLINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) -o $@ \
++	+$(LLINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) -o $@ \
+ 		$(LTO_OBJS) $(BACKEND) $(BACKENDLIBS) $(LIBS)
+ 
+ # LTO testing is done as part of C/C++/Fortran etc. testing.
+diff --git a/gcc/objc/Make-lang.in b/gcc/objc/Make-lang.in
+index 18021f2e5..5fb863ef4 100644
+--- a/gcc/objc/Make-lang.in
++++ b/gcc/objc/Make-lang.in
+@@ -63,7 +63,7 @@ cc1obj-checksum.c : build/genchecksum$(build_exeext) checksum-options \
+ 	$(srcdir)/../move-if-change cc1obj-checksum.c.tmp cc1obj-checksum.c
+ 
+ cc1obj$(exeext): $(OBJC_OBJS) $(C_AND_OBJC_OBJS) cc1obj-checksum.o $(BACKEND) $(LIBDEPS)
+-	+$(LLINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) -o $@ \
++	+$(LLINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) -o $@ \
+ 	      $(OBJC_OBJS) $(C_AND_OBJC_OBJS) cc1obj-checksum.o \
+ 	      $(BACKEND) $(LIBS) $(BACKENDLIBS)
+ 
+diff --git a/gcc/objcp/Make-lang.in b/gcc/objcp/Make-lang.in
+index 37eb75712..89630c267 100644
+--- a/gcc/objcp/Make-lang.in
++++ b/gcc/objcp/Make-lang.in
+@@ -67,7 +67,7 @@ cc1objplus-checksum.c : build/genchecksum$(build_exeext) checksum-options \
+ 	cc1objplus-checksum.c
+ 
+ cc1objplus$(exeext): $(OBJCXX_OBJS) cc1objplus-checksum.o $(BACKEND) $(LIBDEPS)
+-	+$(LLINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) -o $@ \
++	+$(LLINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) -o $@ \
+ 		$(OBJCXX_OBJS) cc1objplus-checksum.o $(BACKEND) $(LIBS) $(BACKENDLIBS)
+ 
+ # Objective C++ language specific files.
+-- 
+2.53.0
+

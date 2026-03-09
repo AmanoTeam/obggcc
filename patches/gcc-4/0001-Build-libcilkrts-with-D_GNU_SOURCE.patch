@@ -1,0 +1,30 @@
+From c33d9efa426baa757f2517e17c5a58a67649be9d Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Tue, 10 Mar 2026 22:31:59 +0100
+Subject: [PATCH] Build libcilkrts with -D_GNU_SOURCE
+
+---
+ libcilkrts/Makefile.in | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/libcilkrts/Makefile.in b/libcilkrts/Makefile.in
+index 8f9b0101f..43825e4f9 100644
+--- a/libcilkrts/Makefile.in
++++ b/libcilkrts/Makefile.in
+@@ -709,11 +709,11 @@ scheduler.lo: runtime/scheduler.c
+ @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o scheduler.lo `test -f 'runtime/scheduler.c' || echo '$(srcdir)/'`runtime/scheduler.c
+ 
+ signal_node.lo: runtime/signal_node.c
+-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT signal_node.lo -MD -MP -MF $(DEPDIR)/signal_node.Tpo -c -o signal_node.lo `test -f 'runtime/signal_node.c' || echo '$(srcdir)/'`runtime/signal_node.c
++@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -D_GNU_SOURCE -MT signal_node.lo -MD -MP -MF $(DEPDIR)/signal_node.Tpo -c -o signal_node.lo `test -f 'runtime/signal_node.c' || echo '$(srcdir)/'`runtime/signal_node.c
+ @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/signal_node.Tpo $(DEPDIR)/signal_node.Plo
+ @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='runtime/signal_node.c' object='signal_node.lo' libtool=yes @AMDEPBACKSLASH@
+ @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o signal_node.lo `test -f 'runtime/signal_node.c' || echo '$(srcdir)/'`runtime/signal_node.c
++@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -D_GNU_SOURCE -c -o signal_node.lo `test -f 'runtime/signal_node.c' || echo '$(srcdir)/'`runtime/signal_node.c
+ 
+ spin_mutex.lo: runtime/spin_mutex.c
+ @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT spin_mutex.lo -MD -MP -MF $(DEPDIR)/spin_mutex.Tpo -c -o spin_mutex.lo `test -f 'runtime/spin_mutex.c' || echo '$(srcdir)/'`runtime/spin_mutex.c
+-- 
+2.53.0
+

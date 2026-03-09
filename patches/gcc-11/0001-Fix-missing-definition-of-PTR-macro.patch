@@ -1,0 +1,57 @@
+From b9e1de5f5ef1638a53df11a26d73a71eb99887f2 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Thu, 12 Mar 2026 19:10:50 +0100
+Subject: [PATCH] Fix missing definition of PTR macro
+
+---
+ gcc/basic-block.h | 4 ++--
+ gcc/cgraph.h      | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/gcc/basic-block.h b/gcc/basic-block.h
+index 0fdabf067..7a68f3897 100644
+--- a/gcc/basic-block.h
++++ b/gcc/basic-block.h
+@@ -36,7 +36,7 @@ public:
+   } insns;
+ 
+   /* Auxiliary info specific to a pass.  */
+-  PTR aux;
++  void* aux;
+ 
+   /* Location of any goto implicit in the edge.  */
+   location_t goto_locus;
+@@ -120,7 +120,7 @@ struct GTY((chain_next ("%h.next_bb"), chain_prev ("%h.prev_bb"))) basic_block_d
+   vec<edge, va_gc> *succs;
+ 
+   /* Auxiliary info specific to a pass.  */
+-  PTR GTY ((skip (""))) aux;
++  void* GTY ((skip (""))) aux;
+ 
+   /* Innermost loop containing the block.  */
+   class loop *loop_father;
+diff --git a/gcc/cgraph.h b/gcc/cgraph.h
+index 8e6128bf2..90ea3a12e 100644
+--- a/gcc/cgraph.h
++++ b/gcc/cgraph.h
+@@ -627,7 +627,7 @@ public:
+   /* File stream where this node is being written to.  */
+   struct lto_file_decl_data * lto_file_data;
+ 
+-  PTR GTY ((skip)) aux;
++  void* GTY ((skip)) aux;
+ 
+   /* Comdat group the symbol is in.  Can be private if GGC allowed that.  */
+   tree x_comdat_group;
+@@ -1887,7 +1887,7 @@ public:
+   /* Additional information about an indirect call.  Not cleared when an edge
+      becomes direct.  */
+   cgraph_indirect_call_info *indirect_info;
+-  PTR GTY ((skip (""))) aux;
++  void* GTY ((skip (""))) aux;
+   /* When equal to CIF_OK, inline this call.  Otherwise, points to the
+      explanation why function was not inlined.  */
+   enum cgraph_inline_failed_t inline_failed;
+-- 
+2.53.0
+
