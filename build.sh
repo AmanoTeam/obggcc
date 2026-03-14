@@ -583,7 +583,12 @@ if ! [ -f "${gcc_tarball}" ]; then
 	
 	if (( gcc_major <= 10 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-10/0001-Fix-build-when-compiling-in-C-17-mode.patch"
+	fi
+	
+	if (( gcc_major >= 8 && gcc_major <= 10 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-10/0001-Cygwin-MinGW-Do-not-version-lto-plugins.patch"
+	elif (( gcc_major <= 7 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-7/0001-MinGW-Do-not-version-lto-plugins.patch"
 	fi
 	
 	if (( gcc_major == 11 )); then
