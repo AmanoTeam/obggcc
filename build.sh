@@ -591,6 +591,10 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-7/0001-MinGW-Do-not-version-lto-plugins.patch"
 	fi
 	
+	if (( gcc_major <= 7 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-7/0001-Fix-std-nullptr_t-to-bool-conversion-error.patch"
+	fi
+	
 	if (( gcc_major == 11 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-11/0001-Unpoison-calloc-on-musl-hosts.patch"
 	fi
@@ -1114,14 +1118,11 @@ for target in "${targets[@]}"; do
 		extra_configure_flags+=' --without-isl'
 	fi
 	
-	declare ldflags="-L${toolchain_directory}/lib ${linkflags}"
-	
-	if (( gcc_major <= 8 )) && [[ "${host}" = *'-darwin'* ]]; then
-		# Fixing this properly would require updating the libtool files and
-		# regenerating all configure scripts. It is much easier to simply
-		# pass this flag directly.
-		ldflags+=' -Xlinker -undefined -Xlinker dynamic_lookup'
+	if (( gcc_major <= 7 )) && [[ "${host}" = *'-mingw32' ]]; then
+		extra_configure_flags+=' --disable-plugin'
 	fi
+	
+	declare ldflags="-L${toolchain_directory}/lib ${linkflags}"
 	
 	[ -d "${gcc_directory}/build" ] || mkdir "${gcc_directory}/build"
 	
