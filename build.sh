@@ -1109,6 +1109,15 @@ for target in "${targets[@]}"; do
 		extra_configure_flags+=' --without-isl'
 	fi
 	
+	declare ldflags="-L${toolchain_directory}/lib ${linkflags}"
+	
+	if (( gcc_major <= 8 )) && [[ "${host}" = *'-darwin'* ]]; then
+		# Fixing this properly would require updating the libtool files and
+		# regenerating all configure scripts. It is much easier to simply
+		# pass this flag directly.
+		ldflags+=' -Xlinker -undefined -Xlinker dynamic_lookup'
+	fi
+	
 	[ -d "${gcc_directory}/build" ] || mkdir "${gcc_directory}/build"
 	
 	cd "${gcc_directory}/build"
@@ -1173,7 +1182,7 @@ for target in "${targets[@]}"; do
 		--without-static-standard-libraries \
 		CFLAGS="${ccflags}" \
 		CXXFLAGS="${ccflags}" \
-		LDFLAGS="-L${toolchain_directory}/lib ${linkflags}"
+		LDFLAGS="${ldflags}"
 	
 	ldflags_for_target="${linkflags}"
 	
