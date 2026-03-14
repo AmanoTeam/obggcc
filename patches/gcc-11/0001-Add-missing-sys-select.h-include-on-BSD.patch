@@ -1,0 +1,27 @@
+From 73caf6d58916f02d98a047d3e1b4b5612b1a70d0 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sat, 14 Mar 2026 02:04:52 +0100
+Subject: [PATCH] Add missing <sys/select.h> include on BSD
+
+---
+ libcc1/connection.cc | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/libcc1/connection.cc b/libcc1/connection.cc
+index 64a6d4922..781484b7c 100644
+--- a/libcc1/connection.cc
++++ b/libcc1/connection.cc
+@@ -27,6 +27,10 @@ along with GCC; see the file COPYING3.  If not see
+ #include "connection.hh"
+ #include "rpc.hh"
+ 
++#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__DragonFly__) || defined(__OpenBSD__)
++	#include <sys/select.h>
++#endif
++
+ cc1_plugin::connection::~connection ()
+ {
+ }
+-- 
+2.53.0
+

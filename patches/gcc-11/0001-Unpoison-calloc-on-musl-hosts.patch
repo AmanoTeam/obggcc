@@ -1,0 +1,25 @@
+From fe198dd3e229f1c728a1e733a67845269fc8122a Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sat, 14 Mar 2026 02:08:51 +0100
+Subject: [PATCH] Unpoison calloc on musl hosts
+
+---
+ gcc/system.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/gcc/system.h b/gcc/system.h
+index 28c721565..479151a57 100644
+--- a/gcc/system.h
++++ b/gcc/system.h
+@@ -904,7 +904,7 @@ extern void fancy_abort (const char *, int, const char *)
+ #undef calloc
+ #undef strdup
+ #undef strndup
+- #pragma GCC poison calloc strdup strndup
++ #pragma GCC poison strdup strndup
+ 
+ #if !defined(FLEX_SCANNER) && !defined(YYBISON)
+ #undef malloc
+-- 
+2.53.0
+

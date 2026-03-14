@@ -581,6 +581,11 @@ if ! [ -f "${gcc_tarball}" ]; then
 			"${workdir}/patches/gcc-"*"/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
 	fi
 	
+	if (( gcc_major <= 11 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-11/0001-Add-missing-sys-select.h-include-on-BSD.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-11/0001-Unpoison-calloc-on-musl-hosts.patch"
+	fi
+	
 	if (( gcc_major <= 12 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-12/0001-Fix-definition-of-abort-on-Windows.patch"
 	fi
