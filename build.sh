@@ -1218,6 +1218,12 @@ for target in "${targets[@]}"; do
 		ln \
 			--symbolic \
 			--relative \
+			"${toolchain_directory}/libexec/gcc/${triplet}/${gcc_major}."* \
+			"${toolchain_directory}/libexec/gcc/${triplet}/${gcc_major}"
+		
+		ln \
+			--symbolic \
+			--relative \
 			"${toolchain_directory}/${triplet}/include/c++/${gcc_major}."* \
 			"${toolchain_directory}/${triplet}/include/c++/${gcc_major}"
 	fi
