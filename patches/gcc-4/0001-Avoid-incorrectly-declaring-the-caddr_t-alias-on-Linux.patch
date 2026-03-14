@@ -1,0 +1,27 @@
+From a6c97dbd3ecf974655c6a5cba8bedefa99684311 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sun, 15 Mar 2026 06:33:17 +0100
+Subject: [PATCH] Avoid incorrectly declaring the caddr_t alias on Linux
+
+---
+ gcc/tsystem.h | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/gcc/tsystem.h b/gcc/tsystem.h
+index a46ead51f..5f31c51d3 100644
+--- a/gcc/tsystem.h
++++ b/gcc/tsystem.h
+@@ -86,6 +86,10 @@ extern void *memset (void *, int, size_t);
+ /* All systems have this header.  */
+ #include <stdio.h>
+ 
++#if defined(__linux__)
++#undef caddr_t
++#endif
++
+ /* All systems have this header.  */
+ #include <sys/types.h>
+ 
+-- 
+2.53.0
+

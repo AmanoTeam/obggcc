@@ -1,0 +1,27 @@
+From 0c454a2750b69a2a69129a02ca7800370ab58a8a Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sat, 14 Mar 2026 01:10:01 +0100
+Subject: [PATCH] Fix definition of abort() on Windows
+
+---
+ gcc/system.h | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/gcc/system.h b/gcc/system.h
+index 38733dd81..648d57e4e 100644
+--- a/gcc/system.h
++++ b/gcc/system.h
+@@ -22,6 +22,10 @@ along with GCC; see the file COPYING3.  If not see
+ #ifndef GCC_SYSTEM_H
+ #define GCC_SYSTEM_H
+ 
++#if defined(_WIN32)
++#define WIN32_LEAN_AND_MEAN
++#endif
++
+ /* Define this so that inttypes.h defines the PRI?64 macros even
+    when compiling with a C++ compiler.  Define it here so in the
+    event inttypes.h gets pulled in by another header it is already
+-- 
+2.53.0
+

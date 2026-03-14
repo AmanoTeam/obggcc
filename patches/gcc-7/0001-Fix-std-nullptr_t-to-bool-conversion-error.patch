@@ -1,0 +1,25 @@
+From a5717640e91eaacf4430c14e4080c24d65719497 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sat, 14 Mar 2026 17:54:27 +0100
+Subject: [PATCH] Fix std::nullptr_t to bool conversion error
+
+---
+ gcc/config/i386/i386.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/gcc/config/i386/i386.c b/gcc/config/i386/i386.c
+index de71f56be..fd2881931 100644
+--- a/gcc/config/i386/i386.c
++++ b/gcc/config/i386/i386.c
+@@ -9628,7 +9628,7 @@ function_arg_advance_32 (CUMULATIVE_ARGS *cum, machine_mode mode,
+ 			 HOST_WIDE_INT words)
+ {
+   int res = 0;
+-  bool error_p = NULL;
++  bool error_p = 0;
+ 
+   if (TARGET_IAMCU)
+     {
+-- 
+2.53.0
+

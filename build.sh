@@ -102,8 +102,8 @@ declare -r sysroot_tarball="${build_directory}/sysroot.tar.xz"
 
 declare gdb='1'
 
-declare build_cmake='1'
-declare build_curl='1'
+declare build_cmake='0'
+declare build_curl='0'
 declare build_nz='1'
 
 declare exe=''
@@ -581,12 +581,51 @@ if ! [ -f "${gcc_tarball}" ]; then
 			"${workdir}/patches/gcc-"*"/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
 	fi
 	
+	if (( gcc_major <= 10 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-10/0001-Fix-build-when-compiling-in-C-17-mode.patch"
+	fi
+	
+	if (( gcc_major >= 8 && gcc_major <= 10 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-10/0001-Cygwin-MinGW-Do-not-version-lto-plugins.patch"
+	elif (( gcc_major >= 5 && gcc_major <= 7 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-5/0001-MinGW-Do-not-version-lto-plugins.patch"
+	elif (( gcc_major <= 4 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4/0001-MinGW-Do-not-version-lto-plugins.patch"
+	fi
+	
+	if (( gcc_major >= 5 && gcc_major <= 7 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-7/0001-Fix-std-nullptr_t-to-bool-conversion-error.patch"
+	fi
+	
+	if (( gcc_major == 11 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-11/0001-Unpoison-calloc-on-musl-hosts.patch"
+	fi
+	
+	if (( gcc_major >= 5 && gcc_major <= 11 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-11/0001-Add-missing-sys-select.h-include-on-BSD.patch"
+	fi
+	
+	if (( gcc_major >= 7 && gcc_major <= 11 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-7/0001-Darwin-Arm64-Initial-support-for-the-self-host-driver.patch"
+	fi
+	
+	if (( gcc_major >= 5 && gcc_major <= 12 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-5/0001-Fix-definition-of-abort-on-Windows.patch"
+	elif (( gcc_major <= 4 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4/0001-Fix-definition-of-abort-on-Windows.patch"
+	fi
+	
 	if (( gcc_major >= 11 && gcc_major <= 12 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-11/0001-Fix-missing-definition-of-PTR-macro.patch"
 	fi
 	
 	if (( gcc_major <= 7 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4/0001-Build-libcilkrts-with-D_GNU_SOURCE.patch"
+	fi
+	
+	if (( gcc_major <= 4 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4/0001-strerror.c-Do-not-declare-sys_nerr-or-sys_errlist-if-already-macros.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4/0001-Avoid-incorrectly-declaring-the-caddr_t-alias-on-Linux.patch"
 	fi
 	
 	if (( gcc_major >= 4 && gcc_major <= 5 )); then
@@ -1091,6 +1130,12 @@ for target in "${targets[@]}"; do
 		extra_configure_flags+=' --without-isl'
 	fi
 	
+	if (( gcc_major <= 7 )) && [[ "${host}" = *'-mingw32' ]]; then
+		extra_configure_flags+=' --disable-plugin'
+	fi
+	
+	declare ldflags="-L${toolchain_directory}/lib ${linkflags}"
+	
 	[ -d "${gcc_directory}/build" ] || mkdir "${gcc_directory}/build"
 	
 	cd "${gcc_directory}/build"
@@ -1155,7 +1200,7 @@ for target in "${targets[@]}"; do
 		--without-static-standard-libraries \
 		CFLAGS="${ccflags}" \
 		CXXFLAGS="${ccflags}" \
-		LDFLAGS="-L${toolchain_directory}/lib ${linkflags}"
+		LDFLAGS="${ldflags}"
 	
 	ldflags_for_target="${linkflags}"
 	
@@ -1178,6 +1223,12 @@ for target in "${targets[@]}"; do
 			--relative \
 			"${toolchain_directory}/lib/gcc/${triplet}/${gcc_major}."* \
 			"${toolchain_directory}/lib/gcc/${triplet}/${gcc_major}"
+		
+		ln \
+			--symbolic \
+			--relative \
+			"${toolchain_directory}/libexec/gcc/${triplet}/${gcc_major}."* \
+			"${toolchain_directory}/libexec/gcc/${triplet}/${gcc_major}"
 		
 		ln \
 			--symbolic \
