@@ -581,6 +581,10 @@ if ! [ -f "${gcc_tarball}" ]; then
 			"${workdir}/patches/gcc-"*"/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
 	fi
 	
+	if (( gcc_major <= 10 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-10/0001-Fix-build-when-compiling-in-C-17-mode.patch"
+	fi
+	
 	if (( gcc_major <= 11 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-11/0001-Add-missing-sys-select.h-include-on-BSD.patch"
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-11/0001-Unpoison-calloc-on-musl-hosts.patch"
