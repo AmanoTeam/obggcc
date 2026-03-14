@@ -584,6 +584,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 	if (( gcc_major <= 11 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-11/0001-Add-missing-sys-select.h-include-on-BSD.patch"
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-11/0001-Unpoison-calloc-on-musl-hosts.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-11/0001-Darwin-Arm64-Initial-support-for-the-self-host-driver.patch"
 	fi
 	
 	if (( gcc_major <= 12 )); then
