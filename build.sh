@@ -581,6 +581,10 @@ if ! [ -f "${gcc_tarball}" ]; then
 			"${workdir}/patches/gcc-"*"/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
 	fi
 	
+	if (( gcc_major <= 12 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-12/0001-Fix-definition-of-abort-on-Windows.patch"
+	fi
+	
 	if (( gcc_major >= 11 && gcc_major <= 12 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-11/0001-Fix-missing-definition-of-PTR-macro.patch"
 	fi
