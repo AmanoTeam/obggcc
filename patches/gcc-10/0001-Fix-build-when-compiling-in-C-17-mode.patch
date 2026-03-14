@@ -1,0 +1,26 @@
+From eb4f91e86a182c795ffcc440b6ed2028f6f7ba25 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sat, 14 Mar 2026 05:13:14 +0100
+Subject: [PATCH] Fix build when compiling in C++17 mode
+
+---
+ gcc/cp/except.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/gcc/cp/except.c b/gcc/cp/except.c
+index 31cfc8101..c5cfbefbc 100644
+--- a/gcc/cp/except.c
++++ b/gcc/cp/except.c
+@@ -20,6 +20,9 @@ You should have received a copy of the GNU General Public License
+ along with GCC; see the file COPYING3.  If not see
+ <http://www.gnu.org/licenses/>.  */
+ 
++#if __cplusplus >= 201703L
++#define register
++#endif
+ 
+ #include "config.h"
+ #include "system.h"
+-- 
+2.53.0
+

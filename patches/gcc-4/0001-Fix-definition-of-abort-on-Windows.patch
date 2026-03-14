@@ -1,0 +1,27 @@
+From cf94bfa1f14ce5763a0c33b388409c52ee61ef36 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sun, 15 Mar 2026 06:56:57 +0100
+Subject: [PATCH] Fix definition of abort() on Windows
+
+---
+ gcc/system.h | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/gcc/system.h b/gcc/system.h
+index 42bc509f2..37633e748 100644
+--- a/gcc/system.h
++++ b/gcc/system.h
+@@ -22,6 +22,10 @@ along with GCC; see the file COPYING3.  If not see
+ #ifndef GCC_SYSTEM_H
+ #define GCC_SYSTEM_H
+ 
++#if defined(_WIN32)
++#define WIN32_LEAN_AND_MEAN
++#endif
++
+ /* We must include stdarg.h before stdio.h.  */
+ #include <stdarg.h>
+ 
+-- 
+2.53.0
+
