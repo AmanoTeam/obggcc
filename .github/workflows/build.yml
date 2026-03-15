@@ -33,7 +33,7 @@ jobs:
       id: check-cache
       uses: actions/cache@main
       with:
-        key: 'cache-${{ env.OBGGCC_RELEASE }}.3'
+        key: 'cache-${{ env.OBGGCC_RELEASE }}.5'
         lookup-only: true
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
@@ -61,7 +61,7 @@ jobs:
       if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
       uses: actions/cache@main
       with:
-        key: 'cache-${{ env.OBGGCC_RELEASE }}.3'
+        key: 'cache-${{ env.OBGGCC_RELEASE }}.5'
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
           /tmp/x86_64-linux-gnu.tar.xz.sha256
@@ -134,7 +134,7 @@ jobs:
     - name: Restore from cache
       uses: actions/cache@main
       with:
-        key: 'cache-${{ env.OBGGCC_RELEASE }}.3'
+        key: 'cache-${{ env.OBGGCC_RELEASE }}.5'
         fail-on-cache-miss: true
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
@@ -167,11 +167,11 @@ jobs:
             curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --location --url "${OBGGCC_URL}" --output "${OBGGCC_TARBALL}"
             tar --directory="$(dirname "${OBGGCC_TARBALL}")" --extract --file="${OBGGCC_TARBALL}"
             
-            mv '/tmp/obggcc' '/tmp/obggcc-toolchain-2'
+            mv '/tmp/obggcc' '/tmp/obggcc-toolchain-bin'
             
             export OBGGCC_ARM_MODE='true'
             
-            export OBGGCC_HOME='/tmp/obggcc-toolchain-2'
+            export OBGGCC_HOME='/tmp/obggcc-toolchain-bin'
             # export PATH="${OBGGCC_HOME}/bin:${PATH}"
             
             source "${OBGGCC_HOME}/usr/local/share/obggcc/autotools/${{ matrix.target }}.sh"
@@ -312,7 +312,7 @@ jobs:
           tag_name: 'gcc-${{ env.OBGGCC_RELEASE }}'
           name: 'GCC ${{ env.OBGGCC_RELEASE }}'
           files: ./*/*-{unknown,w64}-*.{tar.xz,zip}*
-          draft: true
+          draft: false
           prerelease: false
           fail_on_unmatched_files: true
           body: "* Update to GCC ${{ env.OBGGCC_RELEASE }}"
