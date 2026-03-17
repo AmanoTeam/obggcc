@@ -29,22 +29,22 @@ Currently, OBGGCC provides cross-compilers targeting 6 major Ubuntu releases and
 
 ### Distributions
 
-| distribution_version     | glibc_version    | linux_version   | availability_date | 
-| :-------------------------: | :----------------: | :----------------: | :------------------: |
-| Debian 4 (Etch)          | glibc 2.3.6        | Linux 2.6.18       | 2007               |
-| Debian 5 (Lenny)          | glibc 2.7        | Linux 2.6.26       | 2009               |
-| Debian 6 (Squeeze)        | glibc 2.11       | Linux 2.6.32       | 2011               |
-| Debian 7 (Wheezy)         | glibc 2.13       | Linux 3.2.78       | 2013               |
-| Ubuntu 12.04 (Precise Pangolin)      | glibc 2.15       | Linux 3.2.0      | 2012               |
-| Debian 7 (Sid)         | glibc 2.17       | Linux 3.12.9       | 2014               |
-| Debian 8 (Jessie)         | glibc 2.19       | Linux 3.16.56      | 2015               |
-| Ubuntu 16.04 (Xenial Xerus)      | glibc 2.23       | Linux 4.4.0      | 2016               |
-| Debian 9 (Stretch)        | glibc 2.24       | Linux 4.9.228       | 2017               |
-| Ubuntu 18.04 (Bionic Beaver)      | glibc 2.27       | Linux 4.15.0      | 2018               |
-| Debian 10 (Buster)        | glibc 2.28       | Linux 4.19.249      | 2019               |
-| Debian 11 (Bullseye)      | glibc 2.31       | Linux 5.10.223      | 2021               |
-| Ubuntu 22.04 (Jammy Jellyfish)      | glibc 2.35       | Linux 5.15.0      | 2022               |
-| Ubuntu 24.04 (Noble Numbat)      | glibc 2.39       | Linux 6.8.0      | 2024               |
+| distribution_version              | glibc_version | linux_version | gcc_version | availability_date |
+| :-------------------------------: | :-----------: | :-----------: | :---------: | :---------------: |
+| Debian 4 (Etch)                  | glibc 2.3.6   | Linux 2.6.18  | GCC 4.1.1   | 2007              |
+| Debian 5 (Lenny)                 | glibc 2.7     | Linux 2.6.26  | GCC 4.3.2   | 2009              |
+| Debian 6 (Squeeze)               | glibc 2.11    | Linux 2.6.32  | GCC 4.4.5   | 2011              |
+| Debian 7 (Wheezy)                | glibc 2.13    | Linux 3.2.78  | GCC 4.7.2   | 2013              |
+| Ubuntu 12.04 (Precise Pangolin)  | glibc 2.15    | Linux 3.2.0   | GCC 4.6.3   | 2012              |
+| Debian 7 (Sid)                   | glibc 2.17    | Linux 3.12.9  | GCC 4.8.2   | 2014              |
+| Debian 8 (Jessie)                | glibc 2.19    | Linux 3.16.56 | GCC 4.9.2   | 2015              |
+| Ubuntu 16.04 (Xenial Xerus)      | glibc 2.23    | Linux 4.4.0   | GCC 5.3.1   | 2016              |
+| Debian 9 (Stretch)               | glibc 2.24    | Linux 4.9.228 | GCC 6.3.0   | 2017              |
+| Ubuntu 18.04 (Bionic Beaver)     | glibc 2.27    | Linux 4.15.0  | GCC 7.3.0   | 2018              |
+| Debian 10 (Buster)               | glibc 2.28    | Linux 4.19.249| GCC 8.3.0   | 2019              |
+| Debian 11 (Bullseye)             | glibc 2.31    | Linux 5.10.223| GCC 10.2.1  | 2021              |
+| Ubuntu 22.04 (Jammy Jellyfish)   | glibc 2.35    | Linux 5.15.0  | GCC 11.2.0  | 2022              |
+| Ubuntu 24.04 (Noble Numbat)      | glibc 2.39    | Linux 6.8.0   | GCC 13.2.0  | 2024              |
 
 ### System architectures
 
@@ -166,26 +166,18 @@ To restore your environment to its original state, run the `deactivate.sh` scrip
 $ source ${OBGGCC_HOME}/build/autotools/deactivate.sh
 ```
 
-See [Autotools bugs](#native-mode-vs-cross-compilation-mode-in-autotools) for a list of bugs related to Autotools and their workarounds.
-
-## Portability with C++ programs
-
-Unlike C programs, you cannot easily distribute C++ binaries in a portable way without also shipping the libstdc++ library (and sometimes, libgcc too) along with your release binary. Usually, shipping the libstdc++ library with your release binary doesn't offer much benefit in terms of libc version portability, as your program would still depend on the same libc version that libstdc++ was linked against (in this case, the one installed on your system).
-
-When building C++ programs with OBGGCC, however, your program automatically links against our variant of libstdc++, which is compiled against the same old libc version that the toolchain you're using provides. Because of this, you can statically link it with your binary (or ship the shared library with your release binary) without worrying about it increasing the libc version requirement.
-
 ## Security and stability implications
 
 Some people might think that linking a program against an old glibc version will make the compiled binary less secure and more vulnerable, as supposedly, the program will be using symbols from a standard library that's unmaintained and no longer receives security fixes. However, that's not true. Binaries compiled against an old glibc version still benefit from security fixes introduced in newer glibc versions as long as the target machine is running an updated glibc.
 
 The whole point of symbol versioning is to prevent behavior inconsistencies when running binaries compiled against different glibc versions. This is accomplished by bumping the symbol version every time a backward-incompatible change is introduced to some public function or API of the standard library. With this, programs compiled against newer versions of the standard library can benefit from newer features, while old programs will continue working as intended, as they will still be using the same version of that specific function or API that was available when the binary was compiled.
 
-The only exception to when a "backward-incompatible change" is not considered for a symbol version bump is when it modifies undocumented behavior. Security fixes are not considered for a version bump, as they essentially correct something that was never intended to work that way — undocumented behavior.
+The only exception to when a "backward-incompatible change" is not considered for a symbol version bump is when it modifies undocumented behavior. Security fixes are not considered for a version bump, as they essentially correct something that was never intended to work that way ,  undocumented behavior.
 
 Changes introduced in a newer glibc version that are not considered for a symbol version bump (including security fixes) take effect in all versions of that symbol, even in programs that were compiled for a glibc version that didn’t include that change. That means your program will still be running secure and optimized code, as long as it’s running on an up-to-date system.
 
 > [!NOTE]  
-> It should be noted that "an up-to-date system" does not specifically refer to a system where all packages — including glibc — are updated to their latest versions, but to a system that, at the bare minimum, receives security updates even if the system itself or its packages don't receive a major upgrade. This is especially true for Long-Term Support (LTS) Linux distributions.
+> It should be noted that "an up-to-date system" does not specifically refer to a system where all packages ,  including glibc ,  are updated to their latest versions, but to a system that, at the bare minimum, receives security updates even if the system itself or its packages don't receive a major upgrade. This is especially true for Long-Term Support (LTS) Linux distributions.
 
 ## Can we go even further?
 
@@ -227,6 +219,9 @@ OBGGCC allows you to change its behavior in certain scenarios through the use of
 
 - `OBGGCC_VERBOSE`  
   - Display the GCC subcommand invocation and the current working directory for every compilation process.
+
+- `OBGGCC_STL_VERSION`  
+  - Cross-compile code targeting a specific version of the GCC runtime libraries, rather than using the ones shipped with the compiler. See [Choosing an arbitrary GCC runtime version](#choosing-an-arbitrary-gcc-runtime-version).
 
 You can enable a switch by setting its value to `true` (e.g: `export OBGGCC_NZ=true`), and disable it by setting its value to `false` (e.g: `export OBGGCC_NZ=false`).
 
@@ -307,7 +302,7 @@ $ x86_64-unknown-linux-gnu2.23-apt install \
 Before cross-compiling curl, set the `OBGGCC_NZ` environment variable to enable OBGGCC to use libraries from nz's system root during the build:
 
 ```bash
-$ export OBGGCC_NZ=1
+$ export OBGGCC_NZ=true
 ```
 
 By default, OBGGCC won't use the libraries and headers from nz's system root unless explicitly told to. That's because OBGGCC assumes that most of the time you want to cross-compile software using only the core GNU C/C++ libraries (glibc and stdc++).
@@ -373,7 +368,7 @@ That's because there are no prebuilt OpenSSL binaries in the cross-compiler's sy
 Now let's try setting the `OBGGCC_SYSTEM_LIBRARIES` environment variable:
 
 ```bash
-$ export OBGGCC_SYSTEM_LIBRARIES=1
+$ export OBGGCC_SYSTEM_LIBRARIES=true
 ```
 
 And then compiling the program again:
@@ -405,11 +400,11 @@ $ x86_64-unknown-linux-gnu2.3-gcc main.c -lcrypto -o main
 
 # But this won't work; mismatching architectures
 $ aarch64-unknown-linux-gnu2.19-gcc main.c -lcrypto -o main
-/home/runner/obggcc/bin/../lib/gcc/aarch64-unknown-linux-gnu/15/../../../../aarch64-unknown-linux-gnu/bin/ld: skipping incompatible /lib64/libcrypto.so when searching for -lcrypto
-/home/runner/obggcc/bin/../lib/gcc/aarch64-unknown-linux-gnu/15/../../../../aarch64-unknown-linux-gnu/bin/ld: skipping incompatible /usr/lib64/libcrypto.so when searching for -lcrypto
-/home/runner/obggcc/bin/../lib/gcc/aarch64-unknown-linux-gnu/15/../../../../aarch64-unknown-linux-gnu/bin/ld: cannot find -lcrypto: No such file or directory
-/home/runner/obggcc/bin/../lib/gcc/aarch64-unknown-linux-gnu/15/../../../../aarch64-unknown-linux-gnu/bin/ld: skipping incompatible /lib64/libcrypto.so when searching for -lcrypto
-/home/runner/obggcc/bin/../lib/gcc/aarch64-unknown-linux-gnu/15/../../../../aarch64-unknown-linux-gnu/bin/ld: skipping incompatible /usr/lib64/libcrypto.so when searching for -lcrypto
+ld: skipping incompatible /lib64/libcrypto.so when searching for -lcrypto
+ld: skipping incompatible /usr/lib64/libcrypto.so when searching for -lcrypto
+ld: cannot find -lcrypto: No such file or directory
+ld: skipping incompatible /lib64/libcrypto.so when searching for -lcrypto
+ld: skipping incompatible /usr/lib64/libcrypto.so when searching for -lcrypto
 collect2: error: ld returned 1 exit status
 ```
 
@@ -434,7 +429,7 @@ It works!
 
 ## Running binaries with a specific glibc
 
-There may be cases where you might want to run your software under a specific glibc version—either to check how it will behave or to try a new glibc feature that was added in a later version but isn’t available in the glibc installed on your system.
+There may be cases where you might want to run your software under a specific glibc version, either to check how it will behave or to try a new glibc feature that was added in a later version but isn’t available in the glibc installed on your system.
 
 The environment variable `OBGGCC_BUILTIN_LOADER` can be used to change the default loader (aka dynamic linker) of an executable when cross-compiling. In other words, you can use this to force your binary to use a different glibc at runtime, ignoring the one available in your system.
 
@@ -455,7 +450,6 @@ I'm running CentOS 7 with glibc 2.17. Let's suppose I want to try the new `getra
 
 ```c
 #include <stdio.h>
-
 #include <sys/random.h>
 
 int main(void) {
@@ -499,7 +493,7 @@ $ ./main
 However, things change when I use `OBGGCC_BUILTIN_LOADER`:
 
 ```bash
-$ export OBGGCC_BUILTIN_LOADER=1
+$ export OBGGCC_BUILTIN_LOADER=true
 $ x86_64-unknown-linux-gnu2.27-gcc main.c -o main
 $ ./main
 0x67 0xE4 0xD3 0x9B 0xBD 0xD2 0x59 0x86 0xC0 0xE7 0x79 0xD2 0x2 0x92 0x3C 0x85
@@ -516,6 +510,33 @@ $ readelf -l main | grep "interpreter:"
 $ readelf -d main | grep "RPATH"
     Library rpath: [/home/runner/obggcc/x86_64-unknown-linux-gnu2.27/lib]
 ```
+
+## Choosing an arbitrary GCC runtime version
+
+By default, cross-compilation links against the runtime libraries of the GCC version used for the build. For bleeding-edge releases, this gives you access to the latest features the compiler has to offer, but comes with the drawback that you will probably need to bundle the GCC libraries or statically link them with your binary (especially for C++ code) if you want it to run out of the box on systems that use an older version of GCC as the base system compiler.
+
+If portability takes precedence over new features for you, it is possible to choose an arbitrary GCC runtime version to use during the build.
+
+### Usage
+
+The extra runtimes are not shipped with ordinary releases by default because they take a lot of storage space. To use them, you need to manually install them using the `gcc-stl-install` tool:
+
+```bash
+$ gcc-stl-install x86_64-unknown-linux-gnu
+```
+
+For other architectures, replace `x86_64-unknown-linux-gnu` with the corresponding target triplet.
+
+To make the cross-compiler use them, set the `OBGGCC_STL_VERSION` environment variable to the GCC version you intend the compiled code to be compatible with. Currently, this variable accepts values from `4` to `14`:
+
+```bash
+# Set it to use the GCC 12 runtime
+$ export OBGGCC_STL_VERSION=12
+# Now just use the compiler as you normally would
+$ x86_64-unknown-linux-gnu2.31-g++ [...]
+```
+
+To make the runtime version match the one used by the distro you are targeting, simply set the version to the one specified in the `gcc_version` field of the [Distributions](#distributions) table.
 
 ## Debugging
 
@@ -542,7 +563,7 @@ SUMMARY: AddressSanitizer: SEGV /home/runner/main.c:4 in main
 If you are playing around with AddressSanitizer, you might want to set the `OBGGCC_RUNTIME_RPATH` environment variable:
 
 ```bash
-export OBGGCC_RUNTIME_RPATH=1
+export OBGGCC_RUNTIME_RPATH=true
 ```
 
 This tells the linker to automatically add the `RPATH` of the directory containing the AddressSanitizer libraries to your executable, so you don't have to bother with setting the `LD_LIBRARY_PATH` or adding the rpath manually:
@@ -551,7 +572,7 @@ This tells the linker to automatically add the `RPATH` of the directory containi
 $ x86_64-unknown-linux-gnu2.3-gcc -fsanitize=address main.c -o main
 $ ./main
 ./main: error while loading shared libraries: libasan.so.8: cannot open shared object file: No such file or directory
-$ export OBGGCC_RUNTIME_RPATH=1
+$ export OBGGCC_RUNTIME_RPATH=true
 $ x86_64-unknown-linux-gnu2.3-gcc -fsanitize=address main.c -o main
 $ ./main
 <it works>
@@ -571,35 +592,6 @@ obggcc/bin/x86_64-unknown-linux-gnu-gdb
 ```
 
 Note that we don't provide prebuilt binaries of the gdb-server. If you want to use GDB for cross-debugging, you should build it yourself.
-
-## Bugs
-
-### Native mode vs cross-compilation mode in Autotools
-
-Autotools behaves differently depending on whether you are compiling code in native mode or cross-compilation mode. Native mode is assumed by default when the value of the `--build` argument matches that of the `--host` argument. Conversely, if the values of `--build` and `--host` do not match, Autotools assumes cross-compilation mode.
-
-The value of `--build`, when not manually specified, is automatically guessed by Autotools based on the system you are currently running. So, when running Autotools on an x86_64 GNU/Linux system, the `--build` argument will automatically assume the value `x86_64-unknown-linux-gnu`. Note that OBGGCC uses that same target name for the x86_64 GNU/Linux cross-compiler. Therefore, in a scenario where you are compiling code from an x86_64 GNU/Linux system to an x86_64 GNU/Linux system, both values of `--build` and `--host` will match, causing Autotools to assume native mode.
-
-Running Autotools in native mode despite being in a cross-compilation context is undesirable. Autotools automatically enables or disables certain features depending on the compilation mode, and one such feature enabled in native mode is [runtime checks](https://gnu.org/software/autoconf/manual/html_node/Runtime.html), which compile and run small test programs on the machine to determine the presence or absence of specific features that the software expects to rely on.
-
-Performing runtime checks in a cross-compilation context can cause Autotools to produce incorrect results when detecting system features. This happens because the system information gathered during the runtime checks reflects the build machine, not the target system, which may have different capabilities. This may cause the build to fail or generate broken binaries.
-
-Unfortunately, Autotools offers no way to disable this behavior, but you can manually patch the `configure` script to force it to always assume cross-compilation mode:
-
-```bash
-sed -ri 's/(cross_compiling)=.*$/\1=yes/' ./configure
-```
-
-If you are building software that has many components organized into subdirectories, you may need to apply the patch recursively:
-
-```bash
-while read file; do
-	sed -ri 's/(cross_compiling)=.*$/\1=yes/' "${file}"
-done <<< "$(find '.' -type 'f' -name 'configure')"
-```
-
-> [!NOTE]  
-> If you have already run the `./configure` script before applying the patch, make sure to run `make distclean` before re-running it, so that the changes take effect.
 
 ## Building OBGGCC
 

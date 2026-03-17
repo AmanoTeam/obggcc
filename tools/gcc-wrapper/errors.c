@@ -33,6 +33,8 @@ const char* obggcc_strerror(const int err) {
 			return "No input files";
 		case ERR_CLANG_NOT_FOUND:
 			return "Clang compiler not found in PATH";
+		case GCC_RUNTIME_FILES_NOT_FOUND:
+			return "No runtime libraries found for this GCC version";
 		default:
 			return "Unknown error";
 	}

@@ -50,6 +50,7 @@ static const char ENV_NEON[] = WRAPPER_FLAVOR_NAME "_NEON";
 static const char ENV_ARM_MODE[] = WRAPPER_FLAVOR_NAME "_ARM_MODE";
 static const char ENV_SIMD[] = WRAPPER_FLAVOR_NAME "_SIMD";
 static const char ENV_LTO[] = WRAPPER_FLAVOR_NAME "_LTO";
+static const char ENV_STL_VERSION[] = WRAPPER_FLAVOR_NAME "_STL_VERSION";
 
 static const char OBGGCC_OPT_HELP[] = "--obggcc-help";
 

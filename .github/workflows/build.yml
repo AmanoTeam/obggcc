@@ -15,7 +15,7 @@ permissions: write-all
 env: 
     OBGGCC_BUILD_PARALLEL_LEVEL: 40
     OBGGCC_BUILD_DIRECTORY: /tmp
-    OBGGCC_RELEASE: 4
+    OBGGCC_RELEASE: 15
     OBGGCC_TARGETS: '*'
 
 jobs:
@@ -173,6 +173,9 @@ jobs:
             
             export OBGGCC_HOME='/tmp/obggcc-toolchain-bin'
             # export PATH="${OBGGCC_HOME}/bin:${PATH}"
+            
+            ${OBGGCC_HOME}/bin/gcc-stl-install '${{ matrix.target }}'
+            export OBGGCC_STL_VERSION=5
             
             source "${OBGGCC_HOME}/usr/local/share/obggcc/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' = *'-freebsd' ]]; then
