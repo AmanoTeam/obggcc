@@ -29,22 +29,22 @@ Currently, OBGGCC provides cross-compilers targeting 6 major Ubuntu releases and
 
 ### Distributions
 
-| distribution_version     | glibc_version    | linux_version   | availability_date | 
-| :-------------------------: | :----------------: | :----------------: | :------------------: |
-| Debian 4 (Etch)          | glibc 2.3.6        | Linux 2.6.18       | 2007               |
-| Debian 5 (Lenny)          | glibc 2.7        | Linux 2.6.26       | 2009               |
-| Debian 6 (Squeeze)        | glibc 2.11       | Linux 2.6.32       | 2011               |
-| Debian 7 (Wheezy)         | glibc 2.13       | Linux 3.2.78       | 2013               |
-| Ubuntu 12.04 (Precise Pangolin)      | glibc 2.15       | Linux 3.2.0      | 2012               |
-| Debian 7 (Sid)         | glibc 2.17       | Linux 3.12.9       | 2014               |
-| Debian 8 (Jessie)         | glibc 2.19       | Linux 3.16.56      | 2015               |
-| Ubuntu 16.04 (Xenial Xerus)      | glibc 2.23       | Linux 4.4.0      | 2016               |
-| Debian 9 (Stretch)        | glibc 2.24       | Linux 4.9.228       | 2017               |
-| Ubuntu 18.04 (Bionic Beaver)      | glibc 2.27       | Linux 4.15.0      | 2018               |
-| Debian 10 (Buster)        | glibc 2.28       | Linux 4.19.249      | 2019               |
-| Debian 11 (Bullseye)      | glibc 2.31       | Linux 5.10.223      | 2021               |
-| Ubuntu 22.04 (Jammy Jellyfish)      | glibc 2.35       | Linux 5.15.0      | 2022               |
-| Ubuntu 24.04 (Noble Numbat)      | glibc 2.39       | Linux 6.8.0      | 2024               |
+| distribution_version              | glibc_version | linux_version | gcc_version | availability_date |
+| :-------------------------------: | :-----------: | :-----------: | :---------: | :---------------: |
+| Debian 4 (Etch)                  | glibc 2.3.6   | Linux 2.6.18  | GCC 4.1.1   | 2007              |
+| Debian 5 (Lenny)                 | glibc 2.7     | Linux 2.6.26  | GCC 4.3.2   | 2009              |
+| Debian 6 (Squeeze)               | glibc 2.11    | Linux 2.6.32  | GCC 4.4.5   | 2011              |
+| Debian 7 (Wheezy)                | glibc 2.13    | Linux 3.2.78  | GCC 4.7.2   | 2013              |
+| Ubuntu 12.04 (Precise Pangolin)  | glibc 2.15    | Linux 3.2.0   | GCC 4.6.3   | 2012              |
+| Debian 7 (Sid)                   | glibc 2.17    | Linux 3.12.9  | GCC 4.8.2   | 2014              |
+| Debian 8 (Jessie)                | glibc 2.19    | Linux 3.16.56 | GCC 4.9.2   | 2015              |
+| Ubuntu 16.04 (Xenial Xerus)      | glibc 2.23    | Linux 4.4.0   | GCC 5.3.1   | 2016              |
+| Debian 9 (Stretch)               | glibc 2.24    | Linux 4.9.228 | GCC 6.3.0   | 2017              |
+| Ubuntu 18.04 (Bionic Beaver)     | glibc 2.27    | Linux 4.15.0  | GCC 7.3.0   | 2018              |
+| Debian 10 (Buster)               | glibc 2.28    | Linux 4.19.249| GCC 8.3.0   | 2019              |
+| Debian 11 (Bullseye)             | glibc 2.31    | Linux 5.10.223| GCC 10.2.1  | 2021              |
+| Ubuntu 22.04 (Jammy Jellyfish)   | glibc 2.35    | Linux 5.15.0  | GCC 11.2.0  | 2022              |
+| Ubuntu 24.04 (Noble Numbat)      | glibc 2.39    | Linux 6.8.0   | GCC 13.2.0  | 2024              |
 
 ### System architectures
 

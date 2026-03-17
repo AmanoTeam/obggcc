@@ -1,4 +1,4 @@
-name: GCC STL
+name: GCC runtime libraries
 
 on:
   workflow_dispatch:
