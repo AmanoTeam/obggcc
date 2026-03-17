@@ -1829,3 +1829,5 @@ if [[ "${host}" = *'-mingw32' ]]; then
  		fi
 	done <<< "$(find "${toolchain_directory}")"
 fi
+
+cp "${workdir}/tools/gcc-stl-install.sh" "${toolchain_directory}/bin/gcc-stl-install"

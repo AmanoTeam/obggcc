@@ -166,8 +166,6 @@ To restore your environment to its original state, run the `deactivate.sh` scrip
 $ source ${OBGGCC_HOME}/build/autotools/deactivate.sh
 ```
 
-See [Autotools bugs](#native-mode-vs-cross-compilation-mode-in-autotools) for a list of bugs related to Autotools and their workarounds.
-
 ## Portability with C++ programs
 
 Unlike C programs, you cannot easily distribute C++ binaries in a portable way without also shipping the libstdc++ library (and sometimes, libgcc too) along with your release binary. Usually, shipping the libstdc++ library with your release binary doesn't offer much benefit in terms of libc version portability, as your program would still depend on the same libc version that libstdc++ was linked against (in this case, the one installed on your system).
@@ -227,6 +225,9 @@ OBGGCC allows you to change its behavior in certain scenarios through the use of
 
 - `OBGGCC_VERBOSE`  
   - Display the GCC subcommand invocation and the current working directory for every compilation process.
+
+- `OBGGCC_STL_VERSION`  
+  - Cross-compile code targeting a specific version of the GCC runtime libraries.
 
 You can enable a switch by setting its value to `true` (e.g: `export OBGGCC_NZ=true`), and disable it by setting its value to `false` (e.g: `export OBGGCC_NZ=false`).
 
@@ -517,6 +518,8 @@ $ readelf -d main | grep "RPATH"
     Library rpath: [/home/runner/obggcc/x86_64-unknown-linux-gnu2.27/lib]
 ```
 
+## Choosin
+
 ## Debugging
 
 ### AddressSanitizer
@@ -571,35 +574,6 @@ obggcc/bin/x86_64-unknown-linux-gnu-gdb
 ```
 
 Note that we don't provide prebuilt binaries of the gdb-server. If you want to use GDB for cross-debugging, you should build it yourself.
-
-## Bugs
-
-### Native mode vs cross-compilation mode in Autotools
-
-Autotools behaves differently depending on whether you are compiling code in native mode or cross-compilation mode. Native mode is assumed by default when the value of the `--build` argument matches that of the `--host` argument. Conversely, if the values of `--build` and `--host` do not match, Autotools assumes cross-compilation mode.
-
-The value of `--build`, when not manually specified, is automatically guessed by Autotools based on the system you are currently running. So, when running Autotools on an x86_64 GNU/Linux system, the `--build` argument will automatically assume the value `x86_64-unknown-linux-gnu`. Note that OBGGCC uses that same target name for the x86_64 GNU/Linux cross-compiler. Therefore, in a scenario where you are compiling code from an x86_64 GNU/Linux system to an x86_64 GNU/Linux system, both values of `--build` and `--host` will match, causing Autotools to assume native mode.
-
-Running Autotools in native mode despite being in a cross-compilation context is undesirable. Autotools automatically enables or disables certain features depending on the compilation mode, and one such feature enabled in native mode is [runtime checks](https://gnu.org/software/autoconf/manual/html_node/Runtime.html), which compile and run small test programs on the machine to determine the presence or absence of specific features that the software expects to rely on.
-
-Performing runtime checks in a cross-compilation context can cause Autotools to produce incorrect results when detecting system features. This happens because the system information gathered during the runtime checks reflects the build machine, not the target system, which may have different capabilities. This may cause the build to fail or generate broken binaries.
-
-Unfortunately, Autotools offers no way to disable this behavior, but you can manually patch the `configure` script to force it to always assume cross-compilation mode:
-
-```bash
-sed -ri 's/(cross_compiling)=.*$/\1=yes/' ./configure
-```
-
-If you are building software that has many components organized into subdirectories, you may need to apply the patch recursively:
-
-```bash
-while read file; do
-	sed -ri 's/(cross_compiling)=.*$/\1=yes/' "${file}"
-done <<< "$(find '.' -type 'f' -name 'configure')"
-```
-
-> [!NOTE]  
-> If you have already run the `./configure` script before applying the patch, make sure to run `make distclean` before re-running it, so that the changes take effect.
 
 ## Building OBGGCC
 
