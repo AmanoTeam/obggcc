@@ -49,6 +49,13 @@ parser.add_argument(
 )
 
 parser.add_argument(
+	"-fstl-version",
+	required = False,
+	metavar = "VERSION",
+	help = "Cross-compile code targeting a specific version of the GCC runtime libraries (integer in the range 4–16)."
+)
+
+parser.add_argument(
 	"-f[no-]verbose",
 	required = False,
 	action = "store_true",

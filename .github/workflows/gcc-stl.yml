@@ -1,0 +1,31 @@
+name: GCC STL
+
+on:
+  workflow_dispatch:
+    branches:
+        - '**'
+
+permissions:
+  contents: write
+
+jobs:
+  native-build:
+    name: Native build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@master
+      - name: Run gcc-stl-create.sh
+        run: bash ./tools/gcc-stl-create.sh
+      - name: Create release
+        uses: softprops/action-gh-release@master
+        with:
+          tag_name: gcc-stl
+          name: GCC runtime libraries
+          files: ./*-unknown-*.tar.xz
+          draft: false
+          prerelease: false
+          fail_on_unmatched_files: true
+          body_path: ./tools/gcc-stl.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -40,9 +40,10 @@
 #include "query.h"
 #include "strsplit.h"
 #include "kargv.h"
+#include "gcc-version.h"
 #include "program_help.h"
 
-static const char GCC_MAJOR_VERSION[] = "16";
+static const char GCC_MAJOR_VERSION[] = "15";
 
 static const char INCLUDE_DIR[] = PATHSEP_M "include";
 static const char INCLUDE_MISSING_DIR[] = PATHSEP_M "include-missing";
@@ -117,6 +118,8 @@ static const char GCC_OPT_SHARED[] = "-shared";
 static const char GCC_OPT_F_SYNTAX_ONLY[] = "-fsyntax-only";
 static const char GCC_OPT_OS[] = "-Os";
 static const char GCC_OPT_FSANITIZE[] = "-fsanitize=";
+static const char GCC_OPT_F_ABI_VERSION[] = "-fabi-version=";
+static const char GCC_OPT_STD[] = "-std=";
 static const char GCC_OPT_XLINKER[] = "-Xlinker";
 static const char GCC_OPT_WL[] = "-Wl,";
 static const char GCC_OPT_F_FAT_LTO_OBJECTS[] = "-ffat-lto-objects";
@@ -293,6 +296,8 @@ static const char CLANG_VERSION_TEMPLATE[] =
 	"InstalledDir: %s\n";
 
 static const char CLANG_WARNING_REMOVE_NONE[] = "none";
+
+static const char GCC_STL[] = "gcc-stl";
 
 static clang_option_t CLANG_SPECIFIC_REMOVE[] = {
 	{
@@ -1497,6 +1502,33 @@ int copy_shared_library(
 }
 #endif
 
+static struct GCCVersion* get_stl_version(const char* const string) {
+	
+	biguint_t value = 0;
+	size_t index = 0;
+	
+	struct GCCVersion* item = NULL;
+	
+	if (string == NULL) {
+		return NULL;
+	}
+	
+	value = strtobui(string, NULL, 10);
+	
+	for (index < 0; index < sizeof(GCC_VERSIONS) / sizeof(*GCC_VERSIONS); index++) {
+		item = &GCC_VERSIONS[index];
+		
+		if (item->version != value) {
+			continue;
+		}
+		
+		return item;
+	}
+	
+	return NULL;
+	
+}
+
 int main(int argc, char* argv[]) {
 	
 	int status = 0;
@@ -1549,6 +1581,8 @@ int main(int argc, char* argv[]) {
 	
 	int wants_force_static = 0;
 	
+	int have_std = 0;
+	
 	hquery_t query = {0};
 	
 	#if defined(OBGGCC)
@@ -1597,6 +1631,8 @@ int main(int argc, char* argv[]) {
 	char* sysroot_library_directory = NULL;
 	char* sysroot_ldscripts_directory = NULL;
 	char* sysroot_runtime_directory = NULL;
+	char* stl_library_directory = NULL;
+	char* stl_gpp_include_directory = NULL;
 	
 	char* sysroot_dynamic_linker = NULL;
 	
@@ -1610,6 +1646,8 @@ int main(int argc, char* argv[]) {
 	char* override_triplet = NULL;
 	
 	char* libc_version = NULL;
+	
+	struct GCCVersion* stl_version = NULL;
 	
 	char* file_name = NULL;
 	char* file_extension = NULL;
@@ -1635,6 +1673,9 @@ int main(int argc, char* argv[]) {
 	char* linker = NULL;
 	
 	char* floating_point_unit = NULL;
+	char* fabi_version = NULL;
+	char* std = NULL;
+	char* sysroot = NULL;
 	
 	unsigned char ch = 0;
 	
@@ -1642,6 +1683,11 @@ int main(int argc, char* argv[]) {
 	
 	#if defined(OBGGCC) || defined(RAIDEN)
 		wants_builtin_loader = query_get_bool(&query, ENV_BUILTIN_LOADER) == 1;
+	#endif
+	
+	#if defined(OBGGCC)
+		opt = query_get_string(&query, ENV_STL_VERSION);
+		stl_version = get_stl_version(opt);
 	#endif
 	
 	wants_force_static = query_get_bool(&query, ENV_STATIC_RUNTIME);
@@ -2019,6 +2065,8 @@ int main(int argc, char* argv[]) {
 				android_weak_symbols = 1;
 				continue;
 			#endif
+		} else if (strncmp(cur, GCC_OPT_STD, strlen(GCC_OPT_STD)) == 0) {
+			have_std = 1;
 		}
 		
 		next:;
@@ -2639,6 +2687,53 @@ int main(int argc, char* argv[]) {
 	strcpy(sysroot_library_directory, sysroot_directory);
 	strcat(sysroot_library_directory, LIBRARY_DIR);
 	
+	if (stl_version != NULL) {
+		arg = uint_stringify(stl_version->version);
+		
+		stl_library_directory = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(GCC_STL) + strlen(PATHSEP_S) + strlen(triplet) + strlen(PATHSEP_S) + strlen(arg) + strlen(LIBRARY_DIR) + strlen(STATIC_LIBRARY_DIR) + 1);
+		
+		if (stl_library_directory == NULL) {
+			err = ERR_MEM_ALLOC_FAILURE;
+			goto end;
+		}
+		
+		strcpy(stl_library_directory, parent_directory);
+		strcat(stl_library_directory, PATHSEP_S);
+		strcat(stl_library_directory, GCC_STL);
+		strcat(stl_library_directory, PATHSEP_S);
+		strcat(stl_library_directory, triplet);
+		strcat(stl_library_directory, PATHSEP_S);
+		strcat(stl_library_directory, arg);
+		strcat(stl_library_directory, LIBRARY_DIR);
+		
+		if (wants_force_static) {
+			strcat(stl_library_directory, STATIC_LIBRARY_DIR);
+		}
+		
+		stl_gpp_include_directory = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(GCC_STL) + strlen(PATHSEP_S) + strlen(triplet) + strlen(PATHSEP_S) + strlen(arg) + strlen(INCLUDE_DIR) + strlen(PATHSEP_S) + strlen(CPP) + strlen(PATHSEP_S) + strlen(arg) + 1);
+		
+		if (stl_gpp_include_directory == NULL) {
+			err = ERR_MEM_ALLOC_FAILURE;
+			goto end;
+		}
+		
+		strcpy(stl_gpp_include_directory, parent_directory);
+		strcat(stl_gpp_include_directory, PATHSEP_S);
+		strcat(stl_gpp_include_directory, GCC_STL);
+		strcat(stl_gpp_include_directory, PATHSEP_S);
+		strcat(stl_gpp_include_directory, triplet);
+		strcat(stl_gpp_include_directory, PATHSEP_S);
+		strcat(stl_gpp_include_directory, arg);
+		strcat(stl_gpp_include_directory, INCLUDE_DIR);
+		strcat(stl_gpp_include_directory, PATHSEP_S);
+		strcat(stl_gpp_include_directory, CPP);
+		strcat(stl_gpp_include_directory, PATHSEP_S);
+		strcat(stl_gpp_include_directory, arg);
+		
+		free(arg);
+		arg = NULL;
+	}
+	
 	sysroot_ldscripts_directory = malloc(strlen(sysroot_library_directory) + strlen(LDSCRIPTS_DIR) + 1);
 	
 	if (sysroot_ldscripts_directory == NULL) {
@@ -2730,16 +2825,16 @@ int main(int argc, char* argv[]) {
 		strcat(gpp_builtins_include_directory, triplet);
 	#endif
 	
-	arg = malloc(strlen(GCC_OPT_SYSROOT) + strlen(EQUAL_S) + strlen(sysroot_directory) + 1);
+	sysroot = malloc(strlen(GCC_OPT_SYSROOT) + strlen(EQUAL_S) + strlen(sysroot_directory) + 1);
 	
-	if (arg == NULL) {
+	if (sysroot == NULL) {
 		err = ERR_MEM_ALLOC_FAILURE;
 		goto end;
 	}
 	
-	strcpy(arg, GCC_OPT_SYSROOT);
-	strcat(arg, EQUAL_S);
-	strcat(arg, sysroot_directory);
+	strcpy(sysroot, GCC_OPT_SYSROOT);
+	strcat(sysroot, EQUAL_S);
+	strcat(sysroot, sysroot_directory);
 	
 	nz_sysroot_directory = malloc(strlen(sysroot_directory) + strlen(NZ_SYSROOT) + 1);
 	
@@ -2754,7 +2849,7 @@ int main(int argc, char* argv[]) {
 	offset = 0;
 	
 	kargv_append(&yargv, executable);
-	kargv_append(&yargv, arg);
+	kargv_append(&yargv, sysroot);
 	
 	#if defined(WCLANG)
 		kargv_append(&yargv, (CLANG_OPT_TARGET + 1));
@@ -2808,7 +2903,60 @@ int main(int argc, char* argv[]) {
 		kargv_append(&yargv, GCC_OPT_NOSTDINC);
 	#endif
 	
-	if (strcmp(cc, GPP) == 0 || strcmp(cc, CPP) == 0 || strcmp(cc, CLANGPP) == 0) {
+	status = strcmp(cc, GPP) == 0 || strcmp(cc, CPP) == 0 || strcmp(cc, CLANGPP) == 0;
+	
+	if (stl_version != NULL) {
+		arg = uint_stringify(stl_version->min_abi_version);
+		
+		fabi_version = malloc(strlen(GCC_OPT_F_ABI_VERSION) + strlen(arg) + 1);
+		
+		if (fabi_version == NULL) {
+			err = ERR_MEM_ALLOC_FAILURE;
+			goto end;
+		}
+		
+		strcpy(fabi_version, GCC_OPT_F_ABI_VERSION);
+		strcat(fabi_version, arg);
+		
+		free(arg);
+		arg = NULL;
+		
+		kargv_append(&yargv, fabi_version);
+		
+		if (!have_std) {
+			std = malloc(strlen(GCC_OPT_STD) + 5 + 2 + 1);
+			
+			if (std == NULL) {
+				err = ERR_MEM_ALLOC_FAILURE;
+				goto end;
+			}
+			
+			strcpy(std, GCC_OPT_STD);
+			
+			arg = uint_stringify((status) ? stl_version->stdcxx_version : stl_version->stdc_version);
+			
+			strcat(std, (status) ? "gnu++" : "gnu");
+			strcat(std, arg);
+			
+			free(arg);
+			arg = NULL;
+			
+			kargv_append(&yargv, std);
+		}
+		
+		if (linking) {
+			kargv_append(&yargv, GCC_OPT_LIBDIR);
+			kargv_append(&yargv, stl_library_directory);
+			
+			kargv_append(&yargv, GCC_OPT_B);
+			kargv_append(&yargv, stl_library_directory);
+		}
+		
+		if (status) {
+			kargv_append(&yargv, GCC_OPT_ISYSTEM);
+			kargv_append(&yargv, stl_gpp_include_directory);
+		}
+	} else if (status) {
 		kargv_append(&yargv, GCC_OPT_ISYSTEM);
 		kargv_append(&yargv, gpp_include_directory);
 		
@@ -3249,6 +3397,9 @@ int main(int argc, char* argv[]) {
 	free(parent_directory);
 	free(non_prefixed_triplet);
 	free(override_triplet);
+	free(fabi_version);
+	free(std);
+	free(sysroot);
 	
 	#if defined(PINO)
 		free(android_version_min);
