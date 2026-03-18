@@ -641,6 +641,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 	
 	if (( gcc_major >= 14 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Turn-Wimplicit-function-declaration-back-into-an-warning.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-14/0001-Avoid-emitting-calls-to-__cxa_call_terminate-on-older-runtimes.patch"
 	fi
 	
 	if (( gcc_major >= 13 )); then
@@ -922,7 +923,7 @@ if [[ "${host}" != *'-android'* ]]; then
 		-DCMAKE_INSTALL_PREFIX="${toolchain_directory}" \
 		-DCMAKE_INSTALL_RPATH='$ORIGIN/../lib'
 	
-	OBGGCC_VERBOSE=1 cmake --build "${PWD}"
+	cmake --build "${PWD}"
 	cmake --install "${PWD}" --strip
 fi
 
