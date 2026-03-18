@@ -1,5 +1,7 @@
 #!/bin/bash
 
+declare -r workdir="${PWD}"
+
 declare -ra versions=(
 	'4'
 	'5'
@@ -110,6 +112,10 @@ for version in "${versions[@]}"; do
 			--recursive \
 			"${PWD}/${target}/${version}/include/c++/${version}/${target}/"* \
 			"${PWD}/${target}/${version}/include/c++/${version}"
+		
+		if (( version <= 5 )); then
+			patch --directory="${PWD}/${target}/${version}/include/c++/${version}" --strip='1' --input="${workdir}/patches/gcc-stl/gcc-4/0001-Backport-__is_nothrow_swappable.patch"
+		fi
 	done
 done
 

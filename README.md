@@ -400,11 +400,11 @@ $ x86_64-unknown-linux-gnu2.3-gcc main.c -lcrypto -o main
 
 # But this won't work; mismatching architectures
 $ aarch64-unknown-linux-gnu2.19-gcc main.c -lcrypto -o main
-/home/runner/obggcc/bin/../lib/gcc/aarch64-unknown-linux-gnu/15/../../../../aarch64-unknown-linux-gnu/bin/ld: skipping incompatible /lib64/libcrypto.so when searching for -lcrypto
-/home/runner/obggcc/bin/../lib/gcc/aarch64-unknown-linux-gnu/15/../../../../aarch64-unknown-linux-gnu/bin/ld: skipping incompatible /usr/lib64/libcrypto.so when searching for -lcrypto
-/home/runner/obggcc/bin/../lib/gcc/aarch64-unknown-linux-gnu/15/../../../../aarch64-unknown-linux-gnu/bin/ld: cannot find -lcrypto: No such file or directory
-/home/runner/obggcc/bin/../lib/gcc/aarch64-unknown-linux-gnu/15/../../../../aarch64-unknown-linux-gnu/bin/ld: skipping incompatible /lib64/libcrypto.so when searching for -lcrypto
-/home/runner/obggcc/bin/../lib/gcc/aarch64-unknown-linux-gnu/15/../../../../aarch64-unknown-linux-gnu/bin/ld: skipping incompatible /usr/lib64/libcrypto.so when searching for -lcrypto
+ld: skipping incompatible /lib64/libcrypto.so when searching for -lcrypto
+ld: skipping incompatible /usr/lib64/libcrypto.so when searching for -lcrypto
+ld: cannot find -lcrypto: No such file or directory
+ld: skipping incompatible /lib64/libcrypto.so when searching for -lcrypto
+ld: skipping incompatible /usr/lib64/libcrypto.so when searching for -lcrypto
 collect2: error: ld returned 1 exit status
 ```
 
@@ -514,7 +514,7 @@ $ readelf -d main | grep "RPATH"
 
 ## Choosing an arbitrary GCC runtime version
 
-By default, cross-compilation links against the runtime libraries of the GCC version used for the build. For bleeding-edge releases, this gives you access to the latest features the compiler has to offer, but comes with the drawback that you will probably need to bundle the GCC shared libraries or statically link them with your binary (especially for C++ code) if you want it to run out of the box on systems that use an older version of GCC as the base system compiler.
+By default, cross-compilation links against the runtime libraries of the GCC version used for the build. For bleeding-edge releases, this gives you access to the latest features the compiler has to offer, but comes with the drawback that you will probably need to bundle the GCC libraries or statically link them with your binary (especially for C++ code) if you want it to run out of the box on systems that use an older version of GCC as the base system compiler.
 
 If portability takes precedence over new features for you, it is possible to choose an arbitrary old GCC runtime version to use during the build.
 
@@ -526,12 +526,12 @@ The extra runtimes are not shipped with ordinary releases by default because the
 $ gcc-stl-install x86_64-unknown-linux-gnu
 ```
 
-*For other architectures, replace `x86_64-unknown-linux-gnu` with the corresponding target triplet.*
+For other architectures, replace `x86_64-unknown-linux-gnu` with the corresponding target triplet.
 
 To make the cross-compiler use them, set the `OBGGCC_STL_VERSION` environment variable to the GCC version you intend the compiled code to be compatible with. Currently, this variable accepts values from `4` to `14`:
 
 ```bash
-# Set it to use the GCC 12 runtimes
+# Set it to use the GCC 12 runtime
 $ export OBGGCC_STL_VERSION=12
 # Now just use the compiler as you normally would
 $ x86_64-unknown-linux-gnu2.31-g++ [...]
