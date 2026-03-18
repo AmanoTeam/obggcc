@@ -174,7 +174,7 @@ jobs:
             export OBGGCC_HOME='/tmp/obggcc-toolchain-bin'
             # export PATH="${OBGGCC_HOME}/bin:${PATH}"
             
-            ${OBGGCC_HOME}/bin/gcc-stl-install x86_64-unknown-linux-gnu
+            ${OBGGCC_HOME}/bin/gcc-stl-install '${{ matrix.target }}'
             export OBGGCC_STL_VERSION=4
             
             source "${OBGGCC_HOME}/usr/local/share/obggcc/autotools/${{ matrix.target }}.sh"
