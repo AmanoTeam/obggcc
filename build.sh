@@ -181,10 +181,10 @@ declare -ra deprecated_targets=(
 )
 
 declare -ra targets=(
-	#'i386-unknown-linux-gnu'
-	#'arm-unknown-linux-gnueabi'
-	#'arm-unknown-linux-gnueabihf'
-	#'aarch64-unknown-linux-gnu'
+	'i386-unknown-linux-gnu'
+	'arm-unknown-linux-gnueabi'
+	'arm-unknown-linux-gnueabihf'
+	'aarch64-unknown-linux-gnu'
 	'x86_64-unknown-linux-gnu'
 )
 
