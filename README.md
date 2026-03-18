@@ -166,12 +166,6 @@ To restore your environment to its original state, run the `deactivate.sh` scrip
 $ source ${OBGGCC_HOME}/build/autotools/deactivate.sh
 ```
 
-## Portability with C++ programs
-
-Unlike C programs, you cannot easily distribute C++ binaries in a portable way without also shipping the libstdc++ library (and sometimes, libgcc too) along with your release binary. Usually, shipping the libstdc++ library with your release binary doesn't offer much benefit in terms of libc version portability, as your program would still depend on the same libc version that libstdc++ was linked against (in this case, the one installed on your system).
-
-When building C++ programs with OBGGCC, however, your program automatically links against our variant of libstdc++, which is compiled against the same old libc version that the toolchain you're using provides. Because of this, you can statically link it with your binary (or ship the shared library with your release binary) without worrying about it increasing the libc version requirement.
-
 ## Security and stability implications
 
 Some people might think that linking a program against an old glibc version will make the compiled binary less secure and more vulnerable, as supposedly, the program will be using symbols from a standard library that's unmaintained and no longer receives security fixes. However, that's not true. Binaries compiled against an old glibc version still benefit from security fixes introduced in newer glibc versions as long as the target machine is running an updated glibc.
@@ -308,7 +302,7 @@ $ x86_64-unknown-linux-gnu2.23-apt install \
 Before cross-compiling curl, set the `OBGGCC_NZ` environment variable to enable OBGGCC to use libraries from nz's system root during the build:
 
 ```bash
-$ export OBGGCC_NZ=1
+$ export OBGGCC_NZ=true
 ```
 
 By default, OBGGCC won't use the libraries and headers from nz's system root unless explicitly told to. That's because OBGGCC assumes that most of the time you want to cross-compile software using only the core GNU C/C++ libraries (glibc and stdc++).
@@ -374,7 +368,7 @@ That's because there are no prebuilt OpenSSL binaries in the cross-compiler's sy
 Now let's try setting the `OBGGCC_SYSTEM_LIBRARIES` environment variable:
 
 ```bash
-$ export OBGGCC_SYSTEM_LIBRARIES=1
+$ export OBGGCC_SYSTEM_LIBRARIES=true
 ```
 
 And then compiling the program again:
@@ -500,7 +494,7 @@ $ ./main
 However, things change when I use `OBGGCC_BUILTIN_LOADER`:
 
 ```bash
-$ export OBGGCC_BUILTIN_LOADER=1
+$ export OBGGCC_BUILTIN_LOADER=true
 $ x86_64-unknown-linux-gnu2.27-gcc main.c -o main
 $ ./main
 0x67 0xE4 0xD3 0x9B 0xBD 0xD2 0x59 0x86 0xC0 0xE7 0x79 0xD2 0x2 0x92 0x3C 0x85
@@ -518,7 +512,32 @@ $ readelf -d main | grep "RPATH"
     Library rpath: [/home/runner/obggcc/x86_64-unknown-linux-gnu2.27/lib]
 ```
 
-## Choosin
+## Choosing an arbitrary GCC runtime version
+
+By default, cross-compilation links against the runtime libraries of the GCC version used for the build. For bleeding-edge releases, this gives you access to the latest features the compiler has to offer, but comes with the drawback that you will probably need to bundle the GCC shared libraries or statically link them with your binary (especially for C++ code) if you want it to run out of the box on systems that use an older version of GCC as the base system compiler.
+
+If portability takes precedence over new features for you, it is possible to choose an arbitrary old GCC runtime version to use during the build.
+
+### Usage
+
+The extra runtimes are not shipped with ordinary releases by default because they take a lot of storage space. To use them, you need to manually install them using the `gcc-stl-install` tool:
+
+```bash
+$ gcc-stl-install x86_64-unknown-linux-gnu
+```
+
+*For other architectures, replace `x86_64-unknown-linux-gnu` with the corresponding target triplet.*
+
+To make the cross-compiler use them, set the `OBGGCC_STL_VERSION` environment variable to the GCC version you intend the compiled code to be compatible with. Currently, this variable accepts values from `4` to `14`:
+
+```bash
+# Set it to use the GCC 12 runtimes
+$ export OBGGCC_STL_VERSION=12
+# Now just use the compiler as you normally would
+$ x86_64-unknown-linux-gnu2.31-g++ [...]
+```
+
+To make the runtime version match the one used by the distro you are targeting, simply set the version to the one specified in the `gcc_version` field of the [Distributions](#distributions) table.
 
 ## Debugging
 
@@ -545,7 +564,7 @@ SUMMARY: AddressSanitizer: SEGV /home/runner/main.c:4 in main
 If you are playing around with AddressSanitizer, you might want to set the `OBGGCC_RUNTIME_RPATH` environment variable:
 
 ```bash
-export OBGGCC_RUNTIME_RPATH=1
+export OBGGCC_RUNTIME_RPATH=true
 ```
 
 This tells the linker to automatically add the `RPATH` of the directory containing the AddressSanitizer libraries to your executable, so you don't have to bother with setting the `LD_LIBRARY_PATH` or adding the rpath manually:
@@ -554,7 +573,7 @@ This tells the linker to automatically add the `RPATH` of the directory containi
 $ x86_64-unknown-linux-gnu2.3-gcc -fsanitize=address main.c -o main
 $ ./main
 ./main: error while loading shared libraries: libasan.so.8: cannot open shared object file: No such file or directory
-$ export OBGGCC_RUNTIME_RPATH=1
+$ export OBGGCC_RUNTIME_RPATH=true
 $ x86_64-unknown-linux-gnu2.3-gcc -fsanitize=address main.c -o main
 $ ./main
 <it works>
