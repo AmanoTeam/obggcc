@@ -1,0 +1,37 @@
+From f43b77e6150e084062852aa63242c50031fb5df2 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Wed, 18 Mar 2026 16:22:07 -0300
+Subject: [PATCH] Avoid emitting calls to __cxa_call_terminate on older
+ runtimes
+
+When a C++ function declared with noexcept throws an exception, GCC generates a try/catch block that calls __cxa_call_terminate() to terminate the process. However, this function is not available in older versions of libstdc++, leading to undefined reference errors when linking code against those runtimes:
+
+ld.bfd: dwp.o: in function `gold::Dwo_file::make_object(gold::Dwp_output_file*) [clone .cold]':
+dwp.cc:(.text.unlikely+0x191): undefined reference to `__cxa_call_terminate'
+ld.bfd: libgold.a(fileread.o): in function `gold::File_read::~File_read() [clone .cold]':
+fileread.cc:(.text.unlikely+0xc3): undefined reference to `__cxa_call_terminate'
+
+Fix this by calling std::terminate() instead when targeting runtimes from GCC < 14 (i.e., -fabi-version=17).
+---
+ gcc/cp/except.cc | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/gcc/cp/except.cc b/gcc/cp/except.cc
+index e1e082ef1..6e5739a64 100644
+--- a/gcc/cp/except.cc
++++ b/gcc/cp/except.cc
+@@ -94,6 +94,11 @@ cp_protect_cleanup_actions (void)
+ 
+      When the destruction of an object during stack unwinding exits
+      using an exception ... void terminate(); is called.  */
++
++  if (flag_abi_version < 18) {
++  	return terminate_fn;
++  }
++
+   return call_terminate_fn;
+ }
+ 
+-- 
+2.52.0
+
