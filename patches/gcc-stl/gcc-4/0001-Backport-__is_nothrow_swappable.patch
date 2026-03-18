@@ -221,7 +221,7 @@ index ecebfa5..f798e27 100644
  			<typename remove_cv<_Tp>::type>::type		\
      { };
  
-+#if __GNUC__ < 5
++#if __GLIBCXX__ <= 20160726
 +  template<typename... _Types>
 +    struct __make_void { typedef void type; };
 +

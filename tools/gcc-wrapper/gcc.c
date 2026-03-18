@@ -2732,6 +2732,11 @@ int main(int argc, char* argv[]) {
 		
 		free(arg);
 		arg = NULL;
+		
+		if (!(directory_exists(stl_library_directory) == 1 && directory_exists(stl_gpp_include_directory) == 1)) {
+			err = GCC_RUNTIME_FILES_NOT_FOUND;
+			goto end;
+		}
 	}
 	
 	sysroot_ldscripts_directory = malloc(strlen(sysroot_library_directory) + strlen(LDSCRIPTS_DIR) + 1);
@@ -3162,6 +3167,14 @@ int main(int argc, char* argv[]) {
 		kargv_append(&yargv, GCC_OPT_XLINKER);
 		kargv_append(&yargv, sysroot_dynamic_linker);
 		
+		if (stl_version != NULL) {
+			kargv_append(&yargv, GCC_OPT_XLINKER);
+			kargv_append(&yargv, LD_OPT_RPATH);
+			
+			kargv_append(&yargv, GCC_OPT_XLINKER);
+			kargv_append(&yargv, stl_library_directory);
+		}
+		
 		kargv_append(&yargv, GCC_OPT_XLINKER);
 		kargv_append(&yargv, LD_OPT_RPATH);
 		
@@ -3193,8 +3206,13 @@ int main(int argc, char* argv[]) {
 		kargv_append(&yargv, GCC_OPT_XLINKER);
 		kargv_append(&yargv, LD_OPT_RPATH);
 		
-		kargv_append(&yargv, GCC_OPT_XLINKER);
-		kargv_append(&yargv, sysroot_runtime_directory);
+		if (stl_version == NULL) {
+			kargv_append(&yargv, GCC_OPT_XLINKER);
+			kargv_append(&yargv, sysroot_runtime_directory);
+		} else {
+			kargv_append(&yargv, GCC_OPT_XLINKER);
+			kargv_append(&yargv, stl_library_directory);
+		}
 	}
 	
 	#if defined(OBGGCC)
