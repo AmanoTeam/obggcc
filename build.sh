@@ -922,7 +922,7 @@ if [[ "${host}" != *'-android'* ]]; then
 		-DCMAKE_INSTALL_PREFIX="${toolchain_directory}" \
 		-DCMAKE_INSTALL_RPATH='$ORIGIN/../lib'
 	
-	cmake --build "${PWD}"
+	OBGGCC_VERBOSE=1 cmake --build "${PWD}"
 	cmake --install "${PWD}" --strip
 fi
 
