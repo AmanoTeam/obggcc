@@ -175,7 +175,7 @@ jobs:
             # export PATH="${OBGGCC_HOME}/bin:${PATH}"
             
             ${OBGGCC_HOME}/bin/gcc-stl-install '${{ matrix.target }}'
-            #export OBGGCC_STL_VERSION=5
+            export OBGGCC_STL_VERSION=5
             
             source "${OBGGCC_HOME}/usr/local/share/obggcc/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' = *'-freebsd' ]]; then
