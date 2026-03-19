@@ -2966,7 +2966,7 @@ int main(int argc, char* argv[]) {
 		* but doing so would break compatibility with the Clang wrapper.
 		*/
 		if (linking) {
-			kargv_append(&xargv, GCC_OPT_LIBDIR);
+			kargv_append(&xargv, GCC_OPT_L);
 			kargv_append(&xargv, GCC_N_LIBRARY);
 		}
 	} else if (status) {
