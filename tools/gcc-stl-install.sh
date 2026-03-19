@@ -67,6 +67,11 @@ for directory in "${stl_directory}/${triplet}/"*; do
 	
 	echo "- creating '${filename}'"
 	echo "INPUT ( AS_NEEDED ( ../../../../../${triplet}/lib/libgcc.a ) )" > "${filename}"
+	
+	filename="${directory}/lib/static/libgcc_n.a"
+	
+	echo "- creating '${filename}'"
+	echo "INPUT ( AS_NEEDED ( ../../../../../../${triplet}/lib/libgcc.a ) )" > "${filename}"
 done
 
 echo "- installed GCC runtime libraries to '${stl_directory}/${triplet}'"
