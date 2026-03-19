@@ -62,6 +62,7 @@ static const char MATH_LIBRARY[] = "m";
 static const char GFORTRAN_LIBRARY[] = "gfortran";
 static const char OBJC_LIBRARY[] = "objc";
 static const char GCOBOL_LIBRARY[] = "gcobol";
+static const char GCC_N_LIBRARY[] = "gcc_n";
 
 static const char LIBATOMIC_SHARED[] = "libatomic.so";
 
@@ -297,7 +298,7 @@ static const char CLANG_VERSION_TEMPLATE[] =
 
 static const char CLANG_WARNING_REMOVE_NONE[] = "none";
 
-static const char GCC_STL[] = "gcc-stl";
+static const char GCC_STL_DIRECTORY[] = PATHSEP_M "build" PATHSEP_M "gcc-stl";
 
 static clang_option_t CLANG_SPECIFIC_REMOVE[] = {
 	{
@@ -1581,7 +1582,7 @@ int main(int argc, char* argv[]) {
 	
 	int wants_force_static = 0;
 	
-	int have_std = 0;
+	int have_flag_std = 0;
 	
 	hquery_t query = {0};
 	
@@ -2066,7 +2067,7 @@ int main(int argc, char* argv[]) {
 				continue;
 			#endif
 		} else if (strncmp(cur, GCC_OPT_STD, strlen(GCC_OPT_STD)) == 0) {
-			have_std = 1;
+			have_flag_std = 1;
 		}
 		
 		next:;
@@ -2653,8 +2654,6 @@ int main(int argc, char* argv[]) {
 		strcat(sysroot_directory, libc_version);
 	#endif
 	
-	kargv_append(&xargv, NULL);
-	
 	sysroot_include_directory = malloc(strlen(sysroot_directory) + strlen(INCLUDE_DIR) + 1);
 	
 	if (sysroot_include_directory == NULL) {
@@ -2690,7 +2689,7 @@ int main(int argc, char* argv[]) {
 	if (stl_version != NULL) {
 		arg = uint_stringify(stl_version->version);
 		
-		stl_library_directory = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(GCC_STL) + strlen(PATHSEP_S) + strlen(triplet) + strlen(PATHSEP_S) + strlen(arg) + strlen(LIBRARY_DIR) + strlen(STATIC_LIBRARY_DIR) + 1);
+		stl_library_directory = malloc(strlen(parent_directory) + strlen(GCC_STL_DIRECTORY) + strlen(PATHSEP_S) + strlen(triplet) + strlen(PATHSEP_S) + strlen(arg) + strlen(LIBRARY_DIR) + strlen(STATIC_LIBRARY_DIR) + 1);
 		
 		if (stl_library_directory == NULL) {
 			err = ERR_MEM_ALLOC_FAILURE;
@@ -2698,8 +2697,7 @@ int main(int argc, char* argv[]) {
 		}
 		
 		strcpy(stl_library_directory, parent_directory);
-		strcat(stl_library_directory, PATHSEP_S);
-		strcat(stl_library_directory, GCC_STL);
+		strcat(stl_library_directory, GCC_STL_DIRECTORY);
 		strcat(stl_library_directory, PATHSEP_S);
 		strcat(stl_library_directory, triplet);
 		strcat(stl_library_directory, PATHSEP_S);
@@ -2710,7 +2708,7 @@ int main(int argc, char* argv[]) {
 			strcat(stl_library_directory, STATIC_LIBRARY_DIR);
 		}
 		
-		stl_gpp_include_directory = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(GCC_STL) + strlen(PATHSEP_S) + strlen(triplet) + strlen(PATHSEP_S) + strlen(arg) + strlen(INCLUDE_DIR) + strlen(PATHSEP_S) + strlen(CPP) + strlen(PATHSEP_S) + strlen(arg) + 1);
+		stl_gpp_include_directory = malloc(strlen(parent_directory) + strlen(GCC_STL_DIRECTORY) + strlen(PATHSEP_S) + strlen(triplet) + strlen(PATHSEP_S) + strlen(arg) + strlen(INCLUDE_DIR) + strlen(PATHSEP_S) + strlen(CPP) + strlen(PATHSEP_S) + strlen(arg) + 1);
 		
 		if (stl_gpp_include_directory == NULL) {
 			err = ERR_MEM_ALLOC_FAILURE;
@@ -2718,8 +2716,7 @@ int main(int argc, char* argv[]) {
 		}
 		
 		strcpy(stl_gpp_include_directory, parent_directory);
-		strcat(stl_gpp_include_directory, PATHSEP_S);
-		strcat(stl_gpp_include_directory, GCC_STL);
+		strcat(stl_gpp_include_directory, GCC_STL_DIRECTORY);
 		strcat(stl_gpp_include_directory, PATHSEP_S);
 		strcat(stl_gpp_include_directory, triplet);
 		strcat(stl_gpp_include_directory, PATHSEP_S);
@@ -2911,25 +2908,27 @@ int main(int argc, char* argv[]) {
 	status = strcmp(cc, GPP) == 0 || strcmp(cc, CPP) == 0 || strcmp(cc, CLANGPP) == 0;
 	
 	if (stl_version != NULL) {
-		arg = uint_stringify(stl_version->min_abi_version);
+		#if !defined(WCLANG)
+			arg = uint_stringify(stl_version->min_abi_version);
+			
+			fabi_version = malloc(strlen(GCC_OPT_F_ABI_VERSION) + strlen(arg) + 1);
+			
+			if (fabi_version == NULL) {
+				err = ERR_MEM_ALLOC_FAILURE;
+				goto end;
+			}
+			
+			strcpy(fabi_version, GCC_OPT_F_ABI_VERSION);
+			strcat(fabi_version, arg);
+			
+			free(arg);
+			arg = NULL;
+			
+			kargv_append(&yargv, fabi_version);
+		#endif
 		
-		fabi_version = malloc(strlen(GCC_OPT_F_ABI_VERSION) + strlen(arg) + 1);
-		
-		if (fabi_version == NULL) {
-			err = ERR_MEM_ALLOC_FAILURE;
-			goto end;
-		}
-		
-		strcpy(fabi_version, GCC_OPT_F_ABI_VERSION);
-		strcat(fabi_version, arg);
-		
-		free(arg);
-		arg = NULL;
-		
-		kargv_append(&yargv, fabi_version);
-		
-		if (!have_std) {
-			std = malloc(strlen(GCC_OPT_STD) + 5 + 2 + 1);
+		if (!have_flag_std) {
+			std = malloc(strlen(GCC_OPT_STD) + 5 /* gnu++ */ + 2 /* 00 */ + 1);
 			
 			if (std == NULL) {
 				err = ERR_MEM_ALLOC_FAILURE;
@@ -2960,6 +2959,15 @@ int main(int argc, char* argv[]) {
 		if (status) {
 			kargv_append(&yargv, GCC_OPT_ISYSTEM);
 			kargv_append(&yargv, stl_gpp_include_directory);
+		}
+		
+		/*
+		* Ideally, this logic could be moved entirely into the GCC driver,
+		* but doing so would break compatibility with the Clang wrapper.
+		*/
+		if (linking) {
+			kargv_append(&xargv, GCC_OPT_L);
+			kargv_append(&xargv, GCC_N_LIBRARY);
 		}
 	} else if (status) {
 		kargv_append(&yargv, GCC_OPT_ISYSTEM);
@@ -3237,6 +3245,7 @@ int main(int argc, char* argv[]) {
 		kargv_append(&yargv, android_version_min);
 	#endif
 	
+	kargv_append(&xargv, NULL);
 	kargv_merge(&yargv, &xargv);
 	
 	args = kargv_getargs(&yargv);

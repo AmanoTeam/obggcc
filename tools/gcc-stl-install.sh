@@ -21,6 +21,8 @@ if [ -z "${triplet}" ]; then
 	exit '1'
 fi
 
+declare -r stl_directory="${OBGGCC_HOME}/build/gcc-stl"
+
 declare status='0'
 
 for target in "${targets[@]}"; do
@@ -38,7 +40,7 @@ if ! (( status )); then
 	exit '1'
 fi
 
-mkdir --parent "${OBGGCC_HOME}/gcc-stl"
+mkdir --parent "${stl_directory}"
 
 declare url="https://github.com/AmanoTeam/obggcc/releases/download/gcc-stl/${triplet}.tar.xz"
 
@@ -56,8 +58,20 @@ curl \
 	--show-error \
 		| tar \
 			--xz \
-			--directory="${OBGGCC_HOME}/gcc-stl" \
+			--directory="${stl_directory}" \
 			--extract \
 			--file='-'
 
-echo "- installed GCC runtime libraries to '${OBGGCC_HOME}/gcc-stl/${triplet}'"
+for directory in "${stl_directory}/${triplet}/"*; do
+	declare filename="${directory}/lib/libgcc_n.a"
+	
+	echo "- creating '${filename}'"
+	echo "INPUT ( AS_NEEDED ( ../../../../../${triplet}/lib/libgcc.a ) )" > "${filename}"
+	
+	filename="${directory}/lib/static/libgcc_n.a"
+	
+	echo "- creating '${filename}'"
+	echo "INPUT ( AS_NEEDED ( ../../../../../../${triplet}/lib/libgcc.a ) )" > "${filename}"
+done
+
+echo "- installed GCC runtime libraries to '${stl_directory}/${triplet}'"
