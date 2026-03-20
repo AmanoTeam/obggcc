@@ -172,12 +172,12 @@ Some people might think that linking a program against an old glibc version will
 
 The whole point of symbol versioning is to prevent behavior inconsistencies when running binaries compiled against different glibc versions. This is accomplished by bumping the symbol version every time a backward-incompatible change is introduced to some public function or API of the standard library. With this, programs compiled against newer versions of the standard library can benefit from newer features, while old programs will continue working as intended, as they will still be using the same version of that specific function or API that was available when the binary was compiled.
 
-The only exception to when a "backward-incompatible change" is not considered for a symbol version bump is when it modifies undocumented behavior. Security fixes are not considered for a version bump, as they essentially correct something that was never intended to work that way — undocumented behavior.
+The only exception to when a "backward-incompatible change" is not considered for a symbol version bump is when it modifies undocumented behavior. Security fixes are not considered for a version bump, as they essentially correct something that was never intended to work that way ,  undocumented behavior.
 
 Changes introduced in a newer glibc version that are not considered for a symbol version bump (including security fixes) take effect in all versions of that symbol, even in programs that were compiled for a glibc version that didn’t include that change. That means your program will still be running secure and optimized code, as long as it’s running on an up-to-date system.
 
 > [!NOTE]  
-> It should be noted that "an up-to-date system" does not specifically refer to a system where all packages — including glibc — are updated to their latest versions, but to a system that, at the bare minimum, receives security updates even if the system itself or its packages don't receive a major upgrade. This is especially true for Long-Term Support (LTS) Linux distributions.
+> It should be noted that "an up-to-date system" does not specifically refer to a system where all packages ,  including glibc ,  are updated to their latest versions, but to a system that, at the bare minimum, receives security updates even if the system itself or its packages don't receive a major upgrade. This is especially true for Long-Term Support (LTS) Linux distributions.
 
 ## Can we go even further?
 
@@ -221,7 +221,7 @@ OBGGCC allows you to change its behavior in certain scenarios through the use of
   - Display the GCC subcommand invocation and the current working directory for every compilation process.
 
 - `OBGGCC_STL_VERSION`  
-  - Cross-compile code targeting a specific version of the GCC runtime libraries.
+  - Cross-compile code targeting a specific version of the GCC runtime libraries, rather than using the ones shipped with the compiler. See [Choosing an arbitrary GCC runtime version](#choosing-an-arbitrary-gcc-runtime-version).
 
 You can enable a switch by setting its value to `true` (e.g: `export OBGGCC_NZ=true`), and disable it by setting its value to `false` (e.g: `export OBGGCC_NZ=false`).
 
@@ -429,7 +429,7 @@ It works!
 
 ## Running binaries with a specific glibc
 
-There may be cases where you might want to run your software under a specific glibc version—either to check how it will behave or to try a new glibc feature that was added in a later version but isn’t available in the glibc installed on your system.
+There may be cases where you might want to run your software under a specific glibc version, either to check how it will behave or to try a new glibc feature that was added in a later version but isn’t available in the glibc installed on your system.
 
 The environment variable `OBGGCC_BUILTIN_LOADER` can be used to change the default loader (aka dynamic linker) of an executable when cross-compiling. In other words, you can use this to force your binary to use a different glibc at runtime, ignoring the one available in your system.
 
@@ -450,7 +450,6 @@ I'm running CentOS 7 with glibc 2.17. Let's suppose I want to try the new `getra
 
 ```c
 #include <stdio.h>
-
 #include <sys/random.h>
 
 int main(void) {
@@ -516,7 +515,7 @@ $ readelf -d main | grep "RPATH"
 
 By default, cross-compilation links against the runtime libraries of the GCC version used for the build. For bleeding-edge releases, this gives you access to the latest features the compiler has to offer, but comes with the drawback that you will probably need to bundle the GCC libraries or statically link them with your binary (especially for C++ code) if you want it to run out of the box on systems that use an older version of GCC as the base system compiler.
 
-If portability takes precedence over new features for you, it is possible to choose an arbitrary old GCC runtime version to use during the build.
+If portability takes precedence over new features for you, it is possible to choose an arbitrary GCC runtime version to use during the build.
 
 ### Usage
 
