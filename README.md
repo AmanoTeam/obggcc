@@ -166,35 +166,6 @@ To restore your environment to its original state, run the `deactivate.sh` scrip
 $ source ${OBGGCC_HOME}/build/autotools/deactivate.sh
 ```
 
-## Security and stability implications
-
-Some people might think that linking a program against an old glibc version will make the compiled binary less secure and more vulnerable, as supposedly, the program will be using symbols from a standard library that's unmaintained and no longer receives security fixes. However, that's not true. Binaries compiled against an old glibc version still benefit from security fixes introduced in newer glibc versions as long as the target machine is running an updated glibc.
-
-The whole point of symbol versioning is to prevent behavior inconsistencies when running binaries compiled against different glibc versions. This is accomplished by bumping the symbol version every time a backward-incompatible change is introduced to some public function or API of the standard library. With this, programs compiled against newer versions of the standard library can benefit from newer features, while old programs will continue working as intended, as they will still be using the same version of that specific function or API that was available when the binary was compiled.
-
-The only exception to when a "backward-incompatible change" is not considered for a symbol version bump is when it modifies undocumented behavior. Security fixes are not considered for a version bump, as they essentially correct something that was never intended to work that way ,  undocumented behavior.
-
-Changes introduced in a newer glibc version that are not considered for a symbol version bump (including security fixes) take effect in all versions of that symbol, even in programs that were compiled for a glibc version that didn’t include that change. That means your program will still be running secure and optimized code, as long as it’s running on an up-to-date system.
-
-> [!NOTE]  
-> It should be noted that "an up-to-date system" does not specifically refer to a system where all packages ,  including glibc ,  are updated to their latest versions, but to a system that, at the bare minimum, receives security updates even if the system itself or its packages don't receive a major upgrade. This is especially true for Long-Term Support (LTS) Linux distributions.
-
-## Can we go even further?
-
-Currently, the minimum supported glibc version for cross-compilation in OBGGCC is glibc 2.3.6. This version is over 20 years old, and while you might be wondering why anyone would be interested in building software for such ancient versions, you might also be curious about whether it is possible to go even further and cross-compile software for glibc 2.2/2.1/2.0 or even glibc 1.x.
-
-### My findings
-
-glibc 1.x and glibc 2.x are not backward compatible in any way, meaning that software built for one cannot run on the other. glibc 1.x also received a lot of criticism in the past for failing to fully comply with the POSIX standard at the time it was still developed. I have not tried to build a cross-compiler for it, but I find it very unlikely that any recent GCC version still has support for such versions. At a bare minimum, heavy patching of the toolchain would be needed to make it work. It's not really worth it.
-
-glibc 2.0 and glibc 2.1 were not binary-compatible on some architectures, as stated in the [release notes](https://sourceware.org/legacy-ml/libc-alpha/1999-q1/msg00310.html) of the said version. Also, symbol versioning did not exist in glibc until the 2.1 release. I'm not sure if software built for glibc 2.0 can run on glibc 2.1 and up.
-
-Support for x86_64 (`amd64`) first appeared in glibc 2.2.5, only gaining overall stability in glibc 2.3 and onwards. Even if we manage to build a working cross-compiler targeting pre-glibc 2.2 releases or older, we would only be able to target very old (and potentially no longer used) system architectures.
-
-Also, starting from glibc 2.2 and lower, `libstdc++` fails to build due to the absence of some required functions in the standard library. It might work with some patching, but I did not bother trying.
-
-So, with that in mind, glibc 2.3 seems to be the minimum version that GCC is able to produce a cross-compiler for without breaking anything.
-
 ## Controlling OBGGCC Behavior
 
 OBGGCC allows you to change its behavior in certain scenarios through the use of environment variables. Below are all the switches OBGGCC supports and their intended purposes:
