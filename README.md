@@ -2,26 +2,22 @@
 
 A Clang and GCC cross-compiler targeting older glibc versions.
 
-## How does it work?
+## How it works
 
-I extracted the sysroot from almost all major legacy/obsolete Debian releases and built a cross-compiler for each of them. This results in a cross-compiler toolchain targeting software for a specific Debian version (and thus, a specific glibc version as well).
+I extracted the sysroots from almost all major legacy Debian releases and built a cross-compiler for each. Each toolchain targets a specific Debian version, and therefore a specific glibc version.
 
 This eliminates the need to install an ancient Linux distribution in Docker/LXC just to build portable binaries, which is the current standard practice.
 
 ## Use cases
 
-Initially, I just wanted to get rid of errors like this:
+OBGGCC solves errors like:
 
 ```
 ./main: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by ./main)
 ./main: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by ./main)
 ```
 
-This error can occur when you build your binaries on a system with a glibc version newer than the one installed on the target system. This is pretty annoying because it prevents users on older Linux distributions from using your software.
-
-Since OBGGCC targets older glibc versions by default, these errors are (almost) unlikely to happen. You can distribute portable Linux binaries without worrying about them being incompatible with some older distributions.
-
-OBGGCC can also be useful if you just want to test whether your program builds or runs on older systems.
+These occur when you build on a system with a newer glibc than the target system. Most of the time, you don’t need a newer version of a glibc function when compiling, but manually selecting a specific version is a pain, especially if you’re compiling someone else’s code or working on a project with multiple dependencies.
 
 ## Supported targets
 
@@ -75,14 +71,11 @@ x86_64-unknown-linux-gnu2.31-gcc
 ...
 ```
 
-The names of the binaries follow the standard GCC naming convention for cross-compilers, which is `<system><system_version>-<compiler>`. So, with this in mind, it is safe to assume that `x86_64-unknown-linux-gnu2.31-gcc` refers to "a GCC cross-compiler targeting binaries for Linux x86_64 with glibc 2.31".
-
-You can use it to compile C/C++ programs as follows:
+You can use them as follows:
 
 ```
 # Compile C programs
 $ x86_64-unknown-linux-gnu2.31-gcc main.c -o main
-
 # Compile C++ programs
 $ x86_64-unknown-linux-gnu2.31-g++ main.c -o main
 ```
@@ -93,10 +86,10 @@ If you prefer, you can use Clang instead of GCC. Just make sure to replace the `
 
 ### CMake
 
-Cross-compiling CMake projects involves using a CMake toolchain file, which is a special file that defines the cross-compilation tools and also the system root CMake should use. Inside the `${OBGGCC_HOME}/build/cmake` directory, there is a custom CMake toolchain file for each cross-compilation target OBGGCC supports:
+Inside the `obggcc/build/cmake` directory, there is a custom CMake toolchain file for each cross-compilation target OBGGCC supports:
 
 ```bash
-$ ls ${OBGGCC_HOME}/build/cmake
+$ ls obggcc/build/cmake
 aarch64-unknown-linux-gnu.cmake
 aarch64-unknown-linux-gnu2.19.cmake
 ...
@@ -119,7 +112,7 @@ To use one of them, pass the `CMAKE_TOOLCHAIN_FILE` definition to your CMake com
 ```bash
 # Setup the environment for cross-compilation
 $ cmake \
-    -DCMAKE_TOOLCHAIN_FILE=${OBGGCC_HOME}/build/cmake/aarch64-unknown-linux-gnu2.19.cmake \
+    -DCMAKE_TOOLCHAIN_FILE=obggcc/build/cmake/aarch64-unknown-linux-gnu2.19.cmake \
     -B build \
     -S  ./
 # Build the project
@@ -128,10 +121,10 @@ $ cmake --build ./build
 
 ### GNU Autotools (aka GNU Build System)
 
-Configuring an autotools project for cross-compilation usually requires the user to modify the environment variables and define the compilation tools the project should use. Inside the `${OBGGCC_HOME}/build/autotools` directory, there is a custom bash script for each cross-compilation target that OBGGCC supports:
+Inside the `obggcc/build/autotools` directory, there is a custom bash script for each cross-compilation target that OBGGCC supports:
 
 ```bash
-$ ls ${OBGGCC_HOME}/build/autotools
+$ ls obggcc/build/autotools
 aarch64-unknown-linux-gnu.sh
 aarch64-unknown-linux-gnu2.19.sh
 ...
@@ -153,17 +146,19 @@ They are meant to be `source`d by you whenever you want to cross-compile somethi
 
 ```bash
 # Setup the environment for cross-compilation
-$ source ${OBGGCC_HOME}/build/autotools/aarch64-unknown-linux-gnu2.19.sh
+$ source obggcc/build/autotools/aarch64-unknown-linux-gnu2.19.sh
 
 # Configure & build the project
 $ ./configure --host="${CROSS_COMPILE_TRIPLET}"
 $ make
 ```
 
+Essentially, these scripts handle the setup of `CC`, `CXX`, `LD`, and other environment variables so you don’t need to configure them manually.
+
 To restore your environment to its original state, run the `deactivate.sh` script from the same directory:
 
 ```bash
-$ source ${OBGGCC_HOME}/build/autotools/deactivate.sh
+$ source obggcc/build/autotools/deactivate.sh
 ```
 
 ## Controlling OBGGCC Behavior
@@ -177,7 +172,7 @@ OBGGCC allows you to change its behavior in certain scenarios through the use of
   - Allows you to change the dynamic linker of an executable during linkage so that it can be run using OBGGCC’s glibc libraries rather than your host machine’s glibc libraries. See [Running binaries with a specific glibc](#running-binaries-with-a-specific-glibc).
 
 - `OBGGCC_RUNTIME_RPATH`  
-  - Automatically appends the path to the directory containing GCC libraries (e.g., libsanitizer (AddressSanitizer), libatomic, and libstdc++) to your executables’ RPATH. This option is enabled by default when using `OBGGCC_BUILTIN_LOADER`.
+  - Automatically appends the path to the directory containing the GCC runtime libraries (e.g., libsanitizer (AddressSanitizer), libatomic, and libstdc++) to your executables’ RPATH. This option is enabled by default when using `OBGGCC_BUILTIN_LOADER`.
 
 - `OBGGCC_NZ`  
   - Allows you to use libraries and headers installed using OBGGCC’s package manager (nz) during cross-compilation. See [Software availability](#software-availability).
@@ -220,13 +215,13 @@ The flag switches listed above are not guaranteed to be portable and are primari
 
 ## Software availability
 
-Note that all the cross-compilers only contain the minimum required to build a working C/C++ program. That is, you won't find any prebuilt binaries of popular projects like OpenSSL or zlib available for use, as you would on an average Linux distribution.
+The cross-compiler ships only with the minimum required to build a working C/C++ program. That is, you won't find any prebuilt binaries of popular projects like OpenSSL or zlib available for use, as you would on an average Linux distribution.
 
 If your project depends on something other than the GNU C library (or the C++ standard libraries, for C++ programs), you need to either build it yourself or install it from somewhere else. For convenience, OBGGCC provides an APT-like tool to install packages from APT repositories to a local directory and enable their usage during cross-compilations.
 
 ### Installing project dependencies with `nz`
 
-You can install packages to a specific system root using the corresponding `<triplet><glibc_version>-nz` command inside the `${OBGGCC_HOME}/bin` directory.
+You can install packages to a specific system root using the corresponding `<triplet><glibc_version>-nz` command inside the `obggcc/bin` directory.
 
 For example, let's suppose you want to cross-compile curl for Ubuntu 16.04 (glibc 2.23) with SSL and HTTP/2 support:
 
@@ -235,8 +230,7 @@ For example, let's suppose you want to cross-compile curl for Ubuntu 16.04 (glib
 First, fetch curl sources and generate the required build files:
 
 ```bash
-$ git clone -b curl-8_14_1 \
-    https://github.com/curl/curl
+$ git clone -b curl-8_14_1 https://github.com/curl/curl
 $ cd curl
 $ autoreconf -fi
 ```
@@ -246,7 +240,7 @@ $ autoreconf -fi
 Now, configure the environment for cross-compilation:
 
 ```bash
-$ source ${OBGGCC_HOME}/build/autotools/x86_64-unknown-linux-gnu2.23.sh
+$ source obggcc/build/autotools/x86_64-unknown-linux-gnu2.23.sh
 ```
 
 #### Step 3
@@ -275,8 +269,6 @@ Before cross-compiling curl, set the `OBGGCC_NZ` environment variable to enable 
 ```bash
 $ export OBGGCC_NZ=true
 ```
-
-By default, OBGGCC won't use the libraries and headers from nz's system root unless explicitly told to. That's because OBGGCC assumes that most of the time you want to cross-compile software using only the core GNU C/C++ libraries (glibc and stdc++).
 
 #### Step 5
 
@@ -554,7 +546,7 @@ $ ./main
 There are also bundled binaries of GDB available for use:
 
 ```
-$ ls ${OBGGCC_HOME}/bin/*-gdb
+$ ls obggcc/bin/*-gdb
 obggcc/bin/aarch64-unknown-linux-gnu-gdb
 obggcc/bin/arm-unknown-linux-gnueabi-gdb
 obggcc/bin/arm-unknown-linux-gnueabihf-gdb
