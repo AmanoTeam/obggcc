@@ -20,17 +20,19 @@ enum GCCMajorVersion {
 	GCC_7 = 7,
 	GCC_8 = 8,
 	GCC_9 = 9,
-	GCC_10  = 10,
-	GCC_11  = 11,
-	GCC_12  = 12,
-	GCC_13  = 13,
-	GCC_14  = 14
+	GCC_10 = 10,
+	GCC_11 = 11,
+	GCC_12 = 12,
+	GCC_13 = 13,
+	GCC_14 = 14,
+	GCC_15 = 15,
+	GCC_16 = 16
 };
 
 enum GxxAbiVersion {
-	GXX_ABI_2  = 2,
-	GXX_ABI_8  = 8,
-	GXX_ABI_9  = 9,
+	GXX_ABI_2 = 2,
+	GXX_ABI_8 = 8,
+	GXX_ABI_9 = 9,
 	GXX_ABI_10 = 10,
 	GXX_ABI_11 = 11,
 	GXX_ABI_12 = 12,
@@ -39,7 +41,9 @@ enum GxxAbiVersion {
 	GXX_ABI_16 = 16,
 	GXX_ABI_17 = 17,
 	GXX_ABI_18 = 18,
-	GXX_ABI_19 = 19
+	GXX_ABI_19 = 19,
+	GXX_ABI_20 = 20,
+	GXX_ABI_21 = 21
 };
 
 enum GccStdVersion {
@@ -157,6 +161,24 @@ static const struct GCCVersion GCC_VERSIONS[] = {
 		.stdc_version = GCC_STD_17,
 		.stdc_max_version = GCC_STD_23,
 		.stdcxx_version = GXX_STD_17,
+		.stdcxx_max_version = GXX_STD_26
+	},
+	{
+		.version = GCC_15,
+		.min_abi_version = GXX_ABI_20,
+		.max_abi_version = GXX_ABI_20,
+		.stdc_version = GCC_STD_23,
+		.stdc_max_version = GCC_STD_23,
+		.stdcxx_version = GXX_STD_17,
+		.stdcxx_max_version = GXX_STD_26
+	},
+	{
+		.version = GCC_16,
+		.min_abi_version = GXX_ABI_21,
+		.max_abi_version = GXX_ABI_21,
+		.stdc_version = GCC_STD_23,
+		.stdc_max_version = GCC_STD_23,
+		.stdcxx_version = GXX_STD_20,
 		.stdcxx_max_version = GXX_STD_26
 	}
 };

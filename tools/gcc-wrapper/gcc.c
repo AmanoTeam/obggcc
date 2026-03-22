@@ -1692,13 +1692,15 @@ int main(int argc, char* argv[]) {
 		opt = query_get_string(&query, ENV_STL_VERSION);
 		stl_version = get_stl_version(opt);
 		
-		if (stl_version->version > gcc_version) {
-			err = ERR_GCC_RUNTIME_TOO_NEW;
-			goto end;
-		}
-		
-		if (stl_version->version == gcc_version) {
-			stl_version = NULL;
+		if (stl_version != NULL) {
+			if (stl_version->version > gcc_version) {
+				err = ERR_GCC_RUNTIME_TOO_NEW;
+				goto end;
+			}
+			
+			if (stl_version->version == gcc_version) {
+				stl_version = NULL;
+			}
 		}
 	#endif
 	
