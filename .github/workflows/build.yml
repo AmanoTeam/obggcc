@@ -15,7 +15,7 @@ permissions: write-all
 env: 
     OBGGCC_BUILD_PARALLEL_LEVEL: 40
     OBGGCC_BUILD_DIRECTORY: /tmp
-    OBGGCC_RELEASE: 15
+    OBGGCC_RELEASE: 16
     OBGGCC_TARGETS: '*'
 
 jobs:
@@ -33,7 +33,7 @@ jobs:
       id: check-cache
       uses: actions/cache@main
       with:
-        key: 'cache-${{ env.OBGGCC_RELEASE }}.5'
+        key: 'cache-${{ env.OBGGCC_RELEASE }}.6'
         lookup-only: true
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
@@ -61,7 +61,7 @@ jobs:
       if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
       uses: actions/cache@main
       with:
-        key: 'cache-${{ env.OBGGCC_RELEASE }}.5'
+        key: 'cache-${{ env.OBGGCC_RELEASE }}.6'
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
           /tmp/x86_64-linux-gnu.tar.xz.sha256
@@ -134,7 +134,7 @@ jobs:
     - name: Restore from cache
       uses: actions/cache@main
       with:
-        key: 'cache-${{ env.OBGGCC_RELEASE }}.5'
+        key: 'cache-${{ env.OBGGCC_RELEASE }}.6'
         fail-on-cache-miss: true
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
