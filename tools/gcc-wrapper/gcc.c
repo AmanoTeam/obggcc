@@ -1680,6 +1680,8 @@ int main(int argc, char* argv[]) {
 	
 	unsigned char ch = 0;
 	
+	const biguint_t gcc_version = strtobui(GCC_MAJOR_VERSION, NULL, 10);
+	
 	query_load_environ(&query);
 	
 	#if defined(OBGGCC) || defined(RAIDEN)
@@ -1689,6 +1691,15 @@ int main(int argc, char* argv[]) {
 	#if defined(OBGGCC)
 		opt = query_get_string(&query, ENV_STL_VERSION);
 		stl_version = get_stl_version(opt);
+		
+		if (stl_version->version > gcc_version) {
+			err = ERR_GCC_RUNTIME_TOO_NEW;
+			goto end;
+		}
+		
+		if (stl_version->version == gcc_version) {
+			stl_version = NULL;
+		}
 	#endif
 	
 	wants_force_static = query_get_bool(&query, ENV_STATIC_RUNTIME);
@@ -2731,7 +2742,7 @@ int main(int argc, char* argv[]) {
 		arg = NULL;
 		
 		if (!(directory_exists(stl_library_directory) == 1 && directory_exists(stl_gpp_include_directory) == 1)) {
-			err = GCC_RUNTIME_FILES_NOT_FOUND;
+			err = ERR_GCC_RUNTIME_LIBRARIES_NOT_FOUND;
 			goto end;
 		}
 	}

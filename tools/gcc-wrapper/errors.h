@@ -17,7 +17,8 @@
 #define ERR_UNKNOWN_BINUTILS_WRAPPER -13
 #define ERR_NO_INPUT_FILES -14
 #define ERR_CLANG_NOT_FOUND -15
-#define GCC_RUNTIME_FILES_NOT_FOUND -16
+#define ERR_GCC_RUNTIME_LIBRARIES_NOT_FOUND -16
+#define ERR_GCC_RUNTIME_TOO_NEW -17
 
 const char* obggcc_strerror(const int err);
 

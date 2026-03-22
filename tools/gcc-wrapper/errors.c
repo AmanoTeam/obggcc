@@ -33,12 +33,13 @@ const char* obggcc_strerror(const int err) {
 			return "No input files";
 		case ERR_CLANG_NOT_FOUND:
 			return "Clang compiler not found in PATH";
-		case GCC_RUNTIME_FILES_NOT_FOUND:
-			return "No runtime libraries found for this GCC version";
+		case ERR_GCC_RUNTIME_LIBRARIES_NOT_FOUND:
+			return "No matching runtime libraries found for this GCC version";
+		case ERR_GCC_RUNTIME_TOO_NEW:
+			return "Using a newer GCC runtime with an older GCC compiler is not supported";
 		default:
 			return "Unknown error";
 	}
 	
 }
-
 
