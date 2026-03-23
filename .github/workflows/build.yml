@@ -174,9 +174,6 @@ jobs:
             export OBGGCC_HOME='/tmp/obggcc-toolchain-bin'
             # export PATH="${OBGGCC_HOME}/bin:${PATH}"
             
-            ${OBGGCC_HOME}/bin/gcc-stl-install '${{ matrix.target }}'
-            export OBGGCC_STL_VERSION=5
-            
             source "${OBGGCC_HOME}/usr/local/share/obggcc/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' = *'-freebsd' ]]; then
             declare -r LOKI_TAG='gcc-15'

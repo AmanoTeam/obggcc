@@ -86,7 +86,7 @@ declare -r yasm_tarball='/tmp/yasm.tar.gz'
 declare -r yasm_directory='/tmp/yasm-1.3.0'
 
 declare -r ninja_tarball='/tmp/ninja.tar.gz'
-declare -r ninja_directory='/tmp/ninja-1.12.1'
+declare -r ninja_directory='/tmp/ninja-master'
 
 declare -r cmake_directory="${workdir}/submodules/cmake"
 
@@ -525,7 +525,7 @@ fi
 
 if ! [ -f "${ninja_tarball}" ]; then
 	curl \
-		--url 'https://deb.debian.org/debian/pool/main/n/ninja-build/ninja-build_1.12.1.orig.tar.gz' \
+		--url 'https://github.com/ninja-build/ninja/archive/master.tar.gz' \
 		--retry '30' \
 		--retry-delay '0' \
 		--retry-all-errors \
