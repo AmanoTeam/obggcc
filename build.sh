@@ -741,7 +741,7 @@ sed \
 	"${mpc_directory}/configure" \
 	"${mpfr_directory}/configure" \
 	"${gmp_directory}/configure" \
-	"${gcc_directory}/libsanitizer/configure"
+	"${gcc_directory}/libsanitizer/configure" || true
 
 # Avoid using absolute hardcoded install_name values on macOS
 sed \
