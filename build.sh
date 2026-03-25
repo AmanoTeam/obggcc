@@ -1240,6 +1240,7 @@ for target in "${targets[@]}"; do
 		--disable-bootstrap \
 		--disable-libstdcxx-pch \
 		--disable-libstdcxx-debug \
+		--disable-libmudflap \
 		--disable-werror \
 		--disable-multilib \
 		--disable-nls \
