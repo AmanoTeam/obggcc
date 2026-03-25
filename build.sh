@@ -1220,7 +1220,7 @@ for target in "${targets[@]}"; do
 		CFLAGS="${ccflags}" \
 		CXXFLAGS="${ccflags}" \
 		LDFLAGS="${ldflags}" \
-		MISSING='texinfo'
+		TEXINFO='missing'
 	
 	ldflags_for_target="${linkflags}"
 	
