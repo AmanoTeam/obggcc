@@ -686,7 +686,11 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
 	fi
 	
-	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
+	if (( gcc_major >= 4.8 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
+	else
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.7/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
+	fi
 	
 	if (( gcc_major >= 16 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0011-Revert-configure-Always-add-pre-installed-header-directories-to-search-path.patch"
