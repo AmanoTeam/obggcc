@@ -1175,7 +1175,7 @@ for target in "${targets[@]}"; do
 		extra_configure_flags+=' --disable-plugin'
 	fi
 	
-	declare -ra extra_flags=(${=extra_configure_flags})
+	declare -a extra_flags=(${=extra_configure_flags})
 	
 	declare ldflags="-L${toolchain_directory}/lib ${linkflags}"
 	
