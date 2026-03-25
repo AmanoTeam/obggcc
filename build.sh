@@ -169,6 +169,8 @@ declare -ra libraries=(
 	'libvtv'
 	'libgcov'
 	'libmpx'
+	'libmudflap'
+	'libmudflapth'
 )
 
 declare -ra bits=(
