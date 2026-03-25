@@ -593,14 +593,8 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-8/0001-Cygwin-MinGW-Do-not-version-lto-plugins.patch"
 	elif (( gcc_major >= 5 && gcc_major <= 7 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-5/0001-MinGW-Do-not-version-lto-plugins.patch"
-	elif (( gcc_major >= 4.9 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.9/0001-MinGW-Do-not-version-lto-plugins.patch"
-	elif (( gcc_major >= 4.6 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.6/0001-MinGW-Do-not-version-lto-plugins.patch"
-	fi
-	
-	if (( gcc_major >= 4.6 && gcc_major <= 4.8 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.6/0001-Build-libmudflap-with-allow-multiple-definition.patch"
+	elif (( gcc_major >= 4.6 && gcc_major <= 4.9 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0001-MinGW-Do-not-version-lto-plugins.patch"
 	fi
 	
 	if (( gcc_major >= 5 && gcc_major <= 7 )); then
@@ -648,7 +642,10 @@ if ! [ -f "${gcc_tarball}" ]; then
 	
 	if (( gcc_major >= 4.6 && gcc_major <= 5 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.6/0001-Fix-wrong-usage-of-bool.patch"
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.6/0001-Prevent-use-of-_unlocked-functions-and-disable-inclusion-of-malloc.h.patch"
+	fi
+	
+	if (( gcc_major >= 4.5 && gcc_major <= 5 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.5/0001-Prevent-use-of-_unlocked-functions-and-disable-inclusion-of-malloc.h.patch"
 	elif (( gcc_major >= 6 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-6/0001-Prevent-use-of-_unlocked-functions.patch"
 	fi
@@ -700,6 +697,8 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
 	elif (( gcc_major >= 4.6 && gcc_major <= 4.7 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
+	elif (( gcc_major >= 4.5 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.5/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
 	fi
 	
 	if (( gcc_major >= 16 )); then
@@ -718,13 +717,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
 	elif (( gcc_major >= 5 && gcc_major <= 13 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-5/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
-	elif (( gcc_major >= 4.8 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.8/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
-	elif (( gcc_major >= 4.7 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.7/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
-	elif (( gcc_major >= 4.6 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.6/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
-	else
+	elif (( gcc_major >= 4.5 && gcc_major <= 4.8 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
 	fi
 	
@@ -1379,9 +1372,12 @@ for target in "${targets[@]}"; do
 	cat "${workdir}/patches/c++config.h" >> "${toolchain_directory}/${triplet}/include/c++/${gcc_major}/${triplet}/bits/c++config.h"
 	
 	if [[ "${host}" = *'-mingw32' ]]; then
-		cp \
-			"${toolchain_directory}/libexec/gcc/${triplet}/${gcc_major}/liblto_plugin${dll}" \
-			"${toolchain_directory}/lib/bfd-plugins"
+		if (( gcc_major >= 4.6 )); then
+			# There was no LTO support on Windows hosts in GCC < 4.6
+			cp \
+				"${toolchain_directory}/libexec/gcc/${triplet}/${gcc_major}/liblto_plugin${dll}" \
+				"${toolchain_directory}/lib/bfd-plugins"
+		fi
 	else
 		ln \
 			--symbolic \
