@@ -1095,7 +1095,7 @@ for target in "${targets[@]}"; do
 	[ -d "${binutils_directory}/build" ] || mkdir "${binutils_directory}/build"
 	
 	cd "${binutils_directory}/build"
-	
+	# --enable-leak-check \
 	../configure \
 		--build="${build}" \
 		--host="${host}" \
@@ -1108,7 +1108,6 @@ for target in "${targets[@]}"; do
 		--enable-relro \
 		--enable-compressed-debug-sections='all' \
 		--enable-default-compressed-debug-sections-algorithm='zstd' \
-		--enable-leak-check \
 		--disable-gprofng \
 		--disable-gold \
 		--disable-default-execstack \
