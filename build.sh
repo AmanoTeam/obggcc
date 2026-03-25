@@ -637,7 +637,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 	fi
 	
 	if (( gcc_major >= 4.8 && gcc_major <= 5 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4/0001-Fix-wrong-usage-of-bool.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.8/0001-Fix-wrong-usage-of-bool.patch"
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.8/0001-Prevent-use-of-_unlocked-functions-and-disable-inclusion-of-malloc.h.patch"
 	elif (( gcc_major >= 6 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-6/0001-Prevent-use-of-_unlocked-functions.patch"
