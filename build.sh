@@ -1069,6 +1069,15 @@ for target in "${targets[@]}"; do
 	
 	mv "${sysroot_directory}" "${toolchain_directory}/${triplet}"
 	
+	if (( native )); then
+		ln \
+			--symbolic \
+			--relative \
+			--force \
+			"${toolchain_directory}/${triplet}" \
+			"${toolchain_directory}/${triplet}/usr"
+	fi
+	
 	if (( gcc_major >= 13 && gcc_major <= 15 )); then
 		cp "${workdir}/patches/librt_asneeded.so" "${toolchain_directory}/${triplet}/lib"
 		cp "${workdir}/patches/librt_asneeded.a" "${toolchain_directory}/${triplet}/lib"
