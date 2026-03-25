@@ -593,8 +593,8 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-5/0001-MinGW-Do-not-version-lto-plugins.patch"
 	elif (( gcc_major >= 4.9 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.9/0001-MinGW-Do-not-version-lto-plugins.patch"
-	elif (( gcc_major >= 4.8 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.8/0001-MinGW-Do-not-version-lto-plugins.patch"
+	elif (( gcc_major >= 4.7 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.7/0001-MinGW-Do-not-version-lto-plugins.patch"
 	fi
 	
 	if (( gcc_major >= 5 && gcc_major <= 7 )); then
@@ -615,8 +615,8 @@ if ! [ -f "${gcc_tarball}" ]; then
 	
 	if (( gcc_major >= 5 && gcc_major <= 12 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-5/0001-Fix-definition-of-abort-on-Windows.patch"
-	elif (( gcc_major >= 4.8 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.8/0001-Fix-definition-of-abort-on-Windows.patch"
+	elif (( gcc_major >= 4.7 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.7/0001-Fix-definition-of-abort-on-Windows.patch"
 	fi
 	
 	if (( gcc_major >= 11 && gcc_major <= 12 )); then
@@ -628,15 +628,15 @@ if ! [ -f "${gcc_tarball}" ]; then
 	fi
 	
 	if (( gcc_major <= 4.9 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.8/0001-strerror.c-Do-not-declare-sys_nerr-or-sys_errlist-if-already-macros.patch"
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.8/0001-Avoid-incorrectly-declaring-the-caddr_t-alias-on-Linux.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.7/0001-strerror.c-Do-not-declare-sys_nerr-or-sys_errlist-if-already-macros.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.7/0001-Avoid-incorrectly-declaring-the-caddr_t-alias-on-Linux.patch"
 	fi
 	
 	if (( gcc_major <= 4.8 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.8/0001-Add-missing-_attribute__-__gnu_inline__.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.7/0001-Add-missing-_attribute__-__gnu_inline__.patch"
 	fi
 	
-	if (( gcc_major >= 4.8 && gcc_major <= 5 )); then
+	if (( gcc_major >= 4.7 && gcc_major <= 5 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.8/0001-Fix-wrong-usage-of-bool.patch"
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.8/0001-Prevent-use-of-_unlocked-functions-and-disable-inclusion-of-malloc.h.patch"
 	elif (( gcc_major >= 6 )); then
@@ -706,6 +706,8 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-5/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
 	elif (( gcc_major >= 4.8 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.8/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
+	elif (( gcc_major >= 4.7 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.7/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
 	else
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
 	fi
@@ -718,7 +720,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-10/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
 	elif (( gcc_major >= 7 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-7/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
-	elif (( gcc_major >= 4.8 )); then
+	elif (( gcc_major >= 4.7 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.8/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
 	else
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-vvv/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
@@ -1210,9 +1212,6 @@ for target in "${targets[@]}"; do
 		--disable-canonical-system-headers \
 		--disable-win32-utf8-manifest \
 		--disable-c++-tools \
-		--disable-install-libiberty \
-		--disable-binutils \
-		--disable-gas \
 		--without-static-standard-libraries \
 		CFLAGS="${ccflags}" \
 		CXXFLAGS="${ccflags}" \
@@ -1317,6 +1316,7 @@ for target in "${targets[@]}"; do
 		"${clang_include_dir}/arm"*'.h' \
 		"${clang_include_dir}/stdatomic.h"
 	
+	[ -f "${toolchain_directory}/lib/libiberty.a" ] && unlink "${toolchain_directory}/lib/libiberty.a"
 	[ -f './libiberty.a' ] && unlink './libiberty.a'
 	
 	unlink './libgcc_s.so' && echo 'GROUP ( libgcc_s.so.1 -lgcc )' > './libgcc_s.so'
