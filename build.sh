@@ -1030,7 +1030,12 @@ make \
 for target in "${targets[@]}"; do
 	check_target_exists "${gcc_targets}" "${target}" || continue
 	
-	declare specs='%{!Qy: -Qn} %{!fgnu-unique: %{!fno-gnu-unique: -fno-gnu-unique}}'
+	declare specs='%{!Qy: -Qn}'
+	
+	if (( gcc_major >= 4.8 )); then
+		specs+=' %{!fgnu-unique: %{!fno-gnu-unique: -fno-gnu-unique}}'
+	fi
+	
 	declare hash_style='both'
 	
 	source "${workdir}/${target}.sh"
