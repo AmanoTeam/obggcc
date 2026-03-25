@@ -953,6 +953,7 @@ cd "${gold_directory}/build"
 	--enable-default-compressed-debug-sections-algorithm='zstd' \
 	--disable-binutils \
 	--disable-gas \
+	--disable-install-libiberty \
 	--without-static-standard-libraries \
 	--with-zstd="${toolchain_directory}" \
 	--with-system-zlib \
