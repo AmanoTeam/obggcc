@@ -1,5 +1,7 @@
 #!/bin/bash
 
+unsetopt nomatch
+
 declare -r workdir="${PWD}"
 
 declare build="$("${workdir}/tools/config.guess")"
@@ -102,9 +104,9 @@ declare -r sysroot_tarball="${build_directory}/sysroot.tar.xz"
 
 declare gdb='1'
 
-declare build_cmake='1'
-declare build_curl='1'
-declare build_nz='1'
+declare build_cmake='0'
+declare build_curl='0'
+declare build_nz='0'
 
 declare exe=''
 declare dll='.so'
@@ -222,7 +224,7 @@ fi
 declare __gcc_major="${gcc_major}"
 
 if [ "${gcc_major}" = '4' ]; then
-	__gcc_major='4.9'
+	true # __gcc_major='4.9'
 fi
 
 if [ "${gcc_major}" != '16' ]; then
@@ -589,8 +591,8 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-8/0001-Cygwin-MinGW-Do-not-version-lto-plugins.patch"
 	elif (( gcc_major >= 5 && gcc_major <= 7 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-5/0001-MinGW-Do-not-version-lto-plugins.patch"
-	elif (( gcc_major <= 4 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4/0001-MinGW-Do-not-version-lto-plugins.patch"
+	elif (( gcc_major >= 4.9 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.9/0001-MinGW-Do-not-version-lto-plugins.patch"
 	fi
 	
 	if (( gcc_major >= 5 && gcc_major <= 7 )); then
@@ -611,26 +613,30 @@ if ! [ -f "${gcc_tarball}" ]; then
 	
 	if (( gcc_major >= 5 && gcc_major <= 12 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-5/0001-Fix-definition-of-abort-on-Windows.patch"
-	elif (( gcc_major <= 4 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4/0001-Fix-definition-of-abort-on-Windows.patch"
+	elif (( gcc_major >= 4.8 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.8/0001-Fix-definition-of-abort-on-Windows.patch"
 	fi
 	
 	if (( gcc_major >= 11 && gcc_major <= 12 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-11/0001-Fix-missing-definition-of-PTR-macro.patch"
 	fi
 	
-	if (( gcc_major <= 7 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4/0001-Build-libcilkrts-with-D_GNU_SOURCE.patch"
+	if (( gcc_major >= 4.9 && gcc_major <= 7 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.9/0001-Build-libcilkrts-with-D_GNU_SOURCE.patch"
 	fi
 	
-	if (( gcc_major <= 4 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4/0001-strerror.c-Do-not-declare-sys_nerr-or-sys_errlist-if-already-macros.patch"
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4/0001-Avoid-incorrectly-declaring-the-caddr_t-alias-on-Linux.patch"
+	if (( gcc_major <= 4.9 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.8/0001-strerror.c-Do-not-declare-sys_nerr-or-sys_errlist-if-already-macros.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.8/0001-Avoid-incorrectly-declaring-the-caddr_t-alias-on-Linux.patch"
 	fi
 	
-	if (( gcc_major >= 4 && gcc_major <= 5 )); then
+	if (( gcc_major <= 4.8 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.8/0001-Add-missing-_attribute__-__gnu_inline__.patch"
+	fi
+	
+	if (( gcc_major >= 4.8 && gcc_major <= 5 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4/0001-Fix-wrong-usage-of-bool.patch"
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4/0001-Prevent-use-of-_unlocked-functions-and-disable-inclusion-of-malloc.h.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.8/0001-Prevent-use-of-_unlocked-functions-and-disable-inclusion-of-malloc.h.patch"
 	elif (( gcc_major >= 6 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-6/0001-Prevent-use-of-_unlocked-functions.patch"
 	fi
@@ -696,8 +702,8 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
 	elif (( gcc_major >= 5 && gcc_major <= 13 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-5/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
-	elif (( gcc_major >= 4 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
+	elif (( gcc_major >= 4.8 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.8/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
 	else
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
 	fi
@@ -710,8 +716,8 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-10/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
 	elif (( gcc_major >= 7 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-7/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
-	elif (( gcc_major >= 4 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
+	elif (( gcc_major >= 4.8 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.8/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
 	else
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-vvv/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
 	fi
@@ -1135,6 +1141,8 @@ for target in "${targets[@]}"; do
 		extra_configure_flags+=' --disable-plugin'
 	fi
 	
+	declare -ra extra_flags=(${=extra_configure_flags})
+	
 	declare ldflags="-L${toolchain_directory}/lib ${linkflags}"
 	
 	[ -d "${gcc_directory}/build" ] || mkdir "${gcc_directory}/build"
@@ -1187,7 +1195,7 @@ for target in "${targets[@]}"; do
 		--with-pic \
 		--with-gnu-as \
 		--with-gnu-ld \
-		${extra_configure_flags} \
+		"${extra_flags[@]}" \
 		--disable-libsanitizer \
 		--disable-bootstrap \
 		--disable-libstdcxx-pch \
@@ -1205,13 +1213,16 @@ for target in "${targets[@]}"; do
 	
 	ldflags_for_target="${linkflags}"
 	
-	declare args=''
-	
 	if (( native )); then
-		args+="${environment}"
+		declare -ra args=(
+			"LD_LIBRARY_PATH=${toolchain_directory}/lib"
+			"PATH=${PATH}:${toolchain_directory}/bin"
+		)
+	else
+		declare -ra args=()
 	fi
 	
-	env ${args} make \
+	env "${args[@]}" make \
 		gcc_cv_objdump="${host}-objdump" \
 		all \
 		--jobs="${max_jobs}"

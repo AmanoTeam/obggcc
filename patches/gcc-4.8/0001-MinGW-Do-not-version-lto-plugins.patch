@@ -1,0 +1,56 @@
+From 54e0986a394345c748091393b917934a0b333c84 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Tue, 24 Mar 2026 22:17:24 +0100
+Subject: [PATCH] MinGW: Do not version lto plugins
+
+---
+ gcc/config.host        | 6 +++---
+ lto-plugin/Makefile.in | 2 +-
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/gcc/config.host b/gcc/config.host
+index 1196ec523..b1f2ac86e 100644
+--- a/gcc/config.host
++++ b/gcc/config.host
+@@ -219,14 +219,14 @@ case ${host} in
+     out_host_hook_obj=host-cygwin.o
+     host_xmake_file="${host_xmake_file} i386/x-cygwin"
+     host_exeext=.exe
+-    host_lto_plugin_soname=cyglto_plugin-0.dll
++    host_lto_plugin_soname=cyglto_plugin.dll
+     ;;
+   i[34567]86-*-mingw32*)
+     host_xm_file=i386/xm-mingw32.h
+     host_xmake_file="${host_xmake_file} i386/x-mingw32"
+     host_exeext=.exe
+     out_host_hook_obj=host-mingw32.o
+-    host_lto_plugin_soname=liblto_plugin-0.dll
++    host_lto_plugin_soname=liblto_plugin.dll
+     ;;
+   x86_64-*-mingw*)
+     use_long_long_for_widest_fast_int=yes
+@@ -234,7 +234,7 @@ case ${host} in
+     host_xmake_file="${host_xmake_file} i386/x-mingw32"
+     host_exeext=.exe
+     out_host_hook_obj=host-mingw32.o
+-    host_lto_plugin_soname=liblto_plugin-0.dll
++    host_lto_plugin_soname=liblto_plugin.dll
+     ;;
+   i[34567]86-*-uwin*)
+     echo "*** UWIN may not be used as a host platform because"
+diff --git a/lto-plugin/Makefile.in b/lto-plugin/Makefile.in
+index 0c8d89fc7..c591d5dd2 100644
+--- a/lto-plugin/Makefile.in
++++ b/lto-plugin/Makefile.in
+@@ -242,7 +242,7 @@ liblto_plugin_la_LIBADD = \
+ 	$(if $(wildcard ../libiberty/pic/libiberty.a),$(Wc)../libiberty/pic/libiberty.a,)
+ 
+ # Note that we intentionally override the bindir supplied by ACX_LT_HOST_FLAGS
+-liblto_plugin_la_LDFLAGS = $(lt_host_flags) -module -bindir $(libexecsubdir) \
++liblto_plugin_la_LDFLAGS = $(lt_host_flags) -module -avoid-version -bindir $(libexecsubdir) \
+ 	$(if $(wildcard ../libiberty/pic/libiberty.a),,-Wc,../libiberty/libiberty.a)
+ 
+ liblto_plugin_la_DEPENDENCIES = $(if $(wildcard \
+-- 
+2.53.0
+
