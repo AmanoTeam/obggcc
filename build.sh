@@ -1219,7 +1219,8 @@ for target in "${targets[@]}"; do
 		--without-static-standard-libraries \
 		CFLAGS="${ccflags}" \
 		CXXFLAGS="${ccflags}" \
-		LDFLAGS="${ldflags}"
+		LDFLAGS="${ldflags}" \
+		MISSING='texinfo'
 	
 	ldflags_for_target="${linkflags}"
 	
@@ -1320,10 +1321,13 @@ for target in "${targets[@]}"; do
 		"${clang_include_dir}/arm"*'.h' \
 		"${clang_include_dir}/stdatomic.h"
 	
-	[ -f "${toolchain_directory}/lib/libiberty.a" ] && unlink "${toolchain_directory}/lib/libiberty.a"
 	[ -f './libiberty.a' ] && unlink './libiberty.a'
 	
 	unlink './libgcc_s.so' && echo 'GROUP ( libgcc_s.so.1 -lgcc )' > './libgcc_s.so'
+	
+	if (( gcc_major <= 4.7 )); then
+		unlink "${toolchain_directory}/lib/libiberty.a"
+	fi
 	
 	rm \
 		--force \
