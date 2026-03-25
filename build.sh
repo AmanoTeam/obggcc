@@ -636,6 +636,10 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.7/0001-Add-missing-_attribute__-__gnu_inline__.patch"
 	fi
 	
+	if (( gcc_major <= 4.7 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.7/0001-Disable-building-documentation.patch"
+	fi
+	
 	if (( gcc_major >= 4.7 && gcc_major <= 5 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.7/0001-Fix-wrong-usage-of-bool.patch"
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.7/0001-Prevent-use-of-_unlocked-functions-and-disable-inclusion-of-malloc.h.patch"
