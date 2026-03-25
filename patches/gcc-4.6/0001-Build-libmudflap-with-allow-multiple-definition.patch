@@ -1,0 +1,34 @@
+From 3bb35066b570fa1876046d67006f76b07bf45c71 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Wed, 25 Mar 2026 20:34:22 +0100
+Subject: [PATCH] Build libmudflap with --allow-multiple-definition
+
+---
+ libmudflap/Makefile.in | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/libmudflap/Makefile.in b/libmudflap/Makefile.in
+index ae342cf80..940229fb8 100644
+--- a/libmudflap/Makefile.in
++++ b/libmudflap/Makefile.in
+@@ -279,7 +279,7 @@ libmudflap_la_SOURCES = \
+ 
+ libmudflap_la_LIBADD = 
+ libmudflap_la_DEPENDENCIES = $(libmudflap_la_LIBADD)
+-libmudflap_la_LDFLAGS = -version-info `grep -v '^\#' $(srcdir)/libtool-version`
++libmudflap_la_LDFLAGS = -version-info `grep -v '^\#' $(srcdir)/libtool-version` -Xlinker --allow-multiple-definition
+ libmudflapth_la_SOURCES = \
+ 	mf-runtime.c \
+ 	mf-heuristics.c \
+@@ -290,7 +290,7 @@ libmudflapth_la_SOURCES = \
+ libmudflapth_la_CFLAGS = -DLIBMUDFLAPTH
+ libmudflapth_la_LIBADD = 
+ libmudflapth_la_DEPENDENCIES = $(libmudflapth_la_LIBADD)
+-libmudflapth_la_LDFLAGS = -version-info `grep -v '^\#' $(srcdir)/libtool-version`
++libmudflapth_la_LDFLAGS = -version-info `grep -v '^\#' $(srcdir)/libtool-version` -Xlinker --allow-multiple-definition
+ 
+ # XXX hack alert
+ # From libffi/Makefile.am
+-- 
+2.53.0
+

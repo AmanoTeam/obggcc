@@ -185,11 +185,11 @@ declare -ra deprecated_targets=(
 )
 
 declare -ra targets=(
-	'i386-unknown-linux-gnu'
 	'arm-unknown-linux-gnueabi'
 	'arm-unknown-linux-gnueabihf'
 	'aarch64-unknown-linux-gnu'
 	'x86_64-unknown-linux-gnu'
+	'i386-unknown-linux-gnu'
 )
 
 declare -r PKG_CONFIG_PATH="${toolchain_directory}/lib/pkgconfig"
@@ -597,6 +597,10 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.9/0001-MinGW-Do-not-version-lto-plugins.patch"
 	elif (( gcc_major >= 4.6 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.6/0001-MinGW-Do-not-version-lto-plugins.patch"
+	fi
+	
+	if (( gcc_major >= 4.6 && gcc_major <= 4.8 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.6/0001-Build-libmudflap-with-allow-multiple-definition.patch"
 	fi
 	
 	if (( gcc_major >= 5 && gcc_major <= 7 )); then
