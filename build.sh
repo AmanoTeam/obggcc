@@ -615,8 +615,8 @@ if ! [ -f "${gcc_tarball}" ]; then
 	
 	if (( gcc_major >= 5 && gcc_major <= 12 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-5/0001-Fix-definition-of-abort-on-Windows.patch"
-	elif (( gcc_major >= 4.6 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.6/0001-Fix-definition-of-abort-on-Windows.patch"
+	elif (( gcc_major >= 4.5 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.5/0001-Fix-definition-of-abort-on-Windows.patch"
 	fi
 	
 	if (( gcc_major >= 11 && gcc_major <= 12 )); then
@@ -667,7 +667,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0003-Change-the-default-language-version-for-C-compilation-from-std-gnu23-to-std-gnu17.patch"
 	fi
 	
-	if [ "${gcc_major}" = '16' ]; then
+	if (( gcc_major >= 16 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0004-Turn-Wimplicit-int-back-into-an-warning.patch"
 	elif (( gcc_major >= 14 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0004-Turn-Wimplicit-int-back-into-an-warning.patch"
@@ -732,7 +732,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 	elif (( gcc_major >= 7 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-7/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
 	elif (( gcc_major >= 4.5 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.6/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.5/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
 	else
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-vvv/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
 	fi
