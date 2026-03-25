@@ -633,7 +633,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 	fi
 	
 	if (( gcc_major <= 4.8 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.6/0001-Add-missing-_attribute__-__gnu_inline__.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.5/0001-Add-missing-_attribute__-__gnu_inline__.patch"
 	fi
 	
 	if (( gcc_major <= 4.7 )); then
