@@ -1211,6 +1211,8 @@ for target in "${targets[@]}"; do
 		--disable-win32-utf8-manifest \
 		--disable-c++-tools \
 		--disable-install-libiberty \
+		--disable-binutils \
+		--disable-gas \
 		--without-static-standard-libraries \
 		CFLAGS="${ccflags}" \
 		CXXFLAGS="${ccflags}" \
