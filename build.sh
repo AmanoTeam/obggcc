@@ -711,7 +711,9 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Enable-automatic-linking-of-librt.patch"
 	fi
 	
-	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-AArch64-enable-libquadmath.patch"
+	if (( gcc_major >= 4.6 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-AArch64-enable-libquadmath.patch"
+	fi
 	
 	if (( gcc_major >= 14 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
