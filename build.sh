@@ -1074,6 +1074,7 @@ for target in "${targets[@]}"; do
 		--disable-gprofng \
 		--disable-gold \
 		--disable-default-execstack \
+		--disable-install-libiberty \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--without-static-standard-libraries \
 		--with-zstd="${toolchain_directory}" \
@@ -1208,6 +1209,7 @@ for target in "${targets[@]}"; do
 		--disable-canonical-system-headers \
 		--disable-win32-utf8-manifest \
 		--disable-c++-tools \
+		--disable-install-libiberty \
 		--without-static-standard-libraries \
 		CFLAGS="${ccflags}" \
 		CXXFLAGS="${ccflags}" \
