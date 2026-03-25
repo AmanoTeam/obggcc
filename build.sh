@@ -185,11 +185,11 @@ declare -ra deprecated_targets=(
 )
 
 declare -ra targets=(
+	'x86_64-unknown-linux-gnu'
+	'i386-unknown-linux-gnu'
 	'arm-unknown-linux-gnueabi'
 	'arm-unknown-linux-gnueabihf'
 	'aarch64-unknown-linux-gnu'
-	'x86_64-unknown-linux-gnu'
-	'i386-unknown-linux-gnu'
 )
 
 declare -r PKG_CONFIG_PATH="${toolchain_directory}/lib/pkgconfig"
@@ -1042,6 +1042,10 @@ for target in "${targets[@]}"; do
 		continue
 	fi
 	
+	if (( gcc_major <= 4.6 )) && [[ "${target}" = 'arm-'*'-gnueabihf' ]]; then
+		continue
+	fi
+	
 	declare specs='%{!Qy: -Qn}'
 	
 	if (( gcc_major >= 4.8 )); then
@@ -1095,7 +1099,7 @@ for target in "${targets[@]}"; do
 	[ -d "${binutils_directory}/build" ] || mkdir "${binutils_directory}/build"
 	
 	cd "${binutils_directory}/build"
-	# --enable-leak-check \
+	
 	../configure \
 		--build="${build}" \
 		--host="${host}" \
@@ -1108,6 +1112,7 @@ for target in "${targets[@]}"; do
 		--enable-relro \
 		--enable-compressed-debug-sections='all' \
 		--enable-default-compressed-debug-sections-algorithm='zstd' \
+		--enable-leak-check \
 		--disable-gprofng \
 		--disable-gold \
 		--disable-default-execstack \
