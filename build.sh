@@ -1069,7 +1069,8 @@ for target in "${targets[@]}"; do
 	
 	mv "${sysroot_directory}" "${toolchain_directory}/${triplet}"
 	
-	if (( native )); then
+	if (( native && gcc_major <= 4.6 )); then
+		# --with-native-system-header-dir was not supported back then
 		ln \
 			--symbolic \
 			--relative \
@@ -1248,12 +1249,12 @@ for target in "${targets[@]}"; do
 	ldflags_for_target="${linkflags}"
 	
 	if (( native )); then
-		declare -ra args=(
+		declare -a args=(
 			"LD_LIBRARY_PATH=${toolchain_directory}/lib"
 			"PATH=${PATH}:${toolchain_directory}/bin"
 		)
 	else
-		declare -ra args=()
+		declare -a args=()
 	fi
 	
 	env "${args[@]}" make \
