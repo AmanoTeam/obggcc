@@ -628,8 +628,8 @@ if ! [ -f "${gcc_tarball}" ]; then
 	fi
 	
 	if (( gcc_major <= 4.9 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.7/0001-strerror.c-Do-not-declare-sys_nerr-or-sys_errlist-if-already-macros.patch"
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.7/0001-Avoid-incorrectly-declaring-the-caddr_t-alias-on-Linux.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.6/0001-strerror.c-Do-not-declare-sys_nerr-or-sys_errlist-if-already-macros.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.6/0001-Avoid-incorrectly-declaring-the-caddr_t-alias-on-Linux.patch"
 	fi
 	
 	if (( gcc_major <= 4.8 )); then
