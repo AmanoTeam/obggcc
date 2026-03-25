@@ -731,7 +731,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 	elif (( gcc_major >= 7 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-7/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
 	elif (( gcc_major >= 4.6 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.7/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.6/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
 	else
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-vvv/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
 	fi
