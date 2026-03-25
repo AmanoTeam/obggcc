@@ -1177,6 +1177,12 @@ for target in "${targets[@]}"; do
 		extra_configure_flags+=' --without-isl'
 	fi
 	
+	if (( gcc_major <= 4.5 )); then
+		# These versions require manually installing a third-party library (libelf) for LTO to work,
+		# which isn’t worth the hassle here.
+		extra_configure_flags+=' --disable-lto'
+	fi
+	
 	if (( gcc_major <= 7 )) && [[ "${host}" = *'-mingw32' ]]; then
 		extra_configure_flags+=' --disable-plugin'
 	fi
@@ -1373,20 +1379,19 @@ for target in "${targets[@]}"; do
 	
 	cat "${workdir}/patches/c++config.h" >> "${toolchain_directory}/${triplet}/include/c++/${gcc_major}/${triplet}/bits/c++config.h"
 	
-	if [[ "${host}" = *'-mingw32' ]]; then
-		if (( gcc_major >= 4.6 )); then
-			# There was no LTO support on Windows hosts in GCC < 4.6
+	if (( gcc_major >= 4.6 )); then
+		if [[ "${host}" = *'-mingw32' ]]; then
 			cp \
 				"${toolchain_directory}/libexec/gcc/${triplet}/${gcc_major}/liblto_plugin${dll}" \
 				"${toolchain_directory}/lib/bfd-plugins"
+		else
+			ln \
+				--symbolic \
+				--relative \
+				--force \
+				"${toolchain_directory}/libexec/gcc/${triplet}/${gcc_major}/liblto_plugin${dll}" \
+				"${toolchain_directory}/lib/bfd-plugins"
 		fi
-	else
-		ln \
-			--symbolic \
-			--relative \
-			--force \
-			"${toolchain_directory}/libexec/gcc/${triplet}/${gcc_major}/liblto_plugin${dll}" \
-			"${toolchain_directory}/lib/bfd-plugins"
 	fi
 	
 	rename_soname_libraries "${toolchain_directory}/${triplet}"
