@@ -1,0 +1,45 @@
+From fc267c520f25213f0f4b3a54479a44747a2d1648 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sun, 29 Mar 2026 15:17:53 +0200
+Subject: [PATCH] Remove hardcoded paths for crt files
+
+---
+ gcc/config/i386/linux64.h | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/gcc/config/i386/linux64.h b/gcc/config/i386/linux64.h
+index 26b7b81..6798abb 100644
+--- a/gcc/config/i386/linux64.h
++++ b/gcc/config/i386/linux64.h
+@@ -39,7 +39,7 @@ Boston, MA 02111-1307, USA.  */
+    done.  */
+ 
+ #undef	LINK_SPEC
+-#define LINK_SPEC "--disable-new-dtags %{!m32:-m elf_x86_64 -Y P,/usr/lib64} %{m32:-m elf_i386} \
++#define LINK_SPEC "--disable-new-dtags %{!m32:-m elf_x86_64} %{m32:-m elf_i386} \
+   %{shared:-shared} \
+   %{!shared: \
+     %{!static: \
+@@ -56,15 +56,15 @@ Boston, MA 02111-1307, USA.  */
+      crti.o%s %{static:crtbeginT.o%s}\
+      %{!static:%{!shared:crtbegin.o%s} %{shared:crtbeginS.o%s}}} \
+    %{!m32:%{!shared: \
+-       %{pg:/usr/lib64/gcrt1.o%s} %{!pg:%{p:/usr/lib64/gcrt1.o%s} \
+-       %{!p:%{profile:/usr/lib64/gcrt1.o%s} %{!profile:/usr/lib64/crt1.o%s}}}}\
+-     /usr/lib64/crti.o%s %{static:crtbeginT.o%s} \
++       %{pg:gcrt1.o%s} %{!pg:%{p:gcrt1.o%s} \
++       %{!p:%{profile:gcrt1.o%s} %{!profile:crt1.o%s}}}}\
++     crti.o%s %{static:crtbeginT.o%s} \
+      %{!static:%{!shared:crtbegin.o%s} %{shared:crtbeginS.o%s}}}"
+ 
+ #undef  ENDFILE_SPEC
+ #define ENDFILE_SPEC "\
+   %{m32:%{!shared:crtend.o%s} %{shared:crtendS.o%s} crtn.o%s} \
+-  %{!m32:%{!shared:crtend.o%s} %{shared:crtendS.o%s} /usr/lib64/crtn.o%s}"
++  %{!m32:%{!shared:crtend.o%s} %{shared:crtendS.o%s} crtn.o%s}"
+ 
+ #define MULTILIB_DEFAULTS { "m64" }
+ 
+-- 
+2.53.0
+

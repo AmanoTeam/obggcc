@@ -1,0 +1,34 @@
+From 81e095f966fb7e48ec50820f1df280abe55b14f0 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Mon, 30 Mar 2026 20:36:53 +0200
+Subject: [PATCH] Don't error out for unknown platforms
+
+---
+ gcc/config.gcc | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/gcc/config.gcc b/gcc/config.gcc
+index 7b242e9..295ebc7 100644
+--- a/gcc/config.gcc
++++ b/gcc/config.gcc
+@@ -475,7 +475,7 @@ case $machine in
+ 	*-*-freebsd4 | *-*-freebsd[4].*) fbsd_tm_file="freebsd4.h";;
+ 	*-*-freebsd5 | *-*-freebsd[5].*) fbsd_tm_file="freebsd5.h";;
+ 	*-*-freebsd6 | *-*-freebsd[6].*) fbsd_tm_file="freebsd6.h";;
+-	*) echo 'Please update *-*-freebsd* in gcc/config.gcc'; exit 1;;
++	*) echo 'Please update *-*-freebsd* in gcc/config.gcc'; true;;
+ 	esac
+ 	tmake_file="t-slibgcc-elf-ver t-freebsd"
+ 	xmake_file=none
+@@ -2764,7 +2764,7 @@ xtensa-*-linux*)
+ 	;;
+ *)
+ 	echo "*** Configuration $machine not supported" 1>&2
+-	exit 1
++	true
+ 	;;
+ esac
+ 
+-- 
+2.53.0
+

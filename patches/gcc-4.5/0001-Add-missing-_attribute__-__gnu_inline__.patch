@@ -1,0 +1,72 @@
+From 15b7c26c2f96f8101b5fe53f35decc9126ce0d06 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Wed, 25 Mar 2026 02:57:37 +0100
+Subject: [PATCH] Add missing _attribute__ ((__gnu_inline__))
+
+---
+ gcc/cp/cfns.gperf |  4 ++--
+ gcc/cp/cfns.h     | 13 +++++--------
+ 2 files changed, 7 insertions(+), 10 deletions(-)
+
+diff --git a/gcc/cp/cfns.gperf b/gcc/cp/cfns.gperf
+index c4c4e2af7..e300b11d7 100644
+--- a/gcc/cp/cfns.gperf
++++ b/gcc/cp/cfns.gperf
+@@ -17,11 +17,11 @@ You should have received a copy of the GNU General Public License
+ along with GCC; see the file COPYING3.  If not see
+ <http://www.gnu.org/licenses/>.  */
+ #ifdef __GNUC__
+-__inline
++__inline __attribute__ ((__gnu_inline__))
+ #endif
+ static unsigned int hash (const char *, unsigned int);
+ #ifdef __GNUC__
+-__inline
++__inline __attribute__ ((__gnu_inline__))
+ #endif
+ const char * libc_name_p (const char *, unsigned int);
+ %}
+diff --git a/gcc/cp/cfns.h b/gcc/cp/cfns.h
+index 42dd3cfc0..f0c0ffdaf 100644
+--- a/gcc/cp/cfns.h
++++ b/gcc/cp/cfns.h
+@@ -48,20 +48,20 @@ You should have received a copy of the GNU General Public License
+ along with GCC; see the file COPYING3.  If not see
+ <http://www.gnu.org/licenses/>.  */
+ #ifdef __GNUC__
+-__inline
++__inline __attribute__ ((__gnu_inline__))
+ #endif
+ static unsigned int hash (const char *, unsigned int);
+ #ifdef __GNUC__
+-__inline
++__inline __attribute__ ((__gnu_inline__))
+ #endif
+ const char * libc_name_p (const char *, unsigned int);
+ /* maximum key range = 391, duplicates = 0 */
+ 
+ #ifdef __GNUC__
+-__inline
++__inline __attribute__ ((__gnu_inline__))
+ #else
+ #ifdef __cplusplus
+-inline
++inline __attribute__ ((__gnu_inline__))
+ #endif
+ #endif
+ static unsigned int
+@@ -123,10 +123,7 @@ hash (register const char *str, register unsigned int len)
+ }
+ 
+ #ifdef __GNUC__
+-__inline
+-#ifdef __GNUC_STDC_INLINE__
+-__attribute__ ((__gnu_inline__))
+-#endif
++__inline __attribute__ ((__gnu_inline__))
+ #endif
+ const char *
+ libc_name_p (register const char *str, register unsigned int len)
+-- 
+2.53.0
+

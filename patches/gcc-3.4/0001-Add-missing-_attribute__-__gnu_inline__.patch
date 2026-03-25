@@ -1,0 +1,68 @@
+From da6fe74b129f543f4adf935ebf69fd4d1b652899 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Thu, 26 Mar 2026 14:28:43 +0100
+Subject: [PATCH 1/4] Add missing _attribute__ ((__gnu_inline__))
+
+---
+ gcc/cp/cfns.gperf |  4 ++--
+ gcc/cp/cfns.h     | 10 +++++-----
+ 2 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/gcc/cp/cfns.gperf b/gcc/cp/cfns.gperf
+index c713eb0c2..7668fc054 100644
+--- a/gcc/cp/cfns.gperf
++++ b/gcc/cp/cfns.gperf
+@@ -1,10 +1,10 @@
+ %{
+ #ifdef __GNUC__
+-__inline
++__inline __attribute__ ((__gnu_inline__))
+ #endif
+ static unsigned int hash (const char *, unsigned int);
+ #ifdef __GNUC__
+-__inline
++__inline __attribute__ ((__gnu_inline__))
+ #endif
+ const char * libc_name_p (const char *, unsigned int);
+ %}
+diff --git a/gcc/cp/cfns.h b/gcc/cp/cfns.h
+index e6d43d8ac..383fcb3e7 100644
+--- a/gcc/cp/cfns.h
++++ b/gcc/cp/cfns.h
+@@ -31,20 +31,20 @@
+ #line 1 "../../gcc/cp/cfns.gperf"
+ 
+ #ifdef __GNUC__
+-__inline
++__inline __attribute__ ((__gnu_inline__))
+ #endif
+ static unsigned int hash (const char *, unsigned int);
+ #ifdef __GNUC__
+-__inline
++__inline __attribute__ ((__gnu_inline__))
+ #endif
+ const char * libc_name_p (const char *, unsigned int);
+ /* maximum key range = 391, duplicates = 0 */
+ 
+ #ifdef __GNUC__
+-__inline
++__inline __attribute__ ((__gnu_inline__))
+ #else
+ #ifdef __cplusplus
+-inline
++inline __attribute__ ((__gnu_inline__))
+ #endif
+ #endif
+ static unsigned int
+@@ -106,7 +106,7 @@ hash (register const char *str, register unsigned int len)
+ }
+ 
+ #ifdef __GNUC__
+-__inline
++__inline __attribute__ ((__gnu_inline__))
+ #endif
+ const char *
+ libc_name_p (register const char *str, register unsigned int len)
+-- 
+2.53.0
+

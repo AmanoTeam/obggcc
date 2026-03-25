@@ -1,0 +1,39 @@
+From 86eb607dfecbfeab241f3f16677a5268b0dc0f85 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Fri, 27 Mar 2026 15:00:45 +0100
+Subject: [PATCH] Add host support for x64 MinGW
+
+---
+ fixincludes/configure | 2 +-
+ gcc/config.host       | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/fixincludes/configure b/fixincludes/configure
+index 4d445194..4c7796e0 100755
+--- a/fixincludes/configure
++++ b/fixincludes/configure
+@@ -2562,7 +2562,7 @@ fi
+ else
+   case $host in
+ 	i?86-*-msdosdjgpp* | \
+-	i?86-*-mingw32* | \
++	*-*-mingw32* | \
+ 	*-*-beos* )
+ 		TARGET=twoprocess
+ 		;;
+diff --git a/gcc/config.host b/gcc/config.host
+index 354551da..ddc6415d 100644
+--- a/gcc/config.host
++++ b/gcc/config.host
+@@ -162,7 +162,7 @@ case ${host} in
+     host_xmake_file=i386/x-cygwin
+     host_exeext=.exe
+     ;;
+-  i[34567]86-*-mingw32*)
++  *-*-mingw*)
+     host_xm_file=i386/xm-mingw32.h
+     host_xmake_file=i386/x-mingw32
+     host_exeext=.exe
+-- 
+2.53.0
+

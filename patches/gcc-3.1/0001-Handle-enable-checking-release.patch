@@ -1,0 +1,24 @@
+From 437437ba9ea2dcca3f9b9593e2a1221324686a7d Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sat, 28 Mar 2026 17:51:07 +0100
+Subject: [PATCH] Handle --enable-checking=release
+
+---
+ gcc/configure | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/gcc/configure b/gcc/configure
+index 89d3372..bd93c2c 100755
+--- a/gcc/configure
++++ b/gcc/configure
+@@ -827,6 +827,7 @@ no)	;;
+ 		rtl)	ac_rtl_checking=1 ;;
+ 		gc)	ac_gc_checking=1 ;;
+ 		gcac)	ac_gc_always_collect=1 ;;
++		release) ;;
+ 		*)	{ echo "configure: error: unknown check category $check" 1>&2; exit 1; } ;;
+ 		esac
+ 	done
+-- 
+2.53.0
+

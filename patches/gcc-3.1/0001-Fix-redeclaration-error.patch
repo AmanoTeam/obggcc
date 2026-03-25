@@ -1,0 +1,138 @@
+From 6b8b5f91334f061e82c91bcd586a765d646f7a14 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sat, 28 Mar 2026 20:43:39 +0100
+Subject: [PATCH] Fix redeclaration error
+
+---
+ gcc/cp/decl.c    | 18 +++++++++---------
+ gcc/cp/decl.h    |  2 +-
+ gcc/cp/decl2.c   |  2 +-
+ gcc/cp/typeck2.c |  2 +-
+ 4 files changed, 12 insertions(+), 12 deletions(-)
+
+diff --git a/gcc/cp/decl.c b/gcc/cp/decl.c
+index f92cd2c..80f5cd6 100644
+--- a/gcc/cp/decl.c
++++ b/gcc/cp/decl.c
+@@ -5989,7 +5989,7 @@ qualify_lookup (val, flags)
+   return val;
+ }
+ 
+-/* Any other BINDING overrides an implicit TYPENAME.  Warn about
++/* Any other BINDING overrides an implicit DECL_TYPENAME.  Warn about
+    that.  */
+ 
+ static void
+@@ -7235,7 +7235,7 @@ groktypename (typename)
+     return typename;
+   split_specs_attrs (TREE_PURPOSE (typename), &specs, &attrs);
+   type = grokdeclarator (TREE_VALUE (typename), specs,
+-			 TYPENAME, 0, &attrs);
++			 DECL_TYPENAME, 0, &attrs);
+   if (attrs)
+     cplus_decl_attributes (&type, attrs, 0);
+   return type;
+@@ -9688,7 +9688,7 @@ check_special_function_return_type (sfk, type, optype)
+      PARM for a parameter declaration (either within a function prototype
+       or before a function body).  Make a PARM_DECL, or return void_type_node.
+      CATCHPARM for a parameter declaration before a catch clause.
+-     TYPENAME if for a typename (in a cast or sizeof).
++     DECL_TYPENAME if for a typename (in a cast or sizeof).
+       Don't make a DECL node; just return the ..._TYPE node.
+      FIELD for a struct or union field; make a FIELD_DECL.
+      BITFIELD for a field with specified width.
+@@ -9698,7 +9698,7 @@ check_special_function_return_type (sfk, type, optype)
+    if there are none; *ATTRLIST may be modified if attributes from inside
+    the declarator should be applied to the declaration.
+ 
+-   In the TYPENAME case, DECLARATOR is really an abstract declarator.
++   In the DECL_TYPENAME case, DECLARATOR is really an abstract declarator.
+    It may also be so in the PARM case, for a prototype where the
+    argument type is specified but not the name.
+ 
+@@ -10518,7 +10518,7 @@ grokdeclarator (declarator, declspecs, decl_context, initialized, attrlist)
+     }
+ 
+   /* Static anonymous unions are dealt with here.  */
+-  if (staticp && decl_context == TYPENAME
++  if (staticp && decl_context == DECL_TYPENAME
+       && TREE_CODE (declspecs) == TREE_LIST
+       && ANON_AGGR_TYPE_P (TREE_VALUE (declspecs)))
+     decl_context = FIELD;
+@@ -11218,7 +11218,7 @@ grokdeclarator (declarator, declspecs, decl_context, initialized, attrlist)
+ 	  error ("non-member `%s' cannot be declared `mutable'", name);
+           RIDBIT_RESET (RID_MUTABLE, specbits);
+         }
+-      else if (decl_context == TYPENAME || RIDBIT_SETP (RID_TYPEDEF, specbits))
++      else if (decl_context == DECL_TYPENAME || RIDBIT_SETP (RID_TYPEDEF, specbits))
+ 	{
+ 	  error ("non-object member `%s' cannot be declared `mutable'", name);
+ 	  RIDBIT_RESET (RID_MUTABLE, specbits);
+@@ -11258,7 +11258,7 @@ grokdeclarator (declarator, declspecs, decl_context, initialized, attrlist)
+ 
+   /* If this is declaring a typedef name, return a TYPE_DECL.  */
+ 
+-  if (RIDBIT_SETP (RID_TYPEDEF, specbits) && decl_context != TYPENAME)
++  if (RIDBIT_SETP (RID_TYPEDEF, specbits) && decl_context != DECL_TYPENAME)
+     {
+       tree decl;
+ 
+@@ -11381,14 +11381,14 @@ grokdeclarator (declarator, declspecs, decl_context, initialized, attrlist)
+   /* If this is a type name (such as, in a cast or sizeof),
+      compute the type and return it now.  */
+ 
+-  if (decl_context == TYPENAME)
++  if (decl_context == DECL_TYPENAME)
+     {
+       /* Note that the grammar rejects storage classes
+ 	 in typenames, fields or parameters.  */
+       if (type_quals != TYPE_UNQUALIFIED)
+ 	type_quals = TYPE_UNQUALIFIED;
+ 
+-      /* Special case: "friend class foo" looks like a TYPENAME context.  */
++      /* Special case: "friend class foo" looks like a DECL_TYPENAME context.  */
+       if (friendp)
+ 	{
+ 	  if (type_quals != TYPE_UNQUALIFIED)
+diff --git a/gcc/cp/decl.h b/gcc/cp/decl.h
+index 2316f06..d7d361d 100644
+--- a/gcc/cp/decl.h
++++ b/gcc/cp/decl.h
+@@ -26,7 +26,7 @@ enum decl_context
+   CATCHPARM,			/* Declaration of catch parm */
+   FIELD,			/* Declaration inside struct or union */
+   BITFIELD,			/* Likewise but with specified width */
+-  TYPENAME,			/* Typename (inside cast or sizeof)  */
++  DECL_TYPENAME,			/* Typename (inside cast or sizeof)  */
+   MEMFUNCDEF			/* Member function definition */
+ };
+ 
+diff --git a/gcc/cp/decl2.c b/gcc/cp/decl2.c
+index c5ed336..786d201 100644
+--- a/gcc/cp/decl2.c
++++ b/gcc/cp/decl2.c
+@@ -1711,7 +1711,7 @@ tree
+ grokoptypename (declspecs, declarator)
+      tree declspecs, declarator;
+ {
+-  tree t = grokdeclarator (declarator, declspecs, TYPENAME, 0, NULL);
++  tree t = grokdeclarator (declarator, declspecs, DECL_TYPENAME, 0, NULL);
+   return mangle_conv_op_name_for_type (t);
+ }
+ 
+diff --git a/gcc/cp/typeck2.c b/gcc/cp/typeck2.c
+index d3febeb..6236df6 100644
+--- a/gcc/cp/typeck2.c
++++ b/gcc/cp/typeck2.c
+@@ -1199,7 +1199,7 @@ build_m_component_ref (datum, component)
+   return component;
+ }
+ 
+-/* Return a tree node for the expression TYPENAME '(' PARMS ')'.  */
++/* Return a tree node for the expression DECL_TYPENAME '(' PARMS ')'.  */
+ 
+ tree
+ build_functional_cast (exp, parms)
+-- 
+2.53.0
+

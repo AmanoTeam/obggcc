@@ -563,7 +563,7 @@ Note that we don't provide prebuilt binaries of the gdb-server. If you want to u
 Start by installing the dependencies with:
 
 ```
-$ sudo apt-get install build-essential autoconf libtool jq python3-minimal
+$ sudo apt-get install build-essential autoconf libtool jq python3-minimal zsh
 ```
 
 Then, clone the repository with:

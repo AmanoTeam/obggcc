@@ -14,20 +14,36 @@ struct GCCVersion {
 };
 
 enum GCCMajorVersion {
-	GCC_4_9 = 4,
-	GCC_5 = 5,
-	GCC_6 = 6,
-	GCC_7 = 7,
-	GCC_8 = 8,
-	GCC_9 = 9,
-	GCC_10 = 10,
-	GCC_11 = 11,
-	GCC_12 = 12,
-	GCC_13 = 13,
-	GCC_14 = 14,
-	GCC_15 = 15,
-	GCC_16 = 16
+	GCC_VERSION_UNKNOWN,
+	GCC_3_1,
+	GCC_3_2,
+	GCC_3_3,
+	GCC_3_4,
+	GCC_4_0,
+	GCC_4_1,
+	GCC_4_2,
+	GCC_4_3,
+	GCC_4_4,
+	GCC_4_5,
+	GCC_4_6,
+	GCC_4_7,
+	GCC_4_8,
+	GCC_4_9,
+	GCC_5,
+	GCC_6,
+	GCC_7,
+	GCC_8,
+	GCC_9,
+	GCC_10,
+	GCC_11,
+	GCC_12,
+	GCC_13,
+	GCC_14,
+	GCC_15,
+	GCC_16
 };
+
+typedef enum GCCMajorVersion gcc_version_t;
 
 enum GxxAbiVersion {
 	GXX_ABI_2 = 2,
@@ -48,6 +64,7 @@ enum GxxAbiVersion {
 
 enum GccStdVersion {
 	GCC_STD_90 = 90,
+	GCC_STD_99 = 99,
 	GCC_STD_11 = 11,
 	GCC_STD_17 = 17,
 	GCC_STD_23 = 23
@@ -64,6 +81,78 @@ enum GxxStdVersion {
 };
 
 static const struct GCCVersion GCC_VERSIONS[] = {
+	{
+		.version = GCC_4_0,
+		.min_abi_version = GXX_ABI_2,
+		.max_abi_version = GXX_ABI_2,
+		.stdc_version = GCC_STD_90,
+		.stdc_max_version = GCC_STD_99,
+		.stdcxx_version = GXX_STD_98,
+		.stdcxx_max_version = GXX_STD_98
+	},
+	{
+		.version = GCC_4_1,
+		.min_abi_version = GXX_ABI_2,
+		.max_abi_version = GXX_ABI_2,
+		.stdc_version = GCC_STD_90,
+		.stdc_max_version = GCC_STD_99,
+		.stdcxx_version = GXX_STD_98,
+		.stdcxx_max_version = GXX_STD_98
+	},
+	{
+		.version = GCC_4_2,
+		.min_abi_version = GXX_ABI_2,
+		.max_abi_version = GXX_ABI_2,
+		.stdc_version = GCC_STD_90,
+		.stdc_max_version = GCC_STD_99,
+		.stdcxx_version = GXX_STD_98,
+		.stdcxx_max_version = GXX_STD_98
+	},
+	{
+		.version = GCC_4_3,
+		.min_abi_version = GXX_ABI_2,
+		.max_abi_version = GXX_ABI_2,
+		.stdc_version = GCC_STD_90,
+		.stdc_max_version = GCC_STD_99,
+		.stdcxx_version = GXX_STD_98,
+		.stdcxx_max_version = GXX_STD_98
+	},
+	{
+		.version = GCC_4_5,
+		.min_abi_version = GXX_ABI_2,
+		.max_abi_version = GXX_ABI_2,
+		.stdc_version = GCC_STD_90,
+		.stdc_max_version = GCC_STD_99,
+		.stdcxx_version = GXX_STD_98,
+		.stdcxx_max_version = GXX_STD_98
+	},
+	{
+		.version = GCC_4_6,
+		.min_abi_version = GXX_ABI_2,
+		.max_abi_version = GXX_ABI_2,
+		.stdc_version = GCC_STD_90,
+		.stdc_max_version = GCC_STD_99,
+		.stdcxx_version = GXX_STD_98,
+		.stdcxx_max_version = GXX_STD_98
+	},
+	{
+		.version = GCC_4_7,
+		.min_abi_version = GXX_ABI_2,
+		.max_abi_version = GXX_ABI_2,
+		.stdc_version = GCC_STD_90,
+		.stdc_max_version = GCC_STD_11,
+		.stdcxx_version = GXX_STD_98,
+		.stdcxx_max_version = GXX_STD_11
+	},
+	{
+		.version = GCC_4_8,
+		.min_abi_version = GXX_ABI_2,
+		.max_abi_version = GXX_ABI_2,
+		.stdc_version = GCC_STD_90,
+		.stdc_max_version = GCC_STD_11,
+		.stdcxx_version = GXX_STD_98,
+		.stdcxx_max_version = GXX_STD_11
+	},
 	{
 		.version = GCC_4_9,
 		.min_abi_version = GXX_ABI_2,
@@ -182,5 +271,7 @@ static const struct GCCVersion GCC_VERSIONS[] = {
 		.stdcxx_max_version = GXX_STD_26
 	}
 };
+
+gcc_version_t gcc_version_unstringify(const char* const value);
 
 #endif /* GCC_VERSIONS_H */

@@ -1,0 +1,79 @@
+From c423601cd71eed642047a22655e20b19e17ad904 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Thu, 26 Mar 2026 19:45:04 +0100
+Subject: [PATCH] Add relative RPATHs to GCC host tools
+
+---
+ gcc/Makefile.in     | 10 +++++-----
+ gcc/cp/Make-lang.in |  4 ++--
+ 2 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/gcc/Makefile.in b/gcc/Makefile.in
+index 0a1ce38b..e783b9b1 100644
+--- a/gcc/Makefile.in
++++ b/gcc/Makefile.in
+@@ -1322,7 +1322,7 @@ xgcc$(exeext): $(GCC_OBJS) gccspec.o version.o intl.o prefix.o \
+ # instead of gccspec.o.
+ cpp$(exeext): $(GCC_OBJS) cppspec.o version.o intl.o prefix.o \
+    version.o $(LIBDEPS) $(EXTRA_GCC_OBJS)
+-	$(CC) $(ALL_CFLAGS) $(LDFLAGS) -o $@ $(GCC_OBJS) cppspec.o \
++	$(CC) $(ALL_CFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) -o $@ $(GCC_OBJS) cppspec.o \
+ 	  intl.o prefix.o version.o $(EXTRA_GCC_OBJS) $(LIBS)
+ 
+ # Create links to binutils, especially for in-tree builds, to make -B.
+@@ -1402,7 +1402,7 @@ cc1-checksum.c : cc1-dummy$(exeext) build/genchecksum$(build_exeext)
+ cc1-checksum.o : cc1-checksum.c
+ 
+ cc1$(exeext): $(C_OBJS) cc1-checksum.o $(BACKEND) $(LIBDEPS)
+-	$(CC) $(ALL_CFLAGS) $(LDFLAGS) -o $@ $(C_OBJS) cc1-checksum.o \
++	$(CC) $(ALL_CFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) -o $@ $(C_OBJS) cc1-checksum.o \
+ 	  $(BACKEND) $(LIBS)
+ 
+ # Build the version of limits.h that we will install.
+@@ -1638,7 +1638,7 @@ COLLECT2_OBJS = collect2.o tlink.o intl.o version.o
+ COLLECT2_LIBS = @COLLECT2_LIBS@
+ collect2$(exeext): $(COLLECT2_OBJS) $(LIBDEPS)
+ # Don't try modifying collect2 (aka ld) in place--it might be linking this.
+-	$(CC) $(ALL_CFLAGS) $(LDFLAGS) -o T$@ \
++	$(CC) $(ALL_CFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) -o T$@ \
+ 		$(COLLECT2_OBJS) $(LIBS) $(COLLECT2_LIBS)
+ 	mv -f T$@ $@
+ 
+@@ -3171,10 +3171,10 @@ gcov-dump.o: gcov-dump.c gcov-io.c $(GCOV_IO_H) $(SYSTEM_H) coretypes.h \
+ 
+ GCOV_OBJS = gcov.o intl.o version.o errors.o
+ gcov$(exeext): $(GCOV_OBJS) $(LIBDEPS)
+-	$(CC) $(ALL_CFLAGS) $(LDFLAGS) $(GCOV_OBJS) $(LIBS) -o $@
++	$(CC) $(ALL_CFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) $(GCOV_OBJS) $(LIBS) -o $@
+ GCOV_DUMP_OBJS = gcov-dump.o version.o errors.o
+ gcov-dump$(exeext): $(GCOV_DUMP_OBJS) $(LIBDEPS)
+-	$(CC) $(ALL_CFLAGS) $(LDFLAGS) $(GCOV_DUMP_OBJS) $(LIBS) -o $@
++	$(CC) $(ALL_CFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) $(GCOV_DUMP_OBJS) $(LIBS) -o $@
+ #
+ # Build the include directory.  The stamp files are stmp-* rather than
+ # s-* so that mostlyclean does not force the include directory to
+diff --git a/gcc/cp/Make-lang.in b/gcc/cp/Make-lang.in
+index c42d63e9..95b7ec35 100644
+--- a/gcc/cp/Make-lang.in
++++ b/gcc/cp/Make-lang.in
+@@ -61,7 +61,7 @@ g++spec.o: $(srcdir)/cp/g++spec.c $(SYSTEM_H) coretypes.h $(TM_H) $(GCC_H) $(CON
+ # Create the compiler driver for g++.
+ GXX_OBJS = $(GCC_OBJS) g++spec.o intl.o prefix.o version.o
+ g++$(exeext): $(GXX_OBJS) $(EXTRA_GCC_OBJS) $(LIBDEPS)
+-	$(CC) $(ALL_CFLAGS) $(LDFLAGS) -o $@ \
++	$(CC) $(ALL_CFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) -o $@ \
+ 	  $(GXX_OBJS) $(EXTRA_GCC_OBJS) $(LIBS)
+ 
+ # Create a version of the g++ driver which calls the cross-compiler.
+@@ -100,7 +100,7 @@ cc1plus-checksum.c : cc1plus-dummy$(exeext) build/genchecksum$(build_exeext)
+ cc1plus-checksum.o : cc1plus-checksum.c
+ 
+ cc1plus$(exeext): $(CXX_OBJS) cc1plus-checksum.o $(BACKEND) $(LIBDEPS)
+-	$(CC) $(ALL_CFLAGS) $(LDFLAGS) -o $@ \
++	$(CC) $(ALL_CFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) -o $@ \
+ 	      $(CXX_OBJS) cc1plus-checksum.o $(BACKEND) $(LIBS)
+ 
+ # Special build rules.
+-- 
+2.53.0
+

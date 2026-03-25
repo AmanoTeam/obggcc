@@ -1,6 +1,6 @@
-From 9dcd90718d9703143f2be6fbd8161c71986e803e Mon Sep 17 00:00:00 2001
+From 54e0986a394345c748091393b917934a0b333c84 Mon Sep 17 00:00:00 2001
 From: Kartatz <105828205+Kartatz@users.noreply.github.com>
-Date: Sun, 15 Mar 2026 03:16:43 +0100
+Date: Tue, 24 Mar 2026 22:17:24 +0100
 Subject: [PATCH] MinGW: Do not version lto plugins
 
 ---
@@ -9,7 +9,7 @@ Subject: [PATCH] MinGW: Do not version lto plugins
  2 files changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/gcc/config.host b/gcc/config.host
-index bea17bcdd..a85d8b273 100644
+index 1196ec523..b1f2ac86e 100644
 --- a/gcc/config.host
 +++ b/gcc/config.host
 @@ -219,14 +219,14 @@ case ${host} in
@@ -39,15 +39,15 @@ index bea17bcdd..a85d8b273 100644
    i[34567]86-*-uwin*)
      echo "*** UWIN may not be used as a host platform because"
 diff --git a/lto-plugin/Makefile.in b/lto-plugin/Makefile.in
-index a70de62f5..a5718771b 100644
+index 0c8d89fc7..c591d5dd2 100644
 --- a/lto-plugin/Makefile.in
 +++ b/lto-plugin/Makefile.in
-@@ -245,7 +245,7 @@ liblto_plugin_la_LIBADD = \
+@@ -242,7 +242,7 @@ liblto_plugin_la_LIBADD = \
+ 	$(if $(wildcard ../libiberty/pic/libiberty.a),$(Wc)../libiberty/pic/libiberty.a,)
  
  # Note that we intentionally override the bindir supplied by ACX_LT_HOST_FLAGS
- liblto_plugin_la_LDFLAGS = $(AM_LDFLAGS) \
--	$(lt_host_flags) -module -bindir $(libexecsubdir) \
-+	$(lt_host_flags) -module -avoid-version -bindir $(libexecsubdir) \
+-liblto_plugin_la_LDFLAGS = $(lt_host_flags) -module -bindir $(libexecsubdir) \
++liblto_plugin_la_LDFLAGS = $(lt_host_flags) -module -avoid-version -bindir $(libexecsubdir) \
  	$(if $(wildcard ../libiberty/pic/libiberty.a),,-Wc,../libiberty/libiberty.a)
  
  liblto_plugin_la_DEPENDENCIES = $(if $(wildcard \

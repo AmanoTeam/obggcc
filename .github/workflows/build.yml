@@ -15,7 +15,7 @@ permissions: write-all
 env: 
     OBGGCC_BUILD_PARALLEL_LEVEL: 40
     OBGGCC_BUILD_DIRECTORY: /tmp
-    OBGGCC_RELEASE: 15
+    OBGGCC_RELEASE: '4.9'
     OBGGCC_TARGETS: '*'
 
 jobs:
@@ -29,6 +29,10 @@ jobs:
     - name: Checkout submodules
       run: |
         git -C submodules/nz submodule update --init --depth=1
+    - name: Install required dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install build-essential autoconf libtool zsh
     - name: Check for cache
       id: check-cache
       uses: actions/cache@main
@@ -41,7 +45,7 @@ jobs:
     - name: Build OBGGCC
       if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
       run: |
-        bash './build.sh'
+        zsh './build.sh'
     - name: Generate tarball
       if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
       run: |
@@ -130,7 +134,7 @@ jobs:
     - name: Install required dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install build-essential autoconf libtool
+        sudo apt-get install build-essential autoconf libtool zsh
     - name: Restore from cache
       uses: actions/cache@main
       with:
@@ -261,7 +265,7 @@ jobs:
             source "${DARWIN_HOME}/usr/local/share/darwin/autotools/${{ matrix.target }}.sh"
         fi
         
-        bash './build.sh'
+        zsh './build.sh'
     - name: Create logs
       if: always()
       run: |

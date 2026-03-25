@@ -1,17 +1,24 @@
-#!/bin/bash
+#!/usr/bin/env zsh
+
+unsetopt nomatch
 
 declare -r workdir="${PWD}"
 
-declare build="$("${workdir}/tools/config.guess")"
+declare build="$(env CC=gcc "${workdir}/tools/config.guess")"
+
+echo "Build: ${build}"
+
 build="${build/-unknown-/-pc-}"
 
 if [ -z "${CROSS_COMPILE_TRIPLET}" ]; then
-	declare -r host="${build}"
+	declare host="${build}"
 	declare -r native='1'
 else
-	declare -r host="${CROSS_COMPILE_TRIPLET}"
+	declare host="${CROSS_COMPILE_TRIPLET}"
 	declare -r native='0'
 fi
+
+echo "Host: ${host}"
 
 if [ -z "${OBGGCC_BUILD_PARALLEL_LEVEL}" ]; then
 	declare -r max_jobs="$(nproc)"
@@ -67,7 +74,7 @@ declare -r gold_tarball="${build_directory}/gold.tar.xz"
 declare -r gold_directory="${build_directory}/gold"
 
 declare gcc_url='https://github.com/gcc-mirror/gcc/archive/master.tar.gz'
-declare -r gcc_tarball="${build_directory}/gcc.tar.xz"
+declare -r gcc_tarball="${build_directory}/gcc.tar.gz"
 declare gcc_directory="${build_directory}/gcc-master"
 
 declare -r libsanitizer_tarball="${build_directory}/libsanitizer.tar.xz"
@@ -88,6 +95,9 @@ declare -r yasm_directory='/tmp/yasm-1.3.0'
 declare -r ninja_tarball='/tmp/ninja.tar.gz'
 declare -r ninja_directory='/tmp/ninja-master'
 
+declare -r bison_tarball="${build_directory}/bison.tar.xz"
+declare -r bison_directory="${build_directory}/bison"
+
 declare -r cmake_directory="${workdir}/submodules/cmake"
 
 declare -r curl_directory="${workdir}/submodules/curl"
@@ -95,16 +105,16 @@ declare -r curl_directory="${workdir}/submodules/curl"
 declare -r nz_directory="${workdir}/submodules/nz"
 declare -r nz_prefix="${build_directory}/nz"
 
-declare -r ccflags='-w -O2'
-declare -r linkflags='-Xlinker -s'
+declare -r ccflags='-O2'
+declare -r linkflags=''
 
 declare -r sysroot_tarball="${build_directory}/sysroot.tar.xz"
 
 declare gdb='1'
 
-declare build_cmake='1'
-declare build_curl='1'
-declare build_nz='1'
+declare build_cmake='0'
+declare build_curl='0'
+declare build_nz='0'
 
 declare exe=''
 declare dll='.so'
@@ -167,6 +177,8 @@ declare -ra libraries=(
 	'libvtv'
 	'libgcov'
 	'libmpx'
+	'libmudflap'
+	'libmudflapth'
 )
 
 declare -ra bits=(
@@ -180,11 +192,11 @@ declare -ra deprecated_targets=(
 	'armv6-unknown-linux-gnueabi'
 )
 
-declare -ra targets=(
-	'i386-unknown-linux-gnu'
+declare -a targets=(
 	'arm-unknown-linux-gnueabi'
 	'arm-unknown-linux-gnueabihf'
 	'aarch64-unknown-linux-gnu'
+	'i386-unknown-linux-gnu'
 	'x86_64-unknown-linux-gnu'
 )
 
@@ -219,17 +231,18 @@ if [[ "${host}" = *'-mingw32' ]]; then
 	dll='.dll'
 fi
 
-declare __gcc_major="${gcc_major}"
-
-if [ "${gcc_major}" = '4' ]; then
-	__gcc_major='4.9'
-fi
-
 if [ "${gcc_major}" != '16' ]; then
-	gcc_url="https://github.com/gcc-mirror/gcc/archive/releases/gcc-${__gcc_major}.tar.gz"
-	gcc_directory="${build_directory}/gcc-releases-gcc-${__gcc_major}"
-fi
+	if (( gcc_major == 3.1 )); then
+		# 3.1 was improperly tagged and includes some 3.2 changes
+		tag='4f77a8528f4ccda031f29634f6264eb77f91d13b'
+	else
+		tag="releases/gcc-${gcc_major}"
+	fi
 	
+	gcc_url="https://github.com/gcc-mirror/gcc/archive/${tag}.tar.gz"
+	gcc_directory="${build_directory}/gcc-${tag//\//-}"
+fi
+
 declare -r gcc_wrapper="${build_directory}/gcc-wrapper${exe}"
 declare -r binutils_gnu_wrapper="${build_directory}/binutils-gnu-wrapper${exe}"
 declare -r binutils_llvm_wrapper="${build_directory}/binutils-llvm-wrapper${exe}"
@@ -419,6 +432,7 @@ if ! [ -f "${binutils_tarball}" ]; then
 	
 	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Add-relative-RPATHs-to-binutils-host-tools.patch"
 	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Don-t-warn-about-local-symbols-within-the-globals.patch"
+	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Don-t-warn-about-errors-while-trying-to-create-the-.eh_frame_hdr-section.patch"
 fi
 
 if ! [ -f "${gold_tarball}" ]; then
@@ -541,6 +555,8 @@ if ! [ -f "${ninja_tarball}" ]; then
 fi
 
 if ! [ -f "${gcc_tarball}" ]; then
+	echo "${gcc_url}"
+	
 	curl \
 		--url "${gcc_url}" \
 		--retry '30' \
@@ -589,16 +605,30 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-8/0001-Cygwin-MinGW-Do-not-version-lto-plugins.patch"
 	elif (( gcc_major >= 5 && gcc_major <= 7 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-5/0001-MinGW-Do-not-version-lto-plugins.patch"
-	elif (( gcc_major <= 4 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4/0001-MinGW-Do-not-version-lto-plugins.patch"
+	elif (( gcc_major >= 4.6 && gcc_major <= 4.8 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.6/0001-MinGW-Do-not-version-lto-plugins.patch"
+	elif (( gcc_major == 4.9 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.9/0001-MinGW-Do-not-version-lto-plugins.patch"
 	fi
 	
 	if (( gcc_major >= 5 && gcc_major <= 7 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-7/0001-Fix-std-nullptr_t-to-bool-conversion-error.patch"
 	fi
 	
+	if (( gcc_major >= 4.0 && gcc_major <= 4.2 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.0/0001-Add-host-support-for-x64-MinGW.patch"
+	elif (( gcc_major <= 3.3 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.1/0001-Add-host-support-for-x64-MinGW.patch"
+	elif (( gcc_major <= 3.4 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.4/0001-Add-host-support-for-x64-MinGW.patch"
+	fi
+	
 	if (( gcc_major == 11 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-11/0001-Unpoison-calloc-on-musl-hosts.patch"
+	fi
+	
+	if (( gcc_major >= 3.3 && gcc_major <= 3.4 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0001-Force-disable-libunwind-support.patch"
 	fi
 	
 	if (( gcc_major >= 5 && gcc_major <= 11 )); then
@@ -611,28 +641,89 @@ if ! [ -f "${gcc_tarball}" ]; then
 	
 	if (( gcc_major >= 5 && gcc_major <= 12 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-5/0001-Fix-definition-of-abort-on-Windows.patch"
-	elif (( gcc_major <= 4 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4/0001-Fix-definition-of-abort-on-Windows.patch"
+	elif (( gcc_major >= 3.4 && gcc_major <= 4.9 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.4/0001-Fix-definition-of-abort-on-Windows.patch"
+	elif (( gcc_major <= 3.3 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.1/0001-Fix-definition-of-abort-on-Windows.patch"
 	fi
 	
 	if (( gcc_major >= 11 && gcc_major <= 12 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-11/0001-Fix-missing-definition-of-PTR-macro.patch"
 	fi
 	
-	if (( gcc_major <= 7 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4/0001-Build-libcilkrts-with-D_GNU_SOURCE.patch"
+	if (( gcc_major >= 4.9 && gcc_major <= 7 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.9/0001-Build-libcilkrts-with-D_GNU_SOURCE.patch"
 	fi
 	
-	if (( gcc_major <= 4 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4/0001-strerror.c-Do-not-declare-sys_nerr-or-sys_errlist-if-already-macros.patch"
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4/0001-Avoid-incorrectly-declaring-the-caddr_t-alias-on-Linux.patch"
+	if (( gcc_major <= 4.9 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.1/0001-strerror.c-Do-not-declare-sys_nerr-or-sys_errlist-if-already-macros.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.1/0001-Avoid-incorrectly-declaring-the-caddr_t-alias-on-Linux.patch"
 	fi
 	
-	if (( gcc_major >= 4 && gcc_major <= 5 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4/0001-Fix-wrong-usage-of-bool.patch"
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4/0001-Prevent-use-of-_unlocked-functions-and-disable-inclusion-of-malloc.h.patch"
-	elif (( gcc_major >= 6 )); then
+	if (( gcc_major <= 4.0 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.1/0001-Add-missing-argument-to-open-call.patch"
+	fi
+	
+	if (( gcc_major >= 4.2 && gcc_major <= 4.7 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.2/0001-Support-Darwin-AArch64-host.patch"
+	fi
+	
+	if (( gcc_major == 3.1 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.1/0001-Allow-compilation-with-GCC-4.4-and-up.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.1/0001-Fix-redeclaration-error.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.1/0001-Fix-locale-support-for-glibc-2.3.patch"
+	fi
+	
+	if (( gcc_major >= 3.1 && gcc_major <= 3.2 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.1/0001-Don-t-error-out-for-unknown-platforms.patch"
+	elif (( gcc_major == 3.3 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.3/0001-Don-t-error-out-for-unknown-platforms.patch"
+	fi
+	
+	if (( gcc_major >= 3.3 && gcc_major <= 3.4 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0001-Handle-enable-checking-release.patch"
+	elif (( gcc_major >= 3.1 && gcc_major <= 3.2 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.1/0001-Handle-enable-checking-release.patch"
+	fi
+	
+	if (( gcc_major >= 4.5 && gcc_major <= 4.8 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.5/0001-Add-missing-_attribute__-__gnu_inline__.patch"
+	elif (( gcc_major >= 3.4 && gcc_major <= 4.4 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.4/0001-Add-missing-_attribute__-__gnu_inline__.patch"
+	elif (( gcc_major >= 3.1 && gcc_major <= 3.2 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.1/0001-Add-missing-_attribute__-__gnu_inline__.patch"
+	elif (( gcc_major == 3.3 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.3/0001-Add-missing-_attribute__-__gnu_inline__.patch"
+	fi
+	
+	if (( gcc_major >= 4.1 && gcc_major <= 4.7 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0001-Disable-building-documentation.patch"
+	elif (( gcc_major >= 3.4 && gcc_major <= 4.0 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.4/0001-Disable-building-documentation.patch"
+	elif (( gcc_major >= 3.1 && gcc_major <= 3.2 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.1/0001-Disable-building-documentation.patch"
+	elif (( gcc_major == 3.3 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.3/0001-Disable-building-documentation.patch"
+	fi
+	
+	if (( gcc_major >= 4.2 && gcc_major <= 4.4 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.2/0001-Fix-duplicate-declarations-of-_log2-functions.patch"
+	elif (( gcc_major >= 4.0 && gcc_major <= 4.1 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.0/0001-Fix-duplicate-declarations-of-_log2-functions.patch"
+	fi
+	
+	if (( gcc_major >= 4.6 && gcc_major <= 5 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.6/0001-Fix-wrong-usage-of-bool.patch"
+	fi
+	
+	if (( gcc_major >= 6 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-6/0001-Prevent-use-of-_unlocked-functions.patch"
+	elif (( gcc_major >= 4.0 && gcc_major <= 5 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.0/0001-Prevent-use-of-_unlocked-functions-and-disable-inclusion-of-malloc.h.patch"
+	elif (( gcc_major == 3.4 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0001-Prevent-use-of-_unlocked-functions-and-disable-inclusion-of-malloc.h.patch"
+	elif (( gcc_major >= 3.1 && gcc_major <= 3.3 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.1/0001-Prevent-use-of-_unlocked-functions-and-disable-inclusion-of-malloc.h.patch"
 	fi
 	
 	if (( gcc_major == 6 )); then
@@ -652,7 +743,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0003-Change-the-default-language-version-for-C-compilation-from-std-gnu23-to-std-gnu17.patch"
 	fi
 	
-	if [ "${gcc_major}" = '16' ]; then
+	if (( gcc_major >= 16 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0004-Turn-Wimplicit-int-back-into-an-warning.patch"
 	elif (( gcc_major >= 14 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0004-Turn-Wimplicit-int-back-into-an-warning.patch"
@@ -674,11 +765,29 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
 	elif (( gcc_major >= 6 && gcc_major <= 7 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-6/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
+	elif (( gcc_major >= 3.1 && gcc_major <= 3.3 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.1/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
 	else
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
 	fi
 	
-	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
+	if (( gcc_major >= 4.8 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
+	elif (( gcc_major >= 4.7 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.7/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
+	elif (( gcc_major >= 4.3 && gcc_major <= 4.6 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.3/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
+	elif (( gcc_major >= 4.0 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.0/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
+	elif (( gcc_major >= 3.3 && gcc_major <= 3.4 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
+	elif (( gcc_major >= 3.1 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.1/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
+	fi
+	
+	if (( gcc_major == 3.1 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.1/0001-Remove-hardcoded-paths-for-crt-files.patch"
+	fi
 	
 	if (( gcc_major >= 16 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0011-Revert-configure-Always-add-pre-installed-header-directories-to-search-path.patch"
@@ -690,15 +799,15 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Enable-automatic-linking-of-librt.patch"
 	fi
 	
-	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-AArch64-enable-libquadmath.patch"
+	if (( gcc_major >= 4.6 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-AArch64-enable-libquadmath.patch"
+	fi
 	
 	if (( gcc_major >= 14 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
 	elif (( gcc_major >= 5 && gcc_major <= 13 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-5/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
-	elif (( gcc_major >= 4 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
-	else
+	elif (( gcc_major >= 4.4 && gcc_major <= 4.8 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
 	fi
 	
@@ -710,11 +819,45 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-10/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
 	elif (( gcc_major >= 7 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-7/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
-	elif (( gcc_major >= 4 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
-	else
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-vvv/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
+	elif (( gcc_major >= 4.3 && gcc_major <= 6 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.3/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
 	fi
+	
+	ln \
+		--symbolic \
+		--force \
+		"${workdir}/tools/config.sub" \
+		"${gcc_directory}/config.sub"
+fi
+
+if (( gcc_major <= 4.0)) && ! [ -f "${bison_tarball}" ]; then
+	echo "https://github.com/Kartatz/bison-legacy/releases/latest/download/${build/-pc-/-unknown-}.tar.xz"
+	
+	declare version='2.7'
+	
+	if (( 1 || gcc_major <= 3.3 )); then
+		version='2.3'
+	fi
+	
+	curl \
+		--url "https://github.com/AmanoTeam/bison-legacy/releases/download/${version}/${build/-pc-/-unknown-}.tar.xz" \
+		--retry '30' \
+		--retry-delay '0' \
+		--retry-all-errors \
+		--retry-max-time '0' \
+		--location \
+		--silent \
+		--output "${bison_tarball}"
+	
+	tar \
+		--directory="$(dirname "${bison_directory}")" \
+		--extract \
+		--file="${bison_tarball}"
+	
+	export PATH="${bison_directory}/bin:${PATH}"
+	export BISON_PKGDATADIR="${bison_directory}/share/bison"
+	
+	bison --version
 fi
 
 # Follow Debian's approach to remove hardcoded RPATHs from binaries
@@ -727,7 +870,7 @@ sed \
 	"${mpc_directory}/configure" \
 	"${mpfr_directory}/configure" \
 	"${gmp_directory}/configure" \
-	"${gcc_directory}/libsanitizer/configure"
+	"${gcc_directory}/libsanitizer/configure" || true
 
 # Avoid using absolute hardcoded install_name values on macOS
 sed \
@@ -945,6 +1088,8 @@ cd "${gold_directory}/build"
 	--enable-default-compressed-debug-sections-algorithm='zstd' \
 	--disable-binutils \
 	--disable-gas \
+	--disable-install-libiberty \
+	--disable-werror \
 	--without-static-standard-libraries \
 	--with-zstd="${toolchain_directory}" \
 	--with-system-zlib \
@@ -978,10 +1123,12 @@ fi
 
 declare cc='gcc'
 declare readelf='readelf'
+declare strip='strip'
 
 if ! (( native )); then
 	cc="${CC}"
 	readelf="${READELF}"
+	strip="${STRIP}"
 fi
 
 sed \
@@ -1008,11 +1155,38 @@ make \
 	LDFLAGS="${linkflags}" \
 	all
 
+if (( gcc_major <= 4.7 )); then
+	targets=("${(@)targets:#aarch64-unknown-linux-gnu}")
+fi
+
+if (( gcc_major <= 4.6 )); then
+	targets=("${(@)targets:#arm-unknown-linux-gnueabihf}")
+fi
+
+if (( gcc_major <= 4.0 )); then
+	targets=("${(@)targets:#arm-unknown-linux-gnueabi}")
+fi
+
 for target in "${targets[@]}"; do
 	check_target_exists "${gcc_targets}" "${target}" || continue
 	
-	declare specs='%{!Qy: -Qn} %{!fgnu-unique: %{!fno-gnu-unique: -fno-gnu-unique}}'
-	declare hash_style='both'
+	declare specs=''
+	
+	if (( gcc_major >= 3.4 )); then
+		specs+='%{!Qy: -Qn}'
+		
+		if (( gcc_major >= 4.8 )); then
+			specs+=' %{!fgnu-unique: %{!fno-gnu-unique: -fno-gnu-unique}}'
+		fi
+	fi
+	
+	if (( native && gcc_major <= 3.4 )); then
+		ln \
+			--symbolic \
+			--force \
+			"$(where ranlib | head -n 1)" \
+			"${build_directory}/${target}-ranlib"
+	fi
 	
 	source "${workdir}/${target}.sh"
 	
@@ -1038,6 +1212,16 @@ for target in "${targets[@]}"; do
 		--file="${sysroot_file}"
 	
 	mv "${sysroot_directory}" "${toolchain_directory}/${triplet}"
+	
+	if (( gcc_major <= 4.6 )); then
+		# Older GCC versions do not support --with-native-system-header-dir
+		ln \
+			--symbolic \
+			--relative \
+			--force \
+			"${toolchain_directory}/${triplet}" \
+			"${toolchain_directory}/${triplet}/usr"
+	fi
 	
 	if (( gcc_major >= 13 && gcc_major <= 15 )); then
 		cp "${workdir}/patches/librt_asneeded.so" "${toolchain_directory}/${triplet}/lib"
@@ -1066,6 +1250,8 @@ for target in "${targets[@]}"; do
 		--disable-gprofng \
 		--disable-gold \
 		--disable-default-execstack \
+		--disable-install-libiberty \
+		--disable-werror \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--without-static-standard-libraries \
 		--with-zstd="${toolchain_directory}" \
@@ -1100,7 +1286,7 @@ for target in "${targets[@]}"; do
 		cp "${binutils_gnu_wrapper}" "${bin}"
 	done
 	
-	rm --force --recursive "${PWD}" &
+	rm --force --recursive "${PWD}"
 	
 	if (( gcc_major >= 6 )) && ( [ "${triplet}" = 'x86_64-unknown-linux-gnu' ] || [ "${triplet}" = 'i386-unknown-linux-gnu' ] ); then
 		specs+=' %{!fno-plt: %{!fplt: -fno-plt}}'
@@ -1131,22 +1317,53 @@ for target in "${targets[@]}"; do
 		extra_configure_flags+=' --without-isl'
 	fi
 	
+	if (( gcc_major <= 4.5 )); then
+		# These versions require manually installing a third-party library (libelf) for LTO to work,
+		# which isn’t worth the hassle here.
+		extra_configure_flags+=' --disable-lto'
+	fi
+	
 	if (( gcc_major <= 7 )) && [[ "${host}" = *'-mingw32' ]]; then
 		extra_configure_flags+=' --disable-plugin'
 	fi
 	
-	declare ldflags="-L${toolchain_directory}/lib ${linkflags}"
+	if (( gcc_major >= 4.5 )); then
+		extra_configure_flags+=' --disable-c++-tools'
+	fi
+	
+	declare -a args=(
+		${=extra_configure_flags}
+	)
+	
+	declare -a env=(
+		"CFLAGS=-fPIC ${ccflags}"
+		"CXXFLAGS=-fPIC ${ccflags}"
+		"DFLAGS=-L${toolchain_directory}/lib ${linkflags}"
+	)
 	
 	[ -d "${gcc_directory}/build" ] || mkdir "${gcc_directory}/build"
 	
-	cd "${gcc_directory}/build"
+	if (( gcc_major >= 3.1 && gcc_major <= 4.3 )) && [[ "${host}" != *'-darwin' ]]; then
+		# -ftree-pre (enabled by default with -O2+) produces a broken g++ that
+		# ICEs when parsing function declarations.
+		printf "exec '%s' \"\${@}\" -fno-tree-pre\n" "${cc}" > "${build_directory}/cc"
+		chmod +x "${build_directory}/cc"
+		
+		env+=(
+			"CC=${build_directory}/cc"
+		)
+	fi
 	
-	../configure \
+	cd "${gcc_directory}/build"
+	rm --force --recursive ./*
+	
+	env "${env[@]}" \
+		../configure \
 		--build="${build/unknown-/}" \
 		--host="${host}" \
 		--target="${triplet}" \
 		--prefix="${toolchain_directory}" \
-		--with-linker-hash-style="${hash_style}" \
+		--with-linker-hash-style='both' \
 		--with-gmp="${toolchain_directory}" \
 		--with-mpc="${toolchain_directory}" \
 		--with-mpfr="${toolchain_directory}" \
@@ -1187,38 +1404,77 @@ for target in "${targets[@]}"; do
 		--with-pic \
 		--with-gnu-as \
 		--with-gnu-ld \
-		${extra_configure_flags} \
+		"${args[@]}" \
 		--disable-libsanitizer \
 		--disable-bootstrap \
 		--disable-libstdcxx-pch \
 		--disable-libstdcxx-debug \
+		--disable-libmudflap \
 		--disable-werror \
 		--disable-multilib \
 		--disable-nls \
 		--disable-canonical-system-headers \
 		--disable-win32-utf8-manifest \
-		--disable-c++-tools \
-		--without-static-standard-libraries \
-		CFLAGS="${ccflags}" \
-		CXXFLAGS="${ccflags}" \
-		LDFLAGS="${ldflags}"
+		--without-static-standard-libraries
 	
-	ldflags_for_target="${linkflags}"
-	
-	declare args=''
+	env=()
 	
 	if (( native )); then
-		args+="${environment}"
+		env=(
+			"LD_LIBRARY_PATH=${toolchain_directory}/lib"
+			"PATH=${PATH}:${toolchain_directory}/bin"
+		)
 	fi
 	
-	env ${args} make \
+	if (( gcc_major <= 3.2 )); then
+		unlink "${build_directory}/ln"
+	fi
+	
+	env "${env[@]}" make \
 		gcc_cv_objdump="${host}-objdump" \
 		all \
 		--jobs="${max_jobs}"
+	
+	if (( gcc_major <= 3.2 )); then
+		cp "${workdir}/tools/ln.sh" "${build_directory}/ln"
+	fi
+	
 	make install
+	
+	if (( gcc_major <= 4.6 )); then
+		unlink "${toolchain_directory}/${triplet}/usr"
+	fi
+	
+	if (( gcc_major <= 4.1 )); then
+		mv \
+			"${toolchain_directory}/include/c++" \
+			"${toolchain_directory}/${triplet}/include"
+	fi
+	
+	if (( gcc_major <= 3.3 )); then
+		ln \
+			--symbolic \
+			--relative \
+			"${toolchain_directory}/lib/gcc-lib" \
+			"${toolchain_directory}/lib/gcc"
+		
+		ln \
+			--symbolic \
+			--relative \
+			"${toolchain_directory}/lib/gcc" \
+			"${toolchain_directory}/libexec"
+	fi
 	
 	if (( gcc_major <= 6 )); then
 		# There was no --with-gcc-major-version-only back then
+		if (( gcc_major >= 3.4 )); then
+			ln \
+				--symbolic \
+				--relative \
+				"${toolchain_directory}/libexec/gcc/${triplet}/${gcc_major}."* \
+				"${toolchain_directory}/libexec/gcc/${triplet}/${gcc_major}"
+		fi
+		
 		ln \
 			--symbolic \
 			--relative \
@@ -1228,17 +1484,11 @@ for target in "${targets[@]}"; do
 		ln \
 			--symbolic \
 			--relative \
-			"${toolchain_directory}/libexec/gcc/${triplet}/${gcc_major}."* \
-			"${toolchain_directory}/libexec/gcc/${triplet}/${gcc_major}"
-		
-		ln \
-			--symbolic \
-			--relative \
 			"${toolchain_directory}/${triplet}/include/c++/${gcc_major}."* \
 			"${toolchain_directory}/${triplet}/include/c++/${gcc_major}"
 	fi
 	
-	if (( gcc_major <= 11 )); then
+	if (( gcc_major >= 4.3 && gcc_major <= 11 )); then
 		ln \
 			--symbolic \
 			--relative \
@@ -1251,8 +1501,6 @@ for target in "${targets[@]}"; do
 			"${toolchain_directory}/lib/gcc/${triplet}/${gcc_major}/install-tools/gsyslimits.h" \
 			"${toolchain_directory}/lib/gcc/${triplet}/${gcc_major}/include/syslimits.h"
 	fi
-	
-	rm --force --recursive "${PWD}"
 	
 	cd "${toolchain_directory}/${triplet}/lib64" 2>/dev/null || cd "${toolchain_directory}/${triplet}/lib"
 	
@@ -1268,13 +1516,15 @@ for target in "${targets[@]}"; do
 		patch --directory="${PWD}" --strip='1' --input="${workdir}/patches/0001-Workaround-mold-linker-issue.patch"
 	fi
 	
-	env ${args} make \
-		-C "${workdir}/tools/libblocksruntime" \
-		PREFIX="${toolchain_directory}/${triplet}" \
-		CC="${triplet}-gcc" \
-		CFLAGS="${ccflags}" \
-		CXXFLAGS="${ccflags}" \
-		LDFLAGS="${linkflags}"
+	if (( gcc_major >= 4.1 )); then
+		env "${env[@]}" make \
+			-C "${workdir}/tools/libblocksruntime" \
+			PREFIX="${toolchain_directory}/${triplet}" \
+			CC="${triplet}-gcc" \
+			CFLAGS="${ccflags}" \
+			CXXFLAGS="${ccflags}" \
+			LDFLAGS="${linkflags}"
+	fi
 	
 	ln \
 		--symbolic \
@@ -1299,9 +1549,22 @@ for target in "${targets[@]}"; do
 		"${clang_include_dir}/arm"*'.h' \
 		"${clang_include_dir}/stdatomic.h"
 	
-	[ -f './libiberty.a' ] && unlink './libiberty.a'
+	rm --force './libiberty.a'
 	
-	unlink './libgcc_s.so' && echo 'GROUP ( libgcc_s.so.1 -lgcc )' > './libgcc_s.so'
+	if (( gcc_major >= 3.1 )); then
+		cp  \
+			"${gcc_directory}/gcc/gsyslimits.h" \
+			"${toolchain_directory}/lib/gcc/${triplet}/${gcc_major}/include/syslimits.h"
+		
+		mv "${toolchain_directory}/lib"{64,}"/libgcc"* "${PWD}" 2>/dev/null || true
+	fi
+	
+	rm --force './libgcc_s.so'
+	echo 'GROUP ( libgcc_s.so.1 -lgcc )' > './libgcc_s.so'
+	
+	if (( gcc_major <= 4.8 )); then
+		rm --force "${toolchain_directory}/lib/libiberty.a"
+	fi
 	
 	rm \
 		--force \
@@ -1317,17 +1580,19 @@ for target in "${targets[@]}"; do
 	
 	cat "${workdir}/patches/c++config.h" >> "${toolchain_directory}/${triplet}/include/c++/${gcc_major}/${triplet}/bits/c++config.h"
 	
-	if [[ "${host}" = *'-mingw32' ]]; then
-		cp \
-			"${toolchain_directory}/libexec/gcc/${triplet}/${gcc_major}/liblto_plugin${dll}" \
-			"${toolchain_directory}/lib/bfd-plugins"
-	else
-		ln \
-			--symbolic \
-			--relative \
-			--force \
-			"${toolchain_directory}/libexec/gcc/${triplet}/${gcc_major}/liblto_plugin${dll}" \
-			"${toolchain_directory}/lib/bfd-plugins"
+	if (( gcc_major >= 4.6 )); then
+		if [[ "${host}" = *'-mingw32' ]]; then
+			cp \
+				"${toolchain_directory}/libexec/gcc/${triplet}/${gcc_major}/liblto_plugin${dll}" \
+				"${toolchain_directory}/lib/bfd-plugins"
+		else
+			ln \
+				--symbolic \
+				--relative \
+				--force \
+				"${toolchain_directory}/libexec/gcc/${triplet}/${gcc_major}/liblto_plugin${dll}" \
+				"${toolchain_directory}/lib/bfd-plugins"
+		fi
 	fi
 	
 	rename_soname_libraries "${toolchain_directory}/${triplet}"
@@ -1416,6 +1681,8 @@ rm \
 	--force \
 	--recursive \
 	"${toolchain_directory}/share" \
+	"${toolchain_directory}/info" \
+	"${toolchain_directory}/man" \
 	"${toolchain_directory}/lib/lib"*'.a' \
 	"${toolchain_directory}/include" \
 	"${toolchain_directory}/lib/pkgconfig" \
@@ -1597,6 +1864,14 @@ while read item; do
 	
 	check_target_exists "${gcc_targets}" "${triplet}${glibc_version}" || continue
 	
+	if (( gcc_major <= 4.7 )) && [[ "${triplet}" = 'aarch64'* ]]; then
+		continue
+	fi
+	
+	if (( gcc_major <= 4.6 )) && [[ "${triplet}" = 'arm-'*'-gnueabihf' ]]; then
+		continue
+	fi
+	
 	declare repository="$(jq --raw-output '.repository.url' <<< "${item}")"
 	declare release="$(jq --raw-output '.repository.release' <<< "${item}")"
 	declare resource="$(jq --raw-output '.repository.resource' <<< "${item}")"
@@ -1656,23 +1931,25 @@ while read item; do
 	ln --symbolic './ld-'*'.so'* './static'
 	ln --symbolic './'*'.o' './static'
 	
-	ln \
-		--symbolic \
-		--relative \
-		"${toolchain_directory}/${triplet}/include/Block"* \
-		'../include'
-	
-	ln \
-		--symbolic \
-		--relative \
-		"${toolchain_directory}/${triplet}/lib/libBlocksRuntime.a" \
-		'./'
-	
-	ln \
-		--symbolic \
-		--relative \
-		"${toolchain_directory}/${triplet}/lib/libBlocksRuntime.a" \
-		'./static'
+	if (( gcc_major >= 4.1 )); then
+		ln \
+			--symbolic \
+			--relative \
+			"${toolchain_directory}/${triplet}/include/Block"* \
+			'../include'
+		
+		ln \
+			--symbolic \
+			--relative \
+			"${toolchain_directory}/${triplet}/lib/libBlocksRuntime.a" \
+			'./'
+		
+		ln \
+			--symbolic \
+			--relative \
+			"${toolchain_directory}/${triplet}/lib/libBlocksRuntime.a" \
+			'./static'
+	fi
 	
 	ln \
 		--symbolic \
@@ -1792,9 +2069,11 @@ while read item; do
 	fi
 done <<< "$(jq --compact-output '.[]' "${workdir}/submodules/debian-sysroot/dist.json")"
 
-for triplet in "${targets[@]}"; do
-	python3 -B "${workdir}/tools/include-missing/main.py" "${toolchain_directory}" "${triplet}"
-done
+if (( gcc_major >= 15 )); then
+	for triplet in "${targets[@]}"; do
+		python3 -B "${workdir}/tools/include-missing/main.py" "${toolchain_directory}" "${triplet}"
+	done
+fi
 
 mkdir --parent "${share_directory}"
 
@@ -1831,4 +2110,46 @@ if [[ "${host}" = *'-mingw32' ]]; then
 	done <<< "$(find "${toolchain_directory}")"
 fi
 
-cp "${workdir}/tools/gcc-stl-install.sh" "${toolchain_directory}/bin/gcc-stl-install"
+if (( gcc_major >= 15 )); then
+	cp "${workdir}/tools/gcc-stl-install.sh" "${toolchain_directory}/bin/gcc-stl-install"
+fi
+
+if (( gcc_major <= 4.7 )); then
+	rm \
+		--force \
+		"${toolchain_directory}/bin/aarch64"* \
+		"${toolchain_directory}/build/"*"/aarch64"* \
+		"${toolchain_directory}/build/"*"/"*"/aarch64"*
+fi
+
+if (( gcc_major <= 4.6 )); then
+	rm \
+		--force \
+		"${toolchain_directory}/bin/"*"gnueabihf"* \
+		"${toolchain_directory}/build/"*"/"*"gnueabihf"* \
+		"${toolchain_directory}/build/"*"/"*"/"*"gnueabihf"*
+fi
+
+if (( gcc_major <= 4.0 )); then
+	rm \
+		--force \
+		"${toolchain_directory}/bin/"*"gnueabi"* \
+		"${toolchain_directory}/build/"*"/"*"gnueabi"* \
+		"${toolchain_directory}/build/"*"/"*"/"*"gnueabi"*
+fi
+
+rm \
+	--force \
+	"${toolchain_directory}/bin/"*"armv6"* \
+	"${toolchain_directory}/build/"*"/"*"armv6"* \
+	"${toolchain_directory}/build/"*"/"*"/"*"armv6"*
+
+while read name; do
+	declare type="$(file --brief --mime-type "${name}")"
+	
+	if ! [[ "${type}" = *'sharedlib' || "${type}" = *'executable' ]]; then
+		continue
+	fi
+	
+	"${strip}" "${name}" 2>/dev/null || true
+done <<< "$(find "${toolchain_directory}" -type 'f')"

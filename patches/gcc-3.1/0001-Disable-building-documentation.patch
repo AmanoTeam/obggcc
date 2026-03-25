@@ -1,0 +1,47 @@
+From 384f81d79950cd3ad96c349667d832948b50124d Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sat, 28 Mar 2026 17:46:57 +0100
+Subject: [PATCH] Disable building documentation
+
+---
+ gcc/Makefile.in | 10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
+
+diff --git a/gcc/Makefile.in b/gcc/Makefile.in
+index e7c29b9..90f8bb7 100644
+--- a/gcc/Makefile.in
++++ b/gcc/Makefile.in
+@@ -2267,8 +2267,8 @@ stmp-fixproto: fixhdr.ready fixproto stmp-int-hdrs
+ 
+ docdir = $(srcdir)/doc
+ 
+-doc: $(BUILD_INFO) $(GENERATED_MANPAGES) gccbug
+-info: $(docdir)/cpp.info $(docdir)/gcc.info $(docdir)/gccint.info lang.info $(docdir)/cppinternals.info
++doc: 
++info: 
+ 
+ $(docdir)/cpp.info: $(docdir)/cpp.texi $(docdir)/include/fdl.texi \
+   $(docdir)/cppenv.texi $(docdir)/cppopts.texi
+@@ -2338,9 +2338,7 @@ gccint.dvi: $(docdir)/gccint.texi \
+ cppinternals.dvi: $(docdir)/cppinternals.texi
+ 	$(TEXI2DVI) -I $(docdir) -I $(docdir)/include $(docdir)/cppinternals.texi
+ 
+-generated-manpages: $(docdir)/gcov.1 $(docdir)/cpp.1 $(docdir)/gcc.1 \
+-	 $(docdir)/gfdl.7 $(docdir)/gpl.7 $(docdir)/fsf-funding.7 \
+-	 lang.generated-manpages
++generated-manpages:
+ 
+ $(docdir)/gcov.1: $(docdir)/gcov.texi
+ 	$(STAMP) $(docdir)/gcov.1
+@@ -2532,7 +2530,7 @@ maintainer-clean:
+ # Install the driver last so that the window when things are
+ # broken is small.
+ install: install-common $(INSTALL_HEADERS) $(INSTALL_LIBGCC) \
+-    $(INSTALL_CPP) install-man install-info intl.install install-@POSUB@ \
++    $(INSTALL_CPP) intl.install install-@POSUB@ \
+     lang.install-normal install-driver
+ 
+ # Handle cpp installation.
+-- 
+2.53.0
+

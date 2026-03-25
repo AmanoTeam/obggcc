@@ -1,0 +1,28 @@
+From 7ebe33f77e8b4c929ab8222056357fef1f451b6c Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Mon, 30 Mar 2026 19:22:22 +0200
+Subject: [PATCH] Don't warn about errors while trying to create the
+ .eh_frame_hdr section
+
+---
+ bfd/elf-eh-frame.c | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/bfd/elf-eh-frame.c b/bfd/elf-eh-frame.c
+index 66a79ae9..9629d617 100644
+--- a/bfd/elf-eh-frame.c
++++ b/bfd/elf-eh-frame.c
+@@ -1057,10 +1057,6 @@ _bfd_elf_parse_eh_frame (bfd *abfd, struct bfd_link_info *info,
+   goto success;
+ 
+  free_no_table:
+-  _bfd_error_handler
+-    /* xgettext:c-format */
+-    (_("error in %pB(%pA); no .eh_frame_hdr table will be created"),
+-     abfd, sec);
+   hdr_info->u.dwarf.table = false;
+  success:
+   _bfd_elf_munmap_section_contents (sec, ehbuf);
+-- 
+2.53.0
+

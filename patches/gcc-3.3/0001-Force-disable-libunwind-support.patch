@@ -1,0 +1,48 @@
+From c246dc850cf8d1d8ddecb1d8ac85bea71a111211 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Mon, 30 Mar 2026 23:19:08 +0200
+Subject: [PATCH] Force disable libunwind support
+
+---
+ gcc/cp/g++spec.c | 2 +-
+ gcc/gcc.c        | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/gcc/cp/g++spec.c b/gcc/cp/g++spec.c
+index af30f1c..7f115dc 100644
+--- a/gcc/cp/g++spec.c
++++ b/gcc/cp/g++spec.c
+@@ -274,7 +274,7 @@ lang_specific_driver (in_argc, in_argv, in_added_libraries)
+     {
+       arglist[j++] = saw_profile_flag ? LIBSTDCXX_PROFILE : LIBSTDCXX;
+       added_libraries++;
+-#ifdef USE_LIBUNWIND_EXCEPTIONS
++#if 0 /* def USE_LIBUNWIND_EXCEPTIONS */
+ # ifndef LIBUNWIND
+ #  define LIBUNWIND "-lunwind"
+ # endif
+diff --git a/gcc/gcc.c b/gcc/gcc.c
+index 8753cd6..936e60f 100644
+--- a/gcc/gcc.c
++++ b/gcc/gcc.c
+@@ -1580,7 +1580,7 @@ init_spec ()
+ 			    ,
+ 			    "-lgcc",
+ 			    "-lgcc_eh"
+-#ifdef USE_LIBUNWIND_EXCEPTIONS
++#if 0 /* def USE_LIBUNWIND_EXCEPTIONS */
+ 			    " -lunwind"
+ #endif
+ 			    );
+@@ -1601,7 +1601,7 @@ init_spec ()
+ 			    ,
+ 			    "libgcc.a%s",
+ 			    "libgcc_eh.a%s"
+-#ifdef USE_LIBUNWIND_EXCEPTIONS
++#if 0 /* def USE_LIBUNWIND_EXCEPTIONS */
+ 			    "libunwind.a%s"
+ #endif
+ 			    );
+-- 
+2.53.0
+

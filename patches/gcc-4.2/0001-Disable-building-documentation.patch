@@ -1,0 +1,74 @@
+From dec8a46cec6c7ca18a4297c420ebdd6f30f24a8d Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Thu, 26 Mar 2026 19:38:44 +0100
+Subject: [PATCH] Disable building documentation
+
+---
+ gcc/Makefile.in | 25 ++++++-------------------
+ 1 file changed, 6 insertions(+), 19 deletions(-)
+
+diff --git a/gcc/Makefile.in b/gcc/Makefile.in
+index c54754bc..0a1ce38b 100644
+--- a/gcc/Makefile.in
++++ b/gcc/Makefile.in
+@@ -3360,15 +3360,14 @@ stmp-install-fixproto: fixproto
+ #
+ # Remake the info files.
+ 
+-doc: $(BUILD_INFO) $(GENERATED_MANPAGES) gccbug
++doc:
+ 
+ INFOFILES = doc/cpp.info doc/gcc.info doc/gccint.info \
+             doc/gccinstall.info doc/cppinternals.info
+ 
+-info: $(INFOFILES) lang.info @GENINSRC@ srcinfo lang.srcinfo
++info:
+ 
+-srcinfo: $(INFOFILES)
+-	-cp -p $^ $(srcdir)/doc
++srcinfo:
+ 
+ TEXI_CPP_FILES = cpp.texi fdl.texi cppenv.texi cppopts.texi		\
+ 	 gcc-common.texi gcc-vers.texi
+@@ -3664,7 +3663,7 @@ maintainer-clean:
+ # Install the driver last so that the window when things are
+ # broken is small.
+ install: install-common $(INSTALL_HEADERS) $(INSTALL_LIBGCC) \
+-    install-cpp install-man install-info install-@POSUB@ \
++    install-cpp install-@POSUB@ \
+     install-driver
+ 
+ # Handle cpp installation.
+@@ -3757,13 +3756,7 @@ install-driver: installdirs xgcc$(exeext)
+ # Install the info files.
+ # $(INSTALL_DATA) might be a relative pathname, so we can't cd into srcdir
+ # to do the install.
+-install-info:: doc installdirs \
+-	$(DESTDIR)$(infodir)/cpp.info \
+-	$(DESTDIR)$(infodir)/gcc.info \
+-	$(DESTDIR)$(infodir)/cppinternals.info \
+-	$(DESTDIR)$(infodir)/gccinstall.info \
+-	$(DESTDIR)$(infodir)/gccint.info \
+-	lang.install-info
++install-info:
+ 
+ $(DESTDIR)$(infodir)/%.info: doc/%.info installdirs
+ 	rm -f $@
+@@ -3800,13 +3793,7 @@ install-html: $(HTMLS_BUILD)
+ 	done
+ 
+ # Install the man pages.
+-install-man: lang.install-man \
+-	$(DESTDIR)$(man1dir)/$(GCC_INSTALL_NAME)$(man1ext) \
+-	$(DESTDIR)$(man1dir)/$(CPP_INSTALL_NAME)$(man1ext) \
+-	$(DESTDIR)$(man1dir)/$(GCOV_INSTALL_NAME)$(man1ext) \
+-	$(DESTDIR)$(man7dir)/fsf-funding$(man7ext) \
+-	$(DESTDIR)$(man7dir)/gfdl$(man7ext) \
+-	$(DESTDIR)$(man7dir)/gpl$(man7ext)
++install-man: 
+ 
+ $(DESTDIR)$(man7dir)/%$(man7ext): doc/%.7 installdirs
+ 	-rm -f $@
+-- 
+2.53.0
+

@@ -35,7 +35,8 @@ SOURCES = biggestint.c \
 	fs/cwd.c \
 	os/find_exe.c \
 	os/execv.c \
-	os/posix_spawn.c
+	os/posix_spawn.c \
+	gcc-version.c
 
 GCC_SOURCES = $(SOURCES) gcc.c
 BINUTILS_LLVM_SOURCES = $(SOURCES) binutils-llvm.c

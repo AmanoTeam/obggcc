@@ -300,6 +300,8 @@ static const char CLANG_WARNING_REMOVE_NONE[] = "none";
 
 static const char GCC_STL_DIRECTORY[] = PATHSEP_M "build" PATHSEP_M "gcc-stl";
 
+static gcc_version_t gcc_version = GCC_VERSION_UNKNOWN;
+
 static clang_option_t CLANG_SPECIFIC_REMOVE[] = {
 	{
 		.name = CLANG_OPT_Q_UNUSED_ARGUMENTS,
@@ -1394,8 +1396,6 @@ static int clang_specific_replace(
 	
 	const char* current = cur;
 	
-	const biguint_t gcc_version = strtobui(GCC_MAJOR_VERSION, NULL, 10);
-	
 	if (strncmp(current, GCC_OPT_F_LTO, strlen(GCC_OPT_F_LTO)) == 0) {
 		current += strlen(GCC_OPT_F_LTO);
 		
@@ -1423,7 +1423,7 @@ static int clang_specific_replace(
 		
 		status = 1;
 		goto end;
-	} else if (strcmp(current, CLANG_OPT_OZ) == 0 && gcc_version < 12) {
+	} else if (strcmp(current, CLANG_OPT_OZ) == 0 && gcc_version < GCC_12) {
 		/* Replace -Oz with -Os. */
 		kargv_append(xargv, GCC_OPT_OS);
 		
@@ -1680,7 +1680,7 @@ int main(int argc, char* argv[]) {
 	
 	unsigned char ch = 0;
 	
-	const biguint_t gcc_version = strtobui(GCC_MAJOR_VERSION, NULL, 10);
+	gcc_version = gcc_version_unstringify(GCC_MAJOR_VERSION);
 	
 	query_load_environ(&query);
 	
@@ -1689,17 +1689,19 @@ int main(int argc, char* argv[]) {
 	#endif
 	
 	#if defined(OBGGCC)
-		opt = query_get_string(&query, ENV_STL_VERSION);
-		stl_version = get_stl_version(opt);
-		
-		if (stl_version != NULL) {
-			if (stl_version->version > gcc_version) {
-				err = ERR_GCC_RUNTIME_TOO_NEW;
-				goto end;
-			}
+		if (gcc_version >= GCC_15) {
+			opt = query_get_string(&query, ENV_STL_VERSION);
+			stl_version = get_stl_version(opt);
 			
-			if (stl_version->version == gcc_version) {
-				stl_version = NULL;
+			if (stl_version != NULL) {
+				if (stl_version->version > gcc_version) {
+					err = ERR_GCC_RUNTIME_TOO_NEW;
+					goto end;
+				}
+				
+				if (stl_version->version == gcc_version) {
+					stl_version = NULL;
+				}
 			}
 		}
 	#endif
@@ -1715,10 +1717,18 @@ int main(int argc, char* argv[]) {
 	}
 	
 	wants_system_libraries = query_get_bool(&query, ENV_SYSTEM_LIBRARIES) == 1;
-	wants_nz = query_get_bool(&query, ENV_NZ) == 1;
+	
+	if (gcc_version >= GCC_15) {
+		wants_nz = query_get_bool(&query, ENV_NZ) == 1;
+	}
+	
 	wants_runtime_rpath = query_get_bool(&query, ENV_RUNTIME_RPATH) == 1;
 	verbose = query_get_bool(&query, ENV_VERBOSE) == 1;
-	wants_neon = query_get_bool(&query, ENV_NEON) == 1;
+	
+	if (gcc_version >= GCC_4_3) {
+		wants_neon = query_get_bool(&query, ENV_NEON) == 1;
+	}
+	
 	wants_arm_mode = query_get_bool(&query, ENV_ARM_MODE) == 1;
 	
 	cur = query_get_string(&query, ENV_LTO);
@@ -2864,7 +2874,10 @@ int main(int argc, char* argv[]) {
 	offset = 0;
 	
 	kargv_append(&yargv, executable);
-	kargv_append(&yargv, sysroot);
+	
+	if (gcc_version > GCC_4_0 || known_clang(cc)) {
+		kargv_append(&yargv, sysroot);
+	}
 	
 	#if defined(WCLANG)
 		kargv_append(&yargv, (CLANG_OPT_TARGET + 1));

@@ -1,0 +1,110 @@
+From 56c20252c69f74eb44e215fdd18b98772dcbf42f Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Tue, 31 Mar 2026 02:32:19 +0200
+Subject: [PATCH] Force disable libunwind support
+
+---
+ gcc/config/ia64/unwind-ia64.c | 2 +-
+ gcc/gcc.c                     | 6 +++---
+ gcc/unwind-compat.c           | 2 +-
+ gcc/unwind-dw2-fde-compat.c   | 2 +-
+ gcc/unwind-dw2-fde-glibc.c    | 2 +-
+ gcc/unwind-dw2.c              | 2 +-
+ 6 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/gcc/config/ia64/unwind-ia64.c b/gcc/config/ia64/unwind-ia64.c
+index a49652e9..b553be58 100644
+--- a/gcc/config/ia64/unwind-ia64.c
++++ b/gcc/config/ia64/unwind-ia64.c
+@@ -2385,7 +2385,7 @@ uw_identify_context (struct _Unwind_Context *context)
+ 
+ #include "unwind.inc"
+ 
+-#if defined (USE_GAS_SYMVER) && defined (SHARED) && defined (USE_LIBUNWIND_EXCEPTIONS)
++#if defined (USE_GAS_SYMVER) && defined (SHARED) && 0 /* defined (USE_LIBUNWIND_EXCEPTIONS) */
+ alias (_Unwind_Backtrace);
+ alias (_Unwind_DeleteException);
+ alias (_Unwind_FindEnclosingFunction);
+diff --git a/gcc/gcc.c b/gcc/gcc.c
+index ee380ed9..113e5b16 100644
+--- a/gcc/gcc.c
++++ b/gcc/gcc.c
+@@ -1643,13 +1643,13 @@ init_spec (void)
+ #else
+ 			    "-lgcc_s%M"
+ #endif
+-#ifdef USE_LIBUNWIND_EXCEPTIONS
++#if 0 /* def USE_LIBUNWIND_EXCEPTIONS */
+ 			    " -lunwind"
+ #endif
+ 			    ,
+ 			    "-lgcc",
+ 			    "-lgcc_eh"
+-#ifdef USE_LIBUNWIND_EXCEPTIONS
++#if 0 /* def USE_LIBUNWIND_EXCEPTIONS */
+ # ifdef HAVE_LD_STATIC_DYNAMIC
+ 			    " %{!static:-Bstatic} -lunwind %{!static:-Bdynamic}"
+ # else
+@@ -1674,7 +1674,7 @@ init_spec (void)
+ 			    ,
+ 			    "libgcc.a%s",
+ 			    "libgcc_eh.a%s"
+-#ifdef USE_LIBUNWIND_EXCEPTIONS
++#if 0 /* def USE_LIBUNWIND_EXCEPTIONS */
+ 			    " -lunwind"
+ #endif
+ 			    );
+diff --git a/gcc/unwind-compat.c b/gcc/unwind-compat.c
+index 26f45ac8..828f48bb 100644
+--- a/gcc/unwind-compat.c
++++ b/gcc/unwind-compat.c
+@@ -28,7 +28,7 @@
+    Software Foundation, 59 Temple Place - Suite 330, Boston, MA
+    02111-1307, USA.  */
+ 
+-#if defined (USE_GAS_SYMVER) && defined (USE_LIBUNWIND_EXCEPTIONS)
++#if defined (USE_GAS_SYMVER) && 0 /* defined (USE_LIBUNWIND_EXCEPTIONS) */
+ #include "unwind.h"
+ #include "unwind-dw2-fde.h"
+ #include "unwind-compat.h"
+diff --git a/gcc/unwind-dw2-fde-compat.c b/gcc/unwind-dw2-fde-compat.c
+index 5e8c0a30..070de32a 100644
+--- a/gcc/unwind-dw2-fde-compat.c
++++ b/gcc/unwind-dw2-fde-compat.c
+@@ -28,7 +28,7 @@
+    Software Foundation, 59 Temple Place - Suite 330, Boston, MA
+    02111-1307, USA.  */
+ 
+-#if defined (USE_GAS_SYMVER) && defined (USE_LIBUNWIND_EXCEPTIONS)
++#if defined (USE_GAS_SYMVER) && 0 /* defined (USE_LIBUNWIND_EXCEPTIONS) */
+ #include "unwind.h"
+ #include "unwind-dw2-fde.h"
+ #include "unwind-compat.h"
+diff --git a/gcc/unwind-dw2-fde-glibc.c b/gcc/unwind-dw2-fde-glibc.c
+index e7d09cfe..e7c6fcad 100644
+--- a/gcc/unwind-dw2-fde-glibc.c
++++ b/gcc/unwind-dw2-fde-glibc.c
+@@ -296,6 +296,6 @@ _Unwind_Find_FDE (void *pc, struct dwarf_eh_bases *bases)
+ #include "unwind-dw2-fde.c"
+ #endif
+ 
+-#if defined (USE_GAS_SYMVER) && defined (SHARED) && defined (USE_LIBUNWIND_EXCEPTIONS)
++#if defined (USE_GAS_SYMVER) && defined (SHARED) && 0 /* defined (USE_LIBUNWIND_EXCEPTIONS) */
+ alias (_Unwind_Find_FDE);
+ #endif
+diff --git a/gcc/unwind-dw2.c b/gcc/unwind-dw2.c
+index 69cfd4f1..6f61cc06 100644
+--- a/gcc/unwind-dw2.c
++++ b/gcc/unwind-dw2.c
+@@ -1375,7 +1375,7 @@ uw_identify_context (struct _Unwind_Context *context)
+ 
+ #include "unwind.inc"
+ 
+-#if defined (USE_GAS_SYMVER) && defined (SHARED) && defined (USE_LIBUNWIND_EXCEPTIONS)
++#if defined (USE_GAS_SYMVER) && defined (SHARED) && 0 /* defined (USE_LIBUNWIND_EXCEPTIONS) */
+ alias (_Unwind_Backtrace);
+ alias (_Unwind_DeleteException);
+ alias (_Unwind_FindEnclosingFunction);
+-- 
+2.53.0
+

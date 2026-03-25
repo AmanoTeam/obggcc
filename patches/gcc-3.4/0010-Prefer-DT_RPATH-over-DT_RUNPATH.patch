@@ -1,0 +1,108 @@
+From 370bcc38912c1eb838ace5dfb9accfbc9c4c2aaa Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Fri, 27 Mar 2026 22:44:02 +0100
+Subject: [PATCH] Prefer DT_RPATH over DT_RUNPATH
+
+---
+ gcc/config/alpha/linux-elf.h | 2 +-
+ gcc/config/arm/linux-elf.h   | 1 +
+ gcc/config/i386/linux.h      | 2 +-
+ gcc/config/i386/linux64.h    | 2 +-
+ gcc/config/ia64/linux.h      | 2 +-
+ gcc/config/rs6000/sysv4.h    | 2 +-
+ gcc/config/s390/linux.h      | 2 +-
+ 7 files changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/gcc/config/alpha/linux-elf.h b/gcc/config/alpha/linux-elf.h
+index 025b9a20..25d60c8d 100644
+--- a/gcc/config/alpha/linux-elf.h
++++ b/gcc/config/alpha/linux-elf.h
+@@ -29,7 +29,7 @@ Boston, MA 02111-1307, USA.  */
+ 
+ #define ELF_DYNAMIC_LINKER	"/lib/ld-linux.so.2"
+ 
+-#define LINK_SPEC "-m elf64alpha %{G*} %{relax:-relax}		\
++#define LINK_SPEC "-m elf64alpha --disable-new-dtags %{G*} %{relax:-relax}		\
+   %{O*:-O3} %{!O*:-O1}						\
+   %{shared:-shared}						\
+   %{!shared:							\
+diff --git a/gcc/config/arm/linux-elf.h b/gcc/config/arm/linux-elf.h
+index 9f291c0b..c70dc025 100644
+--- a/gcc/config/arm/linux-elf.h
++++ b/gcc/config/arm/linux-elf.h
+@@ -89,6 +89,7 @@
+    %{rdynamic:-export-dynamic} \
+    %{!dynamic-linker:-dynamic-linker /lib/ld-linux.so.2} \
+    -X \
++   --disable-new-dtags \
+    %{mbig-endian:-EB}" \
+    SUBTARGET_EXTRA_LINK_SPEC
+ 
+diff --git a/gcc/config/i386/linux.h b/gcc/config/i386/linux.h
+index e7d19ec1..9e01f5c6 100644
+--- a/gcc/config/i386/linux.h
++++ b/gcc/config/i386/linux.h
+@@ -118,7 +118,7 @@ Boston, MA 02111-1307, USA.  */
+ 	%{!dynamic-linker:-dynamic-linker /lib/ld-linux.so.1}} \
+ 	%{static:-static}}}"
+ #else
+-#define LINK_SPEC "-m elf_i386 %{shared:-shared} \
++#define LINK_SPEC "--disable-new-dtags -m elf_i386 %{shared:-shared} \
+   %{!shared: \
+     %{!ibcs: \
+       %{!static: \
+diff --git a/gcc/config/i386/linux64.h b/gcc/config/i386/linux64.h
+index 98536c19..1424681c 100644
+--- a/gcc/config/i386/linux64.h
++++ b/gcc/config/i386/linux64.h
+@@ -55,7 +55,7 @@ Boston, MA 02111-1307, USA.  */
+    done.  */
+ 
+ #undef	LINK_SPEC
+-#define LINK_SPEC "%{!m32:-m elf_x86_64} %{m32:-m elf_i386} \
++#define LINK_SPEC "--disable-new-dtags %{!m32:-m elf_x86_64} %{m32:-m elf_i386} \
+   %{shared:-shared} \
+   %{!shared: \
+     %{!static: \
+diff --git a/gcc/config/ia64/linux.h b/gcc/config/ia64/linux.h
+index 5c73b0c2..95200102 100644
+--- a/gcc/config/ia64/linux.h
++++ b/gcc/config/ia64/linux.h
+@@ -38,7 +38,7 @@ do {						\
+    linux.h file.  */
+ 
+ #undef LINK_SPEC
+-#define LINK_SPEC "\
++#define LINK_SPEC " --disable-new-dtags \
+   %{shared:-shared} \
+   %{!shared: \
+     %{!static: \
+diff --git a/gcc/config/rs6000/sysv4.h b/gcc/config/rs6000/sysv4.h
+index d367aa81..cb787505 100644
+--- a/gcc/config/rs6000/sysv4.h
++++ b/gcc/config/rs6000/sysv4.h
+@@ -1123,7 +1123,7 @@ extern int fixuplabelno;
+ 
+ #define LINK_START_LINUX_SPEC ""
+ 
+-#define LINK_OS_LINUX_SPEC "-m elf32ppclinux %{!shared: %{!static: \
++#define LINK_OS_LINUX_SPEC "-m elf32ppclinux --disable-new-dtags %{!shared: %{!static: \
+   %{rdynamic:-export-dynamic} \
+   %{!dynamic-linker:-dynamic-linker /lib/ld.so.1}}}"
+ 
+diff --git a/gcc/config/s390/linux.h b/gcc/config/s390/linux.h
+index 9a6db9d7..11d94b7b 100644
+--- a/gcc/config/s390/linux.h
++++ b/gcc/config/s390/linux.h
+@@ -79,7 +79,7 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
+ 
+ #undef  LINK_SPEC
+ #define LINK_SPEC \
+-  "%{m31:-m elf_s390}%{m64:-m elf64_s390} \
++  "%{m31:-m elf_s390}%{m64:-m elf64_s390} --disable-new-dtags \
+    %{shared:-shared} \
+    %{!shared: \
+       %{static:-static} \
+-- 
+2.53.0
+
