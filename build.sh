@@ -1074,8 +1074,8 @@ for target in "${targets[@]}"; do
 	
 	mv "${sysroot_directory}" "${toolchain_directory}/${triplet}"
 	
-	if (( native && gcc_major <= 4.6 )); then
-		# --with-native-system-header-dir was not supported back then
+	if (( gcc_major <= 4.6 )); then
+		# Older GCC versions do not support --with-native-system-header-dir
 		ln \
 			--symbolic \
 			--relative \
@@ -1254,8 +1254,8 @@ for target in "${targets[@]}"; do
 		--disable-win32-utf8-manifest \
 		--disable-c++-tools \
 		--without-static-standard-libraries \
-		CFLAGS="${ccflags}" \
-		CXXFLAGS="${ccflags}" \
+		CFLAGS="-fPIC ${ccflags}" \
+		CXXFLAGS="-fPIC ${ccflags}" \
 		LDFLAGS="${ldflags}"
 	
 	ldflags_for_target="${linkflags}"
@@ -1274,6 +1274,10 @@ for target in "${targets[@]}"; do
 		all \
 		--jobs="${max_jobs}"
 	make install
+	
+	if (( gcc_major <= 4.6 )); then
+		unlink "${toolchain_directory}/${triplet}/usr"
+	fi
 	
 	if (( gcc_major <= 6 )); then
 		# There was no --with-gcc-major-version-only back then
