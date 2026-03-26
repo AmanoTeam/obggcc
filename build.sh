@@ -695,9 +695,9 @@ if ! [ -f "${gcc_tarball}" ]; then
 	
 	if (( gcc_major >= 4.8 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
-	elif (( gcc_major >= 4.6 && gcc_major <= 4.7 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
-	elif (( gcc_major >= 4.5 )); then
+	elif (( gcc_major >= 4.7 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.7/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
+	elif (( gcc_major >= 4.5 && gcc_major <= 4.6 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.5/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
 	fi
 	
