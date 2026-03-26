@@ -725,7 +725,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
 	elif (( gcc_major >= 5 && gcc_major <= 13 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-5/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
-	elif (( gcc_major >= 4.3 && gcc_major <= 4.8 )); then
+	elif (( gcc_major >= 4.4 && gcc_major <= 4.8 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
 	fi
 	
