@@ -1661,6 +1661,14 @@ while read item; do
 	
 	check_target_exists "${gcc_targets}" "${triplet}${glibc_version}" || continue
 	
+	if (( gcc_major <= 4.7 )) && [[ "${triplet}" = 'aarch64'* ]]; then
+		continue
+	fi
+	
+	if (( gcc_major <= 4.6 )) && [[ "${triplet}" = 'arm-'*'-gnueabihf' ]]; then
+		continue
+	fi
+	
 	declare repository="$(jq --raw-output '.repository.url' <<< "${item}")"
 	declare release="$(jq --raw-output '.repository.release' <<< "${item}")"
 	declare resource="$(jq --raw-output '.repository.resource' <<< "${item}")"
