@@ -185,11 +185,11 @@ declare -ra deprecated_targets=(
 )
 
 declare -a targets=(
-	'x86_64-unknown-linux-gnu'
-	'i386-unknown-linux-gnu'
 	'arm-unknown-linux-gnueabi'
 	'arm-unknown-linux-gnueabihf'
 	'aarch64-unknown-linux-gnu'
+	'x86_64-unknown-linux-gnu'
+	'i386-unknown-linux-gnu'
 )
 
 declare -r PKG_CONFIG_PATH="${toolchain_directory}/lib/pkgconfig"
