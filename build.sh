@@ -1189,6 +1189,10 @@ for target in "${targets[@]}"; do
 		extra_configure_flags+=' --disable-plugin'
 	fi
 	
+	if (( gcc_major >= 4.5 )); then
+		extra_configure_flags+=' --disable-c++-tools'
+	fi
+	
 	declare -a extra_flags=(${=extra_configure_flags})
 	
 	declare ldflags="-L${toolchain_directory}/lib ${linkflags}"
@@ -1254,7 +1258,6 @@ for target in "${targets[@]}"; do
 		--disable-nls \
 		--disable-canonical-system-headers \
 		--disable-win32-utf8-manifest \
-		--disable-c++-tools \
 		--without-static-standard-libraries \
 		CFLAGS="-fPIC ${ccflags}" \
 		CXXFLAGS="-fPIC ${ccflags}" \
