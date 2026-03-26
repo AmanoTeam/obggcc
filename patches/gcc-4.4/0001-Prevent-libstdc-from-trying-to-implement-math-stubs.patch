@@ -1,0 +1,27 @@
+From da190bf6321c14f29263b0599d4659d84423aab6 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Thu, 26 Mar 2026 14:34:16 +0100
+Subject: [PATCH 3/4] Prevent libstdc++ from trying to implement math stubs
+
+---
+ libstdc++-v3/src/Makefile.in | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/libstdc++-v3/src/Makefile.in b/libstdc++-v3/src/Makefile.in
+index f7c21885c..ee171b1d9 100644
+--- a/libstdc++-v3/src/Makefile.in
++++ b/libstdc++-v3/src/Makefile.in
+@@ -105,8 +105,8 @@ am__objects_5 = atomic.lo bitmap_allocator.lo pool_allocator.lo \
+ 	globals_io.lo hashtable.lo hashtable_c++0x.lo ios.lo \
+ 	ios_failure.lo ios_init.lo ios_locale.lo limits.lo \
+ 	limits_c++0x.lo list.lo debug_list.lo locale.lo locale_init.lo \
+-	locale_facets.lo localename.lo math_stubs_float.lo \
+-	math_stubs_long_double.lo stdexcept.lo strstream.lo \
++	locale_facets.lo localename.lo \
++	stdexcept.lo strstream.lo \
+ 	system_error.lo tree.lo allocator-inst.lo concept-inst.lo \
+ 	fstream-inst.lo ext-inst.lo ios-inst.lo iostream-inst.lo \
+ 	istream-inst.lo istream.lo locale-inst.lo misc-inst.lo \
+-- 
+2.53.0
+
