@@ -1,0 +1,55 @@
+From 43e04ce08c640d3cd819dd8e776a69a7427d80ba Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Thu, 26 Mar 2026 22:09:56 +0100
+Subject: [PATCH] Fix duplicate declarations of *_log2() functions
+
+---
+ gcc/toplev.c | 4 ++++
+ gcc/toplev.h | 4 ++--
+ 2 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/gcc/toplev.c b/gcc/toplev.c
+index 77e5d296..570cdd98 100644
+--- a/gcc/toplev.c
++++ b/gcc/toplev.c
+@@ -520,6 +520,8 @@ read_integral_parameter (const char *p, const char *pname, const int  defval)
+ /* Given X, an unsigned number, return the largest int Y such that 2**Y <= X.
+    If X is 0, return -1.  */
+ 
++#if 0
++
+ int
+ floor_log2 (unsigned HOST_WIDE_INT x)
+ {
+@@ -567,6 +569,8 @@ exact_log2 (unsigned HOST_WIDE_INT x)
+ #endif
+ }
+ 
++#endif
++
+ /* Handler for fatal signals, such as SIGSEGV.  These are transformed
+    into ICE messages, which is much more user friendly.  In case the
+    error printer crashes, reset the signal to prevent infinite recursion.  */
+diff --git a/gcc/toplev.h b/gcc/toplev.h
+index 35d53eb8..2293216d 100644
+--- a/gcc/toplev.h
++++ b/gcc/toplev.h
+@@ -171,13 +171,13 @@ extern int floor_log2                  (unsigned HOST_WIDE_INT);
+ #  define CTZ_HWI __builtin_ctz
+ # endif
+ 
+-extern inline int
++extern inline __attribute__ ((__gnu_inline__)) int
+ floor_log2 (unsigned HOST_WIDE_INT x)
+ {
+   return x ? HOST_BITS_PER_WIDE_INT - 1 - (int) CLZ_HWI (x) : -1;
+ }
+ 
+-extern inline int
++extern inline __attribute__ ((__gnu_inline__)) int
+ exact_log2 (unsigned HOST_WIDE_INT x)
+ {
+   return x == (x & -x) && x ? (int) CTZ_HWI (x) : -1;
+-- 
+2.53.0
+
