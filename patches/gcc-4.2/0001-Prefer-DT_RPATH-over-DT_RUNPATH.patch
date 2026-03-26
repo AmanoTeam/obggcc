@@ -1,0 +1,122 @@
+From c809c2d80b100d917f6dd442ad04f3be9a2296ff Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Thu, 26 Mar 2026 19:50:44 +0100
+Subject: [PATCH] Prefer DT_RPATH over DT_RUNPATH
+
+---
+ gcc/config/alpha/linux-elf.h | 2 +-
+ gcc/config/arm/linux-elf.h   | 1 +
+ gcc/config/i386/linux.h      | 2 +-
+ gcc/config/i386/linux64.h    | 2 +-
+ gcc/config/ia64/linux.h      | 2 +-
+ gcc/config/rs6000/sysv4.h    | 2 +-
+ gcc/config/s390/linux.h      | 2 +-
+ gcc/config/sparc/linux.h     | 2 +-
+ 8 files changed, 8 insertions(+), 7 deletions(-)
+
+diff --git a/gcc/config/alpha/linux-elf.h b/gcc/config/alpha/linux-elf.h
+index 5d17662b..b08dcb58 100644
+--- a/gcc/config/alpha/linux-elf.h
++++ b/gcc/config/alpha/linux-elf.h
+@@ -39,7 +39,7 @@ along with GCC; see the file COPYING3.  If not see
+ 
+ #define ELF_DYNAMIC_LINKER	LINUX_DYNAMIC_LINKER
+ 
+-#define LINK_SPEC "-m elf64alpha %{G*} %{relax:-relax}		\
++#define LINK_SPEC "-m elf64alpha --disable-new-dtags %{G*} %{relax:-relax}		\
+   %{O*:-O3} %{!O*:-O1}						\
+   %{shared:-shared}						\
+   %{!shared:							\
+diff --git a/gcc/config/arm/linux-elf.h b/gcc/config/arm/linux-elf.h
+index 05d33094..b231dc76 100644
+--- a/gcc/config/arm/linux-elf.h
++++ b/gcc/config/arm/linux-elf.h
+@@ -60,6 +60,7 @@
+    %{rdynamic:-export-dynamic} \
+    %{!dynamic-linker:-dynamic-linker " LINUX_DYNAMIC_LINKER "} \
+    -X \
++   --disable-new-dtags \
+    %{mbig-endian:-EB}" \
+    SUBTARGET_EXTRA_LINK_SPEC
+ 
+diff --git a/gcc/config/i386/linux.h b/gcc/config/i386/linux.h
+index f9c84dd4..d8c8d4a9 100644
+--- a/gcc/config/i386/linux.h
++++ b/gcc/config/i386/linux.h
+@@ -108,7 +108,7 @@ along with GCC; see the file COPYING3.  If not see
+   { "dynamic_linker", LINUX_DYNAMIC_LINKER }
+ 
+ #undef	LINK_SPEC
+-#define LINK_SPEC "-m %(link_emulation) %{shared:-shared} \
++#define LINK_SPEC "--disable-new-dtags -m %(link_emulation) %{shared:-shared} \
+   %{!shared: \
+     %{!ibcs: \
+       %{!static: \
+diff --git a/gcc/config/i386/linux64.h b/gcc/config/i386/linux64.h
+index 45450c3c..1d2a09c6 100644
+--- a/gcc/config/i386/linux64.h
++++ b/gcc/config/i386/linux64.h
+@@ -52,7 +52,7 @@ along with GCC; see the file COPYING3.  If not see
+ #define GLIBC_DYNAMIC_LINKER64 "/lib64/ld-linux-x86-64.so.2"
+ 
+ #undef	LINK_SPEC
+-#define LINK_SPEC "%{!m32:-m elf_x86_64} %{m32:-m elf_i386} \
++#define LINK_SPEC "--disable-new-dtags %{!m32:-m elf_x86_64} %{m32:-m elf_i386} \
+   %{shared:-shared} \
+   %{!shared: \
+     %{!static: \
+diff --git a/gcc/config/ia64/linux.h b/gcc/config/ia64/linux.h
+index cecae0df..43f6f43e 100644
+--- a/gcc/config/ia64/linux.h
++++ b/gcc/config/ia64/linux.h
+@@ -40,7 +40,7 @@ do {						\
+ #define GLIBC_DYNAMIC_LINKER "/lib/ld-linux-ia64.so.2"
+ 
+ #undef LINK_SPEC
+-#define LINK_SPEC "\
++#define LINK_SPEC " --disable-new-dtags \
+   %{shared:-shared} \
+   %{!shared: \
+     %{!static: \
+diff --git a/gcc/config/rs6000/sysv4.h b/gcc/config/rs6000/sysv4.h
+index 27c7ee20..0552740b 100644
+--- a/gcc/config/rs6000/sysv4.h
++++ b/gcc/config/rs6000/sysv4.h
+@@ -901,7 +901,7 @@ extern int fixuplabelno;
+ #define LINUX_DYNAMIC_LINKER \
+   CHOOSE_DYNAMIC_LINKER (GLIBC_DYNAMIC_LINKER, UCLIBC_DYNAMIC_LINKER)
+ 
+-#define LINK_OS_LINUX_SPEC "-m elf32ppclinux %{!shared: %{!static: \
++#define LINK_OS_LINUX_SPEC "-m elf32ppclinux --disable-new-dtags %{!shared: %{!static: \
+   %{rdynamic:-export-dynamic} \
+   %{!dynamic-linker:-dynamic-linker " LINUX_DYNAMIC_LINKER "}}}"
+ 
+diff --git a/gcc/config/s390/linux.h b/gcc/config/s390/linux.h
+index ddbcfa97..bbe18456 100644
+--- a/gcc/config/s390/linux.h
++++ b/gcc/config/s390/linux.h
+@@ -77,7 +77,7 @@ along with GCC; see the file COPYING3.  If not see
+ 
+ #undef  LINK_SPEC
+ #define LINK_SPEC \
+-  "%{m31:-m elf_s390}%{m64:-m elf64_s390} \
++  "%{m31:-m elf_s390}%{m64:-m elf64_s390} --disable-new-dtags \
+    %{shared:-shared} \
+    %{!shared: \
+       %{static:-static} \
+diff --git a/gcc/config/sparc/linux.h b/gcc/config/sparc/linux.h
+index aae07fbb..c3b121ad 100644
+--- a/gcc/config/sparc/linux.h
++++ b/gcc/config/sparc/linux.h
+@@ -132,7 +132,7 @@ along with GCC; see the file COPYING3.  If not see
+ 
+ 
+ #undef  LINK_SPEC
+-#define LINK_SPEC "-m elf32_sparc -Y P,/usr/lib %{shared:-shared} \
++#define LINK_SPEC "--disable-new-dtags -m elf32_sparc -Y P,/usr/lib %{shared:-shared} \
+   %{!mno-relax:%{!r:-relax}} \
+   %{!shared: \
+     %{!ibcs: \
+-- 
+2.53.0
+
