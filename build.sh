@@ -184,7 +184,7 @@ declare -ra deprecated_targets=(
 	'armv6-unknown-linux-gnueabi'
 )
 
-declare -ra targets=(
+declare -a targets=(
 	'x86_64-unknown-linux-gnu'
 	'i386-unknown-linux-gnu'
 	'arm-unknown-linux-gnueabi'
@@ -1030,16 +1030,16 @@ make \
 	LDFLAGS="${linkflags}" \
 	all
 
+if (( gcc_major <= 4.7 )); then
+	targets=( "${targets[@]/aarch64-unknown-linux-gnu/}" )
+fi
+
+if (( gcc_major <= 4.6 )); then
+	targets=( "${targets[@]/arm-unknown-linux-gnueabihf/}" )
+fi
+
 for target in "${targets[@]}"; do
 	check_target_exists "${gcc_targets}" "${target}" || continue
-	
-	if (( gcc_major <= 4.7 )) && [[ "${target}" = 'aarch64'* ]]; then
-		continue
-	fi
-	
-	if (( gcc_major <= 4.6 )) && [[ "${target}" = 'arm-'*'-gnueabihf' ]]; then
-		continue
-	fi
 	
 	declare specs='%{!Qy: -Qn}'
 	
