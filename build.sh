@@ -1205,7 +1205,10 @@ for target in "${targets[@]}"; do
 	
 	cd "${gcc_directory}/build"
 	
-	../configure \
+	CFLAGS="-fPIC ${ccflags}" \
+		CXXFLAGS="-fPIC ${ccflags}" \
+		DFLAGS="${ldflags}" \
+		../configure \
 		--build="${build/unknown-/}" \
 		--host="${host}" \
 		--target="${triplet}" \
@@ -1262,10 +1265,7 @@ for target in "${targets[@]}"; do
 		--disable-nls \
 		--disable-canonical-system-headers \
 		--disable-win32-utf8-manifest \
-		--without-static-standard-libraries \
-		CFLAGS="-fPIC ${ccflags}" \
-		CXXFLAGS="-fPIC ${ccflags}" \
-		LDFLAGS="${ldflags}"
+		--without-static-standard-libraries
 	
 	ldflags_for_target="${linkflags}"
 	
