@@ -1362,7 +1362,7 @@ for target in "${targets[@]}"; do
 	unlink './libgcc_s.so' && echo 'GROUP ( libgcc_s.so.1 -lgcc )' > './libgcc_s.so'
 	
 	if (( gcc_major <= 4.8 )); then
-		unlink "${toolchain_directory}/lib/libiberty.a"
+		rm --force "${toolchain_directory}/lib/libiberty.a"
 	fi
 	
 	rm \
