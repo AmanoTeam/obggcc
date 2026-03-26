@@ -1309,7 +1309,7 @@ for target in "${targets[@]}"; do
 			"${toolchain_directory}/${triplet}/include/c++/${gcc_major}"
 	fi
 	
-	if (( gcc_major <= 11 )); then
+	if (( gcc_major >= 4.3 && gcc_major <= 11 )); then
 		ln \
 			--symbolic \
 			--relative \
