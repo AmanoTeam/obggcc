@@ -14,6 +14,7 @@ struct GCCVersion {
 };
 
 enum GCCMajorVersion {
+	GCC_4_5 = 45,
 	GCC_4_6 = 46,
 	GCC_4_7 = 47,
 	GCC_4_8 = 48,
