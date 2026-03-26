@@ -1,0 +1,46 @@
+From e1ab81c01ef7cada81f6d2cc8cac54b705f49417 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Thu, 26 Mar 2026 15:49:50 +0100
+Subject: [PATCH] Fix duplicate declarations of *_log2() functions
+
+---
+ gcc/toplev.c | 2 +-
+ gcc/toplev.h | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/gcc/toplev.c b/gcc/toplev.c
+index d37c50757..b5865f3e1 100644
+--- a/gcc/toplev.c
++++ b/gcc/toplev.c
+@@ -527,7 +527,7 @@ read_integral_parameter (const char *p, const char *pname, const int  defval)
+    for floor_log2 and exact_log2; see toplev.h.  That construct, however,
+    conflicts with the ISO C++ One Definition Rule.   */
+ 
+-#if GCC_VERSION < 3004 || !defined (__cplusplus)
++#if 0
+ 
+ /* Given X, an unsigned number, return the largest int Y such that 2**Y <= X.
+    If X is 0, return -1.  */
+diff --git a/gcc/toplev.h b/gcc/toplev.h
+index 2324b068f..4b5eedef2 100644
+--- a/gcc/toplev.h
++++ b/gcc/toplev.h
+@@ -186,13 +186,13 @@ extern int floor_log2                  (unsigned HOST_WIDE_INT);
+ #  define CTZ_HWI __builtin_ctz
+ # endif
+ 
+-extern inline int
++extern inline __attribute__ ((__gnu_inline__)) int
+ floor_log2 (unsigned HOST_WIDE_INT x)
+ {
+   return x ? HOST_BITS_PER_WIDE_INT - 1 - (int) CLZ_HWI (x) : -1;
+ }
+ 
+-extern inline int
++extern inline __attribute__ ((__gnu_inline__)) int
+ exact_log2 (unsigned HOST_WIDE_INT x)
+ {
+   return x == (x & -x) && x ? (int) CTZ_HWI (x) : -1;
+-- 
+2.53.0
+

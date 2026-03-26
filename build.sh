@@ -642,6 +642,10 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0001-Disable-building-documentation.patch"
 	fi
 	
+	if (( gcc_major <= 4.4 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.4/0001-Fix-duplicate-declarations-of-_log2-functions.patch"
+	fi
+	
 	if (( gcc_major >= 4.6 && gcc_major <= 5 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.6/0001-Fix-wrong-usage-of-bool.patch"
 	fi
