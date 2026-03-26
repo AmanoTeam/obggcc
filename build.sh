@@ -594,7 +594,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 	elif (( gcc_major >= 5 && gcc_major <= 7 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-5/0001-MinGW-Do-not-version-lto-plugins.patch"
 	elif (( gcc_major >= 4.6 && gcc_major <= 4.9 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0001-MinGW-Do-not-version-lto-plugins.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.6/0001-MinGW-Do-not-version-lto-plugins.patch"
 	fi
 	
 	if (( gcc_major >= 5 && gcc_major <= 7 )); then
