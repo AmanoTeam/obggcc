@@ -1031,11 +1031,11 @@ make \
 	all
 
 if (( gcc_major <= 4.7 )); then
-	targets=( "${targets[@]/aarch64-unknown-linux-gnu/}" )
+	targets=("${(@)targets:#aarch64-unknown-linux-gnu}")
 fi
 
 if (( gcc_major <= 4.6 )); then
-	targets=( "${targets[@]/arm-unknown-linux-gnueabihf/}" )
+	targets=("${(@)targets:#arm-unknown-linux-gnueabihf}")
 fi
 
 for target in "${targets[@]}"; do
