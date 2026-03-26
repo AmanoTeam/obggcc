@@ -1290,6 +1290,12 @@ for target in "${targets[@]}"; do
 		unlink "${toolchain_directory}/${triplet}/usr"
 	fi
 	
+	if (( gcc_major <= 4.1 )); then
+		mv \
+			"${toolchain_directory}/include/c++" \
+			"${toolchain_directory}/${triplet}/include"
+	fi
+	
 	if (( gcc_major <= 6 )); then
 		# There was no --with-gcc-major-version-only back then
 		ln \
