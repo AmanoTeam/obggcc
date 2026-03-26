@@ -14,6 +14,7 @@ struct GCCVersion {
 };
 
 enum GCCMajorVersion {
+	GCC_4_8 = 48,
 	GCC_4_9 = 49,
 	GCC_5 = 5,
 	GCC_6 = 6,
@@ -64,6 +65,15 @@ enum GxxStdVersion {
 };
 
 static const struct GCCVersion GCC_VERSIONS[] = {
+	{
+		.version = GCC_4_8,
+		.min_abi_version = GXX_ABI_2,
+		.max_abi_version = GXX_ABI_2,
+		.stdc_version = GCC_STD_90,
+		.stdc_max_version = GCC_STD_11,
+		.stdcxx_version = GXX_STD_98,
+		.stdcxx_max_version = GXX_STD_11
+	},
 	{
 		.version = GCC_4_9,
 		.min_abi_version = GXX_ABI_2,

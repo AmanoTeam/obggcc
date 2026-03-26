@@ -1896,3 +1896,20 @@ if [[ "${host}" = *'-mingw32' ]]; then
 fi
 
 cp "${workdir}/tools/gcc-stl-install.sh" "${toolchain_directory}/bin/gcc-stl-install"
+
+
+if (( gcc_major <= 4.7 )); then
+	rm \
+		--force \
+		"${toolchain_directory}/bin/aarch64"* \
+		"${toolchain_directory}/build/"*"/aarch64"* \
+		"${toolchain_directory}/build/"*"/"*"/aarch64"*
+fi
+
+if (( gcc_major <= 4.6 )); then
+	rm \
+		--force \
+		"${toolchain_directory}/bin/"*"gnueabihf"* \
+		"${toolchain_directory}/build/"*"/"*"gnueabihf"* \
+		"${toolchain_directory}/build/"*"/"*"/"*"gnueabihf"*
+fi
