@@ -780,6 +780,7 @@ if (( gcc_major <= 4.0)) && ! [ -f "${bison_tarball}" ]; then
 		--file="${bison_tarball}"
 	
 	export PATH="${bison_directory}/bin:${PATH}"
+	export BISON_PKGDATADIR="${bison_directory}/share/bison"
 	
 	bison --version
 fi
