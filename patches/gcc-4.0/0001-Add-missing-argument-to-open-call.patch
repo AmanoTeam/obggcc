@@ -1,0 +1,25 @@
+From 21c32a423398ce2b2d2349b962d3ce5530abdd97 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Fri, 27 Mar 2026 19:19:58 +0100
+Subject: [PATCH] Add missing argument to open() call
+
+---
+ gcc/collect2.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/gcc/collect2.c b/gcc/collect2.c
+index c05be80b..04a481bc 100644
+--- a/gcc/collect2.c
++++ b/gcc/collect2.c
+@@ -1577,7 +1577,7 @@ collect_execute (const char *prog, char **argv, const char *redir)
+   if (redir)
+     {
+       /* Open response file.  */
+-      redir_handle = open (redir, O_WRONLY | O_TRUNC | O_CREAT);
++      redir_handle = open (redir, O_WRONLY | O_TRUNC | O_CREAT, 0666);
+ 
+       /* Duplicate the stdout and stderr file handles
+ 	 so they can be restored later.  */
+-- 
+2.53.0
+

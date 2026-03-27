@@ -90,6 +90,9 @@ declare -r yasm_directory='/tmp/yasm-1.3.0'
 declare -r ninja_tarball='/tmp/ninja.tar.gz'
 declare -r ninja_directory='/tmp/ninja-master'
 
+declare -r bison_tarball="${build_directory}/bison.tar.xz"
+declare -r bison_directory="${build_directory}/bison"
+
 declare -r cmake_directory="${workdir}/submodules/cmake"
 
 declare -r curl_directory="${workdir}/submodules/curl"
@@ -636,6 +639,10 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.0/0001-Avoid-incorrectly-declaring-the-caddr_t-alias-on-Linux.patch"
 	fi
 	
+	if (( gcc_major <= 4.0 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.0/0001-Add-missing-argument-to-open-call.patch"
+	fi
+	
 	if (( gcc_major >= 4.5 && gcc_major <= 4.8 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.5/0001-Add-missing-_attribute__-__gnu_inline__.patch"
 	elif (( gcc_major <= 4.4 )); then
@@ -754,6 +761,25 @@ if ! [ -f "${gcc_tarball}" ]; then
 		--force \
 		"${workdir}/tools/config.sub" \
 		"${gcc_directory}/config.sub"
+fi
+
+if (( gcc_major <= 4.0)) && ! [ -f "${bison_tarball}" ]; then
+	curl \
+		--url "https://github.com/Kartatz/bison-legacy/releases/latest/download/${build/-pc-/-unknown-}.tar.xz" \
+		--retry '30' \
+		--retry-delay '0' \
+		--retry-all-errors \
+		--retry-max-time '0' \
+		--location \
+		--silent \
+		--output "${bison_tarball}"
+	
+	tar \
+		--directory="$(dirname "${bison_directory}")" \
+		--extract \
+		--file="${bison_tarball}"
+	
+	export PATH="${bison_directory}/bin:${PATH}"
 fi
 
 # Follow Debian's approach to remove hardcoded RPATHs from binaries
