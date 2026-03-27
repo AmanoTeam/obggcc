@@ -601,10 +601,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-7/0001-Fix-std-nullptr_t-to-bool-conversion-error.patch"
 	fi
 	
-	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.2/0001-Add-support-for-compiling-in-x86_64-pc-mingw32-hosts.patch"
-	
-	( cd "${gcc_directory}" && autoreconf --force --install )
-	( cd "${gcc_directory}/fixincludes" && autoreconf --force --install )
+	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.2/0001-Add-host-support-for-x64-MinGW.patch"
 	
 	if (( gcc_major == 11 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-11/0001-Unpoison-calloc-on-musl-hosts.patch"
