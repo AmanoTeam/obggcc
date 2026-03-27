@@ -15,7 +15,7 @@ permissions: write-all
 env: 
     OBGGCC_BUILD_PARALLEL_LEVEL: 40
     OBGGCC_BUILD_DIRECTORY: /tmp
-    OBGGCC_RELEASE: 4.1
+    OBGGCC_RELEASE: 4.0
     OBGGCC_TARGETS: '*'
 
 jobs:
