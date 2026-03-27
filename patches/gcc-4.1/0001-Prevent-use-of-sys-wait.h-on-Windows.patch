@@ -1,0 +1,27 @@
+From fdf0e723df253f9070ccbe8aec59f3593de0b87a Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Fri, 27 Mar 2026 02:49:46 +0100
+Subject: [PATCH] Prevent use of <sys/wait.h> on Windows
+
+---
+ fixincludes/fixincl.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/fixincludes/fixincl.c b/fixincludes/fixincl.c
+index f8941c39..c257c3e6 100644
+--- a/fixincludes/fixincl.c
++++ b/fixincludes/fixincl.c
+@@ -23,6 +23,10 @@ Boston, MA 02110-1301, USA.  */
+ 
+ #include "fixlib.h"
+ 
++#if defined(_WIN32)
++    #define SEPARATE_FIX_PROC
++#endif
++
+ #include <sys/stat.h>
+ #ifndef SEPARATE_FIX_PROC
+ #include <sys/wait.h>
+-- 
+2.53.0
+
