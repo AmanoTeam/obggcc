@@ -1794,23 +1794,25 @@ while read item; do
 	ln --symbolic './ld-'*'.so'* './static'
 	ln --symbolic './'*'.o' './static'
 	
-	ln \
-		--symbolic \
-		--relative \
-		"${toolchain_directory}/${triplet}/include/Block"* \
-		'../include'
-	
-	ln \
-		--symbolic \
-		--relative \
-		"${toolchain_directory}/${triplet}/lib/libBlocksRuntime.a" \
-		'./'
-	
-	ln \
-		--symbolic \
-		--relative \
-		"${toolchain_directory}/${triplet}/lib/libBlocksRuntime.a" \
-		'./static'
+	if (( gcc_major >= 4.1 )); then
+		ln \
+			--symbolic \
+			--relative \
+			"${toolchain_directory}/${triplet}/include/Block"* \
+			'../include'
+		
+		ln \
+			--symbolic \
+			--relative \
+			"${toolchain_directory}/${triplet}/lib/libBlocksRuntime.a" \
+			'./'
+		
+		ln \
+			--symbolic \
+			--relative \
+			"${toolchain_directory}/${triplet}/lib/libBlocksRuntime.a" \
+			'./static'
+	fi
 	
 	ln \
 		--symbolic \
