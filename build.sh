@@ -602,7 +602,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 	fi
 	
 	if (( gcc_major <= 4.2 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.1/0001-Add-host-support-for-x64-MinGW.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.0/i0001-Add-host-support-for-x64-MinGW.patch"
 	fi
 	
 	if (( gcc_major == 11 )); then
@@ -619,8 +619,8 @@ if ! [ -f "${gcc_tarball}" ]; then
 	
 	if (( gcc_major >= 5 && gcc_major <= 12 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-5/0001-Fix-definition-of-abort-on-Windows.patch"
-	elif (( gcc_major >= 4.1 && gcc_major <= 4.9 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.1/0001-Fix-definition-of-abort-on-Windows.patch"
+	elif (( gcc_major >= 4.0 && gcc_major <= 4.9 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.0/0001-Fix-definition-of-abort-on-Windows.patch"
 	fi
 	
 	if (( gcc_major >= 11 && gcc_major <= 12 )); then
@@ -632,14 +632,14 @@ if ! [ -f "${gcc_tarball}" ]; then
 	fi
 	
 	if (( gcc_major <= 4.9 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.1/0001-strerror.c-Do-not-declare-sys_nerr-or-sys_errlist-if-already-macros.patch"
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.1/0001-Avoid-incorrectly-declaring-the-caddr_t-alias-on-Linux.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.0/0001-strerror.c-Do-not-declare-sys_nerr-or-sys_errlist-if-already-macros.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.0/0001-Avoid-incorrectly-declaring-the-caddr_t-alias-on-Linux.patch"
 	fi
 	
 	if (( gcc_major >= 4.5 && gcc_major <= 4.8 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.5/0001-Add-missing-_attribute__-__gnu_inline__.patch"
 	elif (( gcc_major <= 4.4 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.1/0001-Add-missing-_attribute__-__gnu_inline__.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.0/0001-Add-missing-_attribute__-__gnu_inline__.patch"
 	fi
 	
 	if (( gcc_major <= 4.7 )); then
@@ -648,16 +648,16 @@ if ! [ -f "${gcc_tarball}" ]; then
 	
 	if (( gcc_major >= 4.2 && gcc_major <= 4.4 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.2/0001-Fix-duplicate-declarations-of-_log2-functions.patch"
-	elif (( gcc_major >= 4.1 && gcc_major <= 4.1 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.1/0001-Fix-duplicate-declarations-of-_log2-functions.patch"
+	elif (( gcc_major >= 4.0 && gcc_major <= 4.1 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.0/0001-Fix-duplicate-declarations-of-_log2-functions.patch"
 	fi
 	
 	if (( gcc_major >= 4.6 && gcc_major <= 5 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.6/0001-Fix-wrong-usage-of-bool.patch"
 	fi
 	
-	if (( gcc_major >= 4.1 && gcc_major <= 5 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.1/0001-Prevent-use-of-_unlocked-functions-and-disable-inclusion-of-malloc.h.patch"
+	if (( gcc_major >= 4.0 && gcc_major <= 5 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.0/0001-Prevent-use-of-_unlocked-functions-and-disable-inclusion-of-malloc.h.patch"
 	elif (( gcc_major >= 6 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-6/0001-Prevent-use-of-_unlocked-functions.patch"
 	fi
@@ -711,8 +711,8 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.7/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
 	elif (( gcc_major >= 4.3 && gcc_major <= 4.6 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.3/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
-	elif (( gcc_major >= 4.1 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.1/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
+	elif (( gcc_major >= 4.0 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.0/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
 	fi
 	
 	if (( gcc_major >= 16 )); then
