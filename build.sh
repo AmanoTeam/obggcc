@@ -8,10 +8,10 @@ declare build="$("${workdir}/tools/config.guess")"
 build="${build/-unknown-/-pc-}"
 
 if [ -z "${CROSS_COMPILE_TRIPLET}" ]; then
-	declare -r host="${build}"
+	declare host="${build}"
 	declare -r native='1'
 else
-	declare -r host="${CROSS_COMPILE_TRIPLET}"
+	declare host="${CROSS_COMPILE_TRIPLET}"
 	declare -r native='0'
 fi
 
@@ -1203,6 +1203,13 @@ for target in "${targets[@]}"; do
 	
 	declare ldflags="-L${toolchain_directory}/lib ${linkflags}"
 	
+	declare original_host="${host}"
+	
+	if [[ "${host}" = *'musl'* ]] || [[ "${host}" = *'android'* ]]; then
+		host="${host/musl/gnu}"
+		host="${host/android/gnu}"
+	fi
+	
 	[ -d "${gcc_directory}/build" ] || mkdir "${gcc_directory}/build"
 	
 	cd "${gcc_directory}/build"
@@ -1268,6 +1275,8 @@ for target in "${targets[@]}"; do
 		--disable-canonical-system-headers \
 		--disable-win32-utf8-manifest \
 		--without-static-standard-libraries
+	
+	host="${original_host}"
 	
 	ldflags_for_target="${linkflags}"
 	
