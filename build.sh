@@ -1205,9 +1205,14 @@ for target in "${targets[@]}"; do
 	
 	declare original_host="${host}"
 	
-	if [[ "${host}" = *'musl'* ]] || [[ "${host}" = *'android'* ]]; then
-		host="${host/musl/gnu}"
-		host="${host/android/gnu}"
+	# GCC versions before 4.7 use an autotools version that don't know about Android or MUSL hosts, so trick it into thinking it's a generic GNU system instead. This will unfortunately print the wrong in "gcc -v", but we can live with that.
+	if (( gcc_major <= 4.7 )); then
+		ln \
+			--symbolic \
+			--relative \
+			--force \
+			"${workdir}/tools/config.sub" \
+			"${gcc_directory}/config.sub"
 	fi
 	
 	[ -d "${gcc_directory}/build" ] || mkdir "${gcc_directory}/build"
