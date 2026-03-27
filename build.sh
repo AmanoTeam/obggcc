@@ -601,6 +601,11 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-7/0001-Fix-std-nullptr_t-to-bool-conversion-error.patch"
 	fi
 	
+	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.2/0001-Add-support-for-compiling-in-x86_64-pc-mingw32-hosts.patch"
+	
+	( cd "${gcc_directory}" && autoreconf --force --install )
+	( cd "${gcc_directory}/fixincludes" && autoreconf --force --install )
+	
 	if (( gcc_major == 11 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-11/0001-Unpoison-calloc-on-musl-hosts.patch"
 	fi
@@ -744,6 +749,12 @@ if ! [ -f "${gcc_tarball}" ]; then
 	elif (( gcc_major >= 4.3 && gcc_major <= 6 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.3/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
 	fi
+	
+	ln \
+		--symbolic \
+		--force \
+		"${workdir}/tools/config.sub" \
+		"${gcc_directory}/config.sub"
 fi
 
 # Follow Debian's approach to remove hardcoded RPATHs from binaries
@@ -1202,18 +1213,6 @@ for target in "${targets[@]}"; do
 	declare -a extra_flags=(${=extra_configure_flags})
 	
 	declare ldflags="-L${toolchain_directory}/lib ${linkflags}"
-	
-	declare original_host="${host}"
-	
-	# GCC versions before 4.7 use an autotools version that don't know about Android or MUSL hosts, so trick it into thinking it's a generic GNU system instead. This will unfortunately print the wrong in "gcc -v", but we can live with that.
-	if (( gcc_major <= 4.7 )); then
-		ln \
-			--symbolic \
-			--relative \
-			--force \
-			"${workdir}/tools/config.sub" \
-			"${gcc_directory}/config.sub"
-	fi
 	
 	[ -d "${gcc_directory}/build" ] || mkdir "${gcc_directory}/build"
 	

@@ -1,0 +1,72 @@
+From bd3586e05f193715f1cb4f2a70a1696bc0a5c3c5 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Fri, 27 Mar 2026 14:06:40 +0100
+Subject: [PATCH] Add support for compiling in x86_64-pc-mingw32 hosts
+
+---
+ configure.in             | 9 +++++++++
+ fixincludes/configure.ac | 1 +
+ fixincludes/mkfixinc.sh  | 1 +
+ 3 files changed, 11 insertions(+)
+
+diff --git a/configure.in b/configure.in
+index 6179fb7f..4f9dcbce 100644
+--- a/configure.in
++++ b/configure.in
+@@ -276,6 +276,9 @@ case "${host}" in
+   i[[3456789]]86-*-go32* | i[[3456789]]86-*-msdosdjgpp*)
+     noconfigdirs="$noconfigdirs tcl tk expect dejagnu send-pr uudecode guile itcl gnuserv libffi"
+     ;;
++  x86_64-*-mingw*)
++    noconfigdirs="$noconfigdirs expect dejagnu autoconf automake send-pr rcs guile perl texinfo libtool newlib"
++    ;;
+   i[[3456789]]86-*-mingw32*)
+     # noconfigdirs="tcl tk expect dejagnu make texinfo bison patch flex byacc send-pr uudecode dejagnu diff guile perl itcl gnuserv"
+     noconfigdirs="$noconfigdirs expect dejagnu autoconf automake send-pr rcs guile perl texinfo libtool"
+@@ -616,6 +619,10 @@ case "${target}" in
+          ;;
+     esac
+     ;;    
++  x86_64-*-mingw*)
++    target_configdirs="$target_configdirs target-winsup"
++    noconfigdirs="$noconfigdirs expect target-libgloss target-newlib ${libgcj}"
++    ;;    
+   *-*-cygwin*)
+     target_configdirs="$target_configdirs target-libtermcap target-winsup"
+     noconfigdirs="$noconfigdirs target-gperf target-libgloss ${libgcj}"
+@@ -938,6 +945,8 @@ case "${host}" in
+     ;;
+   *-mingw32*)
+     ;;
++  *-mingw64*)
++    ;;
+   *-interix*)
+     host_makefile_frag="config/mh-interix"
+     ;;
+diff --git a/fixincludes/configure.ac b/fixincludes/configure.ac
+index 04305fe6..0a272295 100644
+--- a/fixincludes/configure.ac
++++ b/fixincludes/configure.ac
+@@ -49,6 +49,7 @@ fi],
+ [case $host in
+ 	i?86-*-msdosdjgpp* | \
+ 	i?86-*-mingw32* | \
++	x86_64-*-mingw32* | \
+ 	*-*-beos* )
+ 		TARGET=twoprocess
+ 		;;
+diff --git a/fixincludes/mkfixinc.sh b/fixincludes/mkfixinc.sh
+index ef048f71..f104901b 100755
+--- a/fixincludes/mkfixinc.sh
++++ b/fixincludes/mkfixinc.sh
+@@ -21,6 +21,7 @@ case $machine in
+     i?86-*-pe | \
+     i?86-*-cygwin* | \
+     i?86-*-mingw32* | \
++    x86_64-*-mingw32* | \
+     i?86-*-uwin* | \
+     i?86-*-interix* | \
+     powerpc-*-eabiaix* | \
+-- 
+2.53.0
+
