@@ -780,6 +780,8 @@ if (( gcc_major <= 4.0)) && ! [ -f "${bison_tarball}" ]; then
 		--file="${bison_tarball}"
 	
 	export PATH="${bison_directory}/bin:${PATH}"
+	
+	bison --version
 fi
 
 # Follow Debian's approach to remove hardcoded RPATHs from binaries
@@ -1319,7 +1321,7 @@ for target in "${targets[@]}"; do
 	env "${args[@]}" make \
 		gcc_cv_objdump="${host}-objdump" \
 		all \
-		--jobs="${max_jobs}"
+		--jobs=1 #"${max_jobs}"
 	make install
 	
 	if (( gcc_major <= 4.6 )); then
