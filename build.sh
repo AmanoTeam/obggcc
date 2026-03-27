@@ -609,10 +609,6 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-11/0001-Add-missing-sys-select.h-include-on-BSD.patch"
 	fi
 	
-	if (( gcc_major >= 4.1 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.1/0001-Default-to-enable-twoprocess-for-MinGW32.patch"
-	fi
-	
 	if (( gcc_major >= 7 && gcc_major <= 11 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-7/0001-Darwin-Arm64-Initial-support-for-the-self-host-driver.patch"
 	fi
