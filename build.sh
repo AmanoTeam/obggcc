@@ -645,6 +645,10 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.4/0001-Add-missing-argument-to-open-call.patch"
 	fi
 	
+	if (( gcc_major <= 3.4 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.4/0001-Handle-enable-checking-release.patch"
+	fi
+	
 	if (( gcc_major >= 4.5 && gcc_major <= 4.8 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.5/0001-Add-missing-_attribute__-__gnu_inline__.patch"
 	elif (( gcc_major <= 4.4 )); then
