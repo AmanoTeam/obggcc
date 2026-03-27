@@ -1390,13 +1390,15 @@ for target in "${targets[@]}"; do
 		patch --directory="${PWD}" --strip='1' --input="${workdir}/patches/0001-Workaround-mold-linker-issue.patch"
 	fi
 	
-	env ${args} make \
-		-C "${workdir}/tools/libblocksruntime" \
-		PREFIX="${toolchain_directory}/${triplet}" \
-		CC="${triplet}-gcc" \
-		CFLAGS="${ccflags}" \
-		CXXFLAGS="${ccflags}" \
-		LDFLAGS="${linkflags}"
+	if (( gcc_major >= 4.1 )); then
+		env ${args} make \
+			-C "${workdir}/tools/libblocksruntime" \
+			PREFIX="${toolchain_directory}/${triplet}" \
+			CC="${triplet}-gcc" \
+			CFLAGS="${ccflags}" \
+			CXXFLAGS="${ccflags}" \
+			LDFLAGS="${linkflags}"
+	fi
 	
 	ln \
 		--symbolic \
