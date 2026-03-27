@@ -1280,8 +1280,6 @@ for target in "${targets[@]}"; do
 		--disable-win32-utf8-manifest \
 		--without-static-standard-libraries
 	
-	host="${original_host}"
-	
 	ldflags_for_target="${linkflags}"
 	
 	if (( native )); then
