@@ -602,7 +602,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 	fi
 	
 	if (( gcc_major <= 4.2 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.0/i0001-Add-host-support-for-x64-MinGW.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.0/0001-Add-host-support-for-x64-MinGW.patch"
 	fi
 	
 	if (( gcc_major == 11 )); then
