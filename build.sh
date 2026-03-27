@@ -601,7 +601,9 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-7/0001-Fix-std-nullptr_t-to-bool-conversion-error.patch"
 	fi
 	
-	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.2/0001-Add-host-support-for-x64-MinGW.patch"
+	if (( gcc_major <= 4.2 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.1/0001-Add-host-support-for-x64-MinGW.patch"
+	fi
 	
 	if (( gcc_major == 11 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-11/0001-Unpoison-calloc-on-musl-hosts.patch"
