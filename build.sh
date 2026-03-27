@@ -1085,6 +1085,10 @@ if (( gcc_major <= 4.6 )); then
 	targets=("${(@)targets:#arm-unknown-linux-gnueabihf}")
 fi
 
+if (( gcc_major <= 4.0 )); then
+	targets=("${(@)targets:#arm-unknown-linux-gnueabi}")
+fi
+
 for target in "${targets[@]}"; do
 	check_target_exists "${gcc_targets}" "${target}" || continue
 	
