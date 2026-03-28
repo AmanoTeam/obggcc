@@ -77,12 +77,12 @@ index f675e073e..3c35b86a2 100644
  GCOV_OBJS = gcov.o
  gcov$(exeext): $(GCOV_OBJS) $(LIBDEPS)
 -	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) $(GCOV_OBJS) \
-+	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) $(GCOV_OBJS) \
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) $(GCOV_OBJS) \
  		hash-table.o ggc-none.o $(LIBS) -o $@
  GCOV_DUMP_OBJS = gcov-dump.o
  gcov-dump$(exeext): $(GCOV_DUMP_OBJS) $(LIBDEPS)
 -	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) $(GCOV_DUMP_OBJS) \
-+	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) $(GCOV_DUMP_OBJS) \
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) $(GCOV_DUMP_OBJS) \
  		hash-table.o ggc-none.o\
  		$(LIBS) -o $@
  

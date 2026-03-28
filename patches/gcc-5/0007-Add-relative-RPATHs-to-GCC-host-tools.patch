@@ -77,11 +77,11 @@ index 4e72d89b3..dda31e4ac 100644
  GCOV_OBJS = gcov.o
  gcov$(exeext): $(GCOV_OBJS) $(LIBDEPS)
 -	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) $(GCOV_OBJS) $(LIBS) -o $@
-+	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) $(GCOV_OBJS) $(LIBS) -o $@
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) $(GCOV_OBJS) $(LIBS) -o $@
  GCOV_DUMP_OBJS = gcov-dump.o
  gcov-dump$(exeext): $(GCOV_DUMP_OBJS) $(LIBDEPS)
 -	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) $(GCOV_DUMP_OBJS) \
-+	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) $(GCOV_DUMP_OBJS) \
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) $(GCOV_DUMP_OBJS) \
  		$(LIBS) -o $@
  
  GCOV_TOOL_DEP_FILES = $(srcdir)/../libgcc/libgcov-util.c gcov-io.c $(GCOV_IO_H) \

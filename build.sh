@@ -1122,6 +1122,10 @@ for target in "${targets[@]}"; do
 		specs+=' %{!fgnu-unique: %{!fno-gnu-unique: -fno-gnu-unique}}'
 	fi
 	
+	if (( gcc_major <= 3.3 )); then
+		specs=''
+	fi
+	
 	if (( native && gcc_major <= 3.4 )); then
 		ln \
 			--symbolic \

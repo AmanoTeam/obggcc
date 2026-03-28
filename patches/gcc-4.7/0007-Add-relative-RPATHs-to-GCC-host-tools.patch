@@ -75,11 +75,11 @@ index f3cc49fdb..86c882d7d 100644
  GCOV_OBJS = gcov.o
  gcov$(exeext): $(GCOV_OBJS) $(LIBDEPS)
 -	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) $(GCOV_OBJS) $(LIBS) -o $@
-+	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) $(GCOV_OBJS) $(LIBS) -o $@
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) $(GCOV_OBJS) $(LIBS) -o $@
  GCOV_DUMP_OBJS = gcov-dump.o
  gcov-dump$(exeext): $(GCOV_DUMP_OBJS) $(LIBDEPS)
 -	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) $(GCOV_DUMP_OBJS) \
-+	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib $(LDFLAGS) $(GCOV_DUMP_OBJS) \
++	+$(LINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(LDFLAGS) $(GCOV_DUMP_OBJS) \
  		$(LIBS) -o $@
  #
  # Build the include directories.  The stamp files are stmp-* rather than
