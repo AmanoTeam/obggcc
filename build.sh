@@ -788,8 +788,14 @@ fi
 if (( gcc_major <= 4.0)) && ! [ -f "${bison_tarball}" ]; then
 	echo "https://github.com/Kartatz/bison-legacy/releases/latest/download/${build/-pc-/-unknown-}.tar.xz"
 	
+	declare version='2.7'
+	
+	if (( gcc_major <= 3.3 )); then
+		version='2.3'
+	fi
+	
 	curl \
-		--url "https://github.com/Kartatz/bison-legacy/releases/latest/download/${build/-pc-/-unknown-}.tar.xz" \
+		--url "https://github.com/AmanoTeam/bison-legacy/releases/download/${version}/${build/-pc-/-unknown-}.tar.xz" \
 		--retry '30' \
 		--retry-delay '0' \
 		--retry-all-errors \
@@ -1123,6 +1129,7 @@ for target in "${targets[@]}"; do
 	fi
 	
 	if (( gcc_major <= 3.3 )); then
+		# --with-specs was not supported in GCC < 3.4
 		specs=''
 	fi
 	
@@ -2011,8 +2018,9 @@ if [[ "${host}" = *'-mingw32' ]]; then
 	done <<< "$(find "${toolchain_directory}")"
 fi
 
-cp "${workdir}/tools/gcc-stl-install.sh" "${toolchain_directory}/bin/gcc-stl-install"
-
+if (( gcc_major >= 15 )); then
+	cp "${workdir}/tools/gcc-stl-install.sh" "${toolchain_directory}/bin/gcc-stl-install"
+fi
 
 if (( gcc_major <= 4.7 )); then
 	rm \
