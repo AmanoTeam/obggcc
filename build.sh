@@ -1385,11 +1385,19 @@ for target in "${targets[@]}"; do
 	fi
 	
 	if (( gcc_major <= 3.3 )); then
+		mkdir "${toolchain_directory}/libexec"
+		
 		ln \
 			--symbolic \
 			--relative \
 			"${toolchain_directory}/lib/gcc-lib" \
 			"${toolchain_directory}/lib/gcc"
+		
+		ln \
+			--symbolic \
+			--relative \
+			"${toolchain_directory}/lib/gcc" \
+			"${toolchain_directory}/lib/libexec"
 	fi
 	
 	if (( gcc_major <= 6 )); then
@@ -1400,11 +1408,13 @@ for target in "${targets[@]}"; do
 			"${toolchain_directory}/lib/gcc/${triplet}/${gcc_major}."* \
 			"${toolchain_directory}/lib/gcc/${triplet}/${gcc_major}"
 		
-		ln \
-			--symbolic \
-			--relative \
-			"${toolchain_directory}/libexec/gcc/${triplet}/${gcc_major}."* \
-			"${toolchain_directory}/libexec/gcc/${triplet}/${gcc_major}"
+		if (( gcc_major >= 3.4 )); then
+			ln \
+				--symbolic \
+				--relative \
+				"${toolchain_directory}/libexec/gcc/${triplet}/${gcc_major}."* \
+				"${toolchain_directory}/libexec/gcc/${triplet}/${gcc_major}"
+		fi
 		
 		ln \
 			--symbolic \
