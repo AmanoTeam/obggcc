@@ -195,8 +195,8 @@ declare -a targets=(
 	'arm-unknown-linux-gnueabi'
 	'arm-unknown-linux-gnueabihf'
 	'aarch64-unknown-linux-gnu'
-	'x86_64-unknown-linux-gnu'
 	'i386-unknown-linux-gnu'
+	'x86_64-unknown-linux-gnu'
 )
 
 declare -r PKG_CONFIG_PATH="${toolchain_directory}/lib/pkgconfig"
@@ -1374,11 +1374,17 @@ for target in "${targets[@]}"; do
 		declare -a args=()
 	fi
 	
+	if (( gcc_major <= 3.2 )); then
+		unlink "${build_directory}/ln"
+	fi
+	
 	env "${args[@]}" make \
 		gcc_cv_objdump="${host}-objdump" \
 		all \
-		--jobs=1 #"${max_jobs}"
+		--jobs="${max_jobs}"
 	make install
+	
+	cp "${workdir}/tools/ln.sh" "${build_directory}/ln"
 	
 	if (( gcc_major <= 4.6 )); then
 		unlink "${toolchain_directory}/${triplet}/usr"
