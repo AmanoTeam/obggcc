@@ -42,7 +42,7 @@ fi
 set -eu
 
 TRAPZERR() {
-	echo "Error: command failed at line $LINENO"
+	echo "Error: command failed at line $_"
 }
 
 declare -r revision="$(git rev-parse --short HEAD)"
