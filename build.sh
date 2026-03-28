@@ -776,6 +776,8 @@ if ! [ -f "${gcc_tarball}" ]; then
 fi
 
 if (( gcc_major <= 4.0)) && ! [ -f "${bison_tarball}" ]; then
+	echo "https://github.com/Kartatz/bison-legacy/releases/latest/download/${build/-pc-/-unknown-}.tar.xz"
+	
 	curl \
 		--url "https://github.com/Kartatz/bison-legacy/releases/latest/download/${build/-pc-/-unknown-}.tar.xz" \
 		--retry '30' \
@@ -1568,6 +1570,8 @@ rm \
 	--force \
 	--recursive \
 	"${toolchain_directory}/share" \
+	"${toolchain_directory}/info" \
+	"${toolchain_directory}/man" \
 	"${toolchain_directory}/lib/lib"*'.a' \
 	"${toolchain_directory}/include" \
 	"${toolchain_directory}/lib/pkgconfig" \
