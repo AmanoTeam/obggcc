@@ -1110,6 +1110,16 @@ for target in "${targets[@]}"; do
 		specs+=' %{!fgnu-unique: %{!fno-gnu-unique: -fno-gnu-unique}}'
 	fi
 	
+	if (( native )); then
+		ln \
+			--symbolic \
+			--force \
+			"$(where ranlib)" \
+			"${build_directory}/${target}-ranlib"
+	fi
+	
+	"${target}-ranlib" --version
+	
 	declare hash_style='both'
 	
 	source "${workdir}/${target}.sh"
@@ -1338,7 +1348,7 @@ for target in "${targets[@]}"; do
 	env "${args[@]}" make \
 		gcc_cv_objdump="${host}-objdump" \
 		all \
-		--jobs=1 #"${max_jobs}"
+		--jobs="${max_jobs}"
 	make install
 	
 	if (( gcc_major <= 4.6 )); then
