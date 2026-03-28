@@ -1,0 +1,25 @@
+From 64839fb71b1d19ef37e75126cbde555832978059 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sat, 28 Mar 2026 12:59:05 +0100
+Subject: [PATCH] Add host support for x64 MinGW
+
+---
+ gcc/config.gcc | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/gcc/config.gcc b/gcc/config.gcc
+index 7b242e9..7499237 100644
+--- a/gcc/config.gcc
++++ b/gcc/config.gcc
+@@ -1347,7 +1347,7 @@ i[34567]86-*-pe | i[34567]86-*-cygwin*)
+ 	fi
+ 	exeext=.exe
+ 	;;
+-i[34567]86-*-mingw32*)
++*-*-mingw32*)
+ 	tm_file=i386/mingw32.h
+ 	xm_defines=POSIX
+ 	xm_file=i386/xm-mingw32.h
+-- 
+2.53.0
+

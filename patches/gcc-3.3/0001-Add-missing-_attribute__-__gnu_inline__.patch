@@ -1,0 +1,68 @@
+From c558f0cbaf64b87582eabce8fc0fb22818de921b Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sat, 28 Mar 2026 13:04:30 +0100
+Subject: [PATCH] Add missing _attribute__ ((__gnu_inline__))
+
+---
+ gcc/cp/cfns.gperf |  4 ++--
+ gcc/cp/cfns.h     | 10 +++++-----
+ 2 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/gcc/cp/cfns.gperf b/gcc/cp/cfns.gperf
+index e0e9f23..8ffe900 100644
+--- a/gcc/cp/cfns.gperf
++++ b/gcc/cp/cfns.gperf
+@@ -1,10 +1,10 @@
+ %{
+ #ifdef __GNUC__
+-__inline
++__inline __attribute__ ((__gnu_inline__))
+ #endif
+ static unsigned int hash PARAMS ((const char *, unsigned int));
+ #ifdef __GNUC__
+-__inline
++__inline __attribute__ ((__gnu_inline__))
+ #endif
+ const char * libc_name_p PARAMS ((const char *, unsigned int));
+ %}
+diff --git a/gcc/cp/cfns.h b/gcc/cp/cfns.h
+index 6092934..8b62ae8 100644
+--- a/gcc/cp/cfns.h
++++ b/gcc/cp/cfns.h
+@@ -1,20 +1,20 @@
+ /* C code produced by gperf version 2.7.2 */
+ /* Command-line: gperf -o -C -E -k '1-6,$' -j1 -D -N libc_name_p ../../../src-3.3/gcc/cp/cfns.gperf  */
+ #ifdef __GNUC__
+-__inline
++__inline __attribute__ ((__gnu_inline__))
+ #endif
+ static unsigned int hash PARAMS ((const char *, unsigned int));
+ #ifdef __GNUC__
+-__inline
++__inline __attribute__ ((__gnu_inline__))
+ #endif
+ const char * libc_name_p PARAMS ((const char *, unsigned int));
+ /* maximum key range = 480, duplicates = 1 */
+ 
+ #ifdef __GNUC__
+-__inline
++__inline __attribute__ ((__gnu_inline__))
+ #else
+ #ifdef __cplusplus
+-inline
++inline __attribute__ ((__gnu_inline__))
+ #endif
+ #endif
+ static unsigned int
+@@ -74,7 +74,7 @@ hash (str, len)
+ }
+ 
+ #ifdef __GNUC__
+-__inline
++__inline __attribute__ ((__gnu_inline__))
+ #endif
+ const char *
+ libc_name_p (str, len)
+-- 
+2.53.0
+

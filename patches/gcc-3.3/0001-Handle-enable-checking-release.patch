@@ -1,0 +1,24 @@
+From d0b7914e6cdb8d37fa4b2f87d2d983ffd99a0548 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sat, 28 Mar 2026 13:16:15 +0100
+Subject: [PATCH] Handle --enable-checking=release
+
+---
+ gcc/configure | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/gcc/configure b/gcc/configure
+index fc53e88..6a8aab3 100755
+--- a/gcc/configure
++++ b/gcc/configure
+@@ -2019,6 +2019,7 @@ no)	;;
+ 		gc)	ac_gc_checking=1 ;;
+ 		gcac)	ac_gc_always_collect=1 ;;
+ 		valgrind)	ac_checking_valgrind=1 ;;
++		release) ;;
+ 		*)	{ echo "configure: error: unknown check category $check" 1>&2; exit 1; } ;;
+ 		esac
+ 	done
+-- 
+2.53.0
+
