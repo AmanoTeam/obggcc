@@ -683,8 +683,8 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-6/0001-Prevent-use-of-_unlocked-functions.patch"
 	elif (( gcc_major >= 4.0 && gcc_major <= 5 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.0/0001-Prevent-use-of-_unlocked-functions-and-disable-inclusion-of-malloc.h.patch"
-	elif (( gcc_major <= 3.4 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.4/0001-Prevent-use-of-_unlocked-functions-and-disable-inclusion-of-malloc.h.patch"
+	elif (( gcc_major >= 3.3 && gcc_major <= 3.4 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0001-Prevent-use-of-_unlocked-functions-and-disable-inclusion-of-malloc.h.patch"
 	fi
 	
 	if (( gcc_major == 6 )); then
