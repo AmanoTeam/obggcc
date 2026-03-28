@@ -73,7 +73,7 @@ declare -r gold_tarball="${build_directory}/gold.tar.xz"
 declare -r gold_directory="${build_directory}/gold"
 
 declare gcc_url='https://github.com/gcc-mirror/gcc/archive/master.tar.gz'
-declare -r gcc_tarball="${build_directory}/gcc.tar.xz"
+declare -r gcc_tarball="${build_directory}/gcc.tar.gz"
 declare gcc_directory="${build_directory}/gcc-master"
 
 declare -r libsanitizer_tarball="${build_directory}/libsanitizer.tar.xz"
@@ -552,6 +552,8 @@ if ! [ -f "${ninja_tarball}" ]; then
 fi
 
 if ! [ -f "${gcc_tarball}" ]; then
+	echo "${gcc_url}"
+	
 	curl \
 		--url "${gcc_url}" \
 		--retry '30' \
