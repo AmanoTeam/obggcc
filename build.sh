@@ -1384,6 +1384,14 @@ for target in "${targets[@]}"; do
 			"${toolchain_directory}/${triplet}/include"
 	fi
 	
+	if (( gcc_major <= 3.3 )); then
+		ln \
+			--symbolic \
+			--relative \
+			"${toolchain_directory}/lib/gcc-lib" \
+			"${toolchain_directory}/lib/gcc"
+	fi
+	
 	if (( gcc_major <= 6 )); then
 		# There was no --with-gcc-major-version-only back then
 		ln \
