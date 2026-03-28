@@ -41,6 +41,10 @@ fi
 
 set -eu
 
+TRAPZERR() {
+	echo "Error: command failed at line $LINENO"
+}
+
 declare -r revision="$(git rev-parse --short HEAD)"
 
 declare -r toolchain_directory="${build_directory}/obggcc"
@@ -1373,7 +1377,7 @@ for target in "${targets[@]}"; do
 	env "${args[@]}" make \
 		gcc_cv_objdump="${host}-objdump" \
 		all \
-		--jobs="${max_jobs}"
+		--jobs=1 #"${max_jobs}"
 	make install
 	
 	if (( gcc_major <= 4.6 )); then
