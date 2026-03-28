@@ -1385,8 +1385,6 @@ for target in "${targets[@]}"; do
 	fi
 	
 	if (( gcc_major <= 3.3 )); then
-		mkdir "${toolchain_directory}/libexec"
-		
 		ln \
 			--symbolic \
 			--relative \
