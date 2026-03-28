@@ -1110,15 +1110,15 @@ for target in "${targets[@]}"; do
 		specs+=' %{!fgnu-unique: %{!fno-gnu-unique: -fno-gnu-unique}}'
 	fi
 	
-	if (( native )); then
+	if (( native && gcc_major <= 3.4 )); then
 		ln \
 			--symbolic \
 			--force \
-			"$(where ranlib)" \
+			"$(where ranlib | head -n 1)" \
 			"${build_directory}/${target}-ranlib"
+		
+		"${target}-ranlib" --version
 	fi
-	
-	"${target}-ranlib" --version
 	
 	declare hash_style='both'
 	
