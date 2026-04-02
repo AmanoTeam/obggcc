@@ -814,13 +814,13 @@ if ! [ -f "${gcc_tarball}" ]; then
 	if (( gcc_major >= 15 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
 	elif (( gcc_major >= 12 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-12/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
+		true # patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-12/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
 	elif (( gcc_major >= 10 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-10/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
+		true # patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-10/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
 	elif (( gcc_major >= 7 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-7/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
+		true # patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-7/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
 	elif (( gcc_major >= 4.3 && gcc_major <= 6 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.3/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
+		true # patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.3/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
 	fi
 	
 	ln \
