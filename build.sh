@@ -1547,6 +1547,7 @@ for target in "${targets[@]}"; do
 		--force \
 		"${clang_include_dir}/"*'intrin'*'.h' \
 		"${clang_include_dir}/arm"*'.h' \
+		"${clang_include_dir}/"*'3dnow'*'.h' \
 		"${clang_include_dir}/stdatomic.h"
 	
 	rm --force './libiberty.a'
