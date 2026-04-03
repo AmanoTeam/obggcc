@@ -1338,7 +1338,7 @@ for target in "${targets[@]}"; do
 	declare -a env=(
 		"CFLAGS=-fPIC ${ccflags}"
 		"CXXFLAGS=-fPIC ${ccflags}"
-		"DFLAGS=-L${toolchain_directory}/lib ${linkflags}"
+		"LDFLAGS=-L${toolchain_directory}/lib ${linkflags}"
 	)
 	
 	[ -d "${gcc_directory}/build" ] || mkdir "${gcc_directory}/build"
@@ -1547,6 +1547,7 @@ for target in "${targets[@]}"; do
 		--force \
 		"${clang_include_dir}/"*'intrin'*'.h' \
 		"${clang_include_dir}/arm"*'.h' \
+		"${clang_include_dir}/"*'3dnow'*'.h' \
 		"${clang_include_dir}/stdatomic.h"
 	
 	rm --force './libiberty.a'
