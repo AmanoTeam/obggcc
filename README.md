@@ -8,17 +8,6 @@ I extracted the sysroots from almost all major legacy Debian releases and built 
 
 This eliminates the need to install an ancient Linux distribution in Docker/LXC just to build portable binaries, which is the current standard practice.
 
-## Use cases
-
-OBGGCC solves errors like:
-
-```
-./main: /lib64/libc.so.6: version `GLIBC_2.33' not found (required by ./main)
-./main: /lib64/libc.so.6: version `GLIBC_2.34' not found (required by ./main)
-```
-
-These occur when you build on a system with a newer glibc than the target system. Most of the time, you don’t need a newer version of a glibc function when compiling, but manually selecting a specific version is a pain, especially if you’re compiling someone else’s code or working on a project with multiple dependencies.
-
 ## Supported targets
 
 Currently, OBGGCC provides cross-compilers targeting 6 major Ubuntu releases and 9 major Debian releases on 5 system architectures.
@@ -490,7 +479,7 @@ $ gcc-stl-install x86_64-unknown-linux-gnu
 
 For other architectures, replace `x86_64-unknown-linux-gnu` with the corresponding target triplet.
 
-To make the cross-compiler use them, set the `OBGGCC_STL_VERSION` environment variable to the GCC version you intend the compiled code to be compatible with. Currently, this variable accepts values from `4` to `14`:
+To make the cross-compiler use them, set the `OBGGCC_STL_VERSION` environment variable to the GCC version you intend the compiled code to be compatible with. Currently, this variable accepts values from `3.4` to `16`:
 
 ```bash
 # Set it to use the GCC 12 runtime
@@ -616,4 +605,33 @@ You can find the list of supported target triplets [here](#system-architectures)
 
 ## Releases
 
-You can obtain OBGGCC releases from the [releases](https://github.com/AmanoTeam/obggcc/releases) page.
+There are precompiled binaries available for multiple GCC major releases, listed below:
+
+- [GCC 16](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-16) - current development release
+- [GCC 15](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-15) - current stable release
+- [GCC 14](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-14)
+- [GCC 13](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-13)
+- [GCC 12](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-12)
+- [GCC 11](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-11)
+- [GCC 10](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-10)
+- [GCC 9](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-9)
+- [GCC 8](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-8)
+- [GCC 7](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-7)
+- [GCC 6](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-6)
+- [GCC 5](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-5)
+- [GCC 4.9](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-4.9)
+- [GCC 4.8](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-4.8)
+- [GCC 4.7](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-4.7)
+- [GCC 4.6](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-4.6)
+- [GCC 4.5](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-4.5)
+- [GCC 4.4](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-4.4)
+- [GCC 4.3](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-4.3)
+- [GCC 4.2](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-4.2)
+- [GCC 4.1](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-4.1)
+- [GCC 4.0](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-4.0)
+- [GCC 3.4](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-3.4)
+- [GCC 3.3](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-3.3)
+- [GCC 3.2](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-3.2)
+- [GCC 3.1](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-3.1)
+
+Only the **stable** and **development** releases are actively maintained. Older releases may occasionally receive updates to incorporate fixes or improvements from maintained versions, but they are treated as low priority.
