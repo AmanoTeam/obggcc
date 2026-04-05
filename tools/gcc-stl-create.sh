@@ -1,9 +1,21 @@
-#!/bin/bash
+#!/usr/bin/env zsh
+
+unsetopt nomatch
 
 declare -r workdir="${PWD}"
 
 declare -ra versions=(
-	'4'
+	'3.4'
+	'4.0'
+	'4.1'
+	'4.2'
+	'4.3'
+	'4.4'
+	'4.5'
+	'4.6'
+	'4.7'
+	'4.8'
+	'4.9'
 	'5'
 	'6'
 	'7'
@@ -76,6 +88,18 @@ for version in "${versions[@]}"; do
 				--file='-'
 	
 	for target in "${targets[@]}"; do
+		if (( version <= 4.7 )) && [ "${target}" = 'aarch64-unknown-linux-gnu' ]; then
+			continue
+		fi
+		
+		if (( version <= 4.6 )) && [ "${target}" = 'arm-unknown-linux-gnueabihf' ]; then
+			continue
+		fi
+		
+		if (( version <= 4.0 )) && [ "${target}" = 'arm-unknown-linux-gnueabi' ]; then
+			continue
+		fi
+		
 		echo "- Copying GCC ${version} libraries (${target})"
 		
 		rm \
@@ -113,8 +137,28 @@ for version in "${versions[@]}"; do
 			"${PWD}/${target}/${version}/include/c++/${version}/${target}/"* \
 			"${PWD}/${target}/${version}/include/c++/${version}"
 		
-		if (( version <= 5 )); then
-			patch --directory="${PWD}/${target}/${version}/include/c++/${version}" --strip='1' --input="${workdir}/patches/gcc-stl/gcc-4/0001-Backport-__is_nothrow_swappable.patch"
+		if (( version >= 4.8 && version <= 5 )); then
+			patch --directory="${PWD}/${target}/${version}/include/c++/${version}" --strip='1' --input="${workdir}/patches/gcc-stl/gcc-4.8/0001-Backport-__is_nothrow_swappable-to-GCC-6-and-replace-recursive-noexcept-checks.patch"
+		elif (( version >= 4.7 && version <= 4.7 )); then
+			patch --directory="${PWD}/${target}/${version}/include/c++/${version}" --strip='1' --input="${workdir}/patches/gcc-stl/gcc-4.7/0001-Backport-__is_nothrow_swappable-to-GCC-6-and-replace-recursive-noexcept-checks.patch"
+		fi
+		
+		if (( version <= 4.8 )); then
+			sed --in-place 's|"backward_warning.h"|<backward/backward_warning.h>|g' "${PWD}/${target}/${version}/include/c++/${version}/ext/hash_map"
+		fi
+		
+		if (( version <= 4.1 )); then
+			sed \
+				--in-place \
+				--expression 's| __LDBL_DENORM_MIN__ | __LDBL_HAS_DENORM__ |g' \
+				--expression 's| __DBL_DENORM_MIN__ | __DBL_HAS_DENORM__ |g' \
+				--expression 's|bool(__DBL_DENORM_MIN__)|bool(__LDBL_HAS_DENORM__)|g' \
+				"${PWD}/${target}/${version}/include/c++/${version}/limits"
+			
+			sed \
+				--in-place \
+				--expression 's|extern |static |g' \
+				"${PWD}/${target}/${version}/include/c++/${version}/bits/gthr-default.h"
 		fi
 	done
 done

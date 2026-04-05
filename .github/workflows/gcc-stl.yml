@@ -18,8 +18,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@master
+      - name: Install required dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install zsh
       - name: Run gcc-stl-create.sh
-        run: bash ./tools/gcc-stl-create.sh
+        run: zsh ./tools/gcc-stl-create.sh
       - name: Create release
         uses: softprops/action-gh-release@master
         with:

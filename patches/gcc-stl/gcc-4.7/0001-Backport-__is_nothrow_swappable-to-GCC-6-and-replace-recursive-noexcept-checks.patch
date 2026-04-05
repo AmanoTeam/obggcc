@@ -1,0 +1,258 @@
+From 34dffa1341f61a80eff28b83646a9ad2f6be8be6 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sun, 5 Apr 2026 03:40:56 +0000
+Subject: [PATCH] Backport __is_nothrow_swappable to GCC < 6 and replace
+ recursive noexcept checks
+
+---
+ array               |  2 +-
+ bits/algorithmfwd.h | 19 ++++++---------
+ bits/move.h         | 17 ++++++++++----
+ bits/stl_pair.h     |  4 ++--
+ bits/stl_queue.h    |  5 ++--
+ bits/stl_stack.h    |  2 +-
+ ext/alloc_traits.h  |  3 +--
+ tuple               |  5 ++--
+ type_traits         | 57 +++++++++++++++++++++++++++++++++++++++++++++
+ 9 files changed, 87 insertions(+), 27 deletions(-)
+
+diff --git a/array b/array
+index 54cb98d..b9c10b7 100644
+--- a/array
++++ b/array
+@@ -85,7 +85,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
+ 
+       void
+       swap(array& __other)
+-      noexcept(noexcept(swap(std::declval<_Tp&>(), std::declval<_Tp&>())))
++      noexcept(__is_nothrow_swappable<_Tp>::value)
+       { std::swap_ranges(begin(), end(), __other.begin()); }
+ 
+       // Iterators.
+diff --git a/bits/algorithmfwd.h b/bits/algorithmfwd.h
+index fbec55d..2e1db32 100644
+--- a/bits/algorithmfwd.h
++++ b/bits/algorithmfwd.h
+@@ -549,22 +549,17 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
+     _BIter 
+     stable_partition(_BIter, _BIter, _Predicate);
+ 
+-  template<typename _Tp> 
+-    void 
+-    swap(_Tp&, _Tp&)
+ #ifdef __GXX_EXPERIMENTAL_CXX0X__
+-    noexcept(__and_<is_nothrow_move_constructible<_Tp>,
+-	            is_nothrow_move_assignable<_Tp>>::value)
+-#endif
+-    ;
++  // For C++11 swap() is declared in <type_traits>.
+ 
+   template<typename _Tp, size_t _Nm>
+-    void
+-    swap(_Tp (&__a)[_Nm], _Tp (&__b)[_Nm])
+-#ifdef __GXX_EXPERIMENTAL_CXX0X__
+-    noexcept(noexcept(swap(*__a, *__b)))
++    inline void
++    swap(_Tp& __a, _Tp& __b);
++
++  template<typename _Tp, size_t _Nm>
++    inline void
++    swap(_Tp (&__a)[_Nm], _Tp (&__b)[_Nm]);
+ #endif
+-    ;
+ 
+   template<typename _FIter1, typename _FIter2>
+     _FIter2 
+diff --git a/bits/move.h b/bits/move.h
+index 353c466..26d0de8 100644
+--- a/bits/move.h
++++ b/bits/move.h
+@@ -163,11 +163,16 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
+    *  @return   Nothing.
+   */
+   template<typename _Tp>
+-    inline void
+-    swap(_Tp& __a, _Tp& __b)
++    inline
+ #ifdef __GXX_EXPERIMENTAL_CXX0X__
++    typename enable_if<__and_<is_move_constructible<_Tp>,
++			      is_move_assignable<_Tp>>::value>::type
++    swap(_Tp& __a, _Tp& __b)
+     noexcept(__and_<is_nothrow_move_constructible<_Tp>,
+ 	            is_nothrow_move_assignable<_Tp>>::value)
++#else
++    void
++    swap(_Tp& __a, _Tp& __b)
+ #endif
+     {
+       // concept requirements
+@@ -182,10 +187,14 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
+   // DR 809. std::swap should be overloaded for array types.
+   /// Swap the contents of two arrays.
+   template<typename _Tp, size_t _Nm>
+-    inline void
+-    swap(_Tp (&__a)[_Nm], _Tp (&__b)[_Nm])
++    inline
+ #ifdef __GXX_EXPERIMENTAL_CXX0X__
++    typename enable_if<__is_swappable_impl::__is_swappable<_Tp>::value>::type
++    swap(_Tp (&__a)[_Nm], _Tp (&__b)[_Nm])
+     noexcept(noexcept(swap(*__a, *__b)))
++#else
++    void
++    swap(_Tp (&__a)[_Nm], _Tp (&__b)[_Nm])
+ #endif
+     {
+       for (size_t __n = 0; __n < _Nm; ++__n)
+diff --git a/bits/stl_pair.h b/bits/stl_pair.h
+index 09c21eb..9b0a176 100644
+--- a/bits/stl_pair.h
++++ b/bits/stl_pair.h
+@@ -184,8 +184,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
+ 
+       void
+       swap(pair& __p)
+-      noexcept(noexcept(swap(first, __p.first))
+-	       && noexcept(swap(second, __p.second)))
++      noexcept(__is_nothrow_swappable<_T1>::value
++               && __is_nothrow_swappable<_T2>::value)
+       {
+ 	using std::swap;
+ 	swap(first, __p.first);
+diff --git a/bits/stl_queue.h b/bits/stl_queue.h
+index fe65e9b..b0ab556 100644
+--- a/bits/stl_queue.h
++++ b/bits/stl_queue.h
+@@ -243,7 +243,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
+ #ifdef __GXX_EXPERIMENTAL_CXX0X__
+       void
+       swap(queue& __q)
+-      noexcept(noexcept(swap(c, __q.c)))
++      noexcept(__is_nothrow_swappable<_Tp>::value)
+       {
+ 	using std::swap;
+ 	swap(c, __q.c);
+@@ -532,7 +532,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
+ #ifdef __GXX_EXPERIMENTAL_CXX0X__
+       void
+       swap(priority_queue& __pq)
+-      noexcept(noexcept(swap(c, __pq.c)) && noexcept(swap(comp, __pq.comp)))
++      noexcept(__is_nothrow_swappable<_Tp>::value
++               && __is_nothrow_swappable<_Compare>::value)
+       {
+ 	using std::swap;
+ 	swap(c, __pq.c);
+diff --git a/bits/stl_stack.h b/bits/stl_stack.h
+index 6b0f065..8b6cce8 100644
+--- a/bits/stl_stack.h
++++ b/bits/stl_stack.h
+@@ -217,7 +217,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
+ #ifdef __GXX_EXPERIMENTAL_CXX0X__
+       void
+       swap(stack& __s)
+-      noexcept(noexcept(swap(c, __s.c)))
++      noexcept(__is_nothrow_swappable<_Tp>::value)
+       {
+ 	using std::swap;
+ 	swap(c, __s.c);
+diff --git a/ext/alloc_traits.h b/ext/alloc_traits.h
+index e2c35c9..4ae0a95 100644
+--- a/ext/alloc_traits.h
++++ b/ext/alloc_traits.h
+@@ -174,9 +174,8 @@ template<typename _Alloc>
+ 
+     static constexpr bool _S_nothrow_swap()
+     {
+-      using std::swap;
+       return !_S_propagate_on_swap()
+-       	|| noexcept(swap(std::declval<_Alloc&>(), std::declval<_Alloc&>()));
++	|| std::__is_nothrow_swappable<_Alloc>::value;
+     }
+ 
+     template<typename _Tp>
+diff --git a/tuple b/tuple
+index 4d4691f..8211e2c 100644
+--- a/tuple
++++ b/tuple
+@@ -359,9 +359,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
+     protected:
+       void
+       _M_swap(_Tuple_impl& __in)
+-      noexcept(noexcept(swap(std::declval<_Head&>(),
+-			     std::declval<_Head&>()))
+-	       && noexcept(_M_tail(__in)._M_swap(_M_tail(__in))))
++      noexcept(__is_nothrow_swappable<_Head>::value
++               && noexcept(_M_tail(__in)._M_swap(_M_tail(__in))))
+       {
+ 	using std::swap;
+ 	swap(_M_head(*this), _M_head(__in));
+diff --git a/type_traits b/type_traits
+index e3ec7ad..9ff5878 100644
+--- a/type_traits
++++ b/type_traits
+@@ -1900,6 +1900,63 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
+     { };
+ 
+   /// @} group metaprogramming
++
++#if __GLIBCXX__ <= 20160726
++  template<typename... _Types>
++    struct __make_void { typedef void type; };
++
++  template<typename... _Types>
++    using __void_t = typename __make_void<_Types...>::type;
++#endif
++
++  template<bool _B>
++    using __bool_constant = integral_constant<bool, _B>;
++
++   namespace __is_swappable_impl {
++     template <typename _Tp, typename=void>
++     struct __is_swappable : public false_type
++     { };
++   }
++
++  template<typename _Tp>
++    inline
++    typename enable_if<__and_<is_move_constructible<_Tp>,
++			      is_move_assignable<_Tp>>::value>::type
++    swap(_Tp&, _Tp&)
++    noexcept(__and_<is_nothrow_move_constructible<_Tp>,
++	            is_nothrow_move_assignable<_Tp>>::value);
++
++  template<typename _Tp, size_t _Nm>
++    inline
++    typename enable_if<__is_swappable_impl::__is_swappable<_Tp>::value>::type
++    swap(_Tp (&__a)[_Nm], _Tp (&__b)[_Nm])
++    noexcept(noexcept(swap(*__a, *__b)));
++
++  namespace __is_swappable_impl {
++    using std::swap;
++
++    template <typename _Tp>
++    struct __is_swappable<_Tp, __void_t<decltype(swap(declval<_Tp&>(),
++                                                      declval<_Tp&>()))>>
++    : public true_type
++    { };
++  }
++
++  template <bool, typename _Tp>
++    struct __is_nothrow_swappable_impl
++    : public __bool_constant<noexcept(swap(declval<_Tp&>(), declval<_Tp&>()))>
++    { };
++
++  template <typename _Tp>
++    struct __is_nothrow_swappable_impl<false, _Tp> : public false_type
++    { };
++
++  template <typename _Tp>
++    struct __is_nothrow_swappable
++    : public __is_nothrow_swappable_impl<
++               __is_swappable_impl::__is_swappable<_Tp>::value, _Tp>
++    { };
++
+ _GLIBCXX_END_NAMESPACE_VERSION
+ } // namespace
+ 
+-- 
+2.53.0
+

@@ -111,3 +111,64 @@ gcc_version_t gcc_version_unstringify(const char* const value) {
 	return GCC_VERSION_UNKNOWN;
 	
 }
+
+const char* gcc_version_stringify(const gcc_version_t value) {
+
+	switch (value) {
+		case GCC_3_1:
+			return "3.1";
+		case GCC_3_2:
+			return "3.2";
+		case GCC_3_3:
+			return "3.3";
+		case GCC_3_4:
+			return "3.4";
+		case GCC_4_0:
+			return "4.0";
+		case GCC_4_1:
+			return "4.1";
+		case GCC_4_2:
+			return "4.2";
+		case GCC_4_3:
+			return "4.3";
+		case GCC_4_4:
+			return "4.4";
+		case GCC_4_5:
+			return "4.5";
+		case GCC_4_6:
+			return "4.6";
+		case GCC_4_7:
+			return "4.7";
+		case GCC_4_8:
+			return "4.8";
+		case GCC_4_9:
+			return "4.9";
+		case GCC_5:
+			return "5";
+		case GCC_6:
+			return "6";
+		case GCC_7:
+			return "7";
+		case GCC_8:
+			return "8";
+		case GCC_9:
+			return "9";
+		case GCC_10:
+			return "10";
+		case GCC_11:
+			return "11";
+		case GCC_12:
+			return "12";
+		case GCC_13:
+			return "13";
+		case GCC_14:
+			return "14";
+		case GCC_15:
+			return "15";
+		case GCC_16:
+			return "16";
+	}
+	
+	return NULL;
+	
+}
