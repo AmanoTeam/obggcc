@@ -1505,7 +1505,7 @@ int copy_shared_library(
 
 static struct GCCVersion* get_stl_version(const char* const string) {
 	
-	biguint_t value = 0;
+	gcc_version_t value = 0;
 	size_t index = 0;
 	
 	struct GCCVersion* item = NULL;
@@ -1514,7 +1514,7 @@ static struct GCCVersion* get_stl_version(const char* const string) {
 		return NULL;
 	}
 	
-	value = strtobui(string, NULL, 10);
+	value = gcc_version_unstringify(string);
 	
 	for (index < 0; index < sizeof(GCC_VERSIONS) / sizeof(*GCC_VERSIONS); index++) {
 		item = &GCC_VERSIONS[index];
@@ -2710,7 +2710,7 @@ int main(int argc, char* argv[]) {
 	strcat(sysroot_library_directory, LIBRARY_DIR);
 	
 	if (stl_version != NULL) {
-		arg = uint_stringify(stl_version->version);
+		arg = gcc_version_stringify(stl_version->version);
 		
 		stl_library_directory = malloc(strlen(parent_directory) + strlen(GCC_STL_DIRECTORY) + strlen(PATHSEP_S) + strlen(triplet) + strlen(PATHSEP_S) + strlen(arg) + strlen(LIBRARY_DIR) + strlen(STATIC_LIBRARY_DIR) + 1);
 		
@@ -2750,7 +2750,6 @@ int main(int argc, char* argv[]) {
 		strcat(stl_gpp_include_directory, PATHSEP_S);
 		strcat(stl_gpp_include_directory, arg);
 		
-		free(arg);
 		arg = NULL;
 		
 		if (!(directory_exists(stl_library_directory) == 1 && directory_exists(stl_gpp_include_directory) == 1)) {
