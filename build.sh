@@ -112,9 +112,9 @@ declare -r sysroot_tarball="${build_directory}/sysroot.tar.xz"
 
 declare gdb='1'
 
-declare build_cmake='0'
-declare build_curl='0'
-declare build_nz='0'
+declare build_cmake='1'
+declare build_curl='1'
+declare build_nz='1'
 
 declare exe=''
 declare dll='.so'
@@ -229,6 +229,10 @@ if [[ "${host}" = *'-mingw32' ]]; then
 	build_nz='0'
 	exe='.exe'
 	dll='.dll'
+fi
+
+if (( gcc_major < 15 )); then
+	build_nz='0'
 fi
 
 if [ "${gcc_major}" != '16' ]; then
