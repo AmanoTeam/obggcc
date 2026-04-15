@@ -112,8 +112,8 @@ declare -r sysroot_tarball="${build_directory}/sysroot.tar.xz"
 
 declare gdb='1'
 
-declare build_cmake='1'
-declare build_curl='1'
+declare build_cmake='0'
+declare build_curl='0'
 declare build_nz='1'
 
 declare exe=''
@@ -1928,45 +1928,57 @@ while read item; do
 	
 	rename_soname_libraries "${toolchain_directory}/${triplet}${glibc_version}"
 	
-	cd "${toolchain_directory}/${triplet}${glibc_version}/lib"
+	mkdir "${toolchain_directory}/${triplet}${glibc_version}/lib/"{gcc,static}
 	
-	mkdir 'gcc' 'static' 'debug'
+	ln \
+		--symbolic \
+		--relative \
+		"${toolchain_directory}/${triplet}${glibc_version}/lib/lib"*'.'{so,a}* \
+		"${toolchain_directory}/${triplet}${glibc_version}/lib/static"
 	
-	ln --symbolic './lib'*'.'{so,a}* './static'
-	ln --symbolic './ld-'*'.so'* './static'
-	ln --symbolic './'*'.o' './static'
+	ln \
+		--symbolic \
+		--relative \
+		"${toolchain_directory}/${triplet}${glibc_version}/lib/ld-"*'.so'* \
+		"${toolchain_directory}/${triplet}${glibc_version}/lib/static"
+	
+	ln \
+		--symbolic \
+		--relative \
+		"${toolchain_directory}/${triplet}${glibc_version}/lib/"*'.o' \
+		"${toolchain_directory}/${triplet}${glibc_version}/lib/static"
 	
 	if (( gcc_major >= 4.1 )); then
 		ln \
 			--symbolic \
 			--relative \
 			"${toolchain_directory}/${triplet}/include/Block"* \
-			'../include'
+			"${toolchain_directory}/${triplet}${glibc_version}/include"
 		
 		ln \
 			--symbolic \
 			--relative \
 			"${toolchain_directory}/${triplet}/lib/libBlocksRuntime.a" \
-			'./'
+			"${toolchain_directory}/${triplet}${glibc_version}/lib"
 		
 		ln \
 			--symbolic \
 			--relative \
 			"${toolchain_directory}/${triplet}/lib/libBlocksRuntime.a" \
-			'./static'
+			"${toolchain_directory}/${triplet}${glibc_version}/lib/static"
 	fi
 	
 	ln \
 		--symbolic \
 		--relative \
 		"${toolchain_directory}/lib/gcc/${triplet}/${gcc_major}/"*'.'{a,o} \
-		'./'
+		"${toolchain_directory}/${triplet}${glibc_version}/lib"
 	
 	ln \
 		--symbolic \
 		--relative \
 		"${toolchain_directory}/lib/gcc/${triplet}/${gcc_major}/"*'.'{a,o} \
-		'./static'
+		"${toolchain_directory}/${triplet}${glibc_version}/lib/static"
 	
 	if (( gcc_major >= 13 && gcc_major <= 15 )); then
 		ln \
@@ -1989,34 +2001,54 @@ while read item; do
 	fi
 	
 	if [ "${repository}" != 'null' ] && (( build_nz )); then
-		mkdir 'nouzen'
+		mkdir "${toolchain_directory}/${triplet}${glibc_version}/lib/nouzen"
 		
-		cp --recursive "${nz_prefix}/"* "${PWD}/nouzen"
+		cp \
+			--recursive "${nz_prefix}/"* \
+			"${toolchain_directory}/${triplet}${glibc_version}/lib/nouzen"
 		
-		mkdir --parent "${PWD}/nouzen/lib"
+		mkdir \
+			--parent \
+			"${toolchain_directory}/${triplet}${glibc_version}/lib/nouzen/lib"
 		
 		ln \
 			--symbolic \
 			--relative \
 			"${toolchain_directory}/lib/nouzen/lib"* \
-			"${PWD}/nouzen/lib"
+			"${toolchain_directory}/${triplet}${glibc_version}/lib/nouzen/lib"
 		
-		mkdir --parent './nouzen/etc/nouzen/sources.list'
+		mkdir \
+			--parent \
+			"${toolchain_directory}/${triplet}${glibc_version}/lib/nouzen/etc/nouzen/sources.list"
 		
-		echo -e "repository = ${repository}\nrelease = ${release}\nresource = ${resource}\narchitecture = ${architecture}\nformat = apt" > './nouzen/etc/nouzen/sources.list/obggcc.conf'
+		echo -e \
+			"repository = ${repository}\nrelease = ${release}\nresource = ${resource}\narchitecture = ${architecture}\nformat = apt" > "${toolchain_directory}/${triplet}${glibc_version}/lib/nouzen/etc/nouzen/sources.list/obggcc.conf"
 		
-		cd '../'
+		mkdir "${toolchain_directory}/${triplet}${glibc_version}/bin"
 		
-		mkdir 'bin'
-		cd 'bin'
+		ln \
+			--symbolic \
+			--relative \
+			"${toolchain_directory}/${triplet}${glibc_version}/lib/nouzen/bin/"* \
+			"${toolchain_directory}/${triplet}${glibc_version}/bin"
 		
-		ln --symbolic '../lib/nouzen/bin/'* .
+		ln \
+			--symbolic \
+			--relative \
+			"${toolchain_directory}/${triplet}${glibc_version}/bin/nz" \
+			"${toolchain_directory}/bin/${triplet}${glibc_version}-nz"
 		
-		cd "${toolchain_directory}/bin"
+		ln \
+			--symbolic \
+			--relative \
+			"${toolchain_directory}/${triplet}${glibc_version}/bin/apt" \
+			"${toolchain_directory}/bin/${triplet}${glibc_version}-apt"
 		
-		ln --symbolic "../${triplet}${glibc_version}/bin/nz" "./${triplet}${glibc_version}-nz"
-		ln --symbolic "../${triplet}${glibc_version}/bin/apt" "./${triplet}${glibc_version}-apt"
-		ln --symbolic "../${triplet}${glibc_version}/bin/apt-get" "./${triplet}${glibc_version}-apt-get"
+		ln \
+			--symbolic \
+			--relative \
+			"${toolchain_directory}/${triplet}${glibc_version}/bin/apt-get" \
+			"${toolchain_directory}/bin/${triplet}${glibc_version}-apt-get"
 	fi
 	
 	for library in "${libraries[@]}"; do
@@ -2057,8 +2089,8 @@ while read item; do
 	done
 	
 	for name in "${symlink_tools[@]}"; do
-		source="./${triplet}-${name}"
-		destination="./${triplet}${glibc_version}-${name}"
+		source="${toolchain_directory}/bin/${triplet}-${name}"
+		destination="${toolchain_directory}/bin/${triplet}${glibc_version}-${name}"
 		
 		if ! [ -f "${source}" ]; then
 			continue
@@ -2066,7 +2098,11 @@ while read item; do
 		
 		echo "- Symlinking '${source}' to '${destination}'"
 		
-		ln --symbolic "${source}" "${destination}"
+		ln \
+			--symbolic \
+			--relative \
+			"${source}" \
+			"${destination}"
 	done
 	
 	if [[ "${host}" = *'-mingw32' ]]; then
@@ -2158,3 +2194,8 @@ while read name; do
 	
 	"${strip}" "${name}" 2>/dev/null || true
 done <<< "$(find "${toolchain_directory}" -type 'f')"
+
+if ( find "${toolchain_directory}" -xtype 'l' -print -quit | grep -q . ); then
+	echo '* broken symbolic links *' && find "${toolchain_directory}" -xtype 'l'
+	exit '1'
+fi
