@@ -221,6 +221,7 @@ static const char LLD_OPT_PACK_DYN_RELOCS[] = "--pack-dyn-relocs=relr";
 static const char M_ANDROID_API[] = "__ANDROID_API__=";
 static const char M_ANDROID_MIN_SDK_VERSION[] = "__ANDROID_MIN_SDK_VERSION__=";
 static const char M_ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK[] = "__ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK__";
+static const char M_MSVCRT_VERSION[] = "__MSVCRT_VERSION__=";
 
 static const char GCC_FPU_NEON[] = "neon-vfpv3";
 
@@ -403,6 +404,10 @@ static int libcv_matches(const char a, const char b) {
 		if (a == '1' && b == '.') {
 			return 1;
 		}
+	#elif defined(MINGW) /* MinGW (e.g., msvcrt) */
+		if ((a == 'm' && b == 's') || (a == 'u' && b == 'c')) {
+			return 1;
+		}
 	#else
 		#error "I don't know how to handle this"
 	#endif
@@ -522,6 +527,23 @@ static int get_bitness(const char* const triplet) {
 			strcmp(triplet, "i386-unknown-linux-musl") == 0 ||
 			strcmp(triplet, "armv6-unknown-linux-musleabihf") == 0 ||
 			strcmp(triplet, "armv7-unknown-linux-musleabihf") == 0
+		);
+		
+		if (status) {
+			return ARCH_ABI_32;
+		}
+	#elif defined(MINGW)
+		status = (
+			strcmp(triplet, "x86_64-w64-mingw32") == 0 ||
+			strcmp(triplet, "aarch64-w64-mingw32") == 0
+		);
+		
+		if (status) {
+			return ARCH_ABI_64;
+		}
+		
+		status = (
+			strcmp(triplet, "i686-w64-mingw32") == 0
 		);
 		
 		if (status) {
@@ -730,6 +752,23 @@ static int get_arch(const char* const triplet) {
 		if (status) {
 			return ARCH_SPEC_LOONGSON;
 		}
+	#elif defined(MINGW)
+		status = (
+			strcmp(triplet, "i686-w64-mingw32") == 0 ||
+			strcmp(triplet, "x86_64-w64-mingw32") == 0
+		);
+		
+		if (status) {
+			return ARCH_SPEC_X86;
+		}
+		
+		status = (
+			strcmp(triplet, "aarch64-w64-mingw32") == 0
+		);
+		
+		if (status) {
+			return ARCH_SPEC_ARM;
+		}
 	#else
 		#error "I don't know how to handle this"
 	#endif
@@ -756,6 +795,8 @@ static int target_supports_neon(const char* const name) {
 		if (strcmp(name, "armv7-unknown-linux-musleabihf") == 0) {
 			return 1;
 		}
+	#elif defined(MINGW)
+		/* nothing to do here */
 	#else
 		#error "I don't know how to handle this"
 	#endif
@@ -773,8 +814,8 @@ static int target_supports_relr(const char* const name, const char* const linker
 		}
 		
 		return 1;
-	#elif defined(PINO)
-		/* Not handled */
+	#elif defined(PINO) || defined(MINGW)
+		/* nothing to do here */
 	#elif defined(ATAR)
 		/* OpenBSD has supported DT_RELR since the 7.1 release. */
 		return 1;
@@ -879,6 +920,8 @@ static const char* get_loader(const char* const triplet) {
 		if (strcmp(triplet, "x86_64-unknown-linux-musl") == 0) {
 			return "ld-musl-x86_64.so.1";
 		}
+	#elif defined(MINGW)
+		/* nothing to do here */
 	#endif
 	
 	return NULL;
@@ -922,6 +965,8 @@ static int get_host_version(void) {
 		* so we have to make an assumption here.
 		*/
 		const char* string = "1.2";
+	#elif defined(MINGW)
+		/* nothing to do here */
 	#endif
 	
 	#if defined(__GLIBC__) || defined(__OpenBSD__) || defined(__musl__)
@@ -1668,6 +1713,10 @@ int main(int argc, char* argv[]) {
 		char* android_current_sdk_version = NULL;
 	#endif
 	
+	#if defined(MINGW)
+		char* msvcrt_version = NULL;
+	#endif
+	
 	int hardcode_system_rpath = 0;
 	
 	size_t kargc = 0;
@@ -1719,7 +1768,16 @@ int main(int argc, char* argv[]) {
 	wants_system_libraries = query_get_bool(&query, ENV_SYSTEM_LIBRARIES) == 1;
 	
 	if (gcc_version >= GCC_15) {
-		wants_nz = query_get_bool(&query, ENV_NZ) == 1;
+		wants_nz = query_get_bool(&query, ENV_NZ);
+		
+		#if defined(MINGW)
+			if (wants_nz == -1) {
+				/* Enable it by default on the Windows cross-compiler. */
+				wants_nz = 1;
+			}
+		#else
+			wants_nz = (wants_nz == 1);
+		#endif
 	}
 	
 	wants_runtime_rpath = query_get_bool(&query, ENV_RUNTIME_RPATH) == 1;
@@ -2369,6 +2427,11 @@ int main(int argc, char* argv[]) {
 	
 	size = (size_t) (ptr - file_name);
 	
+	#if defined(MINGW)
+		/* MinGW triplets include a '-' separating the triplet and the C library version */
+		size--;
+	#endif
+	
 	triplet = malloc(size + 1);
 	
 	if (triplet == NULL) {
@@ -2435,24 +2498,26 @@ int main(int argc, char* argv[]) {
 	
 	strcpy(non_prefixed_triplet, triplet);
 	
-	pattern = "-unknown";
-	start = strstr(non_prefixed_triplet, pattern);
-	
-	if (start == NULL) {
-		pattern = "-motomagx";
+	#if !defined(MINGW)
+		pattern = "-unknown";
 		start = strstr(non_prefixed_triplet, pattern);
-	}
-	
-	if (start == NULL) {
-		err = ERR_BAD_TRIPLET;
-		goto end;
-	}
-	
-	dst = start;
-	start += strlen(pattern);
-	size = strlen(start) + 1;
-	
-	memmove(dst, start, size);
+		
+		if (start == NULL) {
+			pattern = "-motomagx";
+			start = strstr(non_prefixed_triplet, pattern);
+		}
+		
+		if (start == NULL) {
+			err = ERR_BAD_TRIPLET;
+			goto end;
+		}
+		
+		dst = start;
+		start += strlen(pattern);
+		size = strlen(start) + 1;
+		
+		memmove(dst, start, size);
+	#endif
 	
 	if (wants_system_libraries || wants_nz) {
 		primary_library_directory = malloc((system_prefix == NULL ? 0 : strlen(system_prefix)) + strlen(USR_DIRECTORY) + strlen(LIB_DIRECTORY) + strlen(PATHSEP_S) + strlen(non_prefixed_triplet) + 1);
@@ -2662,7 +2727,7 @@ int main(int argc, char* argv[]) {
 	
 	get_parent_path(app_filename, parent_directory, 2);
 	
-	sysroot_directory = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(triplet) + strlen(libc_version) + 1);
+	sysroot_directory = malloc(strlen(parent_directory) + strlen(PATHSEP_S) + strlen(triplet) + strlen(HYPHEN) + strlen(libc_version) + 1);
 	
 	if (sysroot_directory == NULL) {
 		err = ERR_MEM_ALLOC_FAILURE;
@@ -2674,6 +2739,10 @@ int main(int argc, char* argv[]) {
 	strcat(sysroot_directory, triplet);
 	
 	#if !defined(RAIDEN)
+		#if defined(MINGW)
+			strcat(sysroot_directory, HYPHEN);
+		#endif
+		
 		strcat(sysroot_directory, libc_version);
 	#endif
 	
@@ -2687,17 +2756,19 @@ int main(int argc, char* argv[]) {
 	strcpy(sysroot_include_directory, sysroot_directory);
 	strcat(sysroot_include_directory, INCLUDE_DIR);
 	
-	if (wants_system_libraries || wants_nz) {
-		sysroot_include_missing_directory = malloc(strlen(sysroot_directory) + strlen(INCLUDE_MISSING_DIR) + 1);
-		
-		if (sysroot_include_missing_directory == NULL) {
-			err = ERR_MEM_ALLOC_FAILURE;
-			goto end;
+	#if !defined(MINGW)
+		if (wants_system_libraries || wants_nz) {
+			sysroot_include_missing_directory = malloc(strlen(sysroot_directory) + strlen(INCLUDE_MISSING_DIR) + 1);
+			
+			if (sysroot_include_missing_directory == NULL) {
+				err = ERR_MEM_ALLOC_FAILURE;
+				goto end;
+			}
+			
+			strcpy(sysroot_include_missing_directory, sysroot_directory);
+			strcat(sysroot_include_missing_directory, INCLUDE_MISSING_DIR);
 		}
-		
-		strcpy(sysroot_include_missing_directory, sysroot_directory);
-		strcat(sysroot_include_missing_directory, INCLUDE_MISSING_DIR);
-	}
+	#endif
 	
 	sysroot_library_directory = malloc(strlen(sysroot_directory) + strlen(LIBRARY_DIR) + strlen(STATIC_LIBRARY_DIR) + 1);
 	
@@ -2860,15 +2931,21 @@ int main(int argc, char* argv[]) {
 	strcat(sysroot, EQUAL_S);
 	strcat(sysroot, sysroot_directory);
 	
-	nz_sysroot_directory = malloc(strlen(sysroot_directory) + strlen(NZ_SYSROOT) + 1);
-	
-	if (nz_sysroot_directory == NULL) {
-		err = ERR_MEM_ALLOC_FAILURE;
-		goto end;
+	if (wants_nz) {
+		nz_sysroot_directory = malloc(strlen(sysroot_directory) + strlen(NZ_SYSROOT) + 1);
+		
+		if (nz_sysroot_directory == NULL) {
+			err = ERR_MEM_ALLOC_FAILURE;
+			goto end;
+		}
+		
+		strcpy(nz_sysroot_directory, sysroot_directory);
+		strcat(nz_sysroot_directory, NZ_SYSROOT);
+		
+		if (directory_exists(nz_sysroot_directory) != 1) {
+			wants_nz = 0;
+		}
 	}
-	
-	strcpy(nz_sysroot_directory, sysroot_directory);
-	strcat(nz_sysroot_directory, NZ_SYSROOT);
 	
 	offset = 0;
 	
@@ -3023,8 +3100,10 @@ int main(int argc, char* argv[]) {
 	}
 	
 	if (wants_nz) {
-		kargv_append(&yargv, GCC_OPT_ISYSTEM);
-		kargv_append(&yargv, sysroot_include_missing_directory);
+		#if !defined(MINGW)
+			kargv_append(&yargv, GCC_OPT_ISYSTEM);
+			kargv_append(&yargv, sysroot_include_missing_directory);
+		#endif
 		
 		directory = malloc(strlen(nz_sysroot_directory) + strlen(SYSTEM_INCLUDE_PATH) + 1);
 		
@@ -3036,8 +3115,25 @@ int main(int argc, char* argv[]) {
 		strcpy(directory, nz_sysroot_directory);
 		strcat(directory, SYSTEM_INCLUDE_PATH);
 		
-		kargv_append(&yargv, GCC_OPT_ISYSTEM);
-		kargv_append(&yargv, directory);
+		if (directory_exists(directory) == 1) {
+			kargv_append(&yargv, GCC_OPT_ISYSTEM);
+			kargv_append(&yargv, directory);
+		}
+		
+		directory = malloc(strlen(nz_sysroot_directory) + strlen(SYSTEM_INCLUDE_PATH) + 1);
+		
+		if (directory == NULL) {
+			err = ERR_MEM_ALLOC_FAILURE;
+			goto end;
+		}
+		
+		strcpy(directory, nz_sysroot_directory);
+		strcat(directory, SYSTEM_INCLUDE_PATH + strlen(USR_DIRECTORY));
+		
+		if (directory_exists(directory) == 1) {
+			kargv_append(&yargv, GCC_OPT_ISYSTEM);
+			kargv_append(&yargv, directory);
+		}
 		
 		directory = malloc(strlen(nz_sysroot_directory) + strlen(SYSTEM_INCLUDE_PATH) + strlen(PATHSEP_S) + strlen(non_prefixed_triplet) + 1);
 		
@@ -3051,14 +3147,18 @@ int main(int argc, char* argv[]) {
 		strcat(directory, PATHSEP_S);
 		strcat(directory, non_prefixed_triplet);
 		
-		kargv_append(&yargv, GCC_OPT_ISYSTEM);
-		kargv_append(&yargv, directory);
+		if (directory_exists(directory) == 1) {
+			kargv_append(&yargv, GCC_OPT_ISYSTEM);
+			kargv_append(&yargv, directory);
+		}
 		
 		if (linking) {
-			if (!linking_shared) {
-				kargv_append(&yargv, GCC_OPT_XLINKER);
-				kargv_append(&yargv, LD_OPT_UNRESOLVED_SYMBOLS);
-			}
+			#if !defined(MINGW)
+				if (!linking_shared) {
+					kargv_append(&yargv, GCC_OPT_XLINKER);
+					kargv_append(&yargv, LD_OPT_UNRESOLVED_SYMBOLS);
+				}
+			#endif
 			
 			for (index = 0; index < sizeof(SYSTEM_LIBRARY_PATH) / sizeof(*SYSTEM_LIBRARY_PATH); index++) {
 				cur = SYSTEM_LIBRARY_PATH[index];
@@ -3072,6 +3172,10 @@ int main(int argc, char* argv[]) {
 				
 				strcpy(directory, nz_sysroot_directory);
 				strcat(directory, cur);
+				
+				if (directory_exists(directory) != 1) {
+					continue;
+				}
 				
 				kargv_append(&yargv, GCC_OPT_LIBDIR);
 				kargv_append(&yargv, directory);
@@ -3270,6 +3374,35 @@ int main(int argc, char* argv[]) {
 		kargv_append(&yargv, android_version_min);
 	#endif
 	
+	#if defined(MINGW)
+		/*
+		Normally, __MSVCRT_VERSION__ is defined by <mingw.h>, and its value
+		depends on the --with-default-msvcrt option used when building MinGW.
+		Since our toolchain allows switching between CRTs at runtime, the
+		macro must be defined manually.
+		*/
+		msvcrt_version = malloc(strlen(M_MSVCRT_VERSION) + 5 + 1);
+		
+		if (msvcrt_version == NULL) {
+			err = ERR_MEM_ALLOC_FAILURE;
+			goto end;
+		}
+		
+		strcpy(msvcrt_version, M_MSVCRT_VERSION);
+		
+		if (strcmp(libc_version, "msvcrt") == 0) {
+			strcat(msvcrt_version, "0x600");
+		} else if (strcmp(libc_version, "ucrt") == 0) {
+			strcat(msvcrt_version, "0xE00");
+		} else {
+			err = ERR_UNKNOWN_SYSTEM_VERSION;
+			goto end;
+		}
+		
+		kargv_append(&yargv, GCC_OPT_D);
+		kargv_append(&yargv, msvcrt_version);
+	#endif
+	
 	kargv_append(&xargv, NULL);
 	kargv_merge(&yargv, &xargv);
 	
@@ -3459,6 +3592,10 @@ int main(int argc, char* argv[]) {
 		if (android_weak_symbols) {
 			free(android_current_sdk_version);
 		}
+	#endif
+	
+	#if defined(MINGW)
+		free(msvcrt_version);
 	#endif
 	
 	query_free(&query);

@@ -15,7 +15,7 @@ index f9fd0b3..6e5bcb0 100644
  top_builddir = @top_builddir@
  top_srcdir = @top_srcdir@
  lib_LTLIBRARIES = libmpc.la
--libmpc_la_LDFLAGS = $(MPC_LDFLAGS) -version-info 7:0:4
+-libmpc_la_LDFLAGS = $(MPC_LDFLAGS) -version-info 7:1:4
 +libmpc_la_LDFLAGS = $(MPC_LDFLAGS) -avoid-version
  libmpc_la_SOURCES = mpc-impl.h abs.c acos.c acosh.c add.c add_fr.c         \
    add_si.c add_ui.c agm.c arg.c asin.c asinh.c atan.c atanh.c clear.c      \

@@ -130,6 +130,8 @@ declare -ra symlink_tools=(
 	'as'
 	'c++filt'
 	'cpp'
+	'dlltool'
+	'dllwrap'
 	'elfedit'
 	'dwp'
 	'gcc-ar'
@@ -151,6 +153,8 @@ declare -ra symlink_tools=(
 	'size'
 	'strings'
 	'strip'
+	'windmc'
+	'windres'
 )
 
 declare -ra libraries=(

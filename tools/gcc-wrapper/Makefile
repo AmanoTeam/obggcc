@@ -38,6 +38,7 @@ SOURCES = biggestint.c \
 	os/posix_spawn.c \
 	gcc-version.c
 
+SOVER_REMOVE_SOURCES = $(SOURCES) soversion-remove.c
 GCC_SOURCES = $(SOURCES) gcc.c
 BINUTILS_LLVM_SOURCES = $(SOURCES) binutils-llvm.c
 BINUTILS_GNU_SOURCES = $(SOURCES) binutils-gnu.c
@@ -56,4 +57,7 @@ binutils-llvm:
 binutils-gnu:
 	$(CC) -Wno-discarded-qualifiers -D $(FLAVOR) -I $(SOURCE_DIRECTORY) $(CFLAGS) $(LDFLAGS) $(CPPFLAGS) $(BINUTILS_GNU_SOURCES) -o $(PREFIX)/binutils-gnu-wrapper
 
-all: gcc binutils-llvm binutils-gnu
+soversion-remove:
+	$(CC) -Wno-discarded-qualifiers -D $(FLAVOR) -I $(SOURCE_DIRECTORY) $(CFLAGS) $(LDFLAGS) $(CPPFLAGS) $(SOVER_REMOVE_SOURCES) -o $(PREFIX)/soversion-remove
+
+all: gcc binutils-llvm binutils-gnu soversion-remove

@@ -1,10 +1,6 @@
 #if !defined(OBGGCC_H)
 #define OBGGCC_H
 
-#if !(defined(OBGGCC) || defined(PINO) || defined(ATAR) || defined(RAIDEN))
-	#error "Please define the cross-compiler flavor for which we will be a wrapper"
-#endif
-
 #if defined(OBGGCC)
 	#define WRAPPER_FLAVOR_NAME "OBGGCC"
 #elif defined(PINO)
@@ -13,8 +9,10 @@
 	#define WRAPPER_FLAVOR_NAME "ATAR"
 #elif defined(RAIDEN)
 	#define WRAPPER_FLAVOR_NAME "RAIDEN"
+#elif defined(MINGW)
+	#define WRAPPER_FLAVOR_NAME "MINGW"
 #else
-	#error "I don't know how to handle this"
+	#error "Please define the cross-compiler flavor for which we will be a wrapper"
 #endif
 
 #if defined(WCLANG) && defined(PINO)
@@ -34,6 +32,8 @@ static const char DEFAULT_TARGET[] =
 	"x86_64-unknown-openbsd";
 #elif defined(RAIDEN)
 	 "x86_64-unknown-linux-musl1.2";
+#elif defined(MINGW)
+	 "x86_64-w64-mingw32-msvcrt";
 #else
 	#error "I don't know how to handle this"
 #endif
