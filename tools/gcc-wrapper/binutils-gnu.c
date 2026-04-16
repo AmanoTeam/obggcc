@@ -31,7 +31,11 @@ static const char* const BINUTILS[] = {
 	"objdump" EXE,
 	"ranlib" EXE,
 	"readelf" EXE,
-	"strip" EXE
+	"strip" EXE,
+	"windmc" EXE,
+	"windres" EXE,
+	"dlltool" EXE,
+	"dllwrap" EXE
 };
 
 static int binutils_matches(const char* const name) {
