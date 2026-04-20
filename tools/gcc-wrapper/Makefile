@@ -60,4 +60,4 @@ binutils-gnu:
 soversion-remove:
 	$(CC) -Wno-discarded-qualifiers -D $(FLAVOR) -I $(SOURCE_DIRECTORY) $(CFLAGS) $(LDFLAGS) $(CPPFLAGS) $(SOVER_REMOVE_SOURCES) -o $(PREFIX)/soversion-remove
 
-all: gcc binutils-llvm binutils-gnu soversion-remove
+all: gcc binutils-llvm binutils-gnu # soversion-remove
