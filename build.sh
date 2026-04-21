@@ -1849,7 +1849,7 @@ if ! (( native )) && [[ "${host}" != *'-darwin'* ]]; then
 	
 	if [[ "${host}" = *'-mingw32' ]]; then
 		# libwinpthread
-		declare name=$(realpath $("${cc}" --print-file-name="libwinpthread-1${dll}"))
+		declare name=$(realpath $("${cc}" --print-file-name="libwinpthread${dll}"))
 		cp "${name}" "${toolchain_directory}/bin/${soname}"
 	fi
 	
