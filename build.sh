@@ -239,7 +239,7 @@ if (( gcc_major < 15 )); then
 	build_nz='0'
 fi
 
-if [ "${gcc_major}" != '16' ]; then
+if [ "${gcc_major}" != '17' ]; then
 	if (( gcc_major == 3.1 )); then
 		# 3.1 was improperly tagged and includes some 3.2 changes
 		tag='4f77a8528f4ccda031f29634f6264eb77f91d13b'
