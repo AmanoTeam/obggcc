@@ -15,7 +15,7 @@ permissions: write-all
 env: 
     OBGGCC_BUILD_PARALLEL_LEVEL: 40
     OBGGCC_BUILD_DIRECTORY: /tmp
-    OBGGCC_RELEASE: '15'
+    OBGGCC_RELEASE: '16'
     OBGGCC_TARGETS: '*'
 
 jobs:
@@ -313,7 +313,7 @@ jobs:
           name: 'GCC ${{ env.OBGGCC_RELEASE }}'
           files: ./*/*-{unknown,w64}-*.{tar.xz,zip}*
           draft: false
-          prerelease: false
+          prerelease: true
           fail_on_unmatched_files: true
           body: "* Update to GCC ${{ env.OBGGCC_RELEASE }}"
         env:
