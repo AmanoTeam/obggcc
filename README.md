@@ -10,8 +10,6 @@ This eliminates the need to install an ancient Linux distribution in Docker/LXC 
 
 ## Supported targets
 
-Currently, OBGGCC provides cross-compilers targeting 6 major Ubuntu releases and 9 major Debian releases on 5 system architectures.
-
 ### Distributions
 
 | distribution_version              | glibc_version | linux_version | gcc_version | availability_date |
@@ -607,8 +605,8 @@ You can find the list of supported target triplets [here](#system-architectures)
 
 There are precompiled binaries available for multiple GCC major releases, listed below:
 
-- [GCC 16](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-16) - current development release
-- [GCC 15](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-15) - current stable release
+- [GCC 16](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-16) - current stable release
+- [GCC 15](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-15)
 - [GCC 14](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-14)
 - [GCC 13](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-13)
 - [GCC 12](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-12)

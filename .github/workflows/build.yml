@@ -160,7 +160,7 @@ jobs:
             
             source "${RAIDEN_HOME}/build/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' = *'-linux-gnu'* ]]; then
-            declare -r OBGGCC_TAG='gcc-15'
+            declare -r OBGGCC_TAG='gcc-16'
             declare -r OBGGCC_TARBALL='/tmp/toolchain.tar.xz'
             declare -r OBGGCC_URL="https://github.com/AmanoTeam/obggcc/releases/download/${OBGGCC_TAG}/x86_64-unknown-linux-gnu.tar.xz"
             
@@ -236,7 +236,7 @@ jobs:
             
             source "${PINO_HOME}/build/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' = *'-mingw32' ]]; then
-            declare -r MINGW_TAG='gcc-15'
+            declare -r MINGW_TAG='gcc-16'
             declare -r MINGW_TARBALL='/tmp/toolchain.tar.xz'
             declare -r MINGW_URL="https://github.com/AmanoTeam/mingw-gcc-cross/releases/download/${MINGW_TAG}/x86_64-unknown-linux-gnu.tar.xz"
             
