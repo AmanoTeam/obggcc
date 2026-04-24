@@ -161,9 +161,6 @@ OBGGCC allows you to change its behavior in certain scenarios through the use of
 - `OBGGCC_RUNTIME_RPATH`  
   - Automatically appends the path to the directory containing the GCC runtime libraries (e.g., libsanitizer (AddressSanitizer), libatomic, and libstdc++) to your executables’ RPATH. This option is enabled by default when using `OBGGCC_BUILTIN_LOADER`.
 
-- `OBGGCC_NZ`  
-  - Allows you to use libraries and headers installed using OBGGCC’s package manager (nz) during cross-compilation. See [Software availability](#software-availability).
-
 - `OBGGCC_STATIC_RUNTIME`  
   - Tells the cross-compiler to prefer linking with the static versions of the GCC runtime libraries rather than the dynamic ones.
 
@@ -176,7 +173,7 @@ OBGGCC allows you to change its behavior in certain scenarios through the use of
 - `OBGGCC_STL_VERSION`  
   - Cross-compile code targeting a specific version of the GCC runtime libraries, rather than using the ones shipped with the compiler. See [Choosing an arbitrary GCC runtime version](#choosing-an-arbitrary-gcc-runtime-version).
 
-You can enable a switch by setting its value to `true` (e.g: `export OBGGCC_NZ=true`), and disable it by setting its value to `false` (e.g: `export OBGGCC_NZ=false`).
+You can enable a switch by setting its value to `true` (e.g: `export OBGGCC_VERBOSE=true`), and disable it by setting its value to `false` (e.g: `export OBGGCC_NZ=false`).
 
 For every environment variable, there is a matching command-line flag switch available, which you can check with `--obggcc-help`.
 
@@ -192,7 +189,6 @@ options:
   -f[no-]runtime-rpath  Automatically append the path to the directory containing GCC runtime libraries to every executable's DT_RPATH.
   -f[no-]system-libraries
                         Allow compilation and linking with libraries and headers from your host machine’s system root alongside the cross-compiler’s system root.
-  -f[no-]nz             Use libraries and headers installed by OBGGCC’s package manager (nz) during cross-compilation.
   -f[no-]static-runtime
                         Force linking with static variants of the GCC runtime libraries instead of the dynamic versions.
   -f[no-]verbose        Display the GCC subcommand invocation and the current working directory.
@@ -204,70 +200,35 @@ The flag switches listed above are not guaranteed to be portable and are primari
 
 The cross-compiler ships only with the minimum required to build a working C/C++ program. That is, you won't find any prebuilt binaries of popular projects like OpenSSL or zlib available for use, as you would on an average Linux distribution.
 
-If your project depends on something other than the GNU C library (or the C++ standard libraries, for C++ programs), you need to either build it yourself or install it from somewhere else. For convenience, OBGGCC provides an APT-like tool to install packages from APT repositories to a local directory and enable their usage during cross-compilations.
+If your project depends on something other than the GNU C library (or the C++ standard libraries, for C++ programs), you need to either build it yourself or install it from somewhere else. For convenience, the toolchain includes an APT-like utility that installs packages from remote repositories into a local directory and makes them available for use during cross-compilation.
 
-### Installing project dependencies with `nz`
+Below is an example of building a CMake project that uses prebuilt dependencies installed through the package manager:
 
-You can install packages to a specific system root using the corresponding `<triplet><glibc_version>-nz` command inside the `obggcc/bin` directory.
+1. Fetch the project sources (using curl as an example):
 
-For example, let's suppose you want to cross-compile curl for Ubuntu 16.04 (glibc 2.23) with SSL and HTTP/2 support:
+    ```bash
+    git clone https://github.com/curl/curl
+    cd curl
+    ```
 
-#### Step 1
+2. Configure the environment for cross-compilation:
 
-First, fetch curl sources and generate the required build files:
+    ```bash
+    source ~/obggcc/build/autotools/x86_64-unknown-linux-gnu2.27.sh
+    ```
 
-```bash
-$ git clone -b curl-8_14_1 https://github.com/curl/curl
-$ cd curl
-$ autoreconf -fi
-```
+3. Install the required dependencies:
 
-#### Step 2
+    ```bash
+    ~/obggcc/bin/x86_64-unknown-linux-gnu2.27-apt install libnghttp2-dev libssl-dev zlib1g-dev libpsl-dev
+    ```
 
-Now, configure the environment for cross-compilation:
+4. Build curl as usual:
 
-```bash
-$ source obggcc/build/autotools/x86_64-unknown-linux-gnu2.23.sh
-```
-
-#### Step 3
-
-Install the required dependencies:
-
-```bash
-$ x86_64-unknown-linux-gnu2.23-nz \
-    --install 'libnghttp2-dev;libssl-dev;zlib1g-dev;libpsl-dev'
-```
-
-There is also an `apt` script wrapper around `nz` that you can use to install packages _à la_ the APT way:
-
-```bash
-$ x86_64-unknown-linux-gnu2.23-apt install \
-    libnghttp2-dev \
-    libssl-dev \
-    zlib1g-dev \
-    libpsl-dev
-```
-
-#### Step 4
-
-Before cross-compiling curl, set the `OBGGCC_NZ` environment variable to enable OBGGCC to use libraries from nz's system root during the build:
-
-```bash
-$ export OBGGCC_NZ=true
-```
-
-#### Step 5
-
-Now you can build curl the usual way:
-
-```bash
-$ ./configure \
-    --host="${CROSS_COMPILE_TRIPLET}" \
-    --with-openssl \
-    --with-nghttp2 
-$ make
-```
+    ```bash
+    cmake -S . -B build
+    cmake --build build
+    ```
 
 ## Linking with system libraries
 

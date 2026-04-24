@@ -35,13 +35,6 @@ parser.add_argument(
 )
 
 parser.add_argument(
-	"-f[no-]nz",
-	required = False,
-	action = "store_true",
-	help = "Use libraries and headers installed by OBGGCC’s package manager (nz) during cross-compilation."
-)
-
-parser.add_argument(
 	"-f[no-]static-runtime",
 	required = False,
 	action = "store_true",

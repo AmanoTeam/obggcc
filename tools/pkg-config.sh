@@ -31,15 +31,12 @@ TRIPLET="${TRIPLET/-unknown/}"
 declare -r LIBC_VERSION
 declare -r TRIPLET
 
-if [ "${OBGGCC_NZ}" = '1' ] || [ "${OBGGCC_NZ}" = 'true' ]; then
-	PKG_CONFIG_PATH+="${NZ_SYSROOT}/usr/lib/${TRIPLET}/pkgconfig:"
-	PKG_CONFIG_PATH+="${NZ_SYSROOT}/usr/lib/pkgconfig:"
-	PKG_CONFIG_PATH+="${NZ_SYSROOT}/usr/share/pkgconfig:"
-	
-	PKG_CONFIG_LIBDIR="${PKG_CONFIG_PATH}"
-	
-	PKG_CONFIG_SYSROOT_DIR="${NZ_SYSROOT}"
-fi
+PKG_CONFIG_PATH+="${NZ_SYSROOT}/usr/lib/${TRIPLET}/pkgconfig:"
+PKG_CONFIG_PATH+="${NZ_SYSROOT}/usr/lib/pkgconfig:"
+PKG_CONFIG_PATH+="${NZ_SYSROOT}/usr/share/pkgconfig:"
+
+PKG_CONFIG_LIBDIR="${PKG_CONFIG_PATH}"
+PKG_CONFIG_SYSROOT_DIR="${NZ_SYSROOT}"
 
 declare -r \
 	PKG_CONFIG_PATH \

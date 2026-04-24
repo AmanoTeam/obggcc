@@ -1767,18 +1767,7 @@ int main(int argc, char* argv[]) {
 	
 	wants_system_libraries = query_get_bool(&query, ENV_SYSTEM_LIBRARIES) == 1;
 	
-	if (gcc_version >= GCC_15) {
-		wants_nz = query_get_bool(&query, ENV_NZ);
-		
-		#if defined(MINGW)
-			if (wants_nz == -1) {
-				/* Enable it by default on the Windows cross-compiler. */
-				wants_nz = 1;
-			}
-		#else
-			wants_nz = (wants_nz == 1);
-		#endif
-	}
+	wants_nz = (gcc_version >= GCC_15);
 	
 	wants_runtime_rpath = query_get_bool(&query, ENV_RUNTIME_RPATH) == 1;
 	verbose = query_get_bool(&query, ENV_VERBOSE) == 1;
@@ -1854,12 +1843,6 @@ int main(int argc, char* argv[]) {
 			continue;
 		} else if (strcmp(cur, OBGGCC_OPT_F_NO_SYSTEM_LIBRARIES) == 0) {
 			wants_system_libraries = 0;
-			continue;
-		} else if (strcmp(cur, OBGGCC_OPT_F_NZ) == 0) {
-			wants_nz = 1;
-			continue;
-		} else if (strcmp(cur, OBGGCC_OPT_F_NO_NZ) == 0) {
-			wants_nz = 0;
 			continue;
 		} else if (strcmp(cur, OBGGCC_OPT_F_STATIC_RUNTIME) == 0) {
 			wants_force_static = 1;
