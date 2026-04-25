@@ -1660,7 +1660,7 @@ int main(int argc, char* argv[]) {
 	
 	char* executable = NULL;
 	
-	char* gpp_builtins_include_directory = NULL;
+	char* gpp_bits_include_directory = NULL;
 	
 	char* gpp_include_directory = NULL;
 	char* gcc_include_directory = NULL;
@@ -1673,6 +1673,7 @@ int main(int argc, char* argv[]) {
 	char* nz_sysroot_directory = NULL;
 	
 	char* sysroot_include_directory = NULL;
+	char* sysroot_bits_include_directory = NULL;
 	char* sysroot_include_missing_directory = NULL;
 	char* sysroot_library_directory = NULL;
 	char* sysroot_ldscripts_directory = NULL;
@@ -2739,6 +2740,17 @@ int main(int argc, char* argv[]) {
 	strcpy(sysroot_include_directory, sysroot_directory);
 	strcat(sysroot_include_directory, INCLUDE_DIR);
 	
+	sysroot_bits_include_directory = malloc(strlen(sysroot_include_directory) + strlen(PATHSEP_S) + strlen(triplet) + 1);
+	
+	if (sysroot_bits_include_directory == NULL) {
+		err = ERR_MEM_ALLOC_FAILURE;
+		goto end;
+	}
+	
+	strcpy(sysroot_bits_include_directory, sysroot_include_directory);
+	strcat(sysroot_bits_include_directory, PATHSEP_S);
+	strcat(sysroot_bits_include_directory, triplet);
+	
 	#if !defined(MINGW)
 		if (wants_system_libraries || wants_nz) {
 			sysroot_include_missing_directory = malloc(strlen(sysroot_directory) + strlen(INCLUDE_MISSING_DIR) + 1);
@@ -2890,18 +2902,16 @@ int main(int argc, char* argv[]) {
 	strcat(gpp_include_directory, PATHSEP_S);
 	strcat(gpp_include_directory, GCC_MAJOR_VERSION);
 	
-	#if !defined(PINO)
-		gpp_builtins_include_directory = malloc(strlen(gpp_include_directory) + strlen(PATHSEP_S) + strlen(triplet) + 1);
-		
-		if (gpp_builtins_include_directory == NULL) {
-			err = ERR_MEM_ALLOC_FAILURE;
-			goto end;
-		}
-		
-		strcpy(gpp_builtins_include_directory, gpp_include_directory);
-		strcat(gpp_builtins_include_directory, PATHSEP_S);
-		strcat(gpp_builtins_include_directory, triplet);
-	#endif
+	gpp_bits_include_directory = malloc(strlen(gpp_include_directory) + strlen(PATHSEP_S) + strlen(triplet) + 1);
+	
+	if (gpp_bits_include_directory == NULL) {
+		err = ERR_MEM_ALLOC_FAILURE;
+		goto end;
+	}
+	
+	strcpy(gpp_bits_include_directory, gpp_include_directory);
+	strcat(gpp_bits_include_directory, PATHSEP_S);
+	strcat(gpp_bits_include_directory, triplet);
 	
 	sysroot = malloc(strlen(GCC_OPT_SYSROOT) + strlen(EQUAL_S) + strlen(sysroot_directory) + 1);
 	
@@ -3058,16 +3068,19 @@ int main(int argc, char* argv[]) {
 		kargv_append(&yargv, GCC_OPT_ISYSTEM);
 		kargv_append(&yargv, gpp_include_directory);
 		
-		#if !defined(PINO)
-			kargv_append(&yargv, GCC_OPT_ISYSTEM);
-			kargv_append(&yargv, gpp_builtins_include_directory);
-		#endif
+		kargv_append(&yargv, GCC_OPT_ISYSTEM);
+		kargv_append(&yargv, gpp_bits_include_directory);
 	}
 	
 	kargv_append(&yargv, GCC_OPT_ISYSTEM);
 	kargv_append(&yargv, gcc_include_directory);
 	kargv_append(&yargv, GCC_OPT_ISYSTEM);
 	kargv_append(&yargv, sysroot_include_directory);
+	
+	if (directory_exists(sysroot_bits_include_directory) == 1) {
+		kargv_append(&yargv, GCC_OPT_ISYSTEM);
+		kargv_append(&yargv, sysroot_bits_include_directory);
+	}
 	
 	if (linking) {
 		kargv_merge(&yargv, &kargv_libdir);
@@ -3553,12 +3566,13 @@ int main(int argc, char* argv[]) {
 	
 	free(floating_point_unit);
 	free(sysroot_include_directory);
+	free(sysroot_bits_include_directory);
 	free(sysroot_include_missing_directory);
 	free(sysroot_library_directory);
 	free(sysroot_ldscripts_directory);
 	free(gcc_include_directory);
 	free(gpp_include_directory);
-	free(gpp_builtins_include_directory);
+	free(gpp_bits_include_directory);
 	free(primary_library_directory);
 	free(secondary_library_directory);
 	free(nz_sysroot_directory);
