@@ -43,7 +43,7 @@
 #include "gcc-version.h"
 #include "program_help.h"
 
-static const char GCC_MAJOR_VERSION[] = "15";
+static const char GCC_MAJOR_VERSION[] = "16";
 
 static const char INCLUDE_DIR[] = PATHSEP_M "include";
 static const char INCLUDE_MISSING_DIR[] = PATHSEP_M "include-missing";
@@ -381,6 +381,118 @@ static clang_option_t CLANG_SPECIFIC_REMOVE[] = {
 	{
 		.name = CLANG_OPT_XCLANG,
 		.value = 1
+	},
+	{
+		.name = "-Wempty-init-stmt",
+		.value = 0
+	},
+	{
+		.name = "-Wfloat-zero-conversion",
+		.value = 0
+	},
+	{
+		.name = "-Wfloat-overflow-conversion",
+		.value = 0
+	},
+	{
+		.name = "-Wloop-analysis",
+		.value = 0
+	},
+	{
+		.name = "-Wcomma",
+		.value = 0
+	},
+	{
+		.name = "--start-no-unused-arguments",
+		.value = 0
+	},
+	{
+		.name = "--end-no-unused-arguments",
+		.value = 0
+	},
+	{
+		.name = "-Wstring-conversion",
+		.value = 0
+	},
+	{
+		.name = "-Wthread-safety",
+		.value = 0
+	},
+	{
+		.name = "-mllvm",
+		.value = 1
+	},
+	{
+		.name = "-Wbitfield-enum-conversion",
+		.value = 0
+	},
+	{
+		.name = "-Wformat-type-confusion",
+		.value = 0
+	},
+	{
+		.name = "-Wshadow-field-in-constructor-modified",
+		.value = 0
+	},
+	{
+		.name = "-Wtautological-constant-in-range-compare",
+		.value = 0
+	},
+	{
+		.name = "-Wunreachable-code-return",
+		.value = 0
+	},
+	{
+		.name = "-Wclass-varargs",
+		.value = 0
+	},
+	{
+		.name = "-gsimple-template-names",
+		.value = 0
+	},
+	{
+		.name = "-Wdeprecated-builtins",
+		.value = 0
+	},
+	{
+		.name = "-Wvla-cxx-extension",
+		.value = 0
+	},
+	{
+		.name = "-Winline-new-delete",
+		.value = 0
+	},
+	{
+		.name = "-Wdeprecated-anon-enum-enum-conversion",
+		.value = 0
+	},
+	{
+		.name = "-Wrange-loop-analysis",
+		.value = 0
+	},
+	{
+		.name = "-Wtautological-type-limit-compare",
+		.value = 0
+	},
+	{
+		.name = "-Watomic-alignment",
+		.value = 0
+	},
+	{
+		.name = "-Wimplicit-int-conversion",
+		.value = 0
+	},
+	{
+		.name = "-Wlanguage-extension-token",
+		.value = 0
+	},
+	{
+		.name = "-Wunreachable-code-break",
+		.value = 0
+	},
+	{
+		.name = "-Wsometimes-uninitialized",
+		.value = 0
 	}
 };
 
@@ -2077,28 +2189,23 @@ int main(int argc, char* argv[]) {
 				goto end;
 			}
 			
-			/* The Android NDK defaults to "none" as the vendor, but we use "unknown" instead */
-			ptr = strstr(cur, VENDOR_NONE);
+			ptr = strstr(cur, "-");
 			
-			if (ptr != NULL) {
-				/* Architecture */
-				size = (size_t) (ptr - cur);
-				strncpy(override_triplet, cur, size);
-				override_triplet[size] = '\0';
-				
-				if (strcmp(override_triplet, "armv5te") == 0) {
-					strcpy(override_triplet, "armv5");
-				}
-				
-				/* Vendor */
-				strcat(override_triplet, VENDOR_UNKNOWN);
-				
-				/* System */
-				ptr += strlen(VENDOR_NONE);
-				strcat(override_triplet, ptr);
-			} else {
-				strcpy(override_triplet, cur);
+			/* Architecture */
+			size = (size_t) (ptr - cur);
+			strncpy(override_triplet, cur, size);
+			override_triplet[size] = '\0';
+			
+			if (strcmp(override_triplet, "armv5te") == 0) {
+				strcpy(override_triplet, "armv5");
 			}
+			
+			/* Vendor */
+			strcat(override_triplet, VENDOR_UNKNOWN);
+			
+			/* System */
+			ptr = strstr(ptr, "linux-android");
+			strcat(override_triplet, ptr);
 			
 			continue;
 		} else if (strncmp(cur, GCC_OPT_SYSROOT, strlen(GCC_OPT_SYSROOT)) == 0) {
@@ -2365,7 +2472,34 @@ int main(int argc, char* argv[]) {
 	*/
 	if (known_compiler(file_name) && override_triplet == NULL) {
 		if (!(override_cc != NULL && known_clang(override_cc) && cmake_init)) {
-			err = ERR_BAD_TRIPLET;
+			if (!known_clang(file_name)) {
+				err = ERR_BAD_TRIPLET;
+				goto end;
+			}
+			
+			executable = find_exe(file_name);
+			
+			if (executable == NULL) {
+				err = ERR_CLANG_NOT_FOUND;
+				goto end;
+			}
+			
+			kargv_append(&yargv, executable);
+			
+			kargv_append(&xargv, NULL);
+			kargv_merge(&yargv, &xargv);
+			
+			args = kargv_getargs(&yargv);
+			
+			if (verbose) {
+				obggcc_print_args(args);
+			}
+			
+			if (execute_command(executable, args) == -1) {
+				err = ERR_EXECVE_FAILURE;
+				goto end;
+			}
+			
 			goto end;
 		}
 		
