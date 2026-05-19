@@ -147,12 +147,12 @@ jobs:
         if [[ '${{ matrix.target }}' = *'-linux-musl'* ]]; then
             declare -r RAIDEN_TAG='gcc-15'
             declare -r RAIDEN_TARBALL='/tmp/toolchain.tar.xz'
-            declare -r RAIDEN_URL="https://github.com/AmanoTeam/Raiden/releases/download/${RAIDEN_TAG}/x86_64-unknown-linux-gnu.tar.xz"
+            declare -r RAIDEN_URL="https://github.com/AmanoTeam/musl-gcc-cross/releases/download/${RAIDEN_TAG}/x86_64-unknown-linux-gnu.tar.xz"
             
             curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --location --url "${RAIDEN_URL}" --output "${RAIDEN_TARBALL}"
             tar --directory="$(dirname "${RAIDEN_TARBALL}")" --extract --file="${RAIDEN_TARBALL}"
             
-            export RAIDEN_HOME='/tmp/raiden'
+            export RAIDEN_HOME='/tmp/musl-gcc-cross'
             export PATH="${RAIDEN_HOME}/bin:${PATH}"
             
             source "${RAIDEN_HOME}/build/autotools/${{ matrix.target }}.sh"
@@ -175,51 +175,39 @@ jobs:
         elif [[ '${{ matrix.target }}' = *'-freebsd' ]]; then
             declare -r LOKI_TAG='gcc-15'
             declare -r LOKI_TARBALL='/tmp/toolchain.tar.xz'
-            declare -r LOKI_URL="https://github.com/AmanoTeam/Loki/releases/download/${LOKI_TAG}/x86_64-unknown-linux-gnu.tar.xz"
+            declare -r LOKI_URL="https://github.com/AmanoTeam/freebsd-gcc-cross/releases/download/${LOKI_TAG}/x86_64-unknown-linux-gnu.tar.xz"
             
             curl --silent --connect-timeout '10' --retry '15' --retry-all-errors --fail --location --url "${LOKI_URL}" --output "${LOKI_TARBALL}"
             tar --directory="$(dirname "${LOKI_TARBALL}")" --extract --file="${LOKI_TARBALL}"
             
-            export LOKI_HOME='/tmp/loki'
+            export LOKI_HOME='/tmp/freebsd-gcc-cross'
             export PATH="${LOKI_HOME}/bin:${PATH}"
             
             source "${LOKI_HOME}/build/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' = *'-netbsd'* ]]; then
             declare -r DAKINI_TAG='gcc-15'
             declare -r DAKINI_TARBALL='/tmp/toolchain.tar.xz'
-            declare -r DAKINI_URL="https://github.com/AmanoTeam/Dakini/releases/download/${DAKINI_TAG}/x86_64-unknown-linux-gnu.tar.xz"
+            declare -r DAKINI_URL="https://github.com/AmanoTeam/netbsd-gcc-cross/releases/download/${DAKINI_TAG}/x86_64-unknown-linux-gnu.tar.xz"
             
             curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --location --url "${DAKINI_URL}" --output "${DAKINI_TARBALL}"
             tar --directory="$(dirname "${DAKINI_TARBALL}")" --extract --file="${DAKINI_TARBALL}"
             
-            export DAKINI_HOME='/tmp/dakini'
+            export DAKINI_HOME='/tmp/netbsd-gcc-cross'
             export PATH="${DAKINI_HOME}/bin:${PATH}"
             
             source "${DAKINI_HOME}/build/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' = *'-dragonfly' ]]; then
-            declare -r VENTI_TAG='gcc-15'
+            declare -r VENTI_TAG='gcc-16'
             declare -r VENTI_TARBALL='/tmp/toolchain.tar.xz'
-            declare -r VENTI_URL="https://github.com/AmanoTeam/Venti/releases/download/${VENTI_TAG}/x86_64-unknown-linux-gnu.tar.xz"
+            declare -r VENTI_URL="https://github.com/AmanoTeam/dragonfly-gcc-cross/releases/download/${VENTI_TAG}/x86_64-unknown-linux-gnu.tar.xz"
             
             curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --location --url "${VENTI_URL}" --output "${VENTI_TARBALL}"
             tar --directory="$(dirname "${VENTI_TARBALL}")" --extract --file="${VENTI_TARBALL}"
             
-            export VENTI_HOME='/tmp/venti'
+            export VENTI_HOME='/tmp/dragonfly-gcc-cross'
             export PATH="${VENTI_HOME}/bin:${PATH}"
             
             source "${VENTI_HOME}/build/autotools/${{ matrix.target }}.sh"
-        elif [[ '${{ matrix.target }}' = *'-haiku' ]]; then
-            declare -r SIL_TAG='gcc-15'
-            declare -r SIL_TARBALL='/tmp/toolchain.tar.xz'
-            declare -r SIL_URL="https://github.com/AmanoTeam/Sil/releases/download/${SIL_TAG}/x86_64-unknown-linux-gnu.tar.xz"
-            
-            curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --location --url "${SIL_URL}" --output "${SIL_TARBALL}"
-            tar --directory="$(dirname "${SIL_TARBALL}")" --extract --file="${SIL_TARBALL}"
-            
-            export SIL_HOME='/tmp/sil'
-            export PATH="${SIL_HOME}/bin:${PATH}"
-            
-            source "${SIL_HOME}/build/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' = *'-android'* ]]; then
             declare -r PINO_TAG='gcc-16'
             declare -r PINO_TARBALL='/tmp/toolchain.tar.xz'
@@ -249,10 +237,10 @@ jobs:
                 --silent \
                 --show-error \
                 --fail \
-                --url 'https://raw.githubusercontent.com/AmanoTeam/OSXCross-Builds/refs/heads/master/main.sh' \
+                --url 'https://raw.githubusercontent.com/AmanoTeam/darwin-clang-cross/refs/heads/master/main.sh' \
                     | bash -s -- install
             
-            export DARWIN_HOME='/tmp/darwin'
+            export DARWIN_HOME='/tmp/darwin-clang-cross'
             export PATH="${DARWIN_HOME}/bin:${PATH}"
             
             source "${DARWIN_HOME}/build/autotools/${{ matrix.target }}.sh"

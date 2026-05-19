@@ -1205,7 +1205,7 @@ static const char* get_max_libc_version(const char* const triplet) {
 		);
 		
 		if (status) {
-			return "35";
+			return "36";
 		}
 		
 		status = (
