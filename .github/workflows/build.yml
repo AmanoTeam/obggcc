@@ -268,9 +268,13 @@ jobs:
     - name: Generate tarball
       run: |
         if [[ '${{ matrix.target }}' = *'-mingw32' ]]; then
-            declare tarball_filename='/tmp/${{ matrix.target }}.zip'
+            declare tarball_filename='/tmp/${{ matrix.target }}.7z'
             cd '/tmp'
-            zip --recurse-paths -9 "${tarball_filename}" 'obggcc'
+            7z a "${tarball_filename}" 'obggcc' \
+                -t7z \
+                -m0=lzma2:d=1536m:fb=273:mc=1000000 \
+                -ms=on \
+                -mmt="$(nproc)"
         else
             declare tarball_filename='/tmp/${{ matrix.target }}.tar.xz'
             tar --directory='/tmp' --create --file=- 'obggcc' | xz --threads='0' --extreme --memlimit-compress='100%' --compress -9 > "${tarball_filename}"
@@ -296,7 +300,7 @@ jobs:
         with:
           tag_name: 'gcc-${{ env.OBGGCC_RELEASE }}'
           name: 'GCC ${{ env.OBGGCC_RELEASE }}'
-          files: ./*/*-{unknown,w64}-*.{tar.xz,zip}*
+          files: ./*/*-{unknown,w64}-*.{tar.xz,7z}*
           draft: false
           prerelease: false
           fail_on_unmatched_files: true
