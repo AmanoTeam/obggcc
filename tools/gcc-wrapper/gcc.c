@@ -255,6 +255,7 @@ static char* SYSTEM_LIBRARY_PATH[] = {
 static const char NDK_CXX_STL_DIRECTORY[] = PATHSEP_M "sources" PATHSEP_M "cxx-stl";
 static const char NDK_SYSROOT_INCLUDE_DIRECTORY[] = PATHSEP_M "sysroot" PATHSEP_M "usr" PATHSEP_M "include";
 static const char NDK_SYSROOT_LIBRARY_DIRECTORY[] = PATHSEP_M "prebuilt" PATHSEP_M "linux-x86_64" PATHSEP_M "lib" PATHSEP_M "gcc";
+static const char NDK_SYSROOT_SECONDARY_LIBRARY_DIRECTORY[] = PATHSEP_M "platforms" PATHSEP_M "android-";
 
 static const char USR_DIRECTORY[] = PATHSEP_M "usr";
 static const char LIB_DIRECTORY[] = PATHSEP_M "lib";
@@ -368,12 +369,6 @@ static clang_option_t CLANG_SPECIFIC_REMOVE[] = {
 		.name = CLANG_OPT_F_INTEGRATED_AS,
 		.value = 0
 	},
-#if defined(PINO)
-	{
-		.name = GCC_OPT_STATIC,
-		.value = 0
-	},
-#endif
 	{
 		.name = CLANG_OPT_F_ERROR_LIMIT,
 		.value = 1
@@ -1037,6 +1032,34 @@ static const char* get_loader(const char* const triplet) {
 	#endif
 	
 	return NULL;
+	
+}
+
+static int check_test_file(const char* const name) {
+	
+	const char* const base = basename(name);
+	
+	const int status = (
+		strcmp(base, "test.o") == 0 ||
+		strncmp(base, CMAKE_C_COMPILER_TEST, strlen(CMAKE_C_COMPILER_TEST)) == 0 ||
+		strncmp(base, CMAKE_CXX_COMPILER_TEST, strlen(CMAKE_CXX_COMPILER_TEST)) == 0
+	);
+	
+	return status;
+	
+}
+
+static int check_build_system_init(const char* const prev, const char* const cur) {
+	
+	const int status = (
+		strcmp(cur, "-?") == 0 ||
+		strcmp(cur, CMAKE_C_COMPILER_ID) == 0 ||
+		strcmp(cur, CMAKE_CXX_COMPILER_ID) == 0 ||
+		(prev != NULL && strcmp(prev, GCC_OPT_O) == 0 && check_test_file(cur)) ||
+		(strstr(cur, CMAKE_FILES_DIRECTORY) != NULL && check_test_file(cur))
+	);
+	
+	return status;
 	
 }
 
@@ -1749,7 +1772,7 @@ int main(int argc, char* argv[]) {
 	
 	const char* override_linker = NULL;
 	
-	int cmake_init = 0;
+	int build_system_init = 0;
 	
 	int linking = argc != 1;
 	int linking_shared = 0;
@@ -2006,7 +2029,7 @@ int main(int argc, char* argv[]) {
 			Since this is irrelevant to us—and may even cause conflicts with our own implementation—
 			strip these arguments out and avoid passing them down to the compiler.
 			*/
-			if (!(strstr(cur, NDK_CXX_STL_DIRECTORY) == NULL && strstr(cur, NDK_SYSROOT_INCLUDE_DIRECTORY) == NULL && strstr(cur, NDK_SYSROOT_LIBRARY_DIRECTORY) == NULL)) {
+			if (!(strstr(cur, NDK_CXX_STL_DIRECTORY) == NULL && strstr(cur, NDK_SYSROOT_INCLUDE_DIRECTORY) == NULL && strstr(cur, NDK_SYSROOT_LIBRARY_DIRECTORY) == NULL && strstr(cur, NDK_SYSROOT_SECONDARY_LIBRARY_DIRECTORY) == NULL)) {
 				index += offset;
 				continue;
 			}
@@ -2129,14 +2152,8 @@ int main(int argc, char* argv[]) {
 			wants_libgomp = 1;
 		} else if (strcmp(cur, GCC_OPT_F_GNU_TM) == 0) {
 			wants_libitm = 1;
-		} else if (strcmp(cur, CMAKE_C_COMPILER_ID) == 0 || strcmp(cur, CMAKE_CXX_COMPILER_ID) == 0) {
-			cmake_init = 1;
-		} else if (strstr(cur, CMAKE_FILES_DIRECTORY) != NULL) {
-			file_name = basename(cur);
-			
-			if (file_name != NULL) {
-				cmake_init += (strncmp(file_name, CMAKE_C_COMPILER_TEST, strlen(CMAKE_C_COMPILER_TEST)) == 0 || strncmp(file_name, CMAKE_CXX_COMPILER_TEST, strlen(CMAKE_CXX_COMPILER_TEST)) == 0);
-			}
+		} else if (check_build_system_init(prev, cur)) {
+			build_system_init = 1;
 		} else if (prev != NULL && strcmp(prev, GCC_OPT_O) == 0 && output_directory == NULL) {
 			file_extension = splitext_get(cur);
 			
@@ -2371,7 +2388,7 @@ int main(int argc, char* argv[]) {
 		
 		This spoofing is only applied during the initial C/C++ compiler detection.
 		*/
-		if (known_clang(override_cc) && cmake_init) {
+		if (known_clang(override_cc) && build_system_init) {
 			kargv_append(&xargv, GCC_OPT_U_GNUC);
 			kargv_append(&xargv, GCC_OPT_D_CLANG);
 			kargv_append(&xargv, GCC_OPT_D_CLANG_MAJOR);
@@ -2471,7 +2488,7 @@ int main(int argc, char* argv[]) {
 	If so, it's expected that the user provide the triplet through the --target=<value> flag instead.
 	*/
 	if (known_compiler(file_name) && override_triplet == NULL) {
-		if (!(override_cc != NULL && known_clang(override_cc) && cmake_init)) {
+		if (!(override_cc != NULL && known_clang(override_cc) && build_system_init)) {
 			if (!known_clang(file_name)) {
 				err = ERR_BAD_TRIPLET;
 				goto end;

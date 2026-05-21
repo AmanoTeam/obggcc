@@ -272,7 +272,8 @@ jobs:
             cd '/tmp'
             7z a "${tarball_filename}" 'obggcc' \
                 -t7z \
-                -m0=lzma2:d=1536m:fb=273:mc=1000000 \
+                -mx=9 \
+                -m0=lzma2:d=128m:fb=128 \
                 -ms=on \
                 -mmt="$(nproc)"
         else

@@ -185,3 +185,76 @@ int file_exists(const char* const filename) {
 	return err;
 	
 }
+
+int symlink_exists(const char* const path) {
+	/*
+	Checks if the path is a symbolic link.
+	
+	Returns (1) if the path is a symbolic link, (0) if it is not, (-1) on error.
+	*/
+	
+	int err = 0;
+	
+	#if defined(_WIN32)
+		DWORD attributes = 0;
+		
+		#if defined(_UNICODE)
+			wchar_t* wpath = NULL;
+			
+			/* This prefix is required to support long paths in Windows 10+ */
+			const size_t prefixs = isabsolute(path) ? wcslen(WIN10_LONG_PATH_PREFIX) : 0;
+			
+			const int wpaths = MultiByteToWideChar(CP_UTF8, 0, path, -1, NULL, 0);
+			
+			if (wpaths == 0) {
+				err = -1;
+				goto end;
+			}
+			
+			wpath = malloc((prefixs + (size_t) wpaths) * sizeof(*wpath));
+			
+			if (wpath == NULL) {
+				err = -1;
+				goto end;
+			}
+			
+			if (prefixs > 0) {
+				wcscpy(wpath, WIN10_LONG_PATH_PREFIX);
+			}
+			
+			if (MultiByteToWideChar(CP_UTF8, 0, path, -1, wpath + prefixs, wpaths) == 0) {
+				err = -1;
+				goto end;
+			}
+			
+			attributes = GetFileAttributesW(wpath);
+		#else
+			attributes = GetFileAttributesA(path);
+		#endif
+		
+		if (attributes == INVALID_FILE_ATTRIBUTES) {
+			err = -1;
+			goto end;
+		}
+		
+		err = (attributes & FILE_ATTRIBUTE_REPARSE_POINT) != 0;
+	#else
+		struct stat st = {0};
+		
+		if (lstat(path, &st) == -1) {
+			err = -1;
+			goto end;
+		}
+		
+		err = S_ISLNK(st.st_mode);
+	#endif
+	
+	end:;
+	
+	#if defined(_WIN32) && defined(_UNICODE)
+		free(wpath);
+	#endif
+	
+	return err;
+	
+}

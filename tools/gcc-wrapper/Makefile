@@ -36,6 +36,9 @@ SOURCES = biggestint.c \
 	os/find_exe.c \
 	os/execv.c \
 	os/posix_spawn.c \
+	os/envdir.c \
+	os/time.c \
+	fs/mkdir.c \
 	gcc-version.c
 
 SOVER_REMOVE_SOURCES = $(SOURCES) soversion-remove.c
