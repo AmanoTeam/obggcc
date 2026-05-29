@@ -49,7 +49,6 @@ static const char INCLUDE_DIR[] = PATHSEP_M "include";
 static const char INCLUDE_MISSING_DIR[] = PATHSEP_M "include-missing";
 static const char LIBRARY_DIR[] = PATHSEP_M "lib";
 static const char STATIC_LIBRARY_DIR[] = PATHSEP_M "static";
-static const char LDSCRIPTS_DIR[] = PATHSEP_M "ldscripts";
 
 static const char GCC_LIBRARY_DIR[] = PATHSEP_M "lib" PATHSEP_M "gcc";
 
@@ -1811,7 +1810,6 @@ int main(int argc, char* argv[]) {
 	char* sysroot_bits_include_directory = NULL;
 	char* sysroot_include_missing_directory = NULL;
 	char* sysroot_library_directory = NULL;
-	char* sysroot_ldscripts_directory = NULL;
 	char* sysroot_runtime_directory = NULL;
 	char* stl_library_directory = NULL;
 	char* stl_gpp_include_directory = NULL;
@@ -2975,16 +2973,6 @@ int main(int argc, char* argv[]) {
 		}
 	}
 	
-	sysroot_ldscripts_directory = malloc(strlen(sysroot_library_directory) + strlen(LDSCRIPTS_DIR) + 1);
-	
-	if (sysroot_ldscripts_directory == NULL) {
-		err = ERR_MEM_ALLOC_FAILURE;
-		goto end;
-	}
-	
-	strcpy(sysroot_ldscripts_directory, sysroot_library_directory);
-	strcat(sysroot_ldscripts_directory, LDSCRIPTS_DIR);
-	
 	if (wants_force_static) {
 		strcat(sysroot_library_directory, STATIC_LIBRARY_DIR);
 	}
@@ -3235,9 +3223,6 @@ int main(int argc, char* argv[]) {
 	
 	if (linking) {
 		kargv_merge(&yargv, &kargv_libdir);
-		
-		kargv_append(&yargv, GCC_OPT_LIBDIR);
-		kargv_append(&yargv, sysroot_ldscripts_directory);
 		
 		kargv_append(&yargv, GCC_OPT_LIBDIR);
 		kargv_append(&yargv, sysroot_library_directory);
@@ -3720,7 +3705,6 @@ int main(int argc, char* argv[]) {
 	free(sysroot_bits_include_directory);
 	free(sysroot_include_missing_directory);
 	free(sysroot_library_directory);
-	free(sysroot_ldscripts_directory);
 	free(gcc_include_directory);
 	free(gpp_include_directory);
 	free(gpp_bits_include_directory);
