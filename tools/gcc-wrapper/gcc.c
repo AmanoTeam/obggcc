@@ -2851,7 +2851,7 @@ int main(int argc, char* argv[]) {
 		}
 	}
 	
-	if (wants_lto != LTO_NONE) {
+	if (!build_system_init && wants_lto != LTO_NONE) {
 		#if defined(WCLANG)
 			kargv_append(&xargv, ((wants_lto == LTO_FULL) ? CLANG_OPT_F_LTO_FULL : CLANG_OPT_F_LTO_THIN));
 			kargv_append(&xargv, GCC_OPT_F_NO_FAT_LTO_OBJECTS);
