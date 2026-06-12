@@ -107,6 +107,7 @@ static const char GCC_OPT_L[] = "-l";
 static const char GCC_OPT_V[] = "-v";
 static const char GCC_OPT_D[] = "-D";
 static const char GCC_OPT_O[] = "-o";
+static const char GCC_OPT_OPT_LEVEL[] = "-O";
 static const char GCC_OPT_C[] = "-c";
 static const char GCC_OPT_R[] = "-r";
 static const char GCC_OPT_S[] = "-S";
@@ -249,6 +250,17 @@ static char* SYSTEM_LIBRARY_PATH[] = {
 	PATHSEP_M "usr" PATHSEP_M "lib",
 	NULL,
 	NULL
+};
+
+static const char* const OPTIMIZATION_LEVELS[] = {
+	"-O0",
+	"-O1",
+	"-O2",
+	"-O3",
+	"-Og",
+	"-Os",
+	"-Oz",
+	"-Ofast"
 };
 
 static const char NDK_CXX_STL_DIRECTORY[] = PATHSEP_M "sources" PATHSEP_M "cxx-stl";
@@ -1709,6 +1721,31 @@ static struct GCCVersion* get_stl_version(const char* const string) {
 	
 }
 
+static const char* get_opt_level(const char* const value) {
+	
+	size_t index = 0;
+	const size_t size = strlen(GCC_OPT_OPT_LEVEL);
+	
+	const char* flag = NULL;
+	
+	if (value == NULL) {
+		return NULL;
+	}
+	
+	for (index = 0; index < sizeof(OPTIMIZATION_LEVELS) / sizeof(*OPTIMIZATION_LEVELS); index++) {
+		flag = OPTIMIZATION_LEVELS[index];
+		
+		if (strcmp(flag + size, value) != 0) {
+			continue;
+		}
+		
+		return flag;
+	}
+	
+	return NULL;
+	
+}
+
 int main(int argc, char* argv[]) {
 	
 	int status = 0;
@@ -1781,6 +1818,7 @@ int main(int argc, char* argv[]) {
 	
 	const char* werror = NULL;
 	const char* cc = NULL;
+	const char* opt_level = NULL;
 	const char* override_cc = NULL;
 	const char* override_libcv = NULL;
 	char* start = NULL;
@@ -1924,6 +1962,9 @@ int main(int argc, char* argv[]) {
 	
 	system_prefix = query_get_string(&query, ENV_SYSTEM_PREFIX);
 	
+	opt = query_get_string(&query, ENV_OPT_LEVEL);
+	opt_level = get_opt_level(opt);
+	
 	host = get_host_triplet();
 	host_version = get_host_version();
 	
@@ -1992,7 +2033,9 @@ int main(int argc, char* argv[]) {
 			continue;
 		}
 		
-		if (strncmp(cur, GCC_OPT_ISYSTEM, strlen(GCC_OPT_ISYSTEM)) == 0 || strncmp(cur, GCC_OPT_LIBDIR, strlen(GCC_OPT_LIBDIR)) == 0 || strncmp(cur, GCC_OPT_I, strlen(GCC_OPT_I)) == 0) {
+		if (opt_level != NULL && strncmp(cur, GCC_OPT_OPT_LEVEL, strlen(GCC_OPT_OPT_LEVEL)) == 0) {
+			continue;
+		} else if (strncmp(cur, GCC_OPT_ISYSTEM, strlen(GCC_OPT_ISYSTEM)) == 0 || strncmp(cur, GCC_OPT_LIBDIR, strlen(GCC_OPT_LIBDIR)) == 0 || strncmp(cur, GCC_OPT_I, strlen(GCC_OPT_I)) == 0) {
 			pattern = NULL;
 			
 			if (strncmp(cur, GCC_OPT_ISYSTEM, strlen(GCC_OPT_ISYSTEM)) == 0) {
@@ -3534,6 +3577,10 @@ int main(int argc, char* argv[]) {
 		kargv_append(&yargv, GCC_OPT_D);
 		kargv_append(&yargv, msvcrt_version);
 	#endif
+	
+	if (opt_level != NULL) {
+		kargv_append(&yargv, opt_level);
+	}
 	
 	kargv_append(&xargv, NULL);
 	kargv_merge(&yargv, &xargv);
