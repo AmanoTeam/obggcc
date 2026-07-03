@@ -106,6 +106,14 @@ $ cmake \
 $ cmake --build ./build
 ```
 
+If you want to use Clang, use the toolchain files from the `clang` subdirectory instead:
+
+```bash
+$ cmake \
+    -DCMAKE_TOOLCHAIN_FILE=obggcc/build/cmake/clang/aarch64-unknown-linux-gnu2.19.cmake \
+...
+```
+
 ### GNU Autotools (aka GNU Build System)
 
 Inside the `obggcc/build/autotools` directory, there is a custom bash script for each cross-compilation target that OBGGCC supports:
@@ -138,6 +146,13 @@ $ source obggcc/build/autotools/aarch64-unknown-linux-gnu2.19.sh
 # Configure & build the project
 $ ./configure --host="${CROSS_COMPILE_TRIPLET}"
 $ make
+```
+
+If you want to use Clang, use the toolchain files from the `clang` subdirectory instead:
+
+```bash
+$ source obggcc/build/autotools/clang/aarch64-unknown-linux-gnu2.19.sh
+...
 ```
 
 Essentially, these scripts handle the setup of `CC`, `CXX`, `LD`, and other environment variables so you don’t need to configure them manually.
