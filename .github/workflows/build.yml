@@ -173,7 +173,7 @@ jobs:
             
             source "${OBGGCC_HOME}/build/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' = *'-freebsd' ]]; then
-            declare -r LOKI_TAG='gcc-15'
+            declare -r LOKI_TAG='gcc-16'
             declare -r LOKI_TARBALL='/tmp/toolchain.tar.xz'
             declare -r LOKI_URL="https://github.com/AmanoTeam/freebsd-gcc-cross/releases/download/${LOKI_TAG}/x86_64-unknown-linux-gnu.tar.xz"
             
