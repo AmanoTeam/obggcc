@@ -2943,7 +2943,7 @@ int main(int argc, char* argv[]) {
 	strcat(sysroot_bits_include_directory, PATHSEP_S);
 	strcat(sysroot_bits_include_directory, triplet);
 	
-	#if !defined(MINGW)
+	#if !defined(MINGW) && !defined(WCLANG)
 		if (wants_system_libraries || wants_nz) {
 			sysroot_include_missing_directory = malloc(strlen(sysroot_directory) + strlen(INCLUDE_MISSING_DIR) + 1);
 			
@@ -3275,7 +3275,7 @@ int main(int argc, char* argv[]) {
 	}
 	
 	if (wants_nz) {
-		#if !defined(MINGW)
+		#if !defined(MINGW) && !defined(WCLANG)
 			kargv_append(&yargv, GCC_OPT_ISYSTEM);
 			kargv_append(&yargv, sysroot_include_missing_directory);
 		#endif
@@ -3365,10 +3365,12 @@ int main(int argc, char* argv[]) {
 	}
 	
 	if (wants_system_libraries) {
-		if (host_version < target_version && directory_exists(sysroot_include_missing_directory) == 1) {
-			kargv_append(&yargv, GCC_OPT_ISYSTEM);
-			kargv_append(&yargv, sysroot_include_missing_directory);
-		}
+		#if !defined(WCLANG)
+			if (host_version < target_version && directory_exists(sysroot_include_missing_directory) == 1) {
+				kargv_append(&yargv, GCC_OPT_ISYSTEM);
+				kargv_append(&yargv, sysroot_include_missing_directory);
+			}
+		#endif
 		
 		/* <prefix>/usr/include */
 		directory = malloc((system_prefix == NULL ? 0 : strlen(system_prefix)) + strlen(SYSTEM_INCLUDE_PATH) + 1);
