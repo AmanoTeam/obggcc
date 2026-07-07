@@ -214,7 +214,6 @@ static const char LD_OPT_NO_ROSEGMENT[] = "--no-rosegment";
 static const char LD_OPT_Z[] = "-z";
 static const char LD_OPT_ORIGIN[] = "origin";
 static const char LD_OPT_PACK_RELATIVE_RELOCS[] = "pack-relative-relocs";
-static const char LD_OPT_NO_FATAL_WARNINGS[] = "--no-fatal-warnings";
 
 static const char LLD_OPT_USE_ANDROID_RELR_TAGS[] = "--use-android-relr-tags";
 static const char LLD_OPT_PACK_DYN_RELOCS[] = "--pack-dyn-relocs=relr";
@@ -3136,10 +3135,7 @@ int main(int argc, char* argv[]) {
 		kargv_append(&yargv, triplet);
 		
 		if (linking) {
-			/* Try LLD first, fall back to the built-in linker if not available. */
-			file_name = find_exe(LD_LLD);
-			
-			if (file_name == NULL) {
+			if (wants_lto == LTO_NONE || (file_name = find_exe(LD_LLD)) == NULL) {
 				get_parent_path(app_filename, parent_directory, 1);
 				
 				file_name = malloc(
@@ -3161,9 +3157,6 @@ int main(int argc, char* argv[]) {
 				strcat(file_name, triplet);
 				strcat(file_name, HYPHEN);
 				strcat(file_name, LD);
-			} else {
-				kargv_append(&yargv, GCC_OPT_XLINKER);
-				kargv_append(&yargv, LD_OPT_NO_FATAL_WARNINGS);
 			}
 			
 			linker = malloc(strlen(GCC_OPT_F_USE_LD) + strlen(file_name) + 1);
