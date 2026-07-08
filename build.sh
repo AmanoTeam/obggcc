@@ -2203,3 +2203,5 @@ if ( find "${toolchain_directory}" -xtype 'l' -print -quit | grep -q . ); then
 	echo '* broken symbolic links *' && find "${toolchain_directory}" -xtype 'l'
 	exit '1'
 fi
+
+cp "${workdir}/README.md" "${toolchain_directory}"

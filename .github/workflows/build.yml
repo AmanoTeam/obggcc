@@ -105,7 +105,6 @@ jobs:
           # NetBSD
           'i386-unknown-netbsdelf',
           'x86_64-unknown-netbsd',
-          'aarch64-unknown-netbsd',
           
           # DragonFly BSD
           'x86_64-unknown-dragonfly',
@@ -114,7 +113,6 @@ jobs:
           'x86_64-unknown-linux-android',
           'i686-unknown-linux-android21',
           'aarch64-unknown-linux-android',
-          'riscv64-unknown-linux-android',
           'armv7-unknown-linux-androideabi21',
         ]
     steps:
