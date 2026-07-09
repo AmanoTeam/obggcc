@@ -2079,7 +2079,7 @@ int main(int argc, char* argv[]) {
 			* Push custom "-L" flags to the beginning of the command line so they
 			* can override the sysroot library directories.
 			*/
-			if (strcmp(pattern, GCC_OPT_LIBDIR) == 0) {
+			if (strcmp(pattern, GCC_OPT_LIBDIR) == 0 && strstr(cur, NZ_SYSROOT) == NULL) {
 				kargv_append(&kargv_libdir, GCC_OPT_LIBDIR);
 				kargv_append(&kargv_libdir, cur);
 				
