@@ -2060,20 +2060,22 @@ int main(int argc, char* argv[]) {
 				cur = argv[index + offset];
 			}
 			
-			/*
-			In older versions of the NDK, the CMake/ndk-build scripts used to manually pass 
-			the library/include directories of the C/C++ standard libraries to the compiler command.
-			
-			Pino does not use this approach, and instead relies on its own logic for locating 
-			the C/C++ standard library directories.
-			
-			Since this is irrelevant to us—and may even cause conflicts with our own implementation—
-			strip these arguments out and avoid passing them down to the compiler.
-			*/
-			if (!(strstr(cur, NDK_CXX_STL_DIRECTORY) == NULL && strstr(cur, NDK_SYSROOT_INCLUDE_DIRECTORY) == NULL && strstr(cur, NDK_SYSROOT_LIBRARY_DIRECTORY) == NULL && strstr(cur, NDK_SYSROOT_SECONDARY_LIBRARY_DIRECTORY) == NULL)) {
-				index += offset;
-				continue;
-			}
+			#if defined(PINO)
+				/*
+				In older versions of the NDK, the CMake/ndk-build scripts used to manually pass 
+				the library/include directories of the C/C++ standard libraries to the compiler command.
+				
+				Pino does not use this approach, and instead relies on its own logic for locating 
+				the C/C++ standard library directories.
+				
+				Since this is irrelevant to us—and may even cause conflicts with our own implementation—
+				strip these arguments out and avoid passing them down to the compiler.
+				*/
+				if (!(strstr(cur, NDK_CXX_STL_DIRECTORY) == NULL && strstr(cur, NDK_SYSROOT_INCLUDE_DIRECTORY) == NULL && strstr(cur, NDK_SYSROOT_LIBRARY_DIRECTORY) == NULL && strstr(cur, NDK_SYSROOT_SECONDARY_LIBRARY_DIRECTORY) == NULL)) {
+					index += offset;
+					continue;
+				}
+			#endif
 			
 			/*
 			* Push custom "-L" flags to the beginning of the command line so they
