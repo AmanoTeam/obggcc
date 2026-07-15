@@ -154,6 +154,7 @@ static const char GCC_OPT_F_STACK_PROTECTOR[] = "-fstack-protector";
 
 static const char GCC_OPT_NODEFAULTLIBS[] = "-nodefaultlibs";
 static const char GCC_OPT_NOSTDLIB[] = "-nostdlib";
+static const char GCC_OPT_NOSTDLIBCXX[] = "-nostdlib++";
 static const char GCC_OPT_WERROR[] = "-Werror";
 static const char GCC_OPT_WNO_ERROR[] = "-Wno-error";
 static const char GCC_OPT_F_TREE_VECTORIZE[] = "-ftree-vectorize";
@@ -498,6 +499,14 @@ static clang_option_t CLANG_SPECIFIC_REMOVE[] = {
 	},
 	{
 		.name = "-Wsometimes-uninitialized",
+		.value = 0
+	},
+	{
+		.name = "-Wheader-hygiene",
+		.value = 0
+	},
+	{
+		.name = "-Wstring-concatenation",
 		.value = 0
 	}
 };
@@ -2035,6 +2044,17 @@ int main(int argc, char* argv[]) {
 			continue;
 		}
 		
+		#if defined(PINO) && !defined(__ANDROID__)
+			/* Older NDKs may pass libc++*.a directly together with -nostdlib++. */
+			if (strstr(cur, NDK_CXX_STL_DIRECTORY) != NULL) {
+				continue;
+			}
+			
+			if (strcmp(cur, GCC_OPT_NOSTDLIBCXX) == 0) {
+				continue;
+			}
+		#endif
+		
 		if (opt_level != NULL && strncmp(cur, GCC_OPT_OPT_LEVEL, strlen(GCC_OPT_OPT_LEVEL)) == 0) {
 			continue;
 		} else if (strncmp(cur, GCC_OPT_ISYSTEM, strlen(GCC_OPT_ISYSTEM)) == 0 || strncmp(cur, GCC_OPT_LIBDIR, strlen(GCC_OPT_LIBDIR)) == 0 || strncmp(cur, GCC_OPT_I, strlen(GCC_OPT_I)) == 0) {
@@ -2062,16 +2082,10 @@ int main(int argc, char* argv[]) {
 				cur = argv[index + offset];
 			}
 			
-			#if defined(PINO)
+			#if defined(PINO) && !defined(__ANDROID__)
 				/*
 				In older versions of the NDK, the CMake/ndk-build scripts used to manually pass 
 				the library/include directories of the C/C++ standard libraries to the compiler command.
-				
-				Pino does not use this approach, and instead relies on its own logic for locating 
-				the C/C++ standard library directories.
-				
-				Since this is irrelevant to us—and may even cause conflicts with our own implementation—
-				strip these arguments out and avoid passing them down to the compiler.
 				*/
 				if (!(strstr(cur, NDK_CXX_STL_DIRECTORY) == NULL && strstr(cur, NDK_SYSROOT_INCLUDE_DIRECTORY) == NULL && strstr(cur, NDK_SYSROOT_LIBRARY_DIRECTORY) == NULL && strstr(cur, NDK_SYSROOT_SECONDARY_LIBRARY_DIRECTORY) == NULL)) {
 					index += offset;
