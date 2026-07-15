@@ -1800,6 +1800,8 @@ int main(int argc, char* argv[]) {
 	
 	int have_flag_std = 0;
 	
+	int print_resource_dir = 0;
+	
 	hquery_t query = {0};
 	
 	#if defined(OBGGCC)
@@ -2283,16 +2285,8 @@ int main(int argc, char* argv[]) {
 			
 			continue;
 		} else if (strcmp(cur, CLANG_OPT_PRINT_RESOURCE_DIR) == 0) {
-			/*
-			The ndk-build's Makefile calls Clang with this flag every time a cross-compilation for a specific architecture is about to begin.
-			It's unclear what the intended purpose of this is, because even after looking in the ndk-build's Makefile, it seems that the return
-			value of this command is stored in a variable and then never reused anywhere in the code.
-			
-			+ https://android.googlesource.com/platform/ndk/+/3cb267487b9a7c1b5956f4239ddd15095630041a/build/core/setup-toolchain.mk#107
-			
-			Since that seems to be a completely useless call and has nothing to do with the compilation step, we will just ignore it.
-			*/
-			goto end;
+			print_resource_dir = 1;
+			continue;
 		} else if (strcmp(cur, GCC_M_ANDROID_WEAK_SYMBOLS) == 0) {
 			#if defined(PINO)
 				android_weak_symbols = 1;
@@ -2473,9 +2467,28 @@ int main(int argc, char* argv[]) {
 		}
 	}
 	
-	if (print_version && known_clang(cc)) {
-		printf(CLANG_VERSION_TEMPLATE, DEFAULT_TARGET, parent_directory);
-		goto end;
+	if (known_clang(cc)) {
+		if (print_version) {
+			printf(CLANG_VERSION_TEMPLATE, DEFAULT_TARGET, parent_directory);
+			goto end;
+		}
+		
+		if (print_resource_dir) {
+			get_parent_path(app_filename, parent_directory, 2);
+			
+			arg = malloc(strlen(parent_directory) + strlen(GCC_LIBRARY_DIR) + 1);
+			
+			if (arg == NULL) {
+				err = ERR_MEM_ALLOC_FAILURE;
+				goto end;
+			}
+			
+			strcpy(arg, parent_directory);
+			strcat(arg, GCC_LIBRARY_DIR);
+			
+			printf("%s\n", arg);
+			goto end;
+		}
 	}
 	
 	if (help) {
