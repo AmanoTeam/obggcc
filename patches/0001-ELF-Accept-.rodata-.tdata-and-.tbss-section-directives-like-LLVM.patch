@@ -1,0 +1,116 @@
+From ce2bc6b81e64e42404f6b9333dd970695a84d744 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Tue, 14 Jul 2026 17:38:58 -0300
+Subject: [PATCH] ELF: Accept .rodata, .tdata and .tbss section directives like
+ LLVM
+
+---
+ gas/config/obj-elf.c | 70 ++++++++++++++++++++++++++++++++++++++++++++
+ gas/config/obj-elf.h |  3 ++
+ 2 files changed, 73 insertions(+)
+
+diff --git a/gas/config/obj-elf.c b/gas/config/obj-elf.c
+index 2e15b251..0f7b0b71 100644
+--- a/gas/config/obj-elf.c
++++ b/gas/config/obj-elf.c
+@@ -134,6 +134,15 @@ static const pseudo_typeS elf_pseudo_table[] =
+   {"text", obj_elf_text, 0},
+   {"bss", obj_elf_bss, 0},
+ 
++  /* Read-only and TLS section directives recognised by LLVM's
++     integrated assembler; accepted here for compatibility.  They
++     behave like ".section .rodata", ".section .tdata" and
++     ".section .tbss" but, like ".text"/".data"/".bss", allow an
++     optional subsection number argument.  */
++  {"rodata", obj_elf_rodata, 0},
++  {"tdata", obj_elf_tdata, 0},
++  {"tbss", obj_elf_tbss, 0},
++
+   {"tls_common", obj_elf_tls_common, 0},
+ 
+   /* End sentinel.  */
+@@ -1677,6 +1686,67 @@ obj_elf_text (int i)
+ #endif
+ }
+ 
++/* Helper for the .rodata, .tdata and .tbss directives.  Switch to the
++   named ELF section, honoring an optional subsection number argument
++   like .text and .data do.  The section type and flags are taken from
++   BFD's default for the section name (i.e. as if ".section NAME" had
++   been written).  */
++
++static void
++obj_elf_named_section (const char *name)
++{
++  subsegT subsection = 0;
++  struct elf_section_match match;
++
++#ifdef md_flush_pending_output
++  md_flush_pending_output ();
++#endif
++
++  obj_elf_section_change_hook ();
++
++  /* The .text, .data and .bss directives accept an optional subsection
++     number argument.  Do the same here for symmetry and to match
++     LLVM's integrated assembler.  */
++  SKIP_WHITESPACE ();
++  if (!is_end_of_line (*input_line_pointer))
++    subsection = get_absolute_expression ();
++  demand_empty_rest_of_line ();
++
++  memset (&match, 0, sizeof (match));
++  obj_elf_change_section (name, SHT_NULL, 0, 0, &match, false);
++  /* obj_elf_change_section selects subsection 0; choose the requested
++     one for compatibility with .text N/.data N.  */
++  subseg_set (now_seg, subsection);
++
++#ifdef md_elf_section_change_hook
++  md_elf_section_change_hook ();
++#endif
++}
++
++/* Change to the .rodata section.  */
++
++void
++obj_elf_rodata (int i ATTRIBUTE_UNUSED)
++{
++  obj_elf_named_section (".rodata");
++}
++
++/* Change to the .tdata (thread-local data) section.  */
++
++void
++obj_elf_tdata (int i ATTRIBUTE_UNUSED)
++{
++  obj_elf_named_section (".tdata");
++}
++
++/* Change to the .tbss (thread-local BSS) section.  */
++
++void
++obj_elf_tbss (int i ATTRIBUTE_UNUSED)
++{
++  obj_elf_named_section (".tbss");
++}
++
+ /* Change to the *ABS* section.  */
+ 
+ void
+diff --git a/gas/config/obj-elf.h b/gas/config/obj-elf.h
+index 910b743a..5bc53b02 100644
+--- a/gas/config/obj-elf.h
++++ b/gas/config/obj-elf.h
+@@ -198,6 +198,9 @@ extern void obj_elf_common (int);
+ extern void obj_elf_bss (int);
+ extern void obj_elf_data (int);
+ extern void obj_elf_text (int);
++extern void obj_elf_rodata (int);
++extern void obj_elf_tdata (int);
++extern void obj_elf_tbss (int);
+ extern void obj_elf_change_section
+   (const char *, unsigned int, bfd_vma, int, struct elf_section_match *,
+    bool);
+-- 
+2.54.0
+

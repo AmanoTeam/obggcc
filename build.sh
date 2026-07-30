@@ -441,6 +441,8 @@ if ! [ -f "${binutils_tarball}" ]; then
 	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Add-relative-RPATHs-to-binutils-host-tools.patch"
 	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Don-t-warn-about-local-symbols-within-the-globals.patch"
 	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Don-t-warn-about-errors-while-trying-to-create-the-.eh_frame_hdr-section.patch"
+	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-ELF-Accept-.rodata-.tdata-and-.tbss-section-directives-like-LLVM.patch"
+	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-ARM-Accept-unified-syntax-conditional-suffix-form-in-divided-syntax.patch"
 fi
 
 if ! [ -f "${gold_tarball}" ]; then
@@ -829,6 +831,12 @@ if ! [ -f "${gcc_tarball}" ]; then
 		true # patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-7/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
 	elif (( gcc_major >= 4.3 && gcc_major <= 6 )); then
 		true # patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.3/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
+	fi
+	
+	if (( gcc_major >= 16 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-c-Accept-__thread-before-static-extern-as-a-pedantic-extension.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-c-Accept-_Static_assert-as-a-compatibility-extension.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Ignore-pragma-weak-when-the-declaration-is-private-o.patch"
 	fi
 	
 	ln \

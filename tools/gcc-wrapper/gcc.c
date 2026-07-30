@@ -508,6 +508,14 @@ static clang_option_t CLANG_SPECIFIC_REMOVE[] = {
 	{
 		.name = "-Wstring-concatenation",
 		.value = 0
+	},
+	{
+		.name = "-Wshadow-field-in-constructor",
+		.value = 0
+	},
+	{
+		.name = "-Wshadow-uncaptured-local",
+		.value = 0
 	}
 };
 

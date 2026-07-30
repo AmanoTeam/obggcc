@@ -1,0 +1,84 @@
+From 404e7051e4250366a1e3af757072fd1ca1f1b586 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Thu, 30 Jul 2026 16:10:21 -0300
+Subject: [PATCH] c++: Accept _Static_assert as a compatibility extension
+
+---
+ gcc/c-family/c-common.cc |  7 ++++++-
+ gcc/cp/parser.cc         | 21 ++++++++++++++++-----
+ 2 files changed, 22 insertions(+), 6 deletions(-)
+
+diff --git a/gcc/c-family/c-common.cc b/gcc/c-family/c-common.cc
+index ad515428c..9241cbdd8 100644
+--- a/gcc/c-family/c-common.cc
++++ b/gcc/c-family/c-common.cc
+@@ -391,6 +391,11 @@ static bool nonnull_check_p (tree, unsigned HOST_WIDE_INT);
+    reserved words such as 'class'.  In C++, 'class' is a reserved
+    word.  In Objective-C++ it is too.  In Objective-C, it is a
+    reserved word too, but only if it follows an '@' sign.
++
++   A mask of 0 makes a keyword available in all C and C++ modes; this
++   is used for C keywords accepted in C++ as a compatibility
++   extension (e.g. _Static_assert, accepted by Clang), for which the
++   C++ parser then issues a pedwarn.
+ */
+ const struct c_common_resword c_common_reswords[] =
+ {
+@@ -418,7 +423,7 @@ const struct c_common_resword c_common_reswords[] =
+   { "_Fract",           RID_FRACT,     D_CONLY | D_EXT },
+   { "_Accum",           RID_ACCUM,     D_CONLY | D_EXT },
+   { "_Sat",             RID_SAT,       D_CONLY | D_EXT },
+-  { "_Static_assert",   RID_STATIC_ASSERT, D_CONLY },
++  { "_Static_assert",   RID_STATIC_ASSERT, 0 },
+   { "_Noreturn",        RID_NORETURN,  D_CONLY },
+   { "_Generic",         RID_GENERIC,   D_CONLY },
+   { "_Thread_local",    RID_THREAD,    D_CONLY },
+diff --git a/gcc/cp/parser.cc b/gcc/cp/parser.cc
+index 337fbfd3f..de80c21cc 100644
+--- a/gcc/cp/parser.cc
++++ b/gcc/cp/parser.cc
+@@ -19392,7 +19392,16 @@ cp_parser_static_assert (cp_parser *parser, bool member_p)
+ 
+   /* Peek at the `static_assert' token so we can keep track of exactly
+      where the static assertion started.  */
+-  token_loc = cp_lexer_peek_token (parser->lexer)->location;
++  cp_token *assert_tok = cp_lexer_peek_token (parser->lexer);
++  token_loc = assert_tok->location;
++  tree spelling = assert_tok->u.value;
++
++  /* _Static_assert is a C11 keyword that is also accepted in C++ as a
++     compatibility extension (matching Clang).  Diagnose its use in
++     C++ mode as a non-standard extension.  */
++  if (spelling == get_identifier ("_Static_assert"))
++    pedwarn (token_loc, OPT_Wpedantic,
++	     "ISO C++ does not support %qE", spelling);
+ 
+   /* Look for the `static_assert' keyword.  */
+   if (!cp_parser_require_keyword (parser, RID_STATIC_ASSERT,
+@@ -19419,8 +19428,9 @@ cp_parser_static_assert (cp_parser *parser, bool member_p)
+     {
+       if (pedantic && cxx_dialect < cxx17)
+ 	pedwarn (input_location, OPT_Wc__17_extensions,
+-		 "%<static_assert%> without a message "
+-		 "only available with %<-std=c++17%> or %<-std=gnu++17%>");
++		 "%qE without a message "
++		 "only available with %<-std=c++17%> or %<-std=gnu++17%>",
++		 spelling);
+       /* Eat the ')'  */
+       cp_lexer_consume_token (parser->lexer);
+       message = build_empty_string ();
+@@ -19447,8 +19457,9 @@ cp_parser_static_assert (cp_parser *parser, bool member_p)
+ 	  location_t loc = cp_lexer_peek_token (parser->lexer)->location;
+ 	  if (cxx_dialect < cxx26)
+ 	    pedwarn (loc, OPT_Wc__26_extensions,
+-		     "%<static_assert%> with non-string message only "
+-		     "available with %<-std=c++2c%> or %<-std=gnu++2c%>");
++		     "%qE with non-string message only "
++		     "available with %<-std=c++2c%> or %<-std=gnu++2c%>",
++		     spelling);
+ 
+ 	  message = cp_parser_conditional_expression (parser);
+ 	  if (TREE_CODE (message) == STRING_CST)
+-- 
+2.55.0
+

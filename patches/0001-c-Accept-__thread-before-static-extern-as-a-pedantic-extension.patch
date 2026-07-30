@@ -1,0 +1,44 @@
+From 393d05d4293118f1cfde695b20443ecc56007cef Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Thu, 30 Jul 2026 02:45:53 +0000
+Subject: [PATCH] c: Accept __thread before static/extern as a pedantic
+ extension
+
+---
+ gcc/c/c-decl.cc | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/gcc/c/c-decl.cc b/gcc/c/c-decl.cc
+index b90a90705..538011acb 100644
+--- a/gcc/c/c-decl.cc
++++ b/gcc/c/c-decl.cc
+@@ -13247,18 +13247,22 @@ declspecs_add_scspec (location_t loc,
+       break;
+     case RID_EXTERN:
+       n = csc_extern;
+-      /* Diagnose "__thread extern".  */
++      /* "__thread extern" is a GNU extension; pedwarn about the order,
++	 as in the C++ front-end.  */
+       if (specs->thread_p && specs->thread_gnu_p)
+-	error ("%<__thread%> before %<extern%>");
++	pedwarn (specs->locations[cdw_thread], 0,
++		 "%<__thread%> before %<extern%>");
+       break;
+     case RID_REGISTER:
+       n = csc_register;
+       break;
+     case RID_STATIC:
+       n = csc_static;
+-      /* Diagnose "__thread static".  */
++      /* "__thread static" is a GNU extension; pedwarn about the order,
++	 as in the C++ front-end.  */
+       if (specs->thread_p && specs->thread_gnu_p)
+-	error ("%<__thread%> before %<static%>");
++	pedwarn (specs->locations[cdw_thread], 0,
++		 "%<__thread%> before %<static%>");
+       break;
+     case RID_TYPEDEF:
+       n = csc_typedef;
+-- 
+2.55.0
+

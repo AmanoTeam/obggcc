@@ -1,0 +1,28 @@
+From 10f1a020f9a60f9f34193187ece477dd2e76a4f3 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Tue, 14 Jul 2026 16:46:31 -0300
+Subject: [PATCH] ARM: Accept unified-syntax conditional suffix form in divided
+ syntax
+
+---
+ gas/config/tc-arm.c | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/gas/config/tc-arm.c b/gas/config/tc-arm.c
+index ba599ef1..8f86fe39 100644
+--- a/gas/config/tc-arm.c
++++ b/gas/config/tc-arm.c
+@@ -22551,10 +22551,6 @@ opcode_lookup (char **str)
+ 	case OT_cinfix3:
+ 	case OT_cinfix3_deprecated:
+ 	case OT_odd_infix_unc:
+-	  if (!unified_syntax)
+-	    return NULL;
+-	  /* Fall through.  */
+-
+ 	case OT_csuffix:
+ 	case OT_csuffixF:
+ 	case OT_csuf_or_in3:
+-- 
+2.54.0
+

@@ -1,0 +1,26 @@
+From e7668393c3e4a0fbd27542d0fb7e0ab0fd6a6a9e Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Thu, 26 Jun 2025 15:00:18 -0300
+Subject: [PATCH] Ignore #pragma weak when the declaration is private or does
+ not have external linkage
+
+---
+ gcc/varasm.cc | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/gcc/varasm.cc b/gcc/varasm.cc
+index 10c1d2e31..dbef31fd9 100644
+--- a/gcc/varasm.cc
++++ b/gcc/varasm.cc
+@@ -6258,7 +6258,7 @@ declare_weak (tree decl)
+ 	      || flag_syntax_only);
+   if (! TREE_PUBLIC (decl))
+     {
+-      error ("weak declaration of %q+D must be public", decl);
++      warning (0, "weak declaration of %q+D must be public", decl);
+       return;
+     }
+   else if (!TARGET_SUPPORTS_WEAK)
+-- 
+2.49.0
+
