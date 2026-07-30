@@ -1,4 +1,4 @@
-#/bin/bash
+#!/usr/bin/env bash
 
 unset \
 	CROSS_COMPILE_TRIPLET \

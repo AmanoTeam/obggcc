@@ -1060,7 +1060,6 @@ static int check_test_file(const char* const name) {
 	const char* const base = basename(name);
 	
 	const int status = (
-		strcmp(base, "test.o") == 0 ||
 		strncmp(base, CMAKE_C_COMPILER_TEST, strlen(CMAKE_C_COMPILER_TEST)) == 0 ||
 		strncmp(base, CMAKE_CXX_COMPILER_TEST, strlen(CMAKE_CXX_COMPILER_TEST)) == 0
 	);
@@ -1071,10 +1070,14 @@ static int check_test_file(const char* const name) {
 
 static int check_build_system_init(const char* const prev, const char* const cur) {
 	
+	const char* const base = basename(cur);
+	
 	const int status = (
 		strcmp(cur, "-?") == 0 ||
-		strcmp(cur, CMAKE_C_COMPILER_ID) == 0 ||
-		strcmp(cur, CMAKE_CXX_COMPILER_ID) == 0 ||
+		strcmp(base, CMAKE_C_COMPILER_ID) == 0 ||
+		strcmp(base, CMAKE_CXX_COMPILER_ID) == 0 ||
+		strcmp(base, "CXX-DetectStdlib.h") == 0 ||
+		strcmp(base, "test.o") == 0 ||
 		(prev != NULL && strcmp(prev, GCC_OPT_O) == 0 && check_test_file(cur)) ||
 		(strstr(cur, CMAKE_FILES_DIRECTORY) != NULL && check_test_file(cur))
 	);
