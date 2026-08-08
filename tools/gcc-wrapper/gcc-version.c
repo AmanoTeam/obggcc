@@ -4,6 +4,10 @@
 
 gcc_version_t gcc_version_unstringify(const char* const value) {
 	
+	if (strcmp(value, "2.95") == 0) {
+		return GCC_2_95;
+	}
+	
 	if (strcmp(value, "3.1") == 0) {
 		return GCC_3_1;
 	}

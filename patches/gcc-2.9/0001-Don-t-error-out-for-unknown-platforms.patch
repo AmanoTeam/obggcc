@@ -1,0 +1,39 @@
+From ab1b43c3afdd4135d9e65fd106f7bd5a717e6878 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sat, 8 Aug 2026 18:19:02 +0000
+Subject: [PATCH] Don't error out for unknown platforms
+
+---
+ gcc/configure    | 2 +-
+ gcc/configure.in | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/gcc/configure b/gcc/configure
+index 38d3db4fe27..224e12eaf00 100755
+--- a/gcc/configure
++++ b/gcc/configure
+@@ -5606,7 +5606,7 @@ for machine in $build $host $target; do
+ 		;;
+ 	*)
+ 		echo "Configuration $machine not supported" 1>&2
+-		exit 1
++		true
+ 		;;
+ 	esac
+ 
+diff --git a/gcc/configure.in b/gcc/configure.in
+index 55dcec76823..a7f14770216 100644
+--- a/gcc/configure.in
++++ b/gcc/configure.in
+@@ -3302,7 +3302,7 @@ changequote([,])dnl
+ 		;;
+ 	*)
+ 		echo "Configuration $machine not supported" 1>&2
+-		exit 1
++		true
+ 		;;
+ 	esac
+ 
+-- 
+2.54.0
+

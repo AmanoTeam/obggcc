@@ -1,0 +1,1335 @@
+diff --git a/gcc/config/m68k/mot3300-crt0.S b/gcc/config/m68k/mot3300-crt0.S
+@@ -93,6 +93,6 @@
+ 	COMM	splimit%,4
+ 	COMM	environ,4
+ 
+-	IDENT ("$Id: mot3300-crt0.S,v 1.1.1.2 1998/01/14 19:39:06 law Exp $")
++	IDENT ("$Id: mot3300-crt0.S,v 1.2 1998/12/16 21:07:03 law Exp $")
+ 	IDENT ("Contributed by Manfred Hollstein (manfred@lts.sel.alcatel.de)")
+ 	IDENT ("Corrections by Philippe De Muyter (phdm@macqel.be)")
+diff --git a/gcc/config/m68k/mot3300Mcrt0.S b/gcc/config/m68k/mot3300Mcrt0.S
+@@ -137,6 +137,6 @@
+ 	COMM	environ,4
+ 	COMM	_countbase,4
+ 
+-	IDENT ("$Id: mot3300Mcrt0.S,v 1.1.1.2 1998/01/14 19:39:08 law Exp $")
++	IDENT ("$Id: mot3300Mcrt0.S,v 1.2 1998/12/16 21:07:05 law Exp $")
+ 	IDENT ("Contributed by Manfred Hollstein (manfred@lts.sel.alcatel.de)")
+ 	IDENT ("Corrections by Philippe De Muyter (phdm@macqel.be)")
+diff --git a/gcc/config/m88k/dgux.h b/gcc/config/m88k/dgux.h
+@@ -30,7 +30,7 @@
+   (TARGET_SVR4 ? DWARF_DEBUG : SDB_DEBUG)
+ 
+ #ifndef VERSION_INFO2
+-#define VERSION_INFO2   "$Revision: 1.3 $"
++#define VERSION_INFO2   "$Revision: 1.4 $"
+ #endif
+ #ifndef NO_BUGS
+ #define AS_BUG_IMMEDIATE_LABEL
+diff --git a/gcc/config/m88k/m88k.h b/gcc/config/m88k/m88k.h
+@@ -198,13 +198,13 @@
+    Redefined in sysv4.h, and luna.h.  */
+ #define VERSION_INFO1	"m88k, "
+ #ifndef VERSION_INFO2
+-#define VERSION_INFO2   "$Revision: 1.11 $"
++#define VERSION_INFO2   "$Revision: 1.12 $"
+ #endif
+ 
+ #ifndef VERSION_STRING
+ #define VERSION_STRING  version_string
+ #ifdef __STDC__
+-#define TM_RCS_ID      "@(#)" __FILE__ " $Revision: 1.11 $ " __DATE__
++#define TM_RCS_ID      "@(#)" __FILE__ " $Revision: 1.12 $ " __DATE__
+ #else
+ #define TM_RCS_ID      "$What: <@(#) m88k.h,v	1.1.1.2.2.2> $"
+ #endif  /* __STDC__ */
+diff --git a/libf2c/libF77/Version.c b/libf2c/libF77/Version.c
+@@ -1,9 +1,9 @@
+-                                                                                        static char junk[] = "\n@(#)LIBF77 VERSION 19990503\n";
++static char junk[] = "\n@(#)LIBF77 VERSION 19990503\n";
+ 
+ /*
+ */
+ 
+-char __G77_LIBF77_VERSION__[] = "0.5.25 20030502 (prerelease)";
++char __G77_LIBF77_VERSION__[] = "0.5.25 20010319 (prerelease)";
+ 
+ /*
+ 2.00	11 June 1980.  File version.c added to library.
+diff --git a/libf2c/libI77/Version.c b/libf2c/libI77/Version.c
+@@ -1,9 +1,9 @@
+-                                                                                        static char junk[] = "\n@(#) LIBI77 VERSION pjw,dmg-mods 19990503\n";
++static char junk[] = "\n@(#) LIBI77 VERSION pjw,dmg-mods 19990503\n";
+ 
+ /*
+ */
+ 
+-char __G77_LIBI77_VERSION__[] = "0.5.25 20030502 (prerelease)";
++char __G77_LIBI77_VERSION__[] = "0.5.25 20010319 (prerelease)";
+ 
+ /*
+ 2.01	$ format added
+diff --git a/libf2c/libU77/Version.c b/libf2c/libU77/Version.c
+@@ -1,6 +1,6 @@
+-                                                                                        static char junk[] = "\n@(#) LIBU77 VERSION 19980709\n";
++static char junk[] = "\n@(#) LIBU77 VERSION 19980709\n";
+ 
+-char __G77_LIBU77_VERSION__[] = "0.5.25 20030502 (prerelease)";
++char __G77_LIBU77_VERSION__[] = "0.5.25 20010319 (prerelease)";
+ 
+ #include <stdio.h>
+ 
+diff --git a/libio/dbz/dbzmain.c b/libio/dbz/dbzmain.c
+@@ -19,7 +19,7 @@
+ #define	STREQ(a, b)	(*(a) == *(b) && strcmp((a), (b)) == 0)
+ 
+ #ifndef lint
+-static char RCSid[] = "$Header: /egcs/carton/cvsfiles/egcs/./libio/dbz/dbzmain.c,v 1.1.1.1 1997/08/21 22:58:23 jason Exp $";
++static char RCSid[] = "$Header: /cvs/gcc/egcs/libio/dbz/dbzmain.c,v 1.2 1998/02/01 12:20:13 law Exp $";
+ #endif
+ 
+ char *progname;
+diff --git a/libio/dbz/fake.c b/libio/dbz/fake.c
+@@ -13,7 +13,7 @@
+ #define	STREQ(a, b)	(*(a) == *(b) && strcmp((a), (b)) == 0)
+ 
+ #ifndef lint
+-static char RCSid[] = "$Header: /rel/cvsfiles/devo/libio/dbz/fake.c,v 1.2 1993/10/25 20:02:42 bothner Exp $";
++static char RCSid[] = "$Header: /cvs/gcc/egcs/libio/dbz/fake.c,v 1.1.1.1 1997/08/21 22:58:23 jason Exp $";
+ #endif
+ 
+ int midonly = 0;		/* just message ids, rest not realistic */
+diff --git a/libio/fstream.h b/libio/fstream.h
+@@ -1,5 +1,92 @@
++/* This is part of libio/iostream, providing -*- C++ -*- input/output.
+ Copyright (C) 1993, 2000 Free Software Foundation
++
++This file is part of the GNU IO Library.  This library is free
++software; you can redistribute it and/or modify it under the
++terms of the GNU General Public License as published by the
++Free Software Foundation; either version 2, or (at your option)
++any later version.
++
++This library is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++You should have received a copy of the GNU General Public License
++along with this library; see the file COPYING.  If not, write to the Free
++Software Foundation, 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
++
++As a special exception, if you link this library with files
++compiled with a GNU compiler to produce an executable, this does not cause
++the resulting executable to be covered by the GNU General Public License.
++This exception does not however invalidate any other reasons why
++the executable file might be covered by the GNU General Public License. */
++
++#ifndef _FSTREAM_H
++#define _FSTREAM_H
++#ifdef __GNUG__
++#pragma interface
++#endif
++#include <iostream.h>
++
++extern "C++" {
++class fstreambase : virtual public ios {
++#ifdef _IO_NEW_STREAMS
++    mutable filebuf __my_fb; // mutable so rdbuf() can be const
++#endif
++    void __fb_init ();
++  public:
++    fstreambase();
++    fstreambase(int fd);
++    fstreambase(int fd, char *p, int l); /* Deprecated */
++    fstreambase(const char *name, int mode, int prot=0664);
++    void close();
++#ifdef _IO_NEW_STREAMS
++    filebuf* rdbuf() const { return &__my_fb; }
++#else
++    filebuf* rdbuf() const { return (filebuf*) ios::rdbuf(); }
++#endif
++    void open(const char *name, int mode, int prot=0664);
++    int is_open() const { return rdbuf()->is_open(); }
++    void setbuf(char *ptr, int len) { rdbuf()->setbuf(ptr, len); }
++    void attach(int fd);
++#ifdef _STREAM_COMPAT
++    int filedesc() { return rdbuf()->fd(); }
++    fstreambase& raw() { rdbuf()->setbuf(NULL, 0); return *this; }
++#endif
++};
++
++class ifstream : public fstreambase, public istream {
++  public:
++    ifstream() : fstreambase() { }
++    ifstream(int fd) : fstreambase(fd) { }
++    ifstream(int fd, char *p, int l) : fstreambase(fd, p, l) { } /*Deprecated*/
++    ifstream(const char *name, int mode=ios::in, int prot=0664)
+ 	: fstreambase(name, mode | ios::in, prot) { }
++    void open(const char *name, int mode=ios::in, int prot=0664)
+ 	{ fstreambase::open(name, mode | ios::in, prot); }
++};
++
++class ofstream : public fstreambase, public ostream {
++  public:
++    ofstream() : fstreambase() { }
++    ofstream(int fd) : fstreambase(fd) { }
++    ofstream(int fd, char *p, int l) : fstreambase(fd, p, l) { } /*Deprecated*/
++    ofstream(const char *name, int mode=ios::out, int prot=0664)
+ 	: fstreambase(name, mode | ios::out, prot) { }
++    void open(const char *name, int mode=ios::out, int prot=0664)
+ 	{ fstreambase::open(name, mode | ios::out, prot); }
++};
++
++class fstream : public fstreambase, public iostream {
++  public:
++    fstream() : fstreambase() { }
++    fstream(int fd) : fstreambase(fd) { }
++    fstream(const char *name, int mode, int prot=0664)
++	: fstreambase(name, mode, prot) { }
++    fstream(int fd, char *p, int l) : fstreambase(fd, p, l) { } /*Deprecated*/
++    void open(const char *name, int mode, int prot=0664)
++	{ fstreambase::open(name, mode, prot); }
++};
++} // extern "C++"
++#endif /*!_FSTREAM_H*/
+diff --git a/libio/isgetsb.cc b/libio/isgetsb.cc
+@@ -1,4 +1,63 @@
++/* This is part of libio/iostream, providing -*- C++ -*- input/output.
++Copyright (C) 1993 Free Software Foundation
++
++This file is part of the GNU IO Library.  This library is free
++software; you can redistribute it and/or modify it under the
++terms of the GNU General Public License as published by the
++Free Software Foundation; either version 2, or (at your option)
++any later version.
++
++This library is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++You should have received a copy of the GNU General Public License
++along with this library; see the file COPYING.  If not, write to the Free
++Software Foundation, 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
++
++As a special exception, if you link this library with files
++compiled with a GNU compiler to produce an executable, this does not cause
++the resulting executable to be covered by the GNU General Public License.
++This exception does not however invalidate any other reasons why
++the executable file might be covered by the GNU General Public License. */
++
++#include "libioP.h"
++#include "iostream.h"
++#include <string.h>
++
++istream& istream::get(streambuf& sb, char delim /* = '\n' */)
++{
++  _gcount = 0;
++  if (ipfx1())
++    {
+       _IO_cleanup_region_start ((void (*) __P ((void *))) _IO_funlockfile,
+ 				_strbuf);
++      register streambuf* isb = rdbuf();
++      for (;;)
++	{
++	  streamsize len = isb->_IO_read_end - isb->_IO_read_ptr;
++	  if (len <= 0)
++	    if (__underflow(isb) == EOF)
++	      break;
++	    else
++	      len = isb->_IO_read_end - isb->_IO_read_ptr;
++	  char *delimp = (char*)memchr((void*)isb->_IO_read_ptr, delim, len);
++	  if (delimp != NULL)
++	    len = delimp - isb->_IO_read_ptr;
++	  int written = sb.sputn(isb->_IO_read_ptr, len);
++	  isb->_IO_read_ptr += written;
++	  _gcount += written;
++	  if (written != len)
++	    {
++	      set(ios::failbit);
++	      break;
++	    }
++	  if (delimp != NULL)
++	    break;
++	}
+       isfx();
+       _IO_cleanup_region_end (0);
++    }
++  return *this;
++}
+diff --git a/libio/isscan.cc b/libio/isscan.cc
+@@ -1,10 +1,55 @@
++/* 
++Copyright (C) 1993 Free Software Foundation
++
++This file is part of the GNU IO Library.  This library is free
++software; you can redistribute it and/or modify it under the
++terms of the GNU General Public License as published by the
++Free Software Foundation; either version 2, or (at your option)
++any later version.
++
++This library is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++You should have received a copy of the GNU General Public License
++along with this library; see the file COPYING.  If not, write to the Free
++Software Foundation, 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
++
++As a special exception, if you link this library with files
++compiled with a GNU compiler to produce an executable, this does not cause
++the resulting executable to be covered by the GNU General Public License.
++This exception does not however invalidate any other reasons why
++the executable file might be covered by the GNU General Public License. */
++
++#include "libioP.h"
++#include <iostream.h>
++#include <stdarg.h>
++
++istream& istream::scan(const char *format ...)
++{
++    if (ipfx0()) {
+ 	_IO_cleanup_region_start ((void (*) __P ((void *))) _IO_funlockfile,
+ 				  _strbuf);
++	va_list ap;
++	va_start(ap, format);
++	_strbuf->vscan(format, ap, this);
++	va_end(ap);
+ 	isfx();
+ 	_IO_cleanup_region_end (0);
++    }
++    return *this;
++}
++
++istream& istream::vscan(const char *format, _IO_va_list args)
++{
++    if (ipfx0())
+       {
+ 	_IO_cleanup_region_start ((void (*) __P ((void *))) _IO_funlockfile,
+ 				  _strbuf);
++	_strbuf->vscan(format, args, this);
+ 	isfx();
+ 	_IO_cleanup_region_end (0);
+       }
++    return *this;
++}
+diff --git a/libio/parsestream.h b/libio/parsestream.h
+@@ -1 +1,156 @@
++/* This is part of libio/iostream, providing -*- C++ -*- input/output.
++Copyright (C) 1993 Free Software Foundation
++
++This file is part of the GNU IO Library.  This library is free
++software; you can redistribute it and/or modify it under the
++terms of the GNU General Public License as published by the
++Free Software Foundation; either version 2, or (at your option)
++any later version.
++
++This library is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++You should have received a copy of the GNU General Public License
++along with this library; see the file COPYING.  If not, write to the Free
++Software Foundation, 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
++
++As a special exception, if you link this library with files
++compiled with a GNU compiler to produce an executable, this does not cause
++the resulting executable to be covered by the GNU General Public License.
++This exception does not however invalidate any other reasons why
++the executable file might be covered by the GNU General Public License.
++
++Written by Per Bothner (bothner@cygnus.com). */
++
++#ifndef PARSESTREAM_H
++#define PARSESTREAM_H
++#ifdef __GNUG__
++#pragma interface
++#endif
++#include "streambuf.h"
++
++extern "C++" {
++// A parsebuf is a streambuf optimized for scanning text files.
++// It keeps track of line and column numbers.
++// It is guaranteed to remember the entire current line,
++// as well the '\n'-s on either side of it (if they exist).
++// You can arbitrarily seek (or unget) within this extended line.
++// Other backward seeks are not supported.
++// Normal read semantics are supported (and hence istream operators like >>).
++
++class parsebuf : public streambuf {
++  protected:
+     _IO_off_t pos_at_line_start;
++    long _line_length;
++    unsigned long __line_number;
++    char *buf_start;
++    char *buf_end;
++
++  public:
++    parsebuf *chain;
++
++    // Return column number (raw - don't handle tabs etc).
++    // Retult can be -1, meaning: at '\n' before current line.
++    virtual int tell_in_line();
++
++    // seek to (raw) column I in current line.
++    // Result is new (raw) column position - differs from I if unable to seek.
++    // Seek to -1 tries to seek to before previous LF.
++    virtual int seek_in_line(int i);
++
++    // Note: there is no "current line" initially, until something is read.
++
++    // Current line number, starting with 0.
++    // If tell_in_line()==-1, then line number of next line.
++    int line_number() { return __line_number; }
++
++    // Length of current line, not counting either '\n'.
++    int line_length() { return _line_length; }
++    // Current line - not a copy, so file ops may trash it. 
++    virtual char* current_line();
++    virtual streampos seekoff(streamoff, _seek_dir, int mode=ios::in|ios::out);
++    virtual streambuf* setbuf(char* p, int len);
++  protected:
++    parsebuf() { chain= NULL;
++	__line_number = 0; pos_at_line_start = 0; _line_length = -1; }
++    virtual int pbackfail(int c);
++};
++
++// A string_parsebuf is a parsebuf whose source is a fixed string.
++
++class string_parsebuf : public parsebuf {
++  public:
++    int do_delete;
++    string_parsebuf(char *str, int len, int delete_at_close=0);
++    virtual int underflow();
++    virtual char* current_line();
++    virtual int seek_in_line(int i);
++    virtual int tell_in_line();
++    char *left() const { return base(); }
++    char *right() const { return ebuf(); }
++//    streampos seekoff(streamoff, _seek_dir, int);
++};
++
++// A func_parsebuf calls a given function to get new input.
++// Each call returns an entire NUL-terminated line (without the '\n').
++// That line has been allocated with malloc(), not new.
++// The interface is tailored to the GNU readline library.
++// Example:
++// char* DoReadLine(void* arg)
++// {
++//   char *line = readline((char*)arg); /* 'arg' is used as prompt. */
++//   if line == NULL) { putc('\n', stderr); return NULL; }
++//   if (line[0] != '\0') add_history(line);
++//    return line;
++// }
++// char PromptBuffer[100] = "> ";
++// func_parsebuf my_stream(DoReadLine, PromptBuffer);
++
++typedef char *(*CharReader)(void *arg);
++class istream;
++
++class func_parsebuf : public parsebuf {
++  public:
++    void *arg;
++    CharReader read_func;
++    int backed_up_to_newline;
++    func_parsebuf(CharReader func, void *argm = NULL);
++    int underflow();
++    virtual int tell_in_line();
++    virtual int seek_in_line(int i);
++    virtual char* current_line();
++};
++
++// A general_parsebuf is a parsebuf which gets its input from some
++// other streambuf. It explicitly buffers up an entire line.
++
++class general_parsebuf : public parsebuf {
++  public:
++    streambuf *sbuf;
++    int delete_buf; // Delete sbuf when destroying this.
++    general_parsebuf(streambuf *buf, int delete_arg_buf = 0);
++    int underflow();
++    virtual int tell_in_line();
++    virtual int seek_in_line(int i);
++    ~general_parsebuf();
++    virtual char* current_line();
++};
++
++#if 0
++class parsestream : public istream {
++    streammarker marks[2];
++    short _first; // of the two marks; either 0 or 1
++    int _lineno;
++    int first() { return _first; }
++    int second() { return 1-_first; }
++    int line_length() { marks[second].delta(marks[first]); }
++    int line_length() { marks[second].delta(marks[first]); }
++    int seek_in_line(int i);
++    int tell_in_line();
++    int line_number();
++};
++#endif
++} // extern "C++"
++#endif /*!defined(PARSESTREAM_H)*/
+diff --git a/libio/stdstreams.cc b/libio/stdstreams.cc
+@@ -1 +1,153 @@
++/* This is part of libio/iostream, providing -*- C++ -*- input/output.
++Copyright (C) 1993 Free Software Foundation
++
++This file is part of the GNU IO Library.  This library is free
++software; you can redistribute it and/or modify it under the
++terms of the GNU General Public License as published by the
++Free Software Foundation; either version 2, or (at your option)
++any later version.
++
++This library is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++You should have received a copy of the GNU General Public License
++along with this library; see the file COPYING.  If not, write to the Free
++Software Foundation, 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
++
++As a special exception, if you link this library with files
++compiled with a GNU compiler to produce an executable, this does not cause
++the resulting executable to be covered by the GNU General Public License.
++This exception does not however invalidate any other reasons why
++the executable file might be covered by the GNU General Public License. */
++
++/* Written by Per Bothner (bothner@cygnus.com). */
++
++#include "libioP.h"
++#include "streambuf.h"
++#include <stdio.h>
++
++// The ANSI draft requires that operations on cin/cout/cerr can be
++// mixed with operations on stdin/stdout/stderr on a character by
++// character basis.  This normally requires that the streambuf's
++// used by cin/cout/cerr be stdiostreams.  However, if the stdio
++// implementation is the one that is built using this library,
++// then we don't need to, since in that case stdin/stdout/stderr
++// are identical to _IO_stdin/_IO_stdout/_IO_stderr.
++
+ #include <libio.h>
++
++#ifdef _STDIO_USES_IOSTREAM
++#define CIN_SBUF _IO_stdin_
++#define COUT_SBUF _IO_stdout_
++#define CERR_SBUF _IO_stderr_
++static int use_stdiobuf = 0;
++#else
++#define CIN_SBUF _IO_stdin_buf
++#define COUT_SBUF _IO_stdout_buf
++#define CERR_SBUF _IO_stderr_buf
++static int use_stdiobuf = 1;
++#endif
++
++#define cin CIN
++#define cout COUT
++#define cerr CERR
++#define clog CLOG
++#include "iostream.h"
++#undef cin
++#undef cout
++#undef cerr
++#undef clog
++
++#ifdef __GNUG__
++#define PAD 0 /* g++ allows 0-length arrays. */
++#else
++#define PAD 1
++#endif
++struct _fake_istream {
++    struct myfields {
++#ifdef __GNUC__
++	_ios_fields *vb; /* pointer to virtual base class ios */
++	_IO_ssize_t _gcount;
++#else
++	/* This is supposedly correct for cfront. */
++	_IO_ssize_t _gcount;
++	void *vptr;
++	_ios_fields *vb; /* pointer to virtual base class ios */
++#endif
++    } mine;
++    _ios_fields base;
++    char filler[sizeof(struct istream)-sizeof(struct _ios_fields)+PAD];
++};
++struct _fake_ostream {
++    struct myfields {
++#ifndef __GNUC__
++	void *vptr;
++#endif
++	_ios_fields *vb; /* pointer to virtual base class ios */
++    } mine;
++    _ios_fields base;
++    char filler[sizeof(struct ostream)-sizeof(struct _ios_fields)+PAD];
++};
++
++
++#ifdef _IO_NEW_STREAMS
++#define STD_STR(SBUF, TIE, EXTRA_FLAGS) \
++ (streambuf*)&SBUF, TIE, 0, ios::skipws|ios::dec|EXTRA_FLAGS, ' ',0,0,6
++#else
++#define STD_STR(SBUF, TIE, EXTRA_FLAGS) \
++ (streambuf*)&SBUF, TIE, 0, ios::dont_close|ios::dec|ios::skipws|EXTRA_FLAGS, ' ',0,0,6
++#endif
++
++#ifdef __GNUC__
++#define OSTREAM_DEF(NAME, SBUF, TIE, EXTRA_FLAGS, ASM) \
++  _fake_ostream NAME ASM = { {&NAME.base}, {STD_STR(SBUF, TIE, EXTRA_FLAGS) }};
++#define ISTREAM_DEF(NAME, SBUF, TIE, EXTRA_FLAGS) \
++  _fake_istream NAME = { {&NAME.base}, {STD_STR(SBUF, TIE, EXTRA_FLAGS) }};
++#else
++#define OSTREAM_DEF(NAME, SBUF, TIE, EXTRA_FLAGS) \
++  _fake_ostream NAME = { {0, &NAME.base}, {STD_STR(SBUF, TIE, EXTRA_FLAGS) }};
++#define ISTREAM_DEF(NAME, SBUF, TIE, EXTRA_FLAGS) \
++  _fake_istream NAME = {{0, 0, &NAME.base}, {STD_STR(SBUF, TIE, EXTRA_FLAGS)}};
++#endif
++
++OSTREAM_DEF(cout, COUT_SBUF, NULL, 0, )
++OSTREAM_DEF(cerr, CERR_SBUF,(ostream*)&cout, ios::unitbuf, )
++ISTREAM_DEF(cin, CIN_SBUF,  (ostream*)&cout, 0)
++
++/* Only for (partial) compatibility with AT&T's library. */
++#if _G_CLOG_CONFLICT
++OSTREAM_DEF(clog, CERR_SBUF, (ostream*)&cout, 0, __asm__ ("__IO_clog"))
++#else
++OSTREAM_DEF(clog, CERR_SBUF, (ostream*)&cout, 0, )
++#endif
++
++// Switches between using _IO_std{in,out,err} and __std{in,out,err}_buf
++// for standard streams.  This does not normally need to be called
++// explicitly, but is provided for AT&T compatibility.
++
++int ios::sync_with_stdio(int new_state)
++{
++#ifdef _STDIO_USES_IOSTREAM
++    // It is always synced.
++    return 0;
++#else
++    if (new_state == use_stdiobuf) // The usual case now.
++	return use_stdiobuf;
++    if (new_state) {
++	cin.base._strbuf = (streambuf*)&_IO_stdin_buf;
++	cout.base._strbuf = (streambuf*)&_IO_stdout_buf;
++	cerr.base._strbuf = (streambuf*)&_IO_stderr_buf;
++	clog.base._strbuf = (streambuf*)&_IO_stderr_buf;
++    } else {
++	cin.base._strbuf = (streambuf*)_IO_stdin;
++	cout.base._strbuf = (streambuf*)_IO_stdout;
++	cerr.base._strbuf = (streambuf*)_IO_stderr;
++	clog.base._strbuf = (streambuf*)_IO_stderr;
++    }
++    int old_state = use_stdiobuf;
++    use_stdiobuf = new_state;
++    return old_state;
++#endif
++}
+diff --git a/libio/stream.h b/libio/stream.h
+@@ -1,2 +1,59 @@
++/* 
+ Copyright (C) 1993, 1999 Free Software Foundation
++
++This file is part of the GNU IO Library.  This library is free
++software; you can redistribute it and/or modify it under the
++terms of the GNU General Public License as published by the
++Free Software Foundation; either version 2, or (at your option)
++any later version.
++
++This library is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++You should have received a copy of the GNU General Public License
++along with this library; see the file COPYING.  If not, write to the Free
++Software Foundation, 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
++
++As a special exception, if you link this library with files
++compiled with a GNU compiler to produce an executable, this does not cause
++the resulting executable to be covered by the GNU General Public License.
++This exception does not however invalidate any other reasons why
++the executable file might be covered by the GNU General Public License. */
++
++#ifndef _COMPAT_STREAM_H
++#define _COMPAT_STREAM_H
++
++// Compatibility with old library.
++// DO NOT USE THESE FUNCTIONS IN NEW CODE!
++// They are obsolete, non-standard, and non-reentrant.
++
++#define _STREAM_COMPAT
++#include <iostream.h>
++
++extern "C++" {
++extern char* form(const char*, ...);
++
++extern char* dec(long, int=0);
++extern char* dec(int, int=0);
++extern char* dec(unsigned long, int=0);
++extern char* dec(unsigned int, int=0);
++
++extern char* hex(long, int=0);
++extern char* hex(int, int=0);
++extern char* hex(unsigned long, int=0);
++extern char* hex(unsigned int, int=0);
++
++extern char* oct(long, int=0);
++extern char* oct(int, int=0);
++extern char* oct(unsigned long, int=0);
++extern char* oct(unsigned int, int=0);
++
++char*        chr(char ch, int width = 0);
++char*        str(const char* s, int width = 0);
++
+ inline istream& WS(istream& __str) { return ws(__str); }
++} // extern "C++"
++
++#endif /* !_COMPAT_STREAM_H */
+diff --git a/libio/strstream.h b/libio/strstream.h
+@@ -1,3 +1,113 @@
++/* This is part of libio/iostream, providing -*- C++ -*- input/output.
+ Copyright (C) 1993, 1999 Free Software Foundation
++
++This file is part of the GNU IO Library.  This library is free
++software; you can redistribute it and/or modify it under the
++terms of the GNU General Public License as published by the
++Free Software Foundation; either version 2, or (at your option)
++any later version.
++
++This library is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++You should have received a copy of the GNU General Public License
++along with this library; see the file COPYING.  If not, write to the Free
++Software Foundation, 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
++
++As a special exception, if you link this library with files
++compiled with a GNU compiler to produce an executable, this does not cause
++the resulting executable to be covered by the GNU General Public License.
++This exception does not however invalidate any other reasons why
++the executable file might be covered by the GNU General Public License. */
++
++/* Written by Per Bothner (bothner@cygnus.com). */
++
++#ifndef __STRSTREAM_H
++#define __STRSTREAM_H
++#ifdef __GNUG__
++#pragma interface
++#endif
++#include <iostream.h>
++#include <strfile.h>
++
++extern "C++" {
++class strstreambuf : public streambuf
++{
++  struct _IO_str_fields _s;
++  friend class istrstream;
++
++    void init_dynamic(_IO_alloc_type alloc, _IO_free_type free,
++		      int initial_size = 0);
++    void init_static(char *ptr, int size, char *pstart);
++    void init_readonly(const char *ptr, int size);
++  protected:
++    virtual int overflow(int = EOF);
++    virtual int underflow();
++    virtual int pbackfail(int c);
++  public:
++    virtual ~strstreambuf();
++    strstreambuf() { init_dynamic(0, 0); }
++    strstreambuf(int initial_size) { init_dynamic(0, 0, initial_size); }
+     strstreambuf(void *(*__alloc)(_IO_size_t), void (*__free)(void*))
+ 	{ init_dynamic(__alloc, __free); }
++    strstreambuf(char *ptr, int size, char *pstart = NULL)
++	{ init_static(ptr, size, pstart); }
++    strstreambuf(unsigned char *ptr, int size, unsigned char *pstart = NULL)
++	{ init_static((char*)ptr, size, (char*)pstart); }
++    strstreambuf(const char *ptr, int size)
++	{ init_readonly(ptr, size); }
++    strstreambuf(const unsigned char *ptr, int size)
++	{ init_readonly((const char*)ptr, size); }
++    strstreambuf(signed char *ptr, int size, signed char *pstart = NULL)
++	{ init_static((char*)ptr, size, (char*)pstart); }
++    strstreambuf(const signed char *ptr, int size)
++	{ init_readonly((const char*)ptr, size); }
++    // Note: frozen() is always true if !_IO_STR_DYNAMIC(this).
++    int frozen() { return _flags & _IO_USER_BUF ? 1 : 0; }
++    void freeze(int n=1)
++	{ if (_IO_STR_DYNAMIC(this))
++	    { if (n) _flags |= _IO_USER_BUF; else _flags &= ~_IO_USER_BUF; } }
++    _IO_ssize_t pcount();
++    char *str();
++    virtual streampos seekoff(streamoff, _seek_dir, int mode=ios::in|ios::out);
++};
++
++class strstreambase : virtual public ios {
++  protected:
++    strstreambuf __my_sb;
++  public:
++    strstreambuf* rdbuf() { return &__my_sb; }
++  protected:
++    strstreambase() { init (&__my_sb); }
++    strstreambase(char *cp, int n, int mode=ios::out);
++};
++
++class istrstream : public strstreambase, public istream {
++  public:
++    istrstream(const char*, int=0);
++};
++
++class ostrstream : public strstreambase, public ostream {
++  public:
++    ostrstream() { }
++    ostrstream(char *cp, int n, int mode=ios::out) :strstreambase(cp,n,mode){}
++    _IO_ssize_t pcount() { return ((strstreambuf*)_strbuf)->pcount(); }
++    char *str() { return ((strstreambuf*)_strbuf)->str(); }
++    void freeze(int n = 1) { ((strstreambuf*)_strbuf)->freeze(n); }
++    int frozen() { return ((strstreambuf*)_strbuf)->frozen(); }
++};
++
++class strstream : public strstreambase, public iostream {
++  public:
++  strstream() { }
++    strstream(char *cp, int n, int mode=ios::out) :strstreambase(cp,n,mode){}
++    _IO_ssize_t pcount() { return ((strstreambuf*)_strbuf)->pcount(); }
++    char *str() { return ((strstreambuf*)_strbuf)->str(); }
++    void freeze(int n = 1) { ((strstreambuf*)_strbuf)->freeze(n); }
++    int frozen() { return ((strstreambuf*)_strbuf)->frozen(); }
++};
++} // extern "C++"
++
++#endif /*!__STRSTREAM_H*/
+diff --git a/texinfo/Makefile.am b/texinfo/Makefile.am
+@@ -1,5 +1,5 @@
+ ## Makefile.am for texinfo.
+-## $Id: Makefile.am,v 1.5 1998/04/10 00:37:57 law Exp $
++## $Id: Makefile.am,v 1.6.6.1 1999/06/24 21:05:55 law Exp $
+ ## Process this file with automake to produce Makefile.in in all directories.
+ 
+ # Be sure we're using the right version of Automake.
+diff --git a/texinfo/configure.in b/texinfo/configure.in
+@@ -1,5 +1,5 @@
+ dnl Process this file with autoconf to produce a configure script.
+-dnl $Id: configure.in,v 1.7 1998/03/26 10:30:41 law Exp $
++dnl $Id: configure.in,v 1.8.10.1 1999/07/01 11:47:14 oliva Exp $
+ dnl
+ AC_INIT(makeinfo/makeinfo.c)
+ AC_PREREQ(2.12)dnl Minimum Autoconf version required.
+diff --git a/texinfo/cygnus/texiplus.tex b/texinfo/cygnus/texiplus.tex
+@@ -2,7 +2,7 @@
+ %% Cygnus revisions to texinfo.tex, TeX macros to handle texinfo files
+ %   Copyright (C) 1991 Free Software Foundation, Inc.
+ %% Maintained at Cygnus Support as: 
+-%%$Id: texiplus.tex,v 1.1.1.1 1998/03/23 04:42:12 law Exp $
++%%$Id: texiplus.tex,v 1.2 1998/03/24 18:05:30 law Exp $
+   
+ %This texi+.tex file is free software; you can redistribute it and/or
+ %modify it under the terms of the GNU General Public License as
+diff --git a/texinfo/dir b/texinfo/dir
+@@ -1,4 +1,4 @@
+-$Id: dir,v 1.2 1998/03/24 17:58:17 law Exp $
++$Id: dir,v 1.3 1998/03/24 18:05:03 law Exp $
+ This is the file .../info/dir, which contains the topmost node of the
+ Info hierarchy.  The first time you invoke Info you start off
+ looking at that node, which is (dir)Top.
+diff --git a/texinfo/dir-example b/texinfo/dir-example
+@@ -6,7 +6,7 @@
+ If you have dir entries for Texinfo manuals you'd like to be added here,
+   please send them to karl@gnu.org.
+ 
+-$Id: dir-example,v 1.1.1.3 1998/03/24 18:19:30 law Exp $
++$Id: dir-example,v 1.4 1998/03/24 19:40:32 law Exp $
+ 
+ File: dir,	Node: Top,	This is the top of the INFO tree.
+ 
+diff --git a/texinfo/doc/Makefile.am b/texinfo/doc/Makefile.am
+@@ -1,5 +1,5 @@
+ ## Makefile.am for texinfo/emacs.
+-## $Id: Makefile.am,v 1.1.1.2 1998/03/24 18:20:38 law Exp $
++## $Id: Makefile.am,v 1.3 1998/03/24 19:40:35 law Exp $
+ ## Run automake in .. to produce Makefile.in from this.
+ 
+ info_TEXINFOS = info-stnd.texi info.texi texinfo.txi
+diff --git a/texinfo/doc/info-stnd.texi b/texinfo/doc/info-stnd.texi
+@@ -9,7 +9,7 @@
+ @synindex fn cp
+ @synindex ky cp
+ @comment %**end of header
+-@comment $Id: info-stnd.texi,v 1.1.1.2 1998/03/24 18:20:36 law Exp $
++@comment $Id: info-stnd.texi,v 1.3 1998/03/24 19:40:38 law Exp $
+ 
+ @dircategory Texinfo documentation system
+ @direntry
+diff --git a/texinfo/doc/info.texi b/texinfo/doc/info.texi
+@@ -3,7 +3,7 @@
+ @setfilename info.info
+ @settitle Info 1.0
+ @comment %**end of header 
+-@comment $Id: info.texi,v 1.1.1.2 1998/03/24 18:20:37 law Exp $
++@comment $Id: info.texi,v 1.3 1998/03/24 19:40:40 law Exp $
+ 
+ @dircategory Texinfo documentation system
+ @direntry
+diff --git a/texinfo/doc/texinfo.texi b/texinfo/doc/texinfo.texi
+@@ -1,5 +1,5 @@
+ \input texinfo.tex    @c -*-texinfo-*-
+-@c $Id: texinfo.texi,v 1.1.1.1 1998/03/23 04:42:12 law Exp $
++@c $Id: texinfo.texi,v 1.2 1998/03/24 18:05:41 law Exp $
+ @c %**start of header
+ 
+ @c All text is ignored before the setfilename.
+diff --git a/texinfo/doc/texinfo.txi b/texinfo/doc/texinfo.txi
+@@ -1,5 +1,5 @@
+ \input texinfo.tex    @c -*-texinfo-*-
+-@c $Id: texinfo.txi,v 1.50 1998/02/27 21:21:34 karl Exp $
++@c $Id: texinfo.txi,v 1.1.1.1 1998/03/25 02:20:38 law Exp $
+ @c %**start of header
+ 
+ @c All text is ignored before the setfilename.
+diff --git a/texinfo/emacs/Makefile.am b/texinfo/emacs/Makefile.am
+@@ -1,5 +1,5 @@
+ ## Makefile.am for texinfo/emacs.
+-## $Id: Makefile.am,v 1.1.1.1 1998/03/23 04:42:12 law Exp $
++## $Id: Makefile.am,v 1.2 1998/03/24 18:05:45 law Exp $
+ ## Run automake in .. to produce Makefile.in from this.
+ 
+ # Do not byte compile our Elisp files by default.
+diff --git a/texinfo/emacs/elisp-comp b/texinfo/emacs/elisp-comp
+@@ -1,5 +1,5 @@
+ #!/bin/sh
+-# $Id: elisp-comp,v 1.1.1.1 1997/08/21 22:57:57 jason Exp $
++# $Id: elisp-comp,v 1.2 1998/03/24 18:05:49 law Exp $
+ # Trivial script to compile the Elisp files.
+ setpath=${TMPDIR-/tmp}/elc.$$
+ echo "(setq load-path (cons nil load-path))" > $setpath
+diff --git a/texinfo/info/Makefile.am b/texinfo/info/Makefile.am
+@@ -1,5 +1,5 @@
+ ## Makefile.am for texinfo/info.
+-## $Id: Makefile.am,v 1.1.1.2 1998/03/24 18:20:06 law Exp $
++## $Id: Makefile.am,v 1.3 1998/03/24 19:40:42 law Exp $
+ ## Run automake in .. to produce Makefile.in from this.
+ 
+ noinst_PROGRAMS = makedoc
+diff --git a/texinfo/info/clib.c b/texinfo/info/clib.c
+@@ -1,5 +1,5 @@
+ /* clib.c: Functions which we normally expect to find in the C library.
+-   $Id: clib.c,v 1.1.1.1 1997/08/21 22:57:59 jason Exp $
++   $Id: clib.c,v 1.2 1998/03/24 18:06:02 law Exp $
+ 
+    This file is part of GNU Info, a program for reading online documentation
+    stored in Info format.
+diff --git a/texinfo/info/dir.c b/texinfo/info/dir.c
+@@ -1,5 +1,5 @@
+ /* dir.c -- How to build a special "dir" node from "localdir" files.
+-   $Id: dir.c,v 1.1.1.2 1998/03/22 20:42:22 law Exp $
++   $Id: dir.c,v 1.2 1998/03/24 18:06:04 law Exp $
+ 
+    Copyright (C) 1993, 97 Free Software Foundation, Inc.
+ 
+diff --git a/texinfo/info/display.c b/texinfo/info/display.c
+@@ -1,5 +1,5 @@
+ /* display.c -- How to display Info windows.
+-   $Id: display.c,v 1.1.1.2 1998/03/22 20:42:23 law Exp $
++   $Id: display.c,v 1.2 1998/03/24 18:06:05 law Exp $
+ 
+    Copyright (C) 1993, 97 Free Software Foundation, Inc.
+ 
+diff --git a/texinfo/info/display.h b/texinfo/info/display.h
+@@ -1,5 +1,5 @@
+ /* display.h -- How the display in Info is done.
+-   $Id: display.h,v 1.1.1.2 1998/03/22 20:42:24 law Exp $
++   $Id: display.h,v 1.2 1998/03/24 18:06:06 law Exp $
+ 
+    This file is part of GNU Info, a program for reading online documentation
+    stored in Info format.
+diff --git a/texinfo/info/echo-area.c b/texinfo/info/echo-area.c
+@@ -1,5 +1,5 @@
+ /* echo-area.c -- How to read a line in the echo area.
+-   $Id: echo-area.c,v 1.1.1.2 1998/03/24 18:20:08 law Exp $
++   $Id: echo-area.c,v 1.3 1998/03/24 19:40:46 law Exp $
+ 
+    Copyright (C) 1993, 97, 98 Free Software Foundation, Inc.
+ 
+diff --git a/texinfo/info/echo-area.h b/texinfo/info/echo-area.h
+@@ -1,5 +1,5 @@
+ /* echo-area.h -- Functions used in reading information from the echo area.
+-   $Id: echo-area.h,v 1.1.1.2 1998/03/24 18:20:09 law Exp $
++   $Id: echo-area.h,v 1.3 1998/03/24 19:40:48 law Exp $
+ 
+    This file is part of GNU Info, a program for reading online documentation
+    stored in Info format.
+diff --git a/texinfo/info/filesys.c b/texinfo/info/filesys.c
+@@ -1,5 +1,5 @@
+ /* filesys.c -- File system specific functions for hacking this system.
+-   $Id: filesys.c,v 1.1.1.3 1998/03/24 18:20:10 law Exp $
++   $Id: filesys.c,v 1.3 1998/03/24 19:40:49 law Exp $
+ 
+    Copyright (C) 1993, 97, 98 Free Software Foundation, Inc.
+ 
+diff --git a/texinfo/info/filesys.h b/texinfo/info/filesys.h
+@@ -1,5 +1,5 @@
+ /* filesys.h -- External declarations of functions and vars in filesys.c.
+-   $Id: filesys.h,v 1.1.1.2 1998/03/22 20:42:28 law Exp $
++   $Id: filesys.h,v 1.2 1998/03/24 18:06:17 law Exp $
+ 
+    This file is part of GNU Info, a program for reading online documentation
+    stored in Info format.
+diff --git a/texinfo/info/footnotes.c b/texinfo/info/footnotes.c
+@@ -1,5 +1,5 @@
+ /* footnotes.c -- Some functions for manipulating footnotes.
+-   $Id: footnotes.c,v 1.1.1.2 1998/03/22 20:42:29 law Exp $
++   $Id: footnotes.c,v 1.2 1998/03/24 18:06:18 law Exp $
+ 
+    Copyright (C) 1993, 97 Free Software Foundation, Inc.
+ 
+diff --git a/texinfo/info/footnotes.h b/texinfo/info/footnotes.h
+@@ -1,5 +1,5 @@
+ /* footnotes.h -- Some functions for manipulating footnotes.
+-   $Id: footnotes.h,v 1.1.1.2 1998/03/22 20:42:30 law Exp $
++   $Id: footnotes.h,v 1.2 1998/03/24 18:06:19 law Exp $
+ 
+    This file is part of GNU Info, a program for reading online documentation
+    stored in Info format.
+diff --git a/texinfo/info/gc.h b/texinfo/info/gc.h
+@@ -1,5 +1,5 @@
+ /* gc.h -- Functions for garbage collecting unused node contents.
+-   $Id: gc.h,v 1.1.1.2 1998/03/22 20:42:32 law Exp $
++   $Id: gc.h,v 1.2 1998/03/24 18:06:22 law Exp $
+ 
+    This file is part of GNU Info, a program for reading online documentation
+    stored in Info format.
+diff --git a/texinfo/info/indices.c b/texinfo/info/indices.c
+@@ -1,5 +1,5 @@
+ /* indices.c -- Commands for dealing with an Info file Index.
+-   $Id: indices.c,v 1.1.1.2 1998/03/22 20:42:33 law Exp $
++   $Id: indices.c,v 1.2 1998/03/24 18:06:24 law Exp $
+ 
+    Copyright (C) 1993, 97 Free Software Foundation, Inc.
+ 
+diff --git a/texinfo/info/indices.h b/texinfo/info/indices.h
+@@ -1,5 +1,5 @@
+ /* indices.h -- Functions defined in indices.c.
+-   $Id: indices.h,v 1.1.1.2 1998/03/22 20:42:34 law Exp $
++   $Id: indices.h,v 1.2 1998/03/24 18:06:25 law Exp $
+ 
+    This file is part of GNU Info, a program for reading online documentation
+    stored in Info format.
+diff --git a/texinfo/info/info-stnd.texi b/texinfo/info/info-stnd.texi
+@@ -9,7 +9,7 @@
+ @synindex fn cp
+ @synindex ky cp
+ @comment %**end of header
+-@comment $Id: info-stnd.texi,v 1.1.1.1 1997/08/21 22:58:01 jason Exp $
++@comment $Id: info-stnd.texi,v 1.2 1998/03/24 18:06:26 law Exp $
+ 
+ @dircategory Texinfo documentation system
+ @direntry
+diff --git a/texinfo/info/info-utils.h b/texinfo/info/info-utils.h
+@@ -1,5 +1,5 @@
+ /* info-utils.h -- Exported functions and variables from info-util.c.
+-   $Id: info-utils.h,v 1.1.1.2 1998/03/22 20:42:36 law Exp $   
++   $Id: info-utils.h,v 1.2 1998/03/24 18:06:28 law Exp $   
+ 
+    This file is part of GNU Info, a program for reading online documentation
+    stored in Info format.
+diff --git a/texinfo/info/info.c b/texinfo/info/info.c
+@@ -1,5 +1,5 @@
+ /* info.c -- Display nodes of Info files in multiple windows.
+-   $Id: info.c,v 1.1.1.3 1998/03/24 18:20:13 law Exp $
++   $Id: info.c,v 1.3 1998/03/24 19:40:51 law Exp $
+ 
+    Copyright (C) 1993, 96, 97, 98 Free Software Foundation, Inc.
+ 
+diff --git a/texinfo/info/info.h b/texinfo/info/info.h
+@@ -1,5 +1,5 @@
+ /* info.h -- Header file which includes all of the other headers.
+-   $Id: info.h,v 1.1.1.3 1998/03/24 18:20:14 law Exp $
++   $Id: info.h,v 1.3 1998/03/24 19:40:52 law Exp $
+ 
+    This file is part of GNU Info, a program for reading online documentation
+    stored in Info format.
+diff --git a/texinfo/info/info.texi b/texinfo/info/info.texi
+@@ -3,7 +3,7 @@
+ @setfilename info.info
+ @settitle Info 1.0
+ @comment %**end of header 
+-@comment $Id: info.texi,v 1.1.1.1 1997/08/21 22:58:02 jason Exp $
++@comment $Id: info.texi,v 1.2 1998/03/24 18:06:32 law Exp $
+ 
+ @ifinfo
+ @c This is a dir.info fragment to support semi-automated addition of
+diff --git a/texinfo/info/infodoc.c b/texinfo/info/infodoc.c
+@@ -1,5 +1,5 @@
+ /* infodoc.c -- Functions which build documentation nodes.
+-   $Id: infodoc.c,v 1.1.1.2 1998/03/22 20:42:39 law Exp $
++   $Id: infodoc.c,v 1.2 1998/03/24 18:06:33 law Exp $
+ 
+    Copyright (C) 1993, 97 Free Software Foundation, Inc.
+ 
+diff --git a/texinfo/info/infomap.c b/texinfo/info/infomap.c
+@@ -1,5 +1,5 @@
+ /* infomap.c -- Keymaps for Info.
+-   $Id: infomap.c,v 1.1.1.2 1998/03/22 20:42:40 law Exp $
++   $Id: infomap.c,v 1.2 1998/03/24 18:06:34 law Exp $
+ 
+    Copyright (C) 1993, 97 Free Software Foundation, Inc.
+ 
+diff --git a/texinfo/info/m-x.c b/texinfo/info/m-x.c
+@@ -1,5 +1,5 @@
+ /* m-x.c -- Meta-X minibuffer reader.
+-   $Id: m-x.c,v 1.1.1.2 1998/03/22 20:42:42 law Exp $
++   $Id: m-x.c,v 1.2 1998/03/24 18:06:37 law Exp $
+ 
+    Copyright (C) 1993, 97 Free Software Foundation, Inc.
+ 
+diff --git a/texinfo/info/makedoc.c b/texinfo/info/makedoc.c
+@@ -1,5 +1,5 @@
+ /* makedoc.c -- Make doc.c and funs.h from input files.
+-   $Id: makedoc.c,v 1.1.1.2 1998/03/22 20:42:43 law Exp $
++   $Id: makedoc.c,v 1.2 1998/03/24 18:06:38 law Exp $
+ 
+    This file is part of GNU Info, a program for reading online documentation
+    stored in Info format.
+diff --git a/texinfo/info/man.c b/texinfo/info/man.c
+@@ -1,5 +1,5 @@
+ /*  man.c: How to read and format man files.
+-    $Id: man.c,v 1.5 1998/03/22 22:35:19 law Exp $
++    $Id: man.c,v 1.6 1998/03/24 18:06:39 law Exp $
+ 
+    Copyright (C) 1995, 97 Free Software Foundation, Inc.
+ 
+diff --git a/texinfo/info/man.h b/texinfo/info/man.h
+@@ -1,5 +1,5 @@
+ /* man.h: Defines and external function declarations for man.c.
+-   $Id: man.h,v 1.1.1.2 1998/03/22 20:42:46 law Exp $
++   $Id: man.h,v 1.2 1998/03/24 18:06:41 law Exp $
+ 
+    This file is part of GNU Info, a program for reading online documentation
+    stored in Info format.
+diff --git a/texinfo/info/nodemenu.c b/texinfo/info/nodemenu.c
+@@ -1,5 +1,5 @@
+ /* nodemenu.c -- Produce a menu of all visited nodes.
+-   $Id: nodemenu.c,v 1.1.1.2 1998/03/22 20:42:47 law Exp $
++   $Id: nodemenu.c,v 1.2 1998/03/24 18:06:40 law Exp $
+ 
+    Copyright (C) 1993, 97 Free Software Foundation, Inc.
+ 
+diff --git a/texinfo/info/nodes.h b/texinfo/info/nodes.h
+@@ -1,5 +1,5 @@
+ /* nodes.h -- How we represent nodes internally.
+-   $Id: nodes.h,v 1.1.1.2 1998/03/22 20:42:49 law Exp $
++   $Id: nodes.h,v 1.2 1998/03/24 18:06:43 law Exp $
+ 
+    This file is part of GNU Info, a program for reading online documentation
+    stored in Info format.
+diff --git a/texinfo/info/search.h b/texinfo/info/search.h
+@@ -1,5 +1,5 @@
+ /* search.h -- Structure used to search large bodies of text, with bounds.
+-   $Id: search.h,v 1.1.1.2 1998/03/22 20:42:51 law Exp $
++   $Id: search.h,v 1.2 1998/03/24 18:06:45 law Exp $
+ 
+    This file is part of GNU Info, a program for reading online documentation
+    stored in Info format.
+diff --git a/texinfo/info/session.c b/texinfo/info/session.c
+@@ -1,5 +1,5 @@
+ /* session.c -- The user windowing interface to Info.
+-   $Id: session.c,v 1.1.1.3 1998/03/24 18:20:15 law Exp $
++   $Id: session.c,v 1.3 1998/03/24 19:40:53 law Exp $
+ 
+    Copyright (C) 1993, 96, 97 Free Software Foundation, Inc.
+ 
+diff --git a/texinfo/info/signals.h b/texinfo/info/signals.h
+@@ -1,5 +1,5 @@
+ /* signals.h -- Header to include system dependent signal definitions.
+-   $Id: signals.h,v 1.1.1.2 1998/03/22 20:42:55 law Exp $
++   $Id: signals.h,v 1.2 1998/03/24 18:06:49 law Exp $
+ 
+    This file is part of GNU Info, a program for reading online documentation
+    stored in Info format.
+diff --git a/texinfo/info/termdep.h b/texinfo/info/termdep.h
+@@ -1,5 +1,5 @@
+ /* termdep.h -- System things that terminal.c depends on.
+-   $Id: termdep.h,v 1.5 1998/03/24 19:40:54 law Exp $
++   $Id: termdep.h,v 1.6 1998/04/02 18:30:53 wilson Exp $
+ 
+    This file is part of GNU Info, a program for reading online documentation
+    stored in Info format.
+diff --git a/texinfo/info/terminal.c b/texinfo/info/terminal.c
+@@ -1,5 +1,5 @@
+ /* terminal.c -- How to handle the physical terminal for Info.
+-   $Id: terminal.c,v 1.1.1.3 1998/03/24 18:20:18 law Exp $
++   $Id: terminal.c,v 1.5 1998/03/24 19:40:55 law Exp $
+ 
+    Copyright (C) 1988, 89, 90, 91, 92, 93, 96, 97, 98
+    Free Software Foundation, Inc.
+diff --git a/texinfo/info/tilde.c b/texinfo/info/tilde.c
+@@ -1,5 +1,5 @@
+ /* tilde.c -- Tilde expansion code (~/foo := $HOME/foo).
+-   $Id: tilde.c,v 1.1.1.3 1998/03/24 18:20:19 law Exp $
++   $Id: tilde.c,v 1.3 1998/03/24 19:40:56 law Exp $
+ 
+    This file is part of GNU Info, a program for reading online documentation
+    stored in Info format.
+diff --git a/texinfo/info/variables.c b/texinfo/info/variables.c
+@@ -1,5 +1,5 @@
+ /* variables.c -- How to manipulate user visible variables in Info.
+-   $Id: variables.c,v 1.1.1.2 1998/03/22 20:43:01 law Exp $
++   $Id: variables.c,v 1.2 1998/03/24 18:06:57 law Exp $
+ 
+    This file is part of GNU Info, a program for reading online documentation
+    stored in Info format.
+diff --git a/texinfo/info/variables.h b/texinfo/info/variables.h
+@@ -1,5 +1,5 @@
+ /* variables.h -- Description of user visible variables in Info.
+-   $Id: variables.h,v 1.1.1.2 1998/03/22 20:43:02 law Exp $
++   $Id: variables.h,v 1.2 1998/03/24 18:06:58 law Exp $
+ 
+    This file is part of GNU Info, a program for reading online documentation
+    stored in Info format.
+diff --git a/texinfo/info/window.c b/texinfo/info/window.c
+@@ -1,5 +1,5 @@
+ /* window.c -- Windows in Info.
+-   $Id: window.c,v 1.1.1.3 1998/03/24 18:20:20 law Exp $
++   $Id: window.c,v 1.3 1998/03/24 19:40:57 law Exp $
+ 
+    This file is part of GNU Info, a program for reading online documentation
+    stored in Info format.
+diff --git a/texinfo/info/window.h b/texinfo/info/window.h
+@@ -1,5 +1,5 @@
+ /* window.h -- Structure and flags used in manipulating Info windows.
+-   $Id: window.h,v 1.1.1.2 1998/03/22 20:43:04 law Exp $
++   $Id: window.h,v 1.2 1998/03/24 18:07:00 law Exp $
+ 
+    This file is part of GNU Info, a program for reading online documentation
+    stored in Info format.
+diff --git a/texinfo/lib/Makefile.am b/texinfo/lib/Makefile.am
+@@ -1,5 +1,5 @@
+ ## Makefile.am for texinfo/lib.
+-## $Id: Makefile.am,v 1.1.1.2 1998/03/24 18:19:49 law Exp $
++## $Id: Makefile.am,v 1.3 1998/03/24 19:41:15 law Exp $
+ ## Run automake in .. to produce Makefile.in from this.
+ 
+ noinst_LIBRARIES = libtxi.a
+diff --git a/texinfo/lib/system.h b/texinfo/lib/system.h
+@@ -1,5 +1,5 @@
+ /* system.h: System-dependent declarations.  Include this first.
+-   $Id: system.h,v 1.1.1.2 1998/03/24 18:19:53 law Exp $
++   $Id: system.h,v 1.3.10.1 1999/07/01 00:44:57 law Exp $
+ 
+    Copyright (C) 1997 Free Software Foundation, Inc.
+ 
+diff --git a/texinfo/libtxi/Makefile.in b/texinfo/libtxi/Makefile.in
+@@ -1,5 +1,5 @@
+ # Makefile for GNU texinfo/libtxi.  -*- Indented-Text -*-
+-# $Id: Makefile.in,v 1.4 1998/01/13 20:31:57 law Exp $
++# $Id: Makefile.in,v 1.5 1998/03/24 18:07:40 law Exp $
+ 
+ # Copyright (C) 1993, 96, 98 Free Software Foundation, Inc.
+ 
+diff --git a/texinfo/makeinfo/Makefile.am b/texinfo/makeinfo/Makefile.am
+@@ -1,5 +1,5 @@
+ ## Makefile.am for texinfo/makeinfo.
+-## $Id: Makefile.am,v 1.3 1998/03/24 19:41:22 law Exp $
++## $Id: Makefile.am,v 1.4 1998/11/19 22:39:54 manfred Exp $
+ ## Run automake in .. to produce Makefile.in from this.
+ 
+ noinst_PROGRAMS = makeinfo
+diff --git a/texinfo/makeinfo/makeinfo.c b/texinfo/makeinfo/makeinfo.c
+@@ -1,5 +1,5 @@
+ /* Makeinfo -- convert Texinfo source files into Info files.
+-   $Id: makeinfo.c,v 1.11 1998/07/06 21:58:00 law Exp $
++   $Id: makeinfo.c,v 1.11.10.1 1999/05/28 02:10:10 law Exp $
+ 
+    Copyright (C) 1987, 92, 93, 94, 95, 96, 97, 98
+    Free Software Foundation, Inc.
+diff --git a/texinfo/makeinfo/makeinfo.h b/texinfo/makeinfo/makeinfo.h
+@@ -1,5 +1,5 @@
+ /* makeinfo.h -- Declarations for Makeinfo.
+-   $Id: makeinfo.h,v 1.1.1.2 1998/03/22 20:43:08 law Exp $
++   $Id: makeinfo.h,v 1.2 1998/03/24 18:07:56 law Exp $
+ 
+    Copyright (C) 1996, 97 Free Software Foundation, Inc.
+ 
+diff --git a/texinfo/makeinfo/makeinfo.texi b/texinfo/makeinfo/makeinfo.texi
+@@ -4,7 +4,7 @@
+ @set VERSION 1.61
+ @paragraphindent none
+ @comment %**start of header
+-@comment $Id: makeinfo.texi,v 1.1.1.1 1997/08/21 22:58:08 jason Exp $
++@comment $Id: makeinfo.texi,v 1.2 1998/03/24 18:07:55 law Exp $
+ 
+ @ifinfo
+ @format
+diff --git a/texinfo/makeinfo/multi.c b/texinfo/makeinfo/multi.c
+@@ -1,5 +1,5 @@
+ /* multi.c -- multitable stuff for makeinfo.
+-   $Id: multi.c,v 1.2 1998/03/24 18:07:57 law Exp $
++   $Id: multi.c,v 1.3 1998/05/06 21:09:06 law Exp $
+ 
+    Copyright (C) 1996, 97 Free Software Foundation, Inc.
+ 
+diff --git a/texinfo/texinfo.texi b/texinfo/texinfo.texi
+@@ -13,7 +13,7 @@
+ @paragraphindent 2
+ @finalout
+ @comment %**end of header
+-@comment $Id: texinfo.texi,v 1.2 1998/03/24 17:58:30 law Exp $
++@comment $Id: texinfo.texi,v 1.3 1998/03/24 18:05:26 law Exp $
+ 
+ @c Before release, run C-u C-c C-u C-a (texinfo-all-menus-update with a
+ @c prefix arg).  This updates the node pointers, which texinfmt.el needs.
+diff --git a/texinfo/util/Makefile.am b/texinfo/util/Makefile.am
+@@ -1,5 +1,5 @@
+ ## Makefile.am for texinfo/util.
+-## $Id: Makefile.am,v 1.3 1998/03/24 19:41:36 law Exp $
++## $Id: Makefile.am,v 1.4 1999/02/01 10:33:57 manfred Exp $
+ ## Run automake in .. to produce Makefile.in from this.
+ 
+ noinst_PROGRAMS = install-info texindex
+diff --git a/texinfo/util/gen-dir-node b/texinfo/util/gen-dir-node
+@@ -1,5 +1,5 @@
+ #!/bin/sh
+-# $Id: gen-dir-node,v 1.1.1.2 1998/03/22 20:43:12 law Exp $
++# $Id: gen-dir-node,v 1.2 1998/03/24 18:08:43 law Exp $
+ # Generate the top-level Info node, given a directory of Info files
+ # and (optionally) a skeleton file.  The output will be suitable for a
+ # top-level dir file.  The skeleton file contains info topic names in the
+diff --git a/texinfo/util/install-info.c b/texinfo/util/install-info.c
+@@ -1,5 +1,5 @@
+ /* install-info -- create Info directory entry(ies) for an Info file.
+-   $Id: install-info.c,v 1.1.1.3 1998/03/24 18:20:30 law Exp $
++   $Id: install-info.c,v 1.6 1998/03/24 19:41:39 law Exp $
+ 
+    Copyright (C) 1996, 97, 98 Free Software Foundation, Inc.
+ 
+diff --git a/texinfo/util/texi2dvi b/texinfo/util/texi2dvi
+@@ -1,6 +1,6 @@
+ #! /bin/sh
+ # texi2dvi --- smartly produce DVI files from texinfo sources
+-# $Id: texi2dvi,v 1.1.1.3 1998/03/24 18:20:32 law Exp $
++# $Id: texi2dvi,v 1.3 1998/03/24 19:41:41 law Exp $
+ #
+ # Copyright (C) 1992, 93, 94, 95, 96, 97, 98 Free Software Foundation, Inc.
+ #
+@@ -45,7 +45,7 @@
+ progname=`echo "$0" | sed -e 's/[^\/]*\///g'`
+ 
+ # This string is expanded by rcs automatically when this file is checked out.
+-rcs_revision='$Revision: 1.1.1.3 $'
++rcs_revision='$Revision: 1.3 $'
+ version=`set - $rcs_revision; echo $2`
+ 
+ # To prevent hairy quoting and escaping later.
+diff --git a/texinfo/util/texindex.c b/texinfo/util/texindex.c
+@@ -1,5 +1,5 @@
+ /* Prepare TeX index dribble output into an actual index.
+-   $Id: texindex.c,v 1.1.1.3 1998/03/24 18:20:31 law Exp $
++   $Id: texindex.c,v 1.3 1998/03/24 19:41:42 law Exp $
+ 
+    Copyright (C) 1987, 91, 92, 96, 97, 98 Free Software Foundation, Inc.
+ 

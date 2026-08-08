@@ -1,0 +1,27 @@
+From 8457a7fc37d5e3f7b45d1d7288d24c263cd33e50 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sat, 8 Aug 2026 18:02:48 +0000
+Subject: [PATCH] Fix definition of abort() on Windows
+
+---
+ gcc/system.h | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/gcc/system.h b/gcc/system.h
+index 06457874667..2c01abbbec8 100644
+--- a/gcc/system.h
++++ b/gcc/system.h
+@@ -22,6 +22,10 @@ Boston, MA 02111-1307, USA.  */
+ #ifndef __GCC_SYSTEM_H__
+ #define __GCC_SYSTEM_H__
+ 
++#if defined(_WIN32)
++#define WIN32_LEAN_AND_MEAN
++#endif
++
+ /* This is the location of the online document giving information how
+    to report bugs. If you change this string, also check for strings
+    not under control of the preprocessor.  */
+-- 
+2.54.0
+

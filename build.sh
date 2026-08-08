@@ -627,12 +627,19 @@ if ! [ -f "${gcc_tarball}" ]; then
 	
 	if (( gcc_major >= 4.0 && gcc_major <= 4.2 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.0/0001-Add-host-support-for-x64-MinGW.patch"
+	elif (( gcc_major == 2.95 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-2.9/0001-Add-host-support-for-x64-MinGW.patch"
 	elif (( gcc_major <= 3.3 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.1/0001-Add-host-support-for-x64-MinGW.patch"
 	elif (( gcc_major <= 3.4 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.4/0001-Add-host-support-for-x64-MinGW.patch"
 	fi
 	
+	if (( gcc_major == 2.95 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-2.9/0001-Add-host-support-for-x86_64.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-2.9/0001-Restore-source-files-with-stripped-license-headers.patch"
+	fi
+
 	if (( gcc_major == 11 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-11/0001-Unpoison-calloc-on-musl-hosts.patch"
 	fi
@@ -653,6 +660,8 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-5/0001-Fix-definition-of-abort-on-Windows.patch"
 	elif (( gcc_major >= 3.4 && gcc_major <= 4.9 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.4/0001-Fix-definition-of-abort-on-Windows.patch"
+	elif (( gcc_major == 2.95 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-2.9/0001-Fix-definition-of-abort-on-Windows.patch"
 	elif (( gcc_major <= 3.3 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.1/0001-Fix-definition-of-abort-on-Windows.patch"
 	fi
@@ -667,6 +676,11 @@ if ! [ -f "${gcc_tarball}" ]; then
 	
 	if (( gcc_major <= 4.9 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.1/0001-strerror.c-Do-not-declare-sys_nerr-or-sys_errlist-if-already-macros.patch"
+	fi
+	
+	if (( gcc_major == 2.95 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-2.9/0001-Avoid-incorrectly-declaring-the-caddr_t-alias-on-Linux.patch"
+	elif (( gcc_major <= 4.9 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.1/0001-Avoid-incorrectly-declaring-the-caddr_t-alias-on-Linux.patch"
 	fi
 	
@@ -682,18 +696,26 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.1/0001-Allow-compilation-with-GCC-4.4-and-up.patch"
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.1/0001-Fix-redeclaration-error.patch"
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.1/0001-Fix-locale-support-for-glibc-2.3.patch"
+	elif (( gcc_major == 2.95 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-2.9/0001-Allow-compilation-with-GCC-4.4-and-up.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-2.9/0001-Fix-redeclaration-error.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-2.9/0001-Fix-locale-support-for-glibc-2.3.patch"
 	fi
 	
 	if (( gcc_major >= 3.1 && gcc_major <= 3.2 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.1/0001-Don-t-error-out-for-unknown-platforms.patch"
 	elif (( gcc_major == 3.3 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.3/0001-Don-t-error-out-for-unknown-platforms.patch"
+	elif (( gcc_major == 2.95 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-2.9/0001-Don-t-error-out-for-unknown-platforms.patch"
 	fi
 	
 	if (( gcc_major >= 3.3 && gcc_major <= 3.4 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0001-Handle-enable-checking-release.patch"
 	elif (( gcc_major >= 3.1 && gcc_major <= 3.2 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.1/0001-Handle-enable-checking-release.patch"
+	elif (( gcc_major == 2.95 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-2.9/0001-Handle-enable-checking-release.patch"
 	fi
 	
 	if (( gcc_major >= 4.5 && gcc_major <= 4.8 )); then
@@ -704,6 +726,8 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.1/0001-Add-missing-_attribute__-__gnu_inline__.patch"
 	elif (( gcc_major == 3.3 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.3/0001-Add-missing-_attribute__-__gnu_inline__.patch"
+	elif (( gcc_major == 2.95 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-2.9/0001-Add-missing-_attribute__-__gnu_inline__.patch"
 	fi
 	
 	if (( gcc_major >= 4.1 && gcc_major <= 4.7 )); then
@@ -714,6 +738,8 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.1/0001-Disable-building-documentation.patch"
 	elif (( gcc_major == 3.3 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.3/0001-Disable-building-documentation.patch"
+	elif (( gcc_major == 2.95 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-2.9/0001-Disable-building-documentation.patch"
 	fi
 	
 	if (( gcc_major >= 4.2 && gcc_major <= 4.4 )); then
@@ -734,6 +760,8 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0001-Prevent-use-of-_unlocked-functions-and-disable-inclusion-of-malloc.h.patch"
 	elif (( gcc_major >= 3.1 && gcc_major <= 3.3 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.1/0001-Prevent-use-of-_unlocked-functions-and-disable-inclusion-of-malloc.h.patch"
+	elif (( gcc_major == 2.95 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-2.9/0001-Prevent-use-of-_unlocked-functions-and-disable-inclusion-of-malloc.h.patch"
 	fi
 	
 	if (( gcc_major == 6 )); then
@@ -777,6 +805,8 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-6/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
 	elif (( gcc_major >= 3.1 && gcc_major <= 3.3 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.1/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
+	elif (( gcc_major == 2.95 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-2.9/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
 	else
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
 	fi
@@ -793,6 +823,8 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
 	elif (( gcc_major >= 3.1 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-3.1/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
+	elif (( gcc_major == 2.95 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-2.9/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
 	fi
 	
 	if (( gcc_major == 3.1 )); then
@@ -1183,6 +1215,10 @@ if (( gcc_major <= 4.0 )); then
 	targets=("${(@)targets:#arm-unknown-linux-gnueabi}")
 fi
 
+if (( gcc_major <= 3.0 )); then
+	targets=("${(@)targets:#x86_64-unknown-linux-gnu}")
+fi
+
 for target in "${targets[@]}"; do
 	check_target_exists "${gcc_targets}" "${target}" || continue
 	
@@ -1301,6 +1337,18 @@ for target in "${targets[@]}"; do
 		unlink "${bin}"
 		cp "${binutils_gnu_wrapper}" "${bin}"
 	done
+	
+	if (( gcc_major == 2.95 )); then
+		# This version of GCC looks up the target's system headers in
+		# '<tooldir>/bin/include' (the C-preprocessor adds '/include'
+		# to every -B directory it was started with)
+		ln \
+			--symbolic \
+			--relative \
+			--force \
+			"${toolchain_directory}/${triplet}/include" \
+			"${toolchain_directory}/${triplet}/bin/include"
+	fi
 	
 	rm --force --recursive "${PWD}"
 	
@@ -1461,10 +1509,18 @@ for target in "${targets[@]}"; do
 		unlink "${toolchain_directory}/${triplet}/usr"
 	fi
 	
-	if (( gcc_major <= 4.1 )); then
+	if (( gcc_major >= 3.0 && gcc_major <= 4.1 )); then
+		# GCC 2.95 keeps its C++ headers in '<prefix>/include/g++-3',
+		# whose path is hard-coded into the compiler
 		mv \
 			"${toolchain_directory}/include/c++" \
 			"${toolchain_directory}/${triplet}/include"
+	elif (( gcc_major == 2.95 )); then 
+		mkdir --parent "${toolchain_directory}/${triplet}/include/c++"
+		
+		mv \
+			"${toolchain_directory}/include/g++-3" \
+			"${toolchain_directory}/${triplet}/include/c++/${gcc_major}"
 	fi
 	
 	if (( gcc_major <= 3.3 )); then
@@ -1497,11 +1553,13 @@ for target in "${targets[@]}"; do
 			"${toolchain_directory}/lib/gcc/${triplet}/${gcc_major}."* \
 			"${toolchain_directory}/lib/gcc/${triplet}/${gcc_major}"
 		
-		ln \
-			--symbolic \
-			--relative \
-			"${toolchain_directory}/${triplet}/include/c++/${gcc_major}."* \
-			"${toolchain_directory}/${triplet}/include/c++/${gcc_major}"
+		if (( gcc_major >= 3.0 )); then
+			ln \
+				--symbolic \
+				--relative \
+				"${toolchain_directory}/${triplet}/include/c++/${gcc_major}."* \
+				"${toolchain_directory}/${triplet}/include/c++/${gcc_major}"
+		fi
 	fi
 	
 	if (( gcc_major >= 4.3 && gcc_major <= 11 )); then
@@ -1526,6 +1584,22 @@ for target in "${targets[@]}"; do
 		cd '../lib'
 	fi
 	
+	if (( gcc_major == 2.95 )); then
+		ln \
+			--symbolic \
+			--relative \
+			--force \
+			'libstdc++-libc6.1-2.so.3' \
+			'libstdc++.so'
+		
+		ln \
+			--symbolic \
+			--relative \
+			--force \
+			'libstdc++-3-libc6.1-2-2.10.0.a' \
+			'libstdc++.a'
+	fi
+	
 	"${triplet}-strip" "${PWD}/lib"*'.so' 2>/dev/null || true
 	
 	if (( gcc_major >= 13 && gcc_major <= 15 )); then
@@ -1540,6 +1614,10 @@ for target in "${targets[@]}"; do
 			CFLAGS="${ccflags}" \
 			CXXFLAGS="${ccflags}" \
 			LDFLAGS="${linkflags}"
+	fi
+	
+	if (( gcc_major == 2.95 )); then 
+		rm "${toolchain_directory}/lib/gcc/${triplet}/${gcc_major}/libstdc++"*
 	fi
 	
 	ln \
@@ -1595,7 +1673,9 @@ for target in "${targets[@]}"; do
 		cp "${toolchain_directory}/bin/${triplet}-g++${exe}" "${toolchain_directory}/bin/${triplet}-c++${exe}"
 	fi
 	
-	cat "${workdir}/patches/c++config.h" >> "${toolchain_directory}/${triplet}/include/c++/${gcc_major}/${triplet}/bits/c++config.h"
+	if (( gcc_major >= 3.0 )); then
+		cat "${workdir}/patches/c++config.h" >> "${toolchain_directory}/${triplet}/include/c++/${gcc_major}/${triplet}/bits/c++config.h"
+	fi
 	
 	if (( gcc_major >= 4.6 )); then
 		if [[ "${host}" = *'-mingw32' ]]; then
@@ -1886,6 +1966,10 @@ while read item; do
 	fi
 	
 	if (( gcc_major <= 4.6 )) && [[ "${triplet}" = 'arm-'*'-gnueabihf' ]]; then
+		continue
+	fi
+	
+	if (( gcc_major <= 3.0 )) && [[ "${triplet}" = 'x86_64-'* ]]; then
 		continue
 	fi
 	
@@ -2213,3 +2297,4 @@ if ( find "${toolchain_directory}" -xtype 'l' -print -quit | grep -q . ); then
 fi
 
 cp "${workdir}/README.md" "${toolchain_directory}"
+

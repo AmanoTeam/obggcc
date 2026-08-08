@@ -1,0 +1,27 @@
+From 1dd4fcc2b79c88329701c81c37a501f971fee803 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sat, 8 Aug 2026 18:07:20 +0000
+Subject: [PATCH] Avoid incorrectly declaring the caddr_t alias on Linux
+
+---
+ gcc/system.h | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/gcc/system.h b/gcc/system.h
+index 06457874667..f8cec3b3e39 100644
+--- a/gcc/system.h
++++ b/gcc/system.h
+@@ -126,6 +126,10 @@ extern int fputs_unlocked PROTO ((const char *, FILE *));
+ #define ISDIGIT(c) ((unsigned) (c) - '0' <= 9)
+ 
+ 
++#if defined(__linux__)
++#undef caddr_t
++#endif
++
+ #include <sys/types.h>
+ #include <errno.h>
+ 
+-- 
+2.54.0
+

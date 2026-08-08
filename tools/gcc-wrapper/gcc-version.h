@@ -15,6 +15,7 @@ struct GCCVersion {
 
 enum GCCMajorVersion {
 	GCC_VERSION_UNKNOWN,
+	GCC_2_95,
 	GCC_3_1,
 	GCC_3_2,
 	GCC_3_3,

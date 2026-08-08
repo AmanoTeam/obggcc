@@ -1,0 +1,45 @@
+From 5e70008857be1b4554334fbb58f8ef67d37618ea Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sat, 8 Aug 2026 21:20:44 +0000
+Subject: [PATCH] Add host support for x86-64
+
+---
+ gcc/configure    | 5 +++++
+ gcc/configure.in | 5 +++++
+ 2 files changed, 10 insertions(+)
+
+diff --git a/gcc/configure b/gcc/configure
+index 38d3db4fe27..a2c5906864c 100755
+--- a/gcc/configure
++++ b/gcc/configure
+@@ -2947,6 +2947,11 @@ for machine in $build $host $target; do
+ 	sparc*-*-*)
+ 		cpu_type=sparc
+ 		;;
++	x86_64*-*-*)
++		# x86-64 is the 64-bit extension of the i386 architecture; use the
++		# i386 host configuration for x86-64 hosts.
++		cpu_type=i386
++		;;
+ 	esac
+ 
+ 	tm_file=${cpu_type}/${cpu_type}.h
+diff --git a/gcc/configure.in b/gcc/configure.in
+index 55dcec76823..e3e7f4738ee 100644
+--- a/gcc/configure.in
++++ b/gcc/configure.in
+@@ -513,6 +513,11 @@ changequote([,])dnl
+ 	sparc*-*-*)
+ 		cpu_type=sparc
+ 		;;
++	x86_64*-*-*)
++		# x86-64 is the 64-bit extension of the i386 architecture; use the
++		# i386 host configuration for x86-64 hosts.
++		cpu_type=i386
++		;;
+ 	esac
+ 
+ 	tm_file=${cpu_type}/${cpu_type}.h
+-- 
+2.54.0
+

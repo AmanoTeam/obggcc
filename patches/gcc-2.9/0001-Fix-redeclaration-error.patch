@@ -1,0 +1,148 @@
+From 83747937c072b6dc350837e0a10eeddb32a1588b Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sat, 8 Aug 2026 18:12:44 +0000
+Subject: [PATCH] Fix redeclaration error
+
+---
+ gcc/cp/decl.c    | 20 ++++++++++----------
+ gcc/cp/decl.h    |  2 +-
+ gcc/cp/decl2.c   |  2 +-
+ gcc/cp/typeck2.c |  2 +-
+ 4 files changed, 13 insertions(+), 13 deletions(-)
+
+diff --git a/gcc/cp/decl.c b/gcc/cp/decl.c
+index 6a6aeddb4a0..5b5cd22f27d 100644
+--- a/gcc/cp/decl.c
++++ b/gcc/cp/decl.c
+@@ -5734,7 +5734,7 @@ qualify_lookup (val, flags)
+   return val;
+ }
+ 
+-/* Any other BINDING overrides an implicit TYPENAME.  Warn about
++/* Any other BINDING overrides an implicit DECL_TYPENAME.  Warn about
+    that.  */
+ 
+ static void
+@@ -7201,7 +7201,7 @@ groktypename (typename)
+     return typename;
+   return grokdeclarator (TREE_VALUE (typename),
+ 			 TREE_PURPOSE (typename),
+-			 TYPENAME, 0, NULL_TREE);
++			 DECL_TYPENAME, 0, NULL_TREE);
+ }
+ 
+ /* Decode a declarator in an ordinary declaration or data definition.
+@@ -9260,7 +9260,7 @@ check_static_variable_definition (decl, type)
+      PARM for a parameter declaration (either within a function prototype
+       or before a function body).  Make a PARM_DECL, or return void_type_node.
+      CATCHPARM for a parameter declaration before a catch clause.
+-     TYPENAME if for a typename (in a cast or sizeof).
++     DECL_TYPENAME if for a typename (in a cast or sizeof).
+       Don't make a DECL node; just return the ..._TYPE node.
+      FIELD for a struct or union field; make a FIELD_DECL.
+      BITFIELD for a field with specified width.
+@@ -9269,7 +9269,7 @@ check_static_variable_definition (decl, type)
+    ATTRLIST is a TREE_LIST node with prefix attributes in TREE_VALUE and
+    normal attributes in TREE_PURPOSE, or NULL_TREE.
+ 
+-   In the TYPENAME case, DECLARATOR is really an absolute declarator.
++   In the DECL_TYPENAME case, DECLARATOR is really an absolute declarator.
+    It may also be so in the PARM case, for a prototype where the
+    argument type is specified but not the name.
+ 
+@@ -10072,7 +10072,7 @@ grokdeclarator (declarator, declspecs, decl_context, initialized, attrlist)
+ 	  error ("non-member `%s' cannot be declared `mutable'", name);
+ 	  RIDBIT_RESET (RID_MUTABLE, specbits);
+ 	}
+-      else if (friendp || decl_context == TYPENAME)
++      else if (friendp || decl_context == DECL_TYPENAME)
+ 	{
+ 	  error ("non-object member `%s' cannot be declared `mutable'", name);
+ 	  RIDBIT_RESET (RID_MUTABLE, specbits);
+@@ -10111,7 +10111,7 @@ grokdeclarator (declarator, declspecs, decl_context, initialized, attrlist)
+     }
+ 
+   /* Static anonymous unions are dealt with here.  */
+-  if (staticp && decl_context == TYPENAME
++  if (staticp && decl_context == DECL_TYPENAME
+       && TREE_CODE (declspecs) == TREE_LIST
+       && ANON_UNION_TYPE_P (TREE_VALUE (declspecs)))
+     decl_context = FIELD;
+@@ -10338,7 +10338,7 @@ grokdeclarator (declarator, declspecs, decl_context, initialized, attrlist)
+ 	       then you'd have to ask: what does `*(x + i)' mean?  */
+ 	    if (TREE_CODE (type) == REFERENCE_TYPE)
+ 	      {
+-		if (decl_context == TYPENAME)
++		if (decl_context == DECL_TYPENAME)
+ 		  cp_error ("cannot make arrays of references");
+ 		else
+ 		  cp_error ("declaration of `%D' as array of references",
+@@ -11038,7 +11038,7 @@ grokdeclarator (declarator, declspecs, decl_context, initialized, attrlist)
+ 
+   /* If this is declaring a typedef name, return a TYPE_DECL.  */
+ 
+-  if (RIDBIT_SETP (RID_TYPEDEF, specbits) && decl_context != TYPENAME)
++  if (RIDBIT_SETP (RID_TYPEDEF, specbits) && decl_context != DECL_TYPENAME)
+     {
+       tree decl;
+ 
+@@ -11165,7 +11165,7 @@ grokdeclarator (declarator, declspecs, decl_context, initialized, attrlist)
+   /* If this is a type name (such as, in a cast or sizeof),
+      compute the type and return it now.  */
+ 
+-  if (decl_context == TYPENAME)
++  if (decl_context == DECL_TYPENAME)
+     {
+       /* Note that the grammar rejects storage classes
+ 	 in typenames, fields or parameters.  */
+@@ -11176,7 +11176,7 @@ grokdeclarator (declarator, declspecs, decl_context, initialized, attrlist)
+ 	  type_quals = TYPE_UNQUALIFIED;
+ 	}
+ 
+-      /* Special case: "friend class foo" looks like a TYPENAME context.  */
++      /* Special case: "friend class foo" looks like a DECL_TYPENAME context.  */
+       if (friendp)
+ 	{
+ 	  if (type_quals != TYPE_UNQUALIFIED)
+diff --git a/gcc/cp/decl.h b/gcc/cp/decl.h
+index fcb247e7020..0bbea0cdacb 100644
+--- a/gcc/cp/decl.h
++++ b/gcc/cp/decl.h
+@@ -26,7 +26,7 @@ enum decl_context
+   CATCHPARM,			/* Declaration of catch parm */
+   FIELD,			/* Declaration inside struct or union */
+   BITFIELD,			/* Likewise but with specified width */
+-  TYPENAME,			/* Typename (inside cast or sizeof)  */
++  DECL_TYPENAME,			/* Typename (inside cast or sizeof)  */
+   MEMFUNCDEF			/* Member function definition */
+ };
+ 
+diff --git a/gcc/cp/decl2.c b/gcc/cp/decl2.c
+index d7f58bfbfd2..60cdb57f500 100644
+--- a/gcc/cp/decl2.c
++++ b/gcc/cp/decl2.c
+@@ -1930,7 +1930,7 @@ tree
+ grokoptypename (declspecs, declarator)
+      tree declspecs, declarator;
+ {
+-  tree t = grokdeclarator (declarator, declspecs, TYPENAME, 0, NULL_TREE);
++  tree t = grokdeclarator (declarator, declspecs, DECL_TYPENAME, 0, NULL_TREE);
+   return build_typename_overload (t);
+ }
+ 
+diff --git a/gcc/cp/typeck2.c b/gcc/cp/typeck2.c
+index da98203bdc0..11e4d8d2d26 100644
+--- a/gcc/cp/typeck2.c
++++ b/gcc/cp/typeck2.c
+@@ -1415,7 +1415,7 @@ build_m_component_ref (datum, component)
+   return component;
+ }
+ 
+-/* Return a tree node for the expression TYPENAME '(' PARMS ')'.  */
++/* Return a tree node for the expression DECL_TYPENAME '(' PARMS ')'.  */
+ 
+ tree
+ build_functional_cast (exp, parms)
+-- 
+2.54.0
+

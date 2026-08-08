@@ -1,0 +1,36 @@
+From 81d65dad3ded565d33a8e6a080ab8b545cf21e11 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sat, 8 Aug 2026 18:27:15 +0000
+Subject: [PATCH] Prevent use of *_unlocked() functions and disable inclusion
+ of <malloc.h>
+
+---
+ gcc/system.h | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/gcc/system.h b/gcc/system.h
+index 06457874667..33f84470f96 100644
+--- a/gcc/system.h
++++ b/gcc/system.h
+@@ -50,15 +50,15 @@ Boston, MA 02111-1307, USA.  */
+    
+    fputs_unlocked is an extension and needs to be prototyped specially.  */
+ 
+-#if defined HAVE_PUTC_UNLOCKED && !defined NEED_DECLARATION_PUTC_UNLOCKED
++#if defined HAVE_PUTC_UNLOCKED__ && !defined NEED_DECLARATION_PUTC_UNLOCKED
+ # undef putc
+ # define putc(C, Stream) putc_unlocked (C, Stream)
+ #endif
+-#if defined HAVE_FPUTC_UNLOCKED && !defined NEED_DECLARATION_PUTC_UNLOCKED
++#if defined HAVE_FPUTC_UNLOCKED__ && !defined NEED_DECLARATION_PUTC_UNLOCKED
+ # undef fputc
+ # define fputc(C, Stream) fputc_unlocked (C, Stream)
+ #endif
+-#if defined HAVE_FPUTS_UNLOCKED && !defined NEED_DECLARATION_PUTC_UNLOCKED
++#if defined HAVE_FPUTS_UNLOCKED__ && !defined NEED_DECLARATION_PUTC_UNLOCKED
+ # undef fputs
+ # define fputs(String, Stream) fputs_unlocked (String, Stream)
+ # ifdef NEED_DECLARATION_FPUTS_UNLOCKED
+-- 
+2.54.0
+
