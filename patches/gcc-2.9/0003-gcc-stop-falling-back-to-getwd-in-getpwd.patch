@@ -1,0 +1,51 @@
+From 163c84cfa7c2354e55ab5cd895c44e510e6e6286 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sun, 9 Aug 2026 18:29:55 +0000
+Subject: [PATCH] gcc: stop falling back to getwd in getpwd
+
+getpwd.c redirected getcwd to the obsolete getwd whenever POSIX/USG/VMS
+was not defined, or when autoconf detected HAVE_GETWD.  Modern C
+libraries such as musl no longer provide getwd, so when gcc is built
+against such a libc the cc1 link fails with an undefined reference to
+getwd.
+
+Drop the getwd fallback entirely and always call getcwd directly; every
+host in practical use today provides the POSIX getcwd.
+---
+ gcc/getpwd.c | 14 +++++---------
+ 1 file changed, 5 insertions(+), 9 deletions(-)
+
+diff --git a/gcc/getpwd.c b/gcc/getpwd.c
+index c3d155e..2f664cf 100644
+--- a/gcc/getpwd.c
++++ b/gcc/getpwd.c
+@@ -3,21 +3,17 @@
+ #include "config.h"
+ #include "system.h"
+ 
+-/* Virtually every UN*X system now in common use (except for pre-4.3-tahoe
+-   BSD systems) now provides getcwd as called for by POSIX.  Allow for
+-   the few exceptions to the general rule here.  */
++/* Virtually every UN*X system now in common use provides getcwd as
++   called for by POSIX.  Modern C libraries like musl no longer ship
++   getwd, so always call getcwd directly rather than falling back to
++   the obsolete, buffer-overflow-prone getwd.  */
+ 
+-#if !(defined (POSIX) || defined (USG) || defined (VMS)) || defined (HAVE_GETWD)
+-#define getcwd(buf,len) getwd(buf)
++/* We use this as a starting point, not a limit.  */
+ #ifdef MAXPATHLEN
+ #define GUESSPATHLEN (MAXPATHLEN + 1)
+ #else
+ #define GUESSPATHLEN 100
+ #endif
+-#else /* (defined (USG) || defined (VMS)) */
+-/* We actually use this as a starting point, not a limit.  */
+-#define GUESSPATHLEN 100
+-#endif /* (defined (USG) || defined (VMS)) */
+ 
+ #if !(defined (VMS) || (defined(_WIN32) && !defined(__CYGWIN__)))
+ 
+-- 
+2.54.0
+

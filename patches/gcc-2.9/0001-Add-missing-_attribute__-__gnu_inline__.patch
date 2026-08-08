@@ -1,0 +1,34 @@
+From 46d5d4f3018ee2415c08c9420bf17c7fea98682d Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sat, 8 Aug 2026 18:23:19 +0000
+Subject: [PATCH] Add missing _attribute__ ((__gnu_inline__))
+
+---
+ gcc/cp/hash.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/gcc/cp/hash.h b/gcc/cp/hash.h
+index 3c6199630c1..990f5bf2324 100644
+--- a/gcc/cp/hash.h
++++ b/gcc/cp/hash.h
+@@ -11,7 +11,7 @@ struct resword { const char *name; short token; enum rid rid;};
+ /* maximum key range = 247, duplicates = 0 */
+ 
+ #ifdef __GNUC__
+-__inline
++__inline __attribute__ ((__gnu_inline__))
+ #endif
+ static unsigned int
+ hash (str, len)
+@@ -68,7 +68,7 @@ hash (str, len)
+ }
+ 
+ #ifdef __GNUC__
+-__inline
++__inline __attribute__ ((__gnu_inline__))
+ #endif
+ struct resword *
+ is_reserved_word (str, len)
+-- 
+2.54.0
+

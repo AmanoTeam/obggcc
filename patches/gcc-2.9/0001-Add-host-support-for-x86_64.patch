@@ -1,0 +1,55 @@
+From a4be6305984b2e8103dfc063cead14df4e30f215 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sat, 8 Aug 2026 21:20:44 +0000
+Subject: [PATCH] Add host support for x86-64 and AArch64
+
+---
+ gcc/configure    | 10 ++++++++++
+ gcc/configure.in | 10 ++++++++++
+ 2 files changed, 20 insertions(+)
+
+diff --git a/gcc/configure b/gcc/configure
+index 38d3db4..9810e80 100755
+--- a/gcc/configure
++++ b/gcc/configure
+@@ -2947,6 +2947,16 @@ for machine in $build $host $target; do
+ 	sparc*-*-*)
+ 		cpu_type=sparc
+ 		;;
++	aarch64*-*-*)
++		# AArch64 is the 64-bit extension of the ARM architecture; use the
++		# arm host configuration for AArch64 hosts.
++		cpu_type=arm
++		;;
++	x86_64*-*-*)
++		# x86-64 is the 64-bit extension of the i386 architecture; use the
++		# i386 host configuration for x86-64 hosts.
++		cpu_type=i386
++		;;
+ 	esac
+ 
+ 	tm_file=${cpu_type}/${cpu_type}.h
+diff --git a/gcc/configure.in b/gcc/configure.in
+index 55dcec7..b177082 100644
+--- a/gcc/configure.in
++++ b/gcc/configure.in
+@@ -513,6 +513,16 @@ changequote([,])dnl
+ 	sparc*-*-*)
+ 		cpu_type=sparc
+ 		;;
++	aarch64*-*-*)
++		# AArch64 is the 64-bit extension of the ARM architecture; use the
++		# arm host configuration for AArch64 hosts.
++		cpu_type=arm
++		;;
++	x86_64*-*-*)
++		# x86-64 is the 64-bit extension of the i386 architecture; use the
++		# i386 host configuration for x86-64 hosts.
++		cpu_type=i386
++		;;
+ 	esac
+ 
+ 	tm_file=${cpu_type}/${cpu_type}.h
+-- 
+2.54.0
+

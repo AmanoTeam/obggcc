@@ -1,0 +1,84 @@
+From 117664643b58b9db5227a14be580e9db10ed7573 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sun, 9 Aug 2026 18:21:52 +0000
+Subject: [PATCH] texinfo: guard gettext setup calls with ENABLE_NLS
+
+bindtextdomain() and textdomain() are called unconditionally in
+makeinfo, info, texindex and install-info.  When the build is
+configured with --disable-nls the bundled intl/libintl.a is not
+built, so these references are left undefined on hosts whose libc
+lacks gettext (e.g. Android's bionic), breaking the link.
+
+Guard the two calls with #ifdef ENABLE_NLS, which is only defined in
+config.h when --enable-nls (the default) is in effect, so the symbols
+are only referenced when libintl is actually available.
+---
+ texinfo/info/info.c         | 2 ++
+ texinfo/makeinfo/makeinfo.c | 2 ++
+ texinfo/util/install-info.c | 2 ++
+ texinfo/util/texindex.c     | 2 ++
+ 4 files changed, 8 insertions(+)
+
+diff --git a/texinfo/info/info.c b/texinfo/info/info.c
+index 22b831a..6c781c4 100644
+--- a/texinfo/info/info.c
++++ b/texinfo/info/info.c
+@@ -127,8 +127,10 @@ main (argc, argv)
+ #endif
+ 
+   /* Set the text message domain.  */
++#ifdef ENABLE_NLS
+   bindtextdomain (PACKAGE, LOCALEDIR);
+   textdomain (PACKAGE);
++#endif
+ 
+   while (1)
+     {
+diff --git a/texinfo/makeinfo/makeinfo.c b/texinfo/makeinfo/makeinfo.c
+index 3094a65..f06a27b 100644
+--- a/texinfo/makeinfo/makeinfo.c
++++ b/texinfo/makeinfo/makeinfo.c
+@@ -951,8 +951,10 @@ main (argc, argv)
+ #endif
+ 
+   /* Set the text message domain.  */
++#ifdef ENABLE_NLS
+   bindtextdomain (PACKAGE, LOCALEDIR);
+   textdomain (PACKAGE);
++#endif
+ 
+   /* Parse argument flags from the input line. */
+   while ((c = getopt_long (argc, argv, "D:e:E:f:I:o:p:P:r:s:U:V",
+diff --git a/texinfo/util/install-info.c b/texinfo/util/install-info.c
+index 91b599d..3369865 100644
+--- a/texinfo/util/install-info.c
++++ b/texinfo/util/install-info.c
+@@ -438,8 +438,10 @@ main (argc, argv)
+ #endif
+ 
+   /* Set the text message domain.  */
++#ifdef ENABLE_NLS
+   bindtextdomain (PACKAGE, LOCALEDIR);
+   textdomain (PACKAGE);
++#endif
+ 
+   while (1)
+     {
+diff --git a/texinfo/util/texindex.c b/texinfo/util/texindex.c
+index 347cccb..4767602 100644
+--- a/texinfo/util/texindex.c
++++ b/texinfo/util/texindex.c
+@@ -177,8 +177,10 @@ main (argc, argv)
+ #endif
+ 
+   /* Set the text message domain.  */
++#ifdef ENABLE_NLS
+   bindtextdomain (PACKAGE, LOCALEDIR);
+   textdomain (PACKAGE);
++#endif
+ 
+   /* Describe the kind of sorting to do. */
+   /* The first keyfield uses the first braced field and folds case. */
+-- 
+2.54.0
+

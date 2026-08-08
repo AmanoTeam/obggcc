@@ -1,0 +1,36 @@
+From 6c39dd92d69b76178ee6f4b96d2b36db2951f942 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sat, 8 Aug 2026 18:24:57 +0000
+Subject: [PATCH] Disable building documentation
+
+---
+ gcc/Makefile.in | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/gcc/Makefile.in b/gcc/Makefile.in
+index 85bf9f8da5d..0ac9c43047c 100644
+--- a/gcc/Makefile.in
++++ b/gcc/Makefile.in
+@@ -2265,8 +2265,8 @@ stmp-fixproto: fixhdr.ready fixproto stmp-headers
+ #
+ # Remake the info files.
+ 
+-doc: info
+-info: cpp.info gcc.info lang.info
++doc: 
++info: 
+ 
+ cpp.info: $(srcdir)/cpp.texi
+ 	$(MAKEINFO) $(MAKEINFOFLAGS) -I$(srcdir) -o cpp.info $(srcdir)/cpp.texi
+@@ -2434,7 +2434,7 @@ install: $(INSTALL_TARGET) ; @true
+ # Install the driver last so that the window when things are
+ # broken is small.
+ install-normal: install-common $(INSTALL_HEADERS) $(INSTALL_LIBGCC) \
+-    $(INSTALL_CPP) install-man install-info intl.install lang.install-normal \
++    $(INSTALL_CPP) intl.install lang.install-normal \
+     install-driver
+ 
+ # Do nothing while making gcc with a cross-compiler. The person who
+-- 
+2.54.0
+

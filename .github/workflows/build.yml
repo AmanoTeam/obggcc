@@ -12,7 +12,7 @@ permissions: write-all
 env: 
     OBGGCC_BUILD_PARALLEL_LEVEL: 40
     OBGGCC_BUILD_DIRECTORY: /tmp
-    OBGGCC_RELEASE: '16'
+    OBGGCC_RELEASE: '2.95'
     OBGGCC_TARGETS: '*'
 
 jobs:
@@ -42,6 +42,9 @@ jobs:
     - name: Build OBGGCC
       if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
       run: |
+        if [ "${OBGGCC_RELEASE}" = '2.95' ]; then
+              export OBGGCC_BUILD_PARALLEL_LEVEL='1'
+        fi
         zsh './build.sh'
     - name: Generate tarball
       if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
@@ -143,7 +146,7 @@ jobs:
         source './tools/setup_toolchain.sh'
         
         if [[ '${{ matrix.target }}' = *'-linux-musl'* ]]; then
-            declare -r RAIDEN_TAG='gcc-15'
+            declare -r RAIDEN_TAG='gcc-16'
             declare -r RAIDEN_TARBALL='/tmp/toolchain.tar.xz'
             declare -r RAIDEN_URL="https://github.com/AmanoTeam/musl-gcc-cross/releases/download/${RAIDEN_TAG}/x86_64-unknown-linux-gnu.tar.xz"
             
@@ -183,7 +186,7 @@ jobs:
             
             source "${LOKI_HOME}/build/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' = *'-netbsd'* ]]; then
-            declare -r DAKINI_TAG='gcc-15'
+            declare -r DAKINI_TAG='gcc-16'
             declare -r DAKINI_TARBALL='/tmp/toolchain.tar.xz'
             declare -r DAKINI_URL="https://github.com/AmanoTeam/netbsd-gcc-cross/releases/download/${DAKINI_TAG}/x86_64-unknown-linux-gnu.tar.xz"
             
@@ -242,6 +245,10 @@ jobs:
             export PATH="${DARWIN_HOME}/bin:${PATH}"
             
             source "${DARWIN_HOME}/build/autotools/${{ matrix.target }}.sh"
+        fi
+        
+        if [ "${OBGGCC_RELEASE}" = '2.95' ]; then
+              export OBGGCC_BUILD_PARALLEL_LEVEL='1'
         fi
         
         zsh './build.sh'

@@ -1,0 +1,57 @@
+From 0751a06c08a0585fcdb7c22346527702f698f1a5 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sat, 8 Aug 2026 18:02:39 +0000
+Subject: [PATCH] Add host support for x64 MinGW
+
+---
+ gcc/configure    | 4 ++--
+ gcc/configure.in | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/gcc/configure b/gcc/configure
+index 38d3db4fe27..4ca45c280fe 100755
+--- a/gcc/configure
++++ b/gcc/configure
+@@ -3866,7 +3866,7 @@ for machine in $build $host $target; do
+ 		fi
+ 		exeext=.exe
+ 		;;
+-	i[34567]86-*-pe | i[34567]86-*-cygwin*)
++	*-*-pe | *-*-cygwin*)
+ 		xm_file="${xm_file} i386/xm-cygwin.h"
+ 		tmake_file=i386/t-cygwin
+ 		tm_file=i386/cygwin.h
+@@ -3877,7 +3877,7 @@ for machine in $build $host $target; do
+ 		fi
+ 		exeext=.exe
+ 		;;
+-	i[34567]86-*-mingw32*)
++	*-*-mingw32*)
+ 		tm_file=i386/mingw32.h
+ 		xm_file="${xm_file} i386/xm-mingw32.h"
+ 		tmake_file="i386/t-cygwin i386/t-mingw32"
+diff --git a/gcc/configure.in b/gcc/configure.in
+index 55dcec76823..f2fe9e8220b 100644
+--- a/gcc/configure.in
++++ b/gcc/configure.in
+@@ -1527,7 +1527,7 @@ changequote([,])dnl
+ 		exeext=.exe
+ 		;;
+ changequote(,)dnl
+-	i[34567]86-*-pe | i[34567]86-*-cygwin*)
++	*-*-pe | *-*-cygwin*)
+ changequote([,])dnl
+ 		xm_file="${xm_file} i386/xm-cygwin.h"
+ 		tmake_file=i386/t-cygwin
+@@ -1540,7 +1540,7 @@ changequote([,])dnl
+ 		exeext=.exe
+ 		;;
+ changequote(,)dnl
+-	i[34567]86-*-mingw32*)
++	*-*-mingw32*)
+ changequote([,])dnl
+ 		tm_file=i386/mingw32.h
+ 		xm_file="${xm_file} i386/xm-mingw32.h"
+-- 
+2.54.0
+

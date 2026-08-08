@@ -1,0 +1,52 @@
+From 01c9980916a6cdb3dcd82d45ea346b150f99f3cf Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sat, 8 Aug 2026 18:37:50 +0000
+Subject: [PATCH] Prefer DT_RPATH over DT_RUNPATH
+
+---
+ gcc/config/arm/linux-elf.h | 1 +
+ gcc/config/i386/linux.h    | 2 +-
+ gcc/config/rs6000/linux.h  | 2 +-
+ 3 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/gcc/config/arm/linux-elf.h b/gcc/config/arm/linux-elf.h
+index 559fb7773f2..b10fb1d3730 100644
+--- a/gcc/config/arm/linux-elf.h
++++ b/gcc/config/arm/linux-elf.h
+@@ -98,6 +98,7 @@ Boston, MA 02111-1307, USA.  */
+    %{rdynamic:-export-dynamic} \
+    %{!dynamic-linker:-dynamic-linker /lib/ld-linux.so.2} \
+    -X \
++   --disable-new-dtags \
+    %{mbig-endian:-EB}" \
+    SUBTARGET_EXTRA_LINK_SPEC
+ 
+diff --git a/gcc/config/i386/linux.h b/gcc/config/i386/linux.h
+index 90b9aa26f0e..295d2adcba2 100644
+--- a/gcc/config/i386/linux.h
++++ b/gcc/config/i386/linux.h
+@@ -199,7 +199,7 @@ Boston, MA 02111-1307, USA.  */
+ 	%{static:-static}}}"
+ #endif
+ #else
+-#define LINK_SPEC "-m elf_i386 %{shared:-shared} \
++#define LINK_SPEC "--disable-new-dtags -m elf_i386 %{shared:-shared} \
+   %{!shared: \
+     %{!ibcs: \
+       %{!static: \
+diff --git a/gcc/config/rs6000/linux.h b/gcc/config/rs6000/linux.h
+index c2a04fa85b1..0ea84aa788a 100644
+--- a/gcc/config/rs6000/linux.h
++++ b/gcc/config/rs6000/linux.h
+@@ -36,7 +36,7 @@ Boston, MA 02111-1307, USA.  */
+ #define CPP_OS_DEFAULT_SPEC "%(cpp_os_linux)"
+ 
+ #undef LINK_SPEC
+-#define LINK_SPEC "-m elf32ppclinux %{G*} %{shared:-shared} \
++#define LINK_SPEC "--disable-new-dtags -m elf32ppclinux %{G*} %{shared:-shared} \
+   %{!shared: \
+     %{!static: \
+       %{rdynamic:-export-dynamic} \
+-- 
+2.54.0
+

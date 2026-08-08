@@ -1,0 +1,55 @@
+From 8ef031958781e230765ef9ea4c0cd490c9afa848 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sun, 9 Aug 2026 19:18:37 +0000
+Subject: [PATCH] gcc: set POSIX xm_defines for any Linux host
+
+The second pass of the cpu_type loop registers HAVE_ATEXIT/POSIX/BSTRING
+only for hosts whose triple matches "*-*-linux-gnu*".  Other Linux-based
+hosts whose triple doesn't end in "-linux-gnu*" (e.g. Android's
+aarch64-unknown-linux-android21, or any *-*-linux-* host) slip through this
+case and POSIX is left undefined -- code like protoize.c then took the
+non-POSIX branch (using <sys/dir.h>, which bionic does not provide),
+breaking the build.
+
+Match "*-*-linux-*" instead, so every Linux-based host picks up the
+POSIX defs.
+---
+ gcc/configure    | 4 ++--
+ gcc/configure.in | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/gcc/configure b/gcc/configure
+index 9810e80..010e159 100755
+--- a/gcc/configure
++++ b/gcc/configure
+@@ -2962,9 +2962,9 @@ for machine in $build $host $target; do
+ 	tm_file=${cpu_type}/${cpu_type}.h
+ 	xm_file=${cpu_type}/xm-${cpu_type}.h
+ 	
+-	# Common parts for linux-gnu and openbsd systems
++	# Common parts for Linux and openbsd systems
+ 	case $machine in
+-	*-*-linux-gnu*)
++	*-*-linux-*)
+ 		xm_defines="HAVE_ATEXIT POSIX BSTRING"
+ 		;;
+ 	*-*-openbsd*)
+diff --git a/gcc/configure.in b/gcc/configure.in
+index b177082..c2da6b8 100644
+--- a/gcc/configure.in
++++ b/gcc/configure.in
+@@ -528,9 +528,9 @@ changequote([,])dnl
+ 	tm_file=${cpu_type}/${cpu_type}.h
+ 	xm_file=${cpu_type}/xm-${cpu_type}.h
+ 	
+-	# Common parts for linux-gnu and openbsd systems
++	# Common parts for Linux and openbsd systems
+ 	case $machine in
+-	*-*-linux-gnu*)
++	*-*-linux-*)
+ 		xm_defines="HAVE_ATEXIT POSIX BSTRING"
+ 		;;
+ 	*-*-openbsd*)
+-- 
+2.54.0
+

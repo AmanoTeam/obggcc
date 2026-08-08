@@ -1,0 +1,17 @@
+diff --git a/texinfo/lib/system.h b/texinfo/lib/system.h
+index cb3ed0531ff..39ae3709a10 100644
+--- a/texinfo/lib/system.h
++++ b/texinfo/lib/system.h
+@@ -39,8 +39,12 @@
+ #endif
+ 
+ /* For gettext (NLS).  */
++#ifdef ENABLE_NLS
+ #include <libintl.h>
+ #define _(String) gettext (String)
++#else
++#define _(String) (String)
++#endif
+ #define N_(String) (String)
+ 
+ /* Don't use bcopy!  Use memmove if source and destination may overlap,

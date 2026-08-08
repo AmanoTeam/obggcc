@@ -1,0 +1,42 @@
+From 604f57847e30bc077044aca7e4a18e465d1fcbb9 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sun, 9 Aug 2026 19:14:53 +0000
+Subject: [PATCH] gcc: drop unused sys/dir.h include from protoize
+
+protoize.c unconditionally included either <dirent.h> or <sys/dir.h>,
+depending on whether the POSIX macro is defined.  The included code in
+protoize.c does not use any symbol from these headers, so the include is
+dead.  Worse, on hosts whose triple does not match the "*-*-linux-gnu*"
+POSIX-defines case in configure (e.g. aarch64-unknown-linux-android*,
+which is "linux-android" rather than "linux-gnu"), the POSIX macro is
+left undefined, so protoize picks the <sys/dir.h> branch -- and Android's
+bionic libc does not ship <sys/dir.h>, aborting the build with
+"fatal error: sys/dir.h: No such file or directory".
+
+Drop the unused include, matching upstream gcc 3.1, which already
+removes it.
+---
+ gcc/protoize.c | 7 -------
+ 1 file changed, 7 deletions(-)
+
+diff --git a/gcc/protoize.c b/gcc/protoize.c
+index 7e9205c..03d59f7 100644
+--- a/gcc/protoize.c
++++ b/gcc/protoize.c
+@@ -61,13 +61,6 @@ Boston, MA 02111-1307, USA.  */
+ #include "intl.h"
+ #undef abort
+ 
+-#if ! defined (_WIN32) || defined (__CYGWIN__) || defined (_UWIN)
+-#if defined(POSIX) || defined(CONCURRENT)
+-#include <dirent.h>
+-#else
+-#include <sys/dir.h>
+-#endif
+-#endif
+ #include <setjmp.h>
+ 
+ /* Some systems like Linux don't declare rindex if _POSIX_SOURCE is declared,
+-- 
+2.54.0
+

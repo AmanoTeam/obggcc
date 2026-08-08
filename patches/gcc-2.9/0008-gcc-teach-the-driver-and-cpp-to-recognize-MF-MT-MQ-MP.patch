@@ -1,0 +1,143 @@
+From 8c0c2e9d69361e9f7858942fb6233516ed494962 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sun, 9 Aug 2026 19:52:03 +0000
+Subject: [PATCH] gcc: teach the driver and cpp to recognize -MF/-MT/-MQ/-MP
+
+---
+ gcc/cccp.c    | 21 +++++++++++++++++++++
+ gcc/cppinit.c | 18 ++++++++++++++++++
+ gcc/gcc.c     | 15 ++++++++-------
+ 3 files changed, 47 insertions(+), 7 deletions(-)
+
+diff --git a/gcc/cccp.c b/gcc/cccp.c
+index 843866c..5061b46 100644
+--- a/gcc/cccp.c
++++ b/gcc/cccp.c
+@@ -1557,6 +1557,27 @@ main (argc, argv)
+ 	    print_deps_missing_files = 1;
+ 	    break;
+ 	  }
++	if (!strcmp (argv[i], "-MP"))
++	  {
++	    break;
++	  }
++	if (!strcmp (argv[i], "-MF"))
++	  {
++	    if (i + 1 == argc)
++	      fatal ("Filename missing after %s option", argv[i]);
++	    i++;
++	    deps_file = argv[i];
++	    deps_mode = "w";
++	    break;
++	  }
++	if (!strcmp (argv[i], "-MT") || !strcmp (argv[i], "-MQ"))
++	  {
++	    if (i + 1 == argc)
++	      fatal ("Filename missing after %s option", argv[i]);
++	    i++;
++	    deps_target = argv[i];
++	    break;
++	  }
+ 	if (!strcmp (argv[i], "-M"))
+ 	  print_deps = 2;
+ 	else if (!strcmp (argv[i], "-MM"))
+diff --git a/gcc/cppinit.c b/gcc/cppinit.c
+index 453cc58..5fa9fd5 100644
+--- a/gcc/cppinit.c
++++ b/gcc/cppinit.c
+@@ -1457,6 +1457,24 @@ cpp_handle_option (pfile, argc, argv)
+ 	    opts->print_deps_missing_files = 1;
+ 	    break;
+ 	  }
++	if (!strcmp (argv[i], "-MP"))
++	  {
++	    break;
++	  }
++	if (!strcmp (argv[i], "-MF"))
++	  {
++	    if (i+1 == argc)
++	      goto missing_filename;
++	    opts->deps_file = argv[++i];
++	    break;
++	  }
++	if (!strcmp (argv[i], "-MT") || !strcmp (argv[i], "-MQ"))
++	  {
++	    if (i+1 == argc)
++	      goto missing_filename;
++	    opts->deps_target = argv[++i];
++	    break;
++	  }
+ 	if (!strcmp (argv[i], "-M"))
+ 	  opts->print_deps = 2;
+ 	else if (!strcmp (argv[i], "-MM"))
+diff --git a/gcc/gcc.c b/gcc/gcc.c
+index 5c9e73d..8f85efa 100644
+--- a/gcc/gcc.c
++++ b/gcc/gcc.c
+@@ -538,7 +538,8 @@ static struct user_specs *user_specs_head, *user_specs_tail;
+   || !strcmp (STR, "imacros") || !strcmp (STR, "aux-info") \
+   || !strcmp (STR, "idirafter") || !strcmp (STR, "iprefix") \
+   || !strcmp (STR, "iwithprefix") || !strcmp (STR, "iwithprefixbefore") \
+-  || !strcmp (STR, "isystem") || !strcmp (STR, "specs"))
++  || !strcmp (STR, "isystem") || !strcmp (STR, "specs") \
++  || !strcmp (STR, "MF") || !strcmp (STR, "MT") || !strcmp (STR, "MQ"))
+ 
+ #ifndef WORD_SWITCH_TAKES_ARG
+ #define WORD_SWITCH_TAKES_ARG(STR) DEFAULT_WORD_SWITCH_TAKES_ARG (STR)
+@@ -605,7 +606,7 @@ static struct compiler default_compilers[] =
+      "%{E|M|MM:cpp0 -lang-c %{ansi:-std=c89} %{std*} %{nostdinc*}\
+ 	%{C} %{v} %{A*} %{I*} %{P} %{$} %I\
+ 	%{C:%{!E:%eGNU C does not support -C without using -E}}\
+-	%{M} %{MM} %{MD:-MD %b.d} %{MMD:-MMD %b.d} %{MG}\
++	%{M} %{MM} %{MD:-MD %b.d} %{MMD:-MMD %b.d} %{MG} %{MP} %{MF*} %{MQ*} %{MT*}\
+         %{!no-gcc:-D__GNUC__=%v1 -D__GNUC_MINOR__=%v2}\
+ 	%{ansi|std=*:%{!std=gnu*:-trigraphs -D__STRICT_ANSI__}}\
+ 	%{!undef:%{!ansi:%{!std=*:%p}%{std=gnu*:%p}} %P} %{trigraphs}\
+@@ -619,7 +620,7 @@ static struct compiler default_compilers[] =
+       %{!E:%{!M:%{!MM:cc1 %i %1 \
+                   %{std*} %{nostdinc*} %{A*} %{I*} %I\
+                   %{!Q:-quiet} -dumpbase %b.c %{d*} %{m*} %{a*}\
+-                  %{MD:-MD %b.d} %{MMD:-MMD %b.d} %{MG}\
++                  %{MD:-MD %b.d} %{MMD:-MMD %b.d} %{MG} %{MP} %{MF*} %{MQ*} %{MT*}\
+                   %{!no-gcc:-D__GNUC__=%v1 -D__GNUC_MINOR__=%v2}\
+ 		  %{ansi|std=*:%{!std=gnu*:-trigraphs -D__STRICT_ANSI__}}\
+ 		  %{!undef:%{!ansi:%{!std=*:%p}%{std=gnu*:%p}} %P} %{trigraphs}\
+@@ -641,7 +642,7 @@ static struct compiler default_compilers[] =
+     "cpp0 -lang-c %{ansi:-std=c89} %{std*} %{nostdinc*}\
+ 	%{C} %{v} %{A*} %{I*} %{P} %{$} %I\
+ 	%{C:%{!E:%eGNU C does not support -C without using -E}}\
+-	%{M} %{MM} %{MD:-MD %b.d} %{MMD:-MMD %b.d} %{MG}\
++	%{M} %{MM} %{MD:-MD %b.d} %{MMD:-MMD %b.d} %{MG} %{MP} %{MF*} %{MQ*} %{MT*}\
+         %{!no-gcc:-D__GNUC__=%v1 -D__GNUC_MINOR__=%v2}\
+ 	%{ansi|std=*:%{!std=gnu*:-trigraphs -D__STRICT_ANSI__}}\
+ 	%{!undef:%{!ansi:%{!std=*:%p}%{std=gnu*:%p}} %P} %{trigraphs}\
+@@ -669,7 +670,7 @@ static struct compiler default_compilers[] =
+    {"%{E:cpp0 -lang-c %{ansi:-std=c89} %{std*} %{nostdinc*}\
+ 	%{C} %{v} %{A*} %{I*} %{P} %{$} %I\
+ 	%{C:%{!E:%eGNU C does not support -C without using -E}}\
+-	%{M} %{MM} %{MD:-MD %b.d} %{MMD:-MMD %b.d} %{MG}\
++	%{M} %{MM} %{MD:-MD %b.d} %{MMD:-MMD %b.d} %{MG} %{MP} %{MF*} %{MQ*} %{MT*}\
+         %{!no-gcc:-D__GNUC__=%v1 -D__GNUC_MINOR__=%v2}\
+ 	%{ansi|std=*:%{!std=gnu*:-trigraphs -D__STRICT_ANSI__}}\
+ 	%{!undef:%{!ansi:%{!std=*:%p}%{std=gnu*:%p}} %P} %{trigraphs}\
+@@ -686,7 +687,7 @@ static struct compiler default_compilers[] =
+    {"%{!E:%eCompilation of header file requested} \
+     cpp0 %{nostdinc*} %{C} %{v} %{A*} %{I*} %{P} %{$} %I\
+ 	%{C:%{!E:%eGNU C does not support -C without using -E}}\
+-	%{M} %{MM} %{MD:-MD %b.d} %{MMD:-MMD %b.d} %{MG}\
++	%{M} %{MM} %{MD:-MD %b.d} %{MMD:-MMD %b.d} %{MG} %{MP} %{MF*} %{MQ*} %{MT*}\
+         %{!no-gcc:-D__GNUC__=%v1 -D__GNUC_MINOR__=%v2}\
+ 	%{std=*:%{!std=gnu*:-trigraphs -D__STRICT_ANSI__}}\
+ 	%{!undef:%{!std=*:%p}%{std=gnu*:%p} %P} %{trigraphs}\
+@@ -717,7 +718,7 @@ static struct compiler default_compilers[] =
+   {"@assembler-with-cpp",
+    {"cpp0 -lang-asm %{nostdinc*} %{C} %{v} %{A*} %{I*} %{P} %{$} %I\
+ 	%{C:%{!E:%eGNU C does not support -C without using -E}}\
+-	%{M} %{MM} %{MD:-MD %b.d} %{MMD:-MMD %b.d} %{MG} %{trigraphs}\
++	%{M} %{MM} %{MD:-MD %b.d} %{MMD:-MMD %b.d} %{MG} %{MP} %{MF*} %{MQ*} %{MT*} %{trigraphs}\
+         -$ %{!undef:%p %P} -D__ASSEMBLER__ \
+         %c %{Os:-D__OPTIMIZE_SIZE__} %{O*:%{!O0:-D__OPTIMIZE__}}\
+ 	%{ffast-math:-D__FAST_MATH__}\
+-- 
+2.54.0
+

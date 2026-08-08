@@ -1,0 +1,52 @@
+From 93e688704034d1df75f6202054ab55b27d105dca Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sun, 9 Aug 2026 18:32:02 +0000
+Subject: [PATCH] libiberty: also hide sys_nerr from system headers in strerror
+
+strerror.c already renamed sys_errlist to sys_errlist__ while
+including <stdio.h>/<errno.h>, so that a host declaration with
+incompatible qualifiers (e.g. BSD's "const char * const sys_errlist[]")
+would not clash with libiberty's own extern declaration.  It did not do
+the same for sys_nerr, however, so on FreeBSD 15 -- whose <stdio.h>
+declares "extern const int sys_nerr" -- the libiberty extern
+"int sys_nerr" produced a hard "conflicting type qualifiers" error
+and aborted the build.
+
+Rename sys_nerr the same way while including the system headers, as
+upstream gcc 3.1 already does.
+---
+ libiberty/strerror.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/libiberty/strerror.c b/libiberty/strerror.c
+index 644cc75..c788a11 100644
+--- a/libiberty/strerror.c
++++ b/libiberty/strerror.c
+@@ -9,11 +9,12 @@
+ 
+ #ifdef HAVE_SYS_ERRLIST
+ /* Note that errno.h (not sure what OS) or stdio.h (BSD 4.4, at least)
+-   might declare sys_errlist in a way that the compiler might consider
+-   incompatible with our later declaration, perhaps by using const
+-   attributes.  So we hide the declaration in errno.h (if any) using a
+-   macro. */
++   might declare sys_errlist or sys_nerr in a way that the compiler
++   might consider incompatible with our later declaration, perhaps by
++   using const attributes.  So we hide the declaration in errno.h (if
++   any) using a macro. */
+ #define sys_errlist sys_errlist__
++#define sys_nerr sys_nerr__
+ #endif
+ 
+ #include <stdio.h>
+@@ -21,6 +22,7 @@
+ 
+ #ifdef HAVE_SYS_ERRLIST
+ #undef sys_errlist
++#undef sys_nerr
+ #endif
+ 
+ /*  Routines imported from standard C runtime libraries. */
+-- 
+2.54.0
+

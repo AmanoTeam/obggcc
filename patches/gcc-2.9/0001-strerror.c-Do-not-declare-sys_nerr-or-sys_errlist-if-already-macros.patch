@@ -1,0 +1,31 @@
+From 714dee80f3c50d454fa92cc322edc5084afd976d Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sun, 15 Mar 2026 04:07:56 +0100
+Subject: [PATCH] strerror.c: Do not declare sys_nerr or sys_errlist if already
+ macros
+
+---
+ libiberty/strerror.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/libiberty/strerror.c b/libiberty/strerror.c
+index 0efadc3d6..a8a0bd1f7 100644
+--- a/libiberty/strerror.c
++++ b/libiberty/strerror.c
+@@ -469,8 +469,13 @@ static const char **sys_errlist;
+ 
+ #else
+ 
++
++#ifndef sys_nerr
+ extern int sys_nerr;
++#endif
++#ifndef sys_errlist
+ extern char *sys_errlist[];
++#endif
+ 
+ #endif
+ 
+-- 
+2.53.0
+
