@@ -1,0 +1,446 @@
+From f76498920a5e0973b3cc79a252ddb14e8c51d4f8 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Sun, 9 Aug 2026 15:31:04 +0000
+Subject: [PATCH] gcc: make the driver location-independent
+
+Port the relocation mechanism from gcc 3.1 so a moved gcc 2.95 toolchain
+finds its own cpp0/cc1 and the bundled cross binutils relative to where the
+driver binary lives, instead of only relying on the configure-time prefix
+baked into the driver.
+
+In gcc.c, port make_relative_prefix() plus its split_directories()/
+free_split_directories() helpers, add the DIR_UP macro and the
+standard_bindir_prefix variable (with a STANDARD_BINDIR_PREFIX default),
+and wire it into process_command(): when GCC_EXEC_PREFIX is unset, derive it
+from argv[0] and export it via putenv.
+
+TOOLDIR_BASE_PREFIX is kept absolute so that in-tree builds (where the
+install layout does not exist yet) and a normally-installed toolchain still
+locate crt1.o/crti.o and the cross assembler through the direct
+<prefix>/<target>/{bin,lib} path; gcc 2.95 predates --with-sysroot, so the
+startfile search cannot fall back to a sysroot the way 3.1 does.  When the
+toolchain has been relocated and make_relative_prefix() set GCC_EXEC_PREFIX,
+additionally anchor the bundled binutils and target libraries to the
+relocated prefix via TOOLDIR_BASE_PREFIX_RELATIVE, mirroring 3.1's relative
+tooldir handling without regressing the build.
+
+In Makefile.in, pass -DSTANDARD_BINDIR_PREFIX=$(bindir)/ and
+-DTOOLDIR_BASE_PREFIX_RELATIVE=$(unlibsubdir)/../ to the driver build.
+
+This lets a relocated toolchain find cpp0/cc1 and the bundled cross
+binutils (under <prefix>/<target>/bin) the same way 3.x does, instead of:
+
+  installation problem, cannot exec 'cpp0': No such file or directory
+
+or falling back to the system assembler/linker.
+---
+ gcc/Makefile.in |   4 +-
+ gcc/gcc.c       | 318 ++++++++++++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 312 insertions(+), 10 deletions(-)
+
+diff --git a/gcc/Makefile.in b/gcc/Makefile.in
+index 85bf9f8..312f87e 100644
+--- a/gcc/Makefile.in
++++ b/gcc/Makefile.in
+@@ -1410,9 +1410,11 @@ c-common.o : c-common.c $(CONFIG_H) system.h $(TREE_H) c-tree.h c-lex.h \
+ DRIVER_DEFINES = \
+   -DSTANDARD_STARTFILE_PREFIX=\"$(libdir)/\" \
+   -DSTANDARD_EXEC_PREFIX=\"$(libdir)/gcc-lib/\" \
++  -DSTANDARD_BINDIR_PREFIX=\"$(bindir)/\" \
+   -DDEFAULT_TARGET_VERSION=\"$(version)\" \
+   -DDEFAULT_TARGET_MACHINE=\"$(target_alias)\" \
+-  -DTOOLDIR_BASE_PREFIX=\"$(exec_prefix)/\"
++  -DTOOLDIR_BASE_PREFIX=\"$(exec_prefix)/\" \
++  -DTOOLDIR_BASE_PREFIX_RELATIVE=\"$(unlibsubdir)/../\"
+ gcc.o: gcc.c $(CONFIG_H) system.h intl.h multilib.h \
+     Makefile $(lang_specs_files) prefix.h
+ 	$(CC) $(ALL_CFLAGS) $(ALL_CPPFLAGS) $(INCLUDES) \
+diff --git a/gcc/gcc.c b/gcc/gcc.c
+index c5a312d..5c9e73d 100644
+--- a/gcc/gcc.c
++++ b/gcc/gcc.c
+@@ -77,6 +77,10 @@ compilation is specified by a string called a "spec".  */
+ 
+ static char dir_separator_str[] = {DIR_SEPARATOR, 0};
+ 
++#ifndef DIR_UP
++#define DIR_UP ".."
++#endif /* DIR_UP */
++
+ #define obstack_chunk_alloc xmalloc
+ #define obstack_chunk_free free
+ 
+@@ -179,6 +183,9 @@ static struct compiler *lookup_compiler PROTO((const char *, size_t, const char
+ static char *build_search_list	PROTO((struct path_prefix *, const char *, int));
+ static void putenv_from_prefixes PROTO((struct path_prefix *, const char *));
+ static char *find_a_file	PROTO((struct path_prefix *, const char *, int));
++static char **split_directories PROTO((const char *, int *));
++static void free_split_directories PROTO((char **));
++static char *make_relative_prefix PROTO((const char *, const char *, const char *));
+ static void add_prefix		PROTO((struct path_prefix *, const char *,
+ 				       const char *, int, int, int *));
+ static char *skip_whitespace	PROTO((char *));
+@@ -1393,12 +1400,23 @@ static const char *standard_startfile_prefix = STANDARD_STARTFILE_PREFIX;
+ static const char *standard_startfile_prefix_1 = "/lib/";
+ static const char *standard_startfile_prefix_2 = "/usr/lib/";
+ 
++#ifndef STANDARD_BINDIR_PREFIX
++#define STANDARD_BINDIR_PREFIX "/usr/local/bin"
++#endif /* !defined STANDARD_BINDIR_PREFIX */
++
++static const char *standard_bindir_prefix = STANDARD_BINDIR_PREFIX;
++
+ #ifndef TOOLDIR_BASE_PREFIX
+ #define TOOLDIR_BASE_PREFIX "/usr/local/"
+ #endif
+ static const char *tooldir_base_prefix = TOOLDIR_BASE_PREFIX;
+ static const char *tooldir_prefix;
+ 
++#ifndef TOOLDIR_BASE_PREFIX_RELATIVE
++#define TOOLDIR_BASE_PREFIX_RELATIVE "../../../../"
++#endif
++static const char *const tooldir_base_prefix_relative = TOOLDIR_BASE_PREFIX_RELATIVE;
++
+ /* Subdirectory to use for locating libraries.  Set by
+    set_multilib_dir based on the compilation options.  */
+ 
+@@ -2562,6 +2580,246 @@ add_linker_option (option, len)
+ 
+   linker_options [n_linker_options - 1] = save_string (option, len);
+ }
++
++#ifndef VMS
++
++/* FIXME: the location independence code for VMS is hairier than this,
++   and hasn't been written.  */
++
++/* Split a filename into component directories.  */
++
++static char **
++split_directories (name, ptr_num_dirs)
++     const char *name;
++     int *ptr_num_dirs;
++{
++  int num_dirs = 0;
++  char **dirs;
++  const char *p, *q;
++  int ch;
++
++  /* Count the number of directories.  Special case MSDOS disk names as part
++     of the initial directory.  */
++  p = name;
++#ifdef HAVE_DOS_BASED_FILESYSTEM
++  if (name[1] == ':' && IS_DIR_SEPARATOR (name[2]))
++    {
++      p += 3;
++      num_dirs++;
++    }
++#endif /* HAVE_DOS_BASED_FILESYSTEM */
++
++  while ((ch = *p++) != '\0')
++    {
++      if (IS_DIR_SEPARATOR (ch))
++	{
++	  num_dirs++;
++	  while (IS_DIR_SEPARATOR (*p))
++	    p++;
++	}
++    }
++
++  dirs = (char **) xmalloc (sizeof (char *) * (num_dirs + 2));
++
++  /* Now copy the directory parts.  */
++  num_dirs = 0;
++  p = name;
++#ifdef HAVE_DOS_BASED_FILESYSTEM
++  if (name[1] == ':' && IS_DIR_SEPARATOR (name[2]))
++    {
++      dirs[num_dirs++] = save_string (p, 3);
++      p += 3;
++    }
++#endif /* HAVE_DOS_BASED_FILESYSTEM */
++
++  q = p;
++  while ((ch = *p++) != '\0')
++    {
++      if (IS_DIR_SEPARATOR (ch))
++	{
++	  while (IS_DIR_SEPARATOR (*p))
++	    p++;
++
++	  dirs[num_dirs++] = save_string (q, p - q);
++	  q = p;
++	}
++    }
++
++  if (p - 1 - q > 0)
++    dirs[num_dirs++] = save_string (q, p - 1 - q);
++
++  dirs[num_dirs] = NULL;
++  if (ptr_num_dirs)
++    *ptr_num_dirs = num_dirs;
++
++  return dirs;
++}
++
++/* Release storage held by split directories.  */
++
++static void
++free_split_directories (dirs)
++     char **dirs;
++{
++  int i = 0;
++
++  while (dirs[i] != NULL)
++    free (dirs[i++]);
++
++  free ((char *) dirs);
++}
++
++/* Given three strings PROGNAME, BIN_PREFIX, PREFIX, return a string that gets
++   to PREFIX starting with the directory portion of PROGNAME and a relative
++   pathname of the difference between BIN_PREFIX and PREFIX.
++
++   For example, if BIN_PREFIX is /alpha/beta/gamma/gcc/delta, PREFIX is
++   /alpha/beta/gamma/omega/, and PROGNAME is /red/green/blue/gcc, then this
++   function will return /red/green/blue/../omega.
++
++   If no relative prefix can be found, return NULL.  */
++
++static char *
++make_relative_prefix (progname, bin_prefix, prefix)
++     const char *progname;
++     const char *bin_prefix;
++     const char *prefix;
++{
++  char **prog_dirs, **bin_dirs, **prefix_dirs;
++  int prog_num, bin_num, prefix_num, std_loc_p;
++  int i, n, common;
++
++  prog_dirs = split_directories (progname, &prog_num);
++  bin_dirs = split_directories (bin_prefix, &bin_num);
++
++  /* If there is no full pathname, try to find the program by checking in each
++     of the directories specified in the PATH environment variable.  */
++  if (prog_num == 1)
++    {
++      char *temp;
++
++      GET_ENV_PATH_LIST (temp, "PATH");
++      if (temp)
++	{
++	  char *startp, *endp, *nstore;
++	  size_t prefixlen = strlen (temp) + 1;
++	  if (prefixlen < 2)
++	    prefixlen = 2;
++
++	  nstore = (char *) alloca (prefixlen + strlen (progname) + 1);
++
++	  startp = endp = temp;
++	  while (1)
++	    {
++	      if (*endp == PATH_SEPARATOR || *endp == 0)
++		{
++		  if (endp == startp)
++		    {
++		      nstore[0] = '.';
++		      nstore[1] = DIR_SEPARATOR;
++		      nstore[2] = '\0';
++		    }
++		  else
++		    {
++		      strncpy (nstore, startp, endp - startp);
++		      if (! IS_DIR_SEPARATOR (endp[-1]))
++			{
++			  nstore[endp - startp] = DIR_SEPARATOR;
++			  nstore[endp - startp + 1] = 0;
++			}
++		      else
++			nstore[endp - startp] = 0;
++		    }
++		  strcat (nstore, progname);
++		  if (! access (nstore, X_OK)
++#ifdef HAVE_EXECUTABLE_SUFFIX
++		      || ! access (strcat (nstore, EXECUTABLE_SUFFIX), X_OK)
++#endif
++		      )
++		    {
++		      free_split_directories (prog_dirs);
++		      progname = nstore;
++		      prog_dirs = split_directories (progname, &prog_num);
++		      break;
++		    }
++
++		  if (*endp == 0)
++		    break;
++		  endp = startp = endp + 1;
++		}
++	      else
++		endp++;
++	    }
++	}
++    }
++
++  /* Remove the program name from comparison of directory names.  */
++  prog_num--;
++
++  /* Determine if the compiler is installed in the standard location, and if
++     so, we don't need to specify relative directories.  Also, if argv[0]
++     doesn't contain any directory specifiers, there is not much we can do.  */
++  std_loc_p = 0;
++  if (prog_num == bin_num)
++    {
++      for (i = 0; i < bin_num; i++)
++	{
++	  if (strcmp (prog_dirs[i], bin_dirs[i]) != 0)
++	    break;
++	}
++
++      if (prog_num <= 0 || i == bin_num)
++	{
++	  std_loc_p = 1;
++	  free_split_directories (prog_dirs);
++	  free_split_directories (bin_dirs);
++	  prog_dirs = bin_dirs = (char **) 0;
++	  return NULL;
++	}
++    }
++
++  prefix_dirs = split_directories (prefix, &prefix_num);
++
++  /* Find how many directories are in common between bin_prefix & prefix.  */
++  n = (prefix_num < bin_num) ? prefix_num : bin_num;
++  for (common = 0; common < n; common++)
++    {
++      if (strcmp (bin_dirs[common], prefix_dirs[common]) != 0)
++	break;
++    }
++
++  /* If there are no common directories, there can be no relative prefix.  */
++  if (common == 0)
++    {
++      free_split_directories (prog_dirs);
++      free_split_directories (bin_dirs);
++      free_split_directories (prefix_dirs);
++      return NULL;
++    }
++
++  /* Build up the pathnames in argv[0].  */
++  for (i = 0; i < prog_num; i++)
++    obstack_grow (&obstack, prog_dirs[i], strlen (prog_dirs[i]));
++
++  /* Now build up the ..'s.  */
++  for (i = common; i < n; i++)
++    {
++      obstack_grow (&obstack, DIR_UP, sizeof (DIR_UP) - 1);
++      obstack_1grow (&obstack, DIR_SEPARATOR);
++    }
++
++  /* Put in directories to move over to prefix.  */
++  for (i = common; i < prefix_num; i++)
++    obstack_grow (&obstack, prefix_dirs[i], strlen (prefix_dirs[i]));
++
++  free_split_directories (prog_dirs);
++  free_split_directories (bin_dirs);
++  free_split_directories (prefix_dirs);
++
++  obstack_1grow (&obstack, '\0');
++  return obstack_finish (&obstack);
++}
++#endif /* VMS */
+ 
+ /* Create the vector `switches' and its contents.
+    Store its length in `n_switches'.  */
+@@ -2599,7 +2857,19 @@ process_command (argc, argv)
+ 	}
+     }
+ 
+-  /* Set up the default search paths.  */
++  /* Set up the default search paths.  If there is no GCC_EXEC_PREFIX,
++     see if we can create it from the pathname specified in argv[0].  */
++
++#ifndef VMS
++  /* FIXME: make_relative_prefix doesn't yet work for VMS.  */
++  if (!gcc_exec_prefix)
++    {
++      gcc_exec_prefix = make_relative_prefix (argv[0], standard_bindir_prefix,
++					      standard_exec_prefix);
++      if (gcc_exec_prefix)
++	putenv (concat ("GCC_EXEC_PREFIX=", gcc_exec_prefix, NULL_PTR));
++    }
++#endif
+ 
+   if (gcc_exec_prefix)
+     {
+@@ -3069,7 +3339,7 @@ process_command (argc, argv)
+   add_prefix (&startfile_prefixes, standard_exec_prefix_1, "BINUTILS",
+ 	      0, 1, warn_std_ptr);
+ 
+-  tooldir_prefix = concat (tooldir_base_prefix, spec_machine, 
++  tooldir_prefix = concat (tooldir_base_prefix, spec_machine,
+ 			   dir_separator_str, NULL_PTR);
+ 
+   /* If tooldir is relative, base it on exec_prefixes.  A relative
+@@ -3088,22 +3358,52 @@ process_command (argc, argv)
+ 		      spec_version, dir_separator_str, tooldir_prefix, NULL_PTR);
+ 
+ 	  add_prefix (&exec_prefixes,
+-		      concat (gcc_exec_tooldir_prefix, "bin", 
+-			      dir_separator_str, NULL_PTR),
++		      concat (gcc_exec_tooldir_prefix, "bin",
++			  dir_separator_str, NULL_PTR),
+ 		      NULL_PTR, 0, 0, NULL_PTR);
+ 	  add_prefix (&startfile_prefixes,
+-		      concat (gcc_exec_tooldir_prefix, "lib", 
+-			      dir_separator_str, NULL_PTR),
++		      concat (gcc_exec_tooldir_prefix, "lib",
++			  dir_separator_str, NULL_PTR),
+ 		      NULL_PTR, 0, 0, NULL_PTR);
+ 	}
+ 
+       tooldir_prefix = concat (standard_exec_prefix, spec_machine,
+-			       dir_separator_str, spec_version, 
++			       dir_separator_str, spec_version,
+ 			       dir_separator_str, tooldir_prefix, NULL_PTR);
+     }
++#ifndef VMS
++  else if (gcc_exec_prefix)
++    {
++      /* TOOLDIR_BASE_PREFIX is absolute, so the search entries above are
++	 baked in at the configure-time install location.  When the toolchain
++	 has been relocated (i.e. make_relative_prefix() derived GCC_EXEC_PREFIX
++	 from argv[0] in process_command), additionally anchor the bundled
++	 binutils and target libraries to the relocated prefix, using a relative
++	 tooldir that resolves from GCC_EXEC_PREFIX.  This mirrors what gcc 3.1
++	 does via its relative TOOLDIR_BASE_PREFIX, while keeping the absolute
++	 entry so that in-tree builds (where the install layout does not exist
++	 yet) still find crt1.o/crti.o and the cross assembler through the
++	 direct path.  */
++      const char *rel_tooldir =
++	concat (tooldir_base_prefix_relative, spec_machine,
++		dir_separator_str, NULL_PTR);
++      char *gcc_exec_tooldir_prefix
++	= concat (gcc_exec_prefix, spec_machine, dir_separator_str,
++		  spec_version, dir_separator_str, rel_tooldir, NULL_PTR);
++
++      add_prefix (&exec_prefixes,
++		  concat (gcc_exec_tooldir_prefix, "bin",
++			  dir_separator_str, NULL_PTR),
++		  "BINUTILS", 0, 0, NULL_PTR);
++      add_prefix (&startfile_prefixes,
++		  concat (gcc_exec_tooldir_prefix, "lib",
++			  dir_separator_str, NULL_PTR),
++		  "BINUTILS", 0, 0, NULL_PTR);
++    }
++#endif /* VMS */
+ 
+-  add_prefix (&exec_prefixes, 
+-              concat (tooldir_prefix, "bin", dir_separator_str, NULL_PTR),
++  add_prefix (&exec_prefixes,
++	      concat (tooldir_prefix, "bin", dir_separator_str, NULL_PTR),
+ 	      "BINUTILS", 0, 0, NULL_PTR);
+   add_prefix (&startfile_prefixes,
+ 	      concat (tooldir_prefix, "lib", dir_separator_str, NULL_PTR),
+-- 
+2.54.0
+

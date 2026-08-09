@@ -43,7 +43,7 @@
 #include "gcc-version.h"
 #include "program_help.h"
 
-static const char GCC_MAJOR_VERSION[] = "16";
+static const char GCC_MAJOR_VERSION[] = "2.95";
 
 static const char INCLUDE_DIR[] = PATHSEP_M "include";
 static const char INCLUDE_MISSING_DIR[] = PATHSEP_M "include-missing";

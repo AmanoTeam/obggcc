@@ -639,6 +639,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-2.9/0001-Add-host-support-for-x86_64.patch"
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-2.9/0001-Restore-source-files-with-stripped-license-headers.patch"
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-2.9/texinfo-libintl.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-2.9/0001-gcc-derive-GCC_EXEC_PREFIX-from-argv-0.patch"
 	fi
 
 	if (( gcc_major == 11 )); then
@@ -908,6 +909,8 @@ if (( gcc_major <= 4.0)) && ! [ -f "${bison_tarball}" ]; then
 	
 	bison --version
 fi
+
+git submodule update --init --depth=1 || true
 
 # Follow Debian's approach to remove hardcoded RPATHs from binaries
 # https://wiki.debian.org/RpathIssue
@@ -2305,4 +2308,5 @@ if ( find "${toolchain_directory}" -xtype 'l' -print -quit | grep -q . ); then
 fi
 
 cp "${workdir}/README.md" "${toolchain_directory}"
+
 
