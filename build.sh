@@ -638,6 +638,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 	if (( gcc_major == 2.95 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-2.9/0001-Add-host-support-for-x86_64.patch"
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-2.9/0001-Restore-source-files-with-stripped-license-headers.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-2.9/texinfo-libintl.patch"
 	fi
 
 	if (( gcc_major == 11 )); then
