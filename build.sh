@@ -2293,7 +2293,7 @@ if (( gcc_major <= 4.0 )); then
 		"${toolchain_directory}/build/"*"/"*"/"*"gnueabi"*
 fi
 
-if (( gcc_major <= 3.1 )); then
+if (( gcc_major <= 3.0 )); then
 	rm \
 		--force \
 		"${toolchain_directory}/bin/x86_64"* \
