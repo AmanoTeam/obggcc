@@ -1418,6 +1418,11 @@ for target in "${targets[@]}"; do
 		)
 	fi
 	
+	if (( gcc_major == 2.95 )); then
+		printf "exec '%s' \"\${@}\"\n" '${triplet}2.3-gcc' > "${build_directory}/${triplet}-gcc"
+		printf "exec '%s' \"\${@}\"\n" '${triplet}2.3-g++' > "${build_directory}/${triplet}-g++"
+	fi
+	
 	cd "${gcc_directory}/build"
 	rm --force --recursive ./*
 	
