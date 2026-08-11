@@ -677,6 +677,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 	
 	if (( gcc_major >= 11 && gcc_major <= 12 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-11/0001-Fix-missing-definition-of-PTR-macro.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-11/0013-Include-memory-before-safe-ctype.h-to-avoid-ctype-macro-poisoning.patch"
 	fi
 	
 	if (( gcc_major >= 4.9 && gcc_major <= 7 )); then
@@ -1410,9 +1411,15 @@ for target in "${targets[@]}"; do
 		${=extra_configure_flags}
 	)
 	
+	gcc_extra_cxxflags=''
+	
+	if (( gcc_major >= 11 && gcc_major <= 12 )); then
+		gcc_extra_cxxflags+='-fno-char8_t'
+	fi
+
 	declare -a env=(
 		"CFLAGS=-fPIC ${ccflags}"
-		"CXXFLAGS=-fPIC ${ccflags}"
+		"CXXFLAGS=-fPIC ${ccflags} ${gcc_extra_cxxflags}"
 		"LDFLAGS=-L${toolchain_directory}/lib ${linkflags}"
 	)
 	

@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Tue, 12 Aug 2026 00:00:00 +0000
+Subject: [PATCH] Include <memory> before "safe-ctype.h" to avoid ctype macro
+ poisoning
+---
+ gcc/system.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/gcc/system.h b/gcc/system.h
+--- a/gcc/system.h
++++ b/gcc/system.h
+@@ -222,6 +222,7 @@
+ #ifdef INCLUDE_FUNCTIONAL
+ # include <functional>
+ #endif
++# include <memory>
+ # include <cstring>
+ # include <new>
+ # include <utility>
