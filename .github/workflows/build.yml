@@ -148,6 +148,10 @@ jobs:
       run: |
         source './tools/setup_toolchain.sh'
         
+        wget 'https://github.com/AmanoTeam/musl-gcc-cross/releases/download/sysroot/x86_64-unknown-linux-musl.tar.xz'
+        tar -xf 'x86_64-unknown-linux-musl.tar.xz'
+        sudo ln -s "${PWD}/x86_64-unknown-linux-musl/lib/libc.so" '/lib/ld-musl-x86_64.so.1'
+        
         if [[ '${{ matrix.target }}' = *'-linux-musl'* ]]; then
             declare -r RAIDEN_TAG='gcc-16'
             declare -r RAIDEN_TARBALL='/tmp/toolchain.tar.xz'
@@ -163,7 +167,7 @@ jobs:
         elif [[ '${{ matrix.target }}' = *'-linux-gnu'* ]]; then
             declare -r OBGGCC_TAG='gcc-16'
             declare -r OBGGCC_TARBALL='/tmp/toolchain.tar.xz'
-            declare -r OBGGCC_URL="https://github.com/AmanoTeam/obggcc/releases/download/${OBGGCC_TAG}/x86_64-unknown-linux-gnu.tar.xz"
+            declare -r OBGGCC_URL="https://github.com/AmanoTeam/obggcc/releases/download/${OBGGCC_TAG}/x86_64-unknown-linux-musl.tar.xz"
             
             curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --location --url "${OBGGCC_URL}" --output "${OBGGCC_TARBALL}"
             tar --directory="$(dirname "${OBGGCC_TARBALL}")" --extract --file="${OBGGCC_TARBALL}"
