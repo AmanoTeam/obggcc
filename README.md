@@ -12,7 +12,7 @@ This eliminates the need to install an ancient Linux distribution in Docker/LXC 
 
 ### Distributions
 
-| distribution_version              | glibc_version | linux_version | gcc_version | availability_date |
+| distribution_version              | glibc_version | linux_version | stl_version | availability_date |
 | :-------------------------------: | :-----------: | :-----------: | :---------: | :---------------: |
 | Debian 4 (Etch)                  | glibc 2.3.6   | Linux 2.6.18  | GCC 4.1.1   | 2007              |
 | Debian 5 (Lenny)                 | glibc 2.7     | Linux 2.6.26  | GCC 4.3.2   | 2009              |
@@ -607,5 +607,6 @@ There are precompiled binaries available for multiple GCC major releases, listed
 - [GCC 3.3](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-3.3)
 - [GCC 3.2](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-3.2)
 - [GCC 3.1](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-3.1)
+- [GCC 2.95](https://github.com/AmanoTeam/obggcc/releases/tag/gcc-2.95)
 
 Only the **stable** and **development** releases are actively maintained. Older releases may occasionally receive updates to incorporate fixes or improvements from maintained versions, but they are treated as low priority.
