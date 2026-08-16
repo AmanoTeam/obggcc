@@ -2904,6 +2904,7 @@ int main(int argc, char* argv[]) {
 			
 			if (wants_lto == LTO_FULL) {
 				kargv_append(&xargv, GCC_OPT_F_DEVIRTUALIZE_AT_LTRANS);
+				kargv_append(&xargv, "-fipa-pta");
 			}
 		#endif
 	}
