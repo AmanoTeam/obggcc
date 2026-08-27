@@ -1857,6 +1857,7 @@ int main(int argc, char* argv[]) {
 	char* gpp_bits_include_directory = NULL;
 	
 	char* gpp_include_directory = NULL;
+	char* gpp_backward_include_directory = NULL;
 	char* gcc_include_directory = NULL;
 	
 	char* primary_library_directory = NULL;
@@ -3125,6 +3126,17 @@ int main(int argc, char* argv[]) {
 	strcat(gpp_include_directory, PATHSEP_S);
 	strcat(gpp_include_directory, GCC_MAJOR_VERSION);
 	
+	gpp_backward_include_directory = malloc(strlen(gpp_include_directory) + strlen(PATHSEP_S) + 8 + 1);
+	
+	if (gpp_backward_include_directory == NULL) {
+		err = ERR_MEM_ALLOC_FAILURE;
+		goto end;
+	}
+	
+	strcpy(gpp_backward_include_directory, gpp_include_directory);
+	strcat(gpp_backward_include_directory, PATHSEP_S);
+	strcat(gpp_backward_include_directory, "backward");
+	
 	gpp_bits_include_directory = malloc(strlen(gpp_include_directory) + strlen(PATHSEP_S) + strlen(triplet) + 1);
 	
 	if (gpp_bits_include_directory == NULL) {
@@ -3287,6 +3299,9 @@ int main(int argc, char* argv[]) {
 	} else if (status) {
 		kargv_append(&yargv, GCC_OPT_ISYSTEM);
 		kargv_append(&yargv, gpp_include_directory);
+		
+		kargv_append(&yargv, GCC_OPT_ISYSTEM);
+		kargv_append(&yargv, gpp_backward_include_directory);
 		
 		kargv_append(&yargv, GCC_OPT_ISYSTEM);
 		kargv_append(&yargv, gpp_bits_include_directory);
@@ -3794,6 +3809,7 @@ int main(int argc, char* argv[]) {
 	free(sysroot_library_directory);
 	free(gcc_include_directory);
 	free(gpp_include_directory);
+	free(gpp_backward_include_directory);
 	free(gpp_bits_include_directory);
 	free(primary_library_directory);
 	free(secondary_library_directory);
