@@ -158,6 +158,7 @@ static const char GCC_OPT_NOSTDLIBCXX[] = "-nostdlib++";
 static const char GCC_OPT_WERROR[] = "-Werror";
 static const char GCC_OPT_WNO_ERROR[] = "-Wno-error";
 static const char GCC_OPT_F_TREE_VECTORIZE[] = "-ftree-vectorize";
+static const char GCC_OPT_PRINT_MULTI_OS_DIRECTORY[] = "-print-multi-os-directory";
 
 static const char GCC_M_ANDROID_VERSION_MIN[] = "-mandroid-version-min=";
 static const char GCC_M_ANDROID_WEAK_SYMBOLS[] = "-mandroid-weak-symbols";
@@ -2181,6 +2182,13 @@ int main(int argc, char* argv[]) {
 			stack_protector = 1;
 		} else if (strcmp(cur, GCC_OPT_VERSION) == 0) {
 			print_version = 1;
+		} else if (strcmp(cur, GCC_OPT_PRINT_MULTI_OS_DIRECTORY) == 0) {
+			/*
+			* Normally, -print-multi-os-directory returns "../lib64" on 64-bit targets,
+			* but we always use "/lib" regardless of this.
+			*/
+			printf(".\n");
+			goto end;
 		} else if (strcmp(cur, GCC_OPT_NODEFAULTLIBS) == 0 || strcmp(cur, GCC_OPT_NOSTDLIB) == 0) {
 			nodefaultlibs = 1;
 		} else if (strncmp(cur, GCC_OPT_L, strlen(GCC_OPT_L)) == 0) {
