@@ -2065,6 +2065,10 @@ int main(int argc, char* argv[]) {
 			if (strcmp(cur, GCC_OPT_NOSTDLIBCXX) == 0) {
 				continue;
 			}
+			
+			if (strcmp(cur, "-stdlib=libc++") == 0) {
+				continue;
+			}
 		#endif
 		
 		if (opt_level != NULL && strncmp(cur, GCC_OPT_OPT_LEVEL, strlen(GCC_OPT_OPT_LEVEL)) == 0) {
