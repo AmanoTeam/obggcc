@@ -517,7 +517,31 @@ static clang_option_t CLANG_SPECIFIC_REMOVE[] = {
 	{
 		.name = "-Wshadow-uncaptured-local",
 		.value = 0
-	}
+	},
+	{
+		.name = "-faddrsig",
+		.value = 0
+	},
+	{
+		.name = "-fdebug-default-version",
+		.value = 1
+	},
+	{
+		.name = "-gsimple-template-names",
+		.value = 0
+	},
+	{
+		.name = "-gsimple-template-names",
+		.value = 0
+	},
+	{
+		.name = "-fsplit-lto-unit",
+		.value = 0
+	},
+	{
+		.name = "-funique-internal-linkage-names",
+		.value = 0
+	},
 };
 
 #define CLANG_SPECIFIC_REMOVE_NON 0

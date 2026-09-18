@@ -1,7 +1,7 @@
-From 3b35a1d7cc1b218f62fd369ce5e719a3a8a3c232 Mon Sep 17 00:00:00 2001
+From 03a7f739a04aed739e613d1c3540ac105f1b00e7 Mon Sep 17 00:00:00 2001
 From: Kartatz <105828205+Kartatz@users.noreply.github.com>
 Date: Thu, 23 Oct 2025 14:47:32 -0300
-Subject: [PATCH 07/11] Add relative RPATHs to GCC host tools
+Subject: [PATCH] Add relative RPATHs to GCC host tools
 
 This change adds relative RPATHs to the host tools built as part of GCC.
 
@@ -14,14 +14,15 @@ This eliminates the need to statically link any libraries and also saves disk sp
  gcc/cobol/Make-lang.in   |  4 ++--
  gcc/cp/Make-lang.in      |  4 ++--
  gcc/fortran/Make-lang.in |  4 ++--
+ gcc/jit/Make-lang.in     |  2 +-
  gcc/lto/Make-lang.in     |  4 ++--
  gcc/m2/Make-lang.in      |  6 +++---
  gcc/objc/Make-lang.in    |  2 +-
  gcc/objcp/Make-lang.in   |  2 +-
- 10 files changed, 25 insertions(+), 25 deletions(-)
+ 11 files changed, 26 insertions(+), 26 deletions(-)
 
 diff --git a/c++tools/Makefile.in b/c++tools/Makefile.in
-index 5acc6d681..9b875d0b9 100644
+index 92f0caff3..e0ae56ec1 100644
 --- a/c++tools/Makefile.in
 +++ b/c++tools/Makefile.in
 @@ -98,7 +98,7 @@ MAPPER.O := server.o resolver.o
@@ -34,10 +35,10 @@ index 5acc6d681..9b875d0b9 100644
  # copy to gcc dir so tests there can run
  all::../gcc/g++-mapper-server$(exeext)
 diff --git a/gcc/Makefile.in b/gcc/Makefile.in
-index cf1408d56..14555da72 100644
+index 8ecef4ccd..670c82661 100644
 --- a/gcc/Makefile.in
 +++ b/gcc/Makefile.in
-@@ -2334,7 +2334,7 @@ libcommon.a: $(OBJS-libcommon)
+@@ -2357,7 +2357,7 @@ libcommon.a: $(OBJS-libcommon)
  # and CC is `gcc'.  It is renamed to `gcc' when it is installed.
  xgcc$(exeext): $(GCC_OBJS) c/gccspec.o libcommon-target.a $(LIBDEPS) \
  	$(EXTRA_GCC_OBJS)
@@ -46,7 +47,7 @@ index cf1408d56..14555da72 100644
  	  c/gccspec.o $(EXTRA_GCC_OBJS) libcommon-target.a \
  	  $(EXTRA_GCC_LIBS) $(LIBS)
  
-@@ -2343,7 +2343,7 @@ xgcc$(exeext): $(GCC_OBJS) c/gccspec.o libcommon-target.a $(LIBDEPS) \
+@@ -2366,7 +2366,7 @@ xgcc$(exeext): $(GCC_OBJS) c/gccspec.o libcommon-target.a $(LIBDEPS) \
  # and only contain c-family extensions (see known_suffixes).
  cpp$(exeext): $(GCC_OBJS) c-family/cppspec.o libcommon-target.a $(LIBDEPS) \
  	$(EXTRA_GCC_OBJS)
@@ -55,7 +56,7 @@ index cf1408d56..14555da72 100644
  	  c-family/cppspec.o $(EXTRA_GCC_OBJS) libcommon-target.a \
  	  $(EXTRA_GCC_LIBS) $(LIBS)
  
-@@ -2553,15 +2553,15 @@ AR_OBJS = file-find.o
+@@ -2570,15 +2570,15 @@ AR_OBJS = file-find.o
  AR_LIBS = @COLLECT2_LIBS@
  
  gcc-ar$(exeext): gcc-ar.o $(AR_OBJS) $(LIBDEPS)
@@ -74,7 +75,7 @@ index cf1408d56..14555da72 100644
  		$(AR_OBJS) $(LIBS) $(AR_LIBS)
  
  CFLAGS-gcc-ar.o += $(DRIVER_DEFINES) \
-@@ -2589,7 +2589,7 @@ COLLECT2_OBJS = collect2.o collect2-aix.o vec.o ggc-none.o \
+@@ -2606,7 +2606,7 @@ COLLECT2_OBJS = collect2.o collect2-aix.o vec.o ggc-none.o \
  COLLECT2_LIBS = @COLLECT2_LIBS@
  collect2$(exeext): $(COLLECT2_OBJS) $(LIBDEPS)
  # Don't try modifying collect2 (aka ld) in place--it might be linking this.
@@ -83,7 +84,7 @@ index cf1408d56..14555da72 100644
  		$(COLLECT2_OBJS) $(LIBS) $(COLLECT2_LIBS)
  	mv -f T$@ $@
  
-@@ -2600,7 +2600,7 @@ LTO_WRAPPER_OBJS = lto-wrapper.o collect-utils.o ggc-none.o lockfile.o \
+@@ -2617,7 +2617,7 @@ LTO_WRAPPER_OBJS = lto-wrapper.o collect-utils.o ggc-none.o lockfile.o \
    lto-ltrans-cache.o
  
  lto-wrapper$(exeext): $(LTO_WRAPPER_OBJS) libcommon-target.a $(LIBDEPS)
@@ -92,7 +93,7 @@ index cf1408d56..14555da72 100644
  	   $(LTO_WRAPPER_OBJS) libcommon-target.a $(LIBS)
  	mv -f T$@ $@
  
-@@ -3500,11 +3500,11 @@ CFLAGS-gcov.o += $(ZLIBINC)
+@@ -3517,11 +3517,11 @@ CFLAGS-gcov.o += $(ZLIBINC)
  
  GCOV_OBJS = gcov.o json.o graphds.o prime-paths.o bitmap.o
  gcov$(exeext): $(GCOV_OBJS) $(LIBDEPS)
@@ -106,7 +107,7 @@ index cf1408d56..14555da72 100644
  		hash-table.o ggc-none.o\
  		$(LIBS) -o $@
  
-@@ -3522,7 +3522,7 @@ libgcov-merge-tool.o: $(srcdir)/../libgcc/libgcov-merge.c $(GCOV_TOOL_DEP_FILES)
+@@ -3539,7 +3539,7 @@ libgcov-merge-tool.o: $(srcdir)/../libgcc/libgcov-merge.c $(GCOV_TOOL_DEP_FILES)
  	  -DIN_GCOV_TOOL=1 -o $@ $<
  GCOV_TOOL_OBJS = gcov-tool.o libgcov-util.o libgcov-driver-tool.o libgcov-merge-tool.o
  gcov-tool$(exeext): $(GCOV_TOOL_OBJS) $(LIBDEPS)
@@ -116,7 +117,7 @@ index cf1408d56..14555da72 100644
  # Build the include directories.  The stamp files are stmp-* rather than
  # s-* so that mostlyclean does not force the include directory to
 diff --git a/gcc/c/Make-lang.in b/gcc/c/Make-lang.in
-index f09fc9946..b5c97fd9d 100644
+index ecfa366af..22fd50c76 100644
 --- a/gcc/c/Make-lang.in
 +++ b/gcc/c/Make-lang.in
 @@ -85,7 +85,7 @@ cc1-checksum.cc : build/genchecksum$(build_exeext) checksum-options \
@@ -129,10 +130,10 @@ index f09fc9946..b5c97fd9d 100644
  	@$(call LINK_PROGRESS,$(INDEX.c),end)
  
 diff --git a/gcc/cobol/Make-lang.in b/gcc/cobol/Make-lang.in
-index 0e2a773d4..b1d09fd09 100644
+index 0c316959d..d74b0bcbf 100644
 --- a/gcc/cobol/Make-lang.in
 +++ b/gcc/cobol/Make-lang.in
-@@ -131,7 +131,7 @@ gcobol$(exeext): \
+@@ -132,7 +132,7 @@ gcobol$(exeext): \
  	 $(EXTRA_GCC_OBJS) \
       libcommon-target.a \
       $(LIBDEPS)
@@ -141,7 +142,7 @@ index 0e2a773d4..b1d09fd09 100644
  	 $(GCOBOL_D_OBJS) $(EXTRA_GCC_OBJS) libcommon-target.a	\
  	 $(EXTRA_GCC_LIBS) $(LIBS)
  
-@@ -264,7 +264,7 @@ cobol.srcextra: cobol/parse.cc cobol/cdf.cc cobol/scan.cc
+@@ -275,7 +275,7 @@ cobol.srcextra: cobol/parse.cc cobol/cdf.cc cobol/scan.cc
  
  cobol1$(exeext): $(cobol1_OBJS) $(BACKEND) $(LIBDEPS) attribs.o $(cobol.prev)
  	@$(call LINK_PROGRESS,$(INDEX.cobol),start)
@@ -151,7 +152,7 @@ index 0e2a773d4..b1d09fd09 100644
  	@$(call LINK_PROGRESS,$(INDEX.cobol),end)
  
 diff --git a/gcc/cp/Make-lang.in b/gcc/cp/Make-lang.in
-index 70cfe2b16..d3850db09 100644
+index e262854fa..25bc8a813 100644
 --- a/gcc/cp/Make-lang.in
 +++ b/gcc/cp/Make-lang.in
 @@ -79,7 +79,7 @@ endif
@@ -173,7 +174,7 @@ index 70cfe2b16..d3850db09 100644
  		$(LIBS) $(BACKENDLIBS)
  	@$(call LINK_PROGRESS,$(INDEX.c++),end)
 diff --git a/gcc/fortran/Make-lang.in b/gcc/fortran/Make-lang.in
-index 5b2f921bf..7d4a52144 100644
+index 7dca21f82..053861be7 100644
 --- a/gcc/fortran/Make-lang.in
 +++ b/gcc/fortran/Make-lang.in
 @@ -83,7 +83,7 @@ CFLAGS-fortran/gfortranspec.o += $(DRIVER_DEFINES)
@@ -194,8 +195,21 @@ index 5b2f921bf..7d4a52144 100644
  		$(F95_OBJS) $(BACKEND) $(ZLIB) $(LIBS) attribs.o \
  		$(BACKENDLIBS)
  	@$(call LINK_PROGRESS,$(INDEX.fortran),end)
+diff --git a/gcc/jit/Make-lang.in b/gcc/jit/Make-lang.in
+index eb1c99660..adea41be4 100644
+--- a/gcc/jit/Make-lang.in
++++ b/gcc/jit/Make-lang.in
+@@ -187,7 +187,7 @@ $(LIBGCCJIT_FILENAME): $(jit_OBJS) \
+ 	$(LIBDEPS) $(srcdir)/jit/libgccjit.map \
+ 	$(EXTRA_GCC_OBJS_EXCLUSIVE) $(jit.prev)
+ 	@$(call LINK_PROGRESS,$(INDEX.jit),start)
+-	+$(LLINKER) $(ALL_LINKERFLAGS) $(JIT_LDFLAGS) -o $@ -shared \
++	+$(LLINKER) $(ALL_LINKERFLAGS) -Xlinker -rpath -Xlinker \$$ORIGIN/../../../../lib -Xlinker -rpath -Xlinker \$$ORIGIN $(JIT_LDFLAGS) -o $@ -shared \
+ 	     $(jit_OBJS) libbackend.a libcommon-target.a libcommon.a \
+ 	     $(CPPLIB) $(LIBDECNUMBER) $(EXTRA_GCC_LIBS) $(LIBS) $(BACKENDLIBS) \
+ 	     $(EXTRA_GCC_OBJS_EXCLUSIVE) \
 diff --git a/gcc/lto/Make-lang.in b/gcc/lto/Make-lang.in
-index 2af8bba44..7fc3c0129 100644
+index a54bdf63c..737173268 100644
 --- a/gcc/lto/Make-lang.in
 +++ b/gcc/lto/Make-lang.in
 @@ -90,13 +90,13 @@ lto-warn = $(STRICT_WARN)
@@ -215,7 +229,7 @@ index 2af8bba44..7fc3c0129 100644
  	@$(call LINK_PROGRESS,$(INDEX.lto2),end)
  
 diff --git a/gcc/m2/Make-lang.in b/gcc/m2/Make-lang.in
-index cd4dc9f06..7d18e70e7 100644
+index 11079927e..024bc0278 100644
 --- a/gcc/m2/Make-lang.in
 +++ b/gcc/m2/Make-lang.in
 @@ -126,7 +126,7 @@ GM2_OBJS = $(GCC_OBJS) prefix.o intl.o m2/gm2spec.o
@@ -246,7 +260,7 @@ index cd4dc9f06..7d18e70e7 100644
                               $(GM2_LIBS_BOOT) $(MC_LIBS) \
                               m2/gm2-gcc/rtegraph.o \
 diff --git a/gcc/objc/Make-lang.in b/gcc/objc/Make-lang.in
-index f7a8f5bc3..0389bf929 100644
+index 678ed9aa1..e8754ef87 100644
 --- a/gcc/objc/Make-lang.in
 +++ b/gcc/objc/Make-lang.in
 @@ -75,7 +75,7 @@ cc1obj-checksum.cc : build/genchecksum$(build_exeext) checksum-options \
@@ -259,7 +273,7 @@ index f7a8f5bc3..0389bf929 100644
  	      $(BACKEND) $(LIBS) $(BACKENDLIBS)
  	@$(call LINK_PROGRESS,$(INDEX.objc),end)
 diff --git a/gcc/objcp/Make-lang.in b/gcc/objcp/Make-lang.in
-index 94bb51207..6167cc5ce 100644
+index 7beb93798..50b162270 100644
 --- a/gcc/objcp/Make-lang.in
 +++ b/gcc/objcp/Make-lang.in
 @@ -78,7 +78,7 @@ cc1objplus-checksum.cc : build/genchecksum$(build_exeext) checksum-options \
@@ -272,5 +286,5 @@ index 94bb51207..6167cc5ce 100644
  		  $(CODYLIB) $(LIBS) $(BACKENDLIBS)
  	@$(call LINK_PROGRESS,$(INDEX.obj-c++),end)
 -- 
-2.50.1
+2.55.0
 
