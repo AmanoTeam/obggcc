@@ -305,8 +305,10 @@ static const char EQUAL_S[] = "=";
 static const char LD_LLD[] = "ld.lld";
 static const char LD[] = "ld";
 
+#define CLANG_VERSION "23.1.1"
+
 static const char CLANG_VERSION_TEMPLATE[] = 
-	"clang version 22.0.0\n"
+	"clang version " CLANG_VERSION "\n"
 	"Target: %s\n"
 	"Thread model: posix\n"
 	"InstalledDir: %s\n";
@@ -1825,6 +1827,7 @@ int main(int argc, char* argv[]) {
 	int address_sanitizer = 0;
 	int stack_protector = 0;
 	int print_version = 0;
+	int dump_version = 0;
 	int verbose = 0;
 	int help = 0;
 	int wants_libcxx = 0;
@@ -2206,6 +2209,8 @@ int main(int argc, char* argv[]) {
 			stack_protector = 1;
 		} else if (strcmp(cur, GCC_OPT_VERSION) == 0) {
 			print_version = 1;
+		} else if (strcmp(cur, "-dumpversion") == 0) {
+			dump_version = 1;
 		} else if (strcmp(cur, GCC_OPT_PRINT_MULTI_OS_DIRECTORY) == 0) {
 			/*
 			* Normally, -print-multi-os-directory returns "../lib64" on 64-bit targets,
@@ -2532,6 +2537,11 @@ int main(int argc, char* argv[]) {
 	if (known_clang(cc)) {
 		if (print_version) {
 			printf(CLANG_VERSION_TEMPLATE, DEFAULT_TARGET, parent_directory);
+			goto end;
+		}
+		
+		if (dump_version) {
+			printf("%s\n", CLANG_VERSION);
 			goto end;
 		}
 		
