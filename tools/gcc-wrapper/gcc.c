@@ -1822,6 +1822,7 @@ int main(int argc, char* argv[]) {
 	int wants_neon = 0;
 	int wants_arm_mode = 0;
 	int wants_lto = LTO_NONE;
+	int wants_disable_werror = 0;
 	
 	int nodefaultlibs = 0;
 	int address_sanitizer = 0;
@@ -1977,6 +1978,8 @@ int main(int argc, char* argv[]) {
 			}
 		}
 	#endif
+	
+	wants_disable_werror = query_get_bool(&query, ENV_WERROR) == 0;
 	
 	wants_force_static = query_get_bool(&query, ENV_STATIC_RUNTIME);
 	
@@ -2211,6 +2214,8 @@ int main(int argc, char* argv[]) {
 			print_version = 1;
 		} else if (strcmp(cur, "-dumpversion") == 0) {
 			dump_version = 1;
+		} else if (wants_disable_werror && strncmp(cur, GCC_OPT_WERROR, 7) == 0) {
+			continue;
 		} else if (strcmp(cur, GCC_OPT_PRINT_MULTI_OS_DIRECTORY) == 0) {
 			/*
 			* Normally, -print-multi-os-directory returns "../lib64" on 64-bit targets,
