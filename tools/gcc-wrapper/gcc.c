@@ -183,6 +183,8 @@ static const char CLANG_OPT_F_COLOR_DIAGNOSTICS[] = "-fcolor-diagnostics";
 static const char CLANG_OPT_F_NO_INTEGRATED_AS[] = "-fno-integrated-as";
 static const char CLANG_OPT_F_INTEGRATED_AS[] = "-fintegrated-as";
 static const char CLANG_OPT_F_SLP_VECTORIZE_AGGRESSIVE[] = "-fslp-vectorize-aggressive";
+static const char CLANG_OPT_F_CONSTEXPR_STEPS[] = "-fconstexpr-steps=";
+static const char GCC_OPT_F_CONSTEXPR_OPS_LIMIT[] = "-fconstexpr-ops-limit=";
 static const char CLANG_OPT_F_ERROR_LIMIT[] = "-ferror-limit";
 static const char CLANG_OPT_F_USE_LD_LLD[] = "-fuse-ld=lld";
 static const char CLANG_OPT_F_LTO_FULL[] = "-flto=full";
@@ -521,6 +523,70 @@ static clang_option_t CLANG_SPECIFIC_REMOVE[] = {
 		.value = 0
 	},
 	{
+		.name = "-Wgnu-zero-variadic-macro-arguments",
+		.value = 0
+	},
+	{
+		.name = "-Wc++11-narrowing",
+		.value = 0
+	},
+	{
+		.name = "-Winconsistent-missing-override",
+		.value = 0
+	},
+	{
+		.name = "-Wmost",
+		.value = 0
+	},
+	{
+		.name = "-Wc++98-compat-extra-semi",
+		.value = 0
+	},
+	{
+		.name = "-Wdeprecated-pragma",
+		.value = 0
+	},
+	{
+		.name = "-Wfor-loop-analysis",
+		.value = 0
+	},
+	{
+		.name = "-Wgnu-redeclared-enum",
+		.value = 0
+	},
+	{
+		.name = "-Wliteral-conversion",
+		.value = 0
+	},
+	{
+		.name = "-Wnullability-completeness",
+		.value = 0
+	},
+	{
+		.name = "-Wself-assign",
+		.value = 0
+	},
+	{
+		.name = "-Wshadow-all",
+		.value = 0
+	},
+	{
+		.name = "-Wtautological-overlap-compare",
+		.value = 0
+	},
+	{
+		.name = "-Wtautological-unsigned-zero-compare",
+		.value = 0
+	},
+	{
+		.name = "-Wunused-comparison",
+		.value = 0
+	},
+	{
+		.name = "-Wimplicit-int-float-conversion",
+		.value = 0
+	},
+	{
 		.name = "-faddrsig",
 		.value = 0
 	},
@@ -544,6 +610,142 @@ static clang_option_t CLANG_SPECIFIC_REMOVE[] = {
 		.name = "-funique-internal-linkage-names",
 		.value = 0
 	},
+	{
+		.name = "-fpch-instantiate-templates",
+		.value = 0
+	},
+	{
+		.name = "-static-openmp",
+		.value = 0
+	},
+	{
+		.name = "-static-libgomp",
+		.value = 0
+	},
+	{
+		.name = "-Wthread-safety-analysis",
+		.value = 0
+	},
+	{
+		.name = "-Wundefined-func-template",
+		.value = 0
+	},
+	{
+		.name = "-fno-cxx-exceptions",
+		.value = 0
+	},
+	{
+		.name = "-fno-slp-vectorize",
+		.value = 0
+	},
+	{
+		.name = "-fno-vectorize",
+		.value = 0
+	},
+	{
+		.name = "-Wc++2a-extensions",
+		.value = 0
+	},
+	{
+		.name = "-Wdeprecated-increment-bool",
+		.value = 0
+	},
+	{
+		.name = "-Wprivate-header",
+		.value = 0
+	},
+	{
+		.name = "-fnew-alignment",
+		.value = 1
+	},
+	{
+		.name = "-Wc++98-compat",
+		.value = 0
+	},
+	{
+		.name = "-disable-free",
+		.value = 0
+	},
+	{
+		.name = "-disable-llvm-verifier",
+		.value = 0
+	},
+	{
+		.name = "-fcxx-exceptions",
+		.value = 0
+	},
+	{
+		.name = "-fblocks",
+		.value = 0
+	},
+	{
+		.name = "-Weverything",
+		.value = 0
+	},
+	{
+		.name = "-Wdocumentation",
+		.value = 0
+	},
+	{
+		.name = "-Warray-bounds-pointer-arithmetic",
+		.value = 0
+	},
+	{
+		.name = "-Wassign-enum",
+		.value = 0
+	},
+	{
+		.name = "-Watomic-properties",
+		.value = 0
+	},
+	{
+		.name = "-Wconditional-uninitialized",
+		.value = 0
+	},
+	{
+		.name = "-Wcovered-switch-default",
+		.value = 0
+	},
+	{
+		.name = "-Wduplicate-enum",
+		.value = 0
+	},
+	{
+		.name = "-Widiomatic-parentheses",
+		.value = 0
+	},
+	{
+		.name = "-Wnullable-to-nonnull-conversion",
+		.value = 0
+	},
+	{
+		.name = "-Wobjc-interface-ivars",
+		.value = 0
+	},
+	{
+		.name = "-Wover-aligned",
+		.value = 0
+	},
+	{
+		.name = "-Wstatic-in-inline",
+		.value = 0
+	},
+	{
+		.name = "-Wsuper-class-method-mismatch",
+		.value = 0
+	},
+	{
+		.name = "-Wincompatible-pointer-types-discards-qualifiers",
+		.value = 0
+	},
+	{
+		.name = "-fmodule-map-file",
+		.value = 1
+	},
+	{
+		.name = "-Wconditional-uninitialized",
+		.value = 0
+	}
 };
 
 #define CLANG_SPECIFIC_REMOVE_NON 0
@@ -1634,6 +1836,8 @@ static int clang_specific_replace(
 	
 	const char* current = cur;
 	
+	char* value = NULL;
+	
 	if (strncmp(current, GCC_OPT_F_LTO, strlen(GCC_OPT_F_LTO)) == 0) {
 		current += strlen(GCC_OPT_F_LTO);
 		
@@ -1670,6 +1874,29 @@ static int clang_specific_replace(
 	} else if (strcmp(current, CLANG_OPT_F_SLP_VECTORIZE_AGGRESSIVE) == 0) {
 		/* Replace -fslp-vectorize-aggressive with -ftree-vectorize. */
 		kargv_append(xargv, GCC_OPT_F_TREE_VECTORIZE);
+		
+		status = 1;
+		goto end;
+	} else if (strncmp(current, CLANG_OPT_F_CONSTEXPR_STEPS, strlen(CLANG_OPT_F_CONSTEXPR_STEPS)) == 0) {
+		/* Replace -fconstexpr-steps=N with -fconstexpr-ops-limit=N. */
+		current += strlen(CLANG_OPT_F_CONSTEXPR_STEPS);
+		
+		if (*current == ZERO) {
+			status = 0;
+			goto end;
+		}
+		
+		value = malloc(strlen(GCC_OPT_F_CONSTEXPR_OPS_LIMIT) + strlen(current) + 1);
+		
+		if (value == NULL) {
+			status = 0;
+			goto end;
+		}
+		
+		strcpy(value, GCC_OPT_F_CONSTEXPR_OPS_LIMIT);
+		strcat(value, current);
+		
+		kargv_append(xargv, value);
 		
 		status = 1;
 		goto end;
@@ -1829,6 +2056,7 @@ int main(int argc, char* argv[]) {
 	int stack_protector = 0;
 	int print_version = 0;
 	int dump_version = 0;
+	int dump_machine = 0;
 	int verbose = 0;
 	int help = 0;
 	int wants_libcxx = 0;
@@ -2214,6 +2442,8 @@ int main(int argc, char* argv[]) {
 			print_version = 1;
 		} else if (strcmp(cur, "-dumpversion") == 0) {
 			dump_version = 1;
+		} else if (strcmp(cur, "-dumpmachine") == 0) {
+			dump_machine = 1;
 		} else if (wants_disable_werror && strncmp(cur, GCC_OPT_WERROR, 7) == 0) {
 			continue;
 		} else if (strcmp(cur, GCC_OPT_PRINT_MULTI_OS_DIRECTORY) == 0) {
@@ -2547,6 +2777,11 @@ int main(int argc, char* argv[]) {
 		
 		if (dump_version) {
 			printf("%s\n", CLANG_VERSION);
+			goto end;
+		}
+		
+		if (dump_machine) {
+			printf("%s\n", override_triplet != NULL ? override_triplet : DEFAULT_TARGET);
 			goto end;
 		}
 		
