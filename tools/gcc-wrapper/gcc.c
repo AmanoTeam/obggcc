@@ -521,6 +521,70 @@ static clang_option_t CLANG_SPECIFIC_REMOVE[] = {
 		.value = 0
 	},
 	{
+		.name = "-Wgnu-zero-variadic-macro-arguments",
+		.value = 0
+	},
+	{
+		.name = "-Wc++11-narrowing",
+		.value = 0
+	},
+	{
+		.name = "-Winconsistent-missing-override",
+		.value = 0
+	},
+	{
+		.name = "-Wmost",
+		.value = 0
+	},
+	{
+		.name = "-Wc++98-compat-extra-semi",
+		.value = 0
+	},
+	{
+		.name = "-Wdeprecated-pragma",
+		.value = 0
+	},
+	{
+		.name = "-Wfor-loop-analysis",
+		.value = 0
+	},
+	{
+		.name = "-Wgnu-redeclared-enum",
+		.value = 0
+	},
+	{
+		.name = "-Wliteral-conversion",
+		.value = 0
+	},
+	{
+		.name = "-Wnullability-completeness",
+		.value = 0
+	},
+	{
+		.name = "-Wself-assign",
+		.value = 0
+	},
+	{
+		.name = "-Wshadow-all",
+		.value = 0
+	},
+	{
+		.name = "-Wtautological-overlap-compare",
+		.value = 0
+	},
+	{
+		.name = "-Wtautological-unsigned-zero-compare",
+		.value = 0
+	},
+	{
+		.name = "-Wunused-comparison",
+		.value = 0
+	},
+	{
+		.name = "-Wimplicit-int-float-conversion",
+		.value = 0
+	},
+	{
 		.name = "-faddrsig",
 		.value = 0
 	},
@@ -544,6 +608,146 @@ static clang_option_t CLANG_SPECIFIC_REMOVE[] = {
 		.name = "-funique-internal-linkage-names",
 		.value = 0
 	},
+	{
+		.name = "-fpch-instantiate-templates",
+		.value = 0
+	},
+	{
+		.name = "-static-openmp",
+		.value = 0
+	},
+	{
+		.name = "-static-libgomp",
+		.value = 0
+	},
+	{
+		.name = "-Wthread-safety-analysis",
+		.value = 0
+	},
+	{
+		.name = "-Wundefined-func-template",
+		.value = 0
+	},
+	{
+		.name = "-fno-cxx-exceptions",
+		.value = 0
+	},
+	{
+		.name = "-fno-slp-vectorize",
+		.value = 0
+	},
+	{
+		.name = "-fno-vectorize",
+		.value = 0
+	},
+	{
+		.name = "-Wc++2a-extensions",
+		.value = 0
+	},
+	{
+		.name = "-Wdeprecated-increment-bool",
+		.value = 0
+	},
+	{
+		.name = "-Wprivate-header",
+		.value = 0
+	},
+	{
+		.name = "-fnew-alignment",
+		.value = 1
+	},
+	{
+		.name = "-Wc++98-compat",
+		.value = 0
+	},
+	{
+		.name = "-disable-free",
+		.value = 0
+	},
+	{
+		.name = "-disable-llvm-verifier",
+		.value = 0
+	},
+	{
+		.name = "-fcxx-exceptions",
+		.value = 0
+	},
+	{
+		.name = "-fblocks",
+		.value = 0
+	},
+	{
+		.name = "-Weverything",
+		.value = 0
+	},
+	{
+		.name = "-Wdocumentation",
+		.value = 0
+	},
+	{
+		.name = "-Warray-bounds-pointer-arithmetic",
+		.value = 0
+	},
+	{
+		.name = "-Wassign-enum",
+		.value = 0
+	},
+	{
+		.name = "-Watomic-properties",
+		.value = 0
+	},
+	{
+		.name = "-Wconditional-uninitialized",
+		.value = 0
+	},
+	{
+		.name = "-Wcovered-switch-default",
+		.value = 0
+	},
+	{
+		.name = "-Wduplicate-enum",
+		.value = 0
+	},
+	{
+		.name = "-Widiomatic-parentheses",
+		.value = 0
+	},
+	{
+		.name = "-Wnullable-to-nonnull-conversion",
+		.value = 0
+	},
+	{
+		.name = "-Wobjc-interface-ivars",
+		.value = 0
+	},
+	{
+		.name = "-Wover-aligned",
+		.value = 0
+	},
+	{
+		.name = "-Wstatic-in-inline",
+		.value = 0
+	},
+	{
+		.name = "-Wsuper-class-method-mismatch",
+		.value = 0
+	},
+	{
+		.name = "-Wincompatible-pointer-types-discards-qualifiers",
+		.value = 0
+	},
+	{
+		.name = "-fmodule-map-file",
+		.value = 1
+	},
+	{
+		.name = "-flax-vector-conversions",
+		.value = 0
+	},
+	{
+		.name = "-fconstexpr-steps",
+		.value = 1
+	}
 };
 
 #define CLANG_SPECIFIC_REMOVE_NON 0
@@ -1829,6 +2033,7 @@ int main(int argc, char* argv[]) {
 	int stack_protector = 0;
 	int print_version = 0;
 	int dump_version = 0;
+	int dump_machine = 0;
 	int verbose = 0;
 	int help = 0;
 	int wants_libcxx = 0;
@@ -2214,6 +2419,8 @@ int main(int argc, char* argv[]) {
 			print_version = 1;
 		} else if (strcmp(cur, "-dumpversion") == 0) {
 			dump_version = 1;
+		} else if (strcmp(cur, "-dumpmachine") == 0) {
+			dump_machine = 1;
 		} else if (wants_disable_werror && strncmp(cur, GCC_OPT_WERROR, 7) == 0) {
 			continue;
 		} else if (strcmp(cur, GCC_OPT_PRINT_MULTI_OS_DIRECTORY) == 0) {
@@ -2547,6 +2754,11 @@ int main(int argc, char* argv[]) {
 		
 		if (dump_version) {
 			printf("%s\n", CLANG_VERSION);
+			goto end;
+		}
+		
+		if (dump_machine) {
+			printf("%s\n", override_triplet != NULL ? override_triplet : DEFAULT_TARGET);
 			goto end;
 		}
 		
