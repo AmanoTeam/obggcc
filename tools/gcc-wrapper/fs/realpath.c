@@ -11,12 +11,9 @@
 	#include <errno.h>
 #endif
 
-#if defined(_WIN32)
-	#include "fs/absrel.h"
-#endif
-
 #include "fs/sep.h"
 #include "fs/realpath.h"
+#include "fs/absrel.h"
 
 char* expand_filename(const char* const filename) {
 	/*
@@ -30,6 +27,7 @@ char* expand_filename(const char* const filename) {
 	char* expanded_filename = NULL;
 	
 	#if defined(_WIN32)
+		HANDLE handle = 0;
 		DWORD size = 0;
 		
 		#if defined(_UNICODE)
@@ -63,12 +61,28 @@ char* expand_filename(const char* const filename) {
 				goto end;
 			}
 			
-			size = GetFullPathNameW(wfilename, 0, NULL, NULL);
+			handle = CreateFileW(
+				wfilename,
+				0,
+				FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+				NULL,
+				OPEN_EXISTING,
+				FILE_FLAG_BACKUP_SEMANTICS,
+				NULL
+			);
+			
+			if (handle == INVALID_HANDLE_VALUE) {
+				size = GetFullPathNameW(wfilename, 0, NULL, NULL);
+			} else {
+				size = GetFinalPathNameByHandleW(handle, NULL, 0, VOLUME_NAME_DOS | FILE_NAME_NORMALIZED);
+			}
 			
 			if (size == 0) {
 				err = -1;
 				goto end;
 			}
+			
+			size++;
 			
 			wexpanded_filename = malloc(((size_t) size) * sizeof(*wexpanded_filename));
 			
@@ -77,9 +91,11 @@ char* expand_filename(const char* const filename) {
 				goto end;
 			}
 			
-			size = GetFullPathNameW(wfilename, size, wexpanded_filename, NULL);
-			
-			free(wfilename);
+			if (handle == INVALID_HANDLE_VALUE) {
+				size = GetFullPathNameW(wfilename, size, wexpanded_filename, NULL);
+			} else {
+				size = GetFinalPathNameByHandleW(handle, wexpanded_filename, size, VOLUME_NAME_DOS | FILE_NAME_NORMALIZED);
+			}
 			
 			if (size == 0) {
 				err = -1;
@@ -105,12 +121,28 @@ char* expand_filename(const char* const filename) {
 				goto end;
 			}
 		#else
-			size = GetFullPathNameA(filename, 0, NULL, NULL);
+			handle = CreateFileA(
+				filename,
+				0,
+				FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+				NULL,
+				OPEN_EXISTING,
+				FILE_FLAG_BACKUP_SEMANTICS,
+				NULL
+			);
+			
+			if (handle == INVALID_HANDLE_VALUE) {
+				size = GetFullPathNameA(filename, 0, NULL, NULL);
+			} else {
+				size = GetFinalPathNameByHandleA(handle, NULL, 0, VOLUME_NAME_DOS | FILE_NAME_NORMALIZED);
+			}
 			
 			if (size == 0) {
 				err = -1;
 				goto end;
 			}
+			
+			size++;
 			
 			expanded_filename = malloc((size_t) size);
 			
@@ -119,21 +151,32 @@ char* expand_filename(const char* const filename) {
 				goto end;
 			}
 			
-			size = GetFullPathNameA(filename, size, expanded_filename, NULL);
+			if (handle == INVALID_HANDLE_VALUE) {
+				size = GetFullPathNameA(filename, size, expanded_filename, NULL);
+			} else {
+				size = GetFinalPathNameByHandleA(handle, expanded_filename, size, VOLUME_NAME_DOS | FILE_NAME_NORMALIZED);
+			}
 			
 			if (size == 0) {
 				err = -1;
 				goto end;
 			}
 		#endif
+		
+		size = (DWORD) strlen(WIN10_LONG_PATH_PREFIX_S);
+		
+		if (strncmp(expanded_filename, WIN10_LONG_PATH_PREFIX_S, (size_t) size) == 0) {
+			memmove(expanded_filename, expanded_filename + size, strlen(expanded_filename + size) + 1);
+		}
 	#else
 		char* tmp = NULL;
+		
+		const char* pos = NULL;
+		char ch = 0;
 		
 		size_t index = 0;
 		size_t len = 0;
 		size_t size = 0;
-		
-		errno = 0;
 		
 		expanded_filename = malloc(PATH_MAX);
 		
@@ -141,6 +184,8 @@ char* expand_filename(const char* const filename) {
 			err = -1;
 			goto end;
 		}
+		
+		errno = 0;
 		
 		if (realpath(filename, expanded_filename) == NULL && errno != ENOENT) {
 			err = -1;
@@ -151,18 +196,29 @@ char* expand_filename(const char* const filename) {
 			goto end;
 		}
 		
-		len = strlen(filename);
-		
-		tmp = malloc(len + 1);
+		tmp = malloc(PATH_MAX);
 		
 		if (tmp == NULL) {
 			err = -1;
 			goto end;
 		}
 		
+		if (isrelative(filename) && filename[0] != '.') {
+			strcpy(tmp, ".");
+			strcat(tmp, PATHSEP_S);
+			strcat(tmp, filename);
+			
+			free(expanded_filename);
+			expanded_filename = expand_filename(tmp);
+			
+			goto end;
+		}
+		
+		len = strlen(filename);
+		
 		for (index = len ; index-- > 0 ;) {
-			const char* const pos = &filename[index];
-			const char ch = *pos;
+			pos = &filename[index];
+			ch = *pos;
 			
 			if (ch != PATHSEP) {
 				continue;
@@ -170,8 +226,9 @@ char* expand_filename(const char* const filename) {
 			
 			size = (size_t) (pos - filename);
 			
-			memcpy(tmp, filename, size);
-			tmp[size] = '\0';
+			tmp[0] = '\0';
+			
+			strncat(tmp, filename, size);
 			
 			if (realpath(tmp, expanded_filename) == NULL) {
 				continue;
@@ -190,6 +247,10 @@ char* expand_filename(const char* const filename) {
 	#endif
 	
 	end:;
+	
+	#if defined(_WIN32)
+		CloseHandle(handle);
+	#endif
 	
 	#if defined(_WIN32) && defined(_UNICODE)
 		free(wfilename);

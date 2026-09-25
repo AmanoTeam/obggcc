@@ -8,6 +8,8 @@
 
 #include "fs/sep.h"
 #include "fs/exists.h"
+#include "fs/getexec.h"
+#include "fs/realpath.h"
 #include "os/find_exe.h"
 
 #if defined(_WIN32) && defined(_UNICODE)
@@ -18,21 +20,25 @@
 
 char* find_exe(const char* const name) {
 	
-	char* executable = NULL;
+	char* exe = NULL;
 	char* path = NULL;
+	char* self = NULL;
+	char* tmp = NULL;
+	
 	const char* component = NULL;
 	
 	int err = 0;
+	int status = 0;
 	
 	size_t index = 0;
 	size_t size = 0;
 	size_t length = 0;
 	
 	#if defined(_WIN32)
-		const char* const executable_extension = ".exe";
+		const char* const extension = ".exe";
 		const unsigned char separator = ';';
 	#else
-		const char* const executable_extension = "";
+		const char* const extension = "";
 		const unsigned char separator = ':';
 	#endif
 	
@@ -76,6 +82,13 @@ char* find_exe(const char* const name) {
 	component = path;
 	length = strlen(path) + 1;
 	
+	self = get_app_filename();
+	
+	if (self == NULL) {
+		err = -1;
+		goto end;
+	}
+	
 	for (index = 0; index < length; index++) {
 		const char* const pos = &path[index];
 		const unsigned char ch = *pos;
@@ -85,41 +98,56 @@ char* find_exe(const char* const name) {
 		}
 		
 		size = (size_t) (pos - component);
-		executable = malloc(size + strlen(PATHSEP_S) + strlen(name) + strlen(executable_extension) + 1);
+		exe = malloc(size + strlen(PATHSEP_S) + strlen(name) + strlen(extension) + 1);
 		
-		if (executable == NULL) {
+		if (exe == NULL) {
 			err = -1;
 			goto end;
 		}
 		
-		memcpy(executable, component, size);
-		executable[size] = '\0';
+		memcpy(exe, component, size);
+		exe[size] = '\0';
 		
-		strcat(executable, PATHSEP_S);
-		strcat(executable, name);
-		strcat(executable, executable_extension);
+		strcat(exe, PATHSEP_S);
+		strcat(exe, name);
+		strcat(exe, extension);
 		
-		if (file_exists(executable) == 1) {
-			goto end;
+		if (file_exists(exe) == 1) {
+			tmp = expand_filename(exe);
+			
+			if (tmp == NULL) {
+				err = -1;
+				goto end;
+			}
+			
+			status = strcmp(tmp, self) == 0;
+			
+			free(tmp);
+			
+			if (!status) {
+				goto end;
+			}
 		}
 		
-		free(executable);
-		executable = NULL;
+		free(exe);
+		exe = NULL;
 		
 		component = (pos + 1);
 	}
 	
 	end:;
 	
+	free(self);
+	
 	#if defined(_WIN32) && defined(_UNICODE)
 		free(path);
 	#endif
 	
 	if (err != 0) {
-		free(executable);
-		executable = NULL;
+		free(exe);
+		exe = NULL;
 	}
 	
-	return executable;
+	return exe;
 	
 }
