@@ -213,9 +213,9 @@ char* get_app_filename(void) {
 			}
 		#endif
 		
-		size = strlen(WIN10_LONG_PATH_PREFIX);
+		size = strlen(WIN10_LONG_PATH_PREFIX_S);
 		
-		if (strncmp(app_filename, WIN10_LONG_PATH_PREFIX, size) == 0) {
+		if (strncmp(app_filename, WIN10_LONG_PATH_PREFIX_S, size) == 0) {
 			memmove(app_filename, app_filename + size, strlen(app_filename + size) + 1);
 		}
 	#elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(__DragonFly__)
