@@ -19,10 +19,12 @@ static const char PATHSEP_DOS_S[] = "\\";
 	#define PATHSEP_M PATHSEP_POSIX_M
 #endif
 
-#if defined(_WIN32) && defined(_UNICODE)
-	static const wchar_t WIN10_LONG_PATH_PREFIX[] = L"\\\\?\\";
-#else
-	static const char WIN10_LONG_PATH_PREFIX[] = "\\\\?\\";
+#if defined(_WIN32)
+	#if defined(_UNICODE)
+		static const wchar_t WIN10_LONG_PATH_PREFIX[] = L"\\\\?\\";
+	#endif
+	
+	static const char WIN10_LONG_PATH_PREFIX_S[] = "\\\\?\\";
 #endif
 
 #endif
