@@ -1508,6 +1508,45 @@ static const char* get_max_libc_version(const char* const triplet) {
 	
 }
 
+static const char* get_min_libc_version(const char* const triplet) {
+	
+	int status = 0;
+	
+	#if defined(PINO)
+		status = (
+			strcmp(triplet, "riscv64-unknown-linux-android") == 0
+		);
+		
+		if (status) {
+			return get_max_libc_version(triplet);
+		}
+		
+		status = (
+			strcmp(triplet, "aarch64-unknown-linux-android") == 0 ||
+			strcmp(triplet, "mips64el-unknown-linux-android") == 0 ||
+			strcmp(triplet, "x86_64-unknown-linux-android") == 0
+		);
+		
+		if (status) {
+			return "21";
+		}
+		
+		status = (
+			strcmp(triplet, "mipsel-unknown-linux-android") == 0 ||
+			strcmp(triplet, "armv7-unknown-linux-androideabi") == 0 ||
+			strcmp(triplet, "i686-unknown-linux-android") == 0 ||
+			strcmp(triplet, "armv5-unknown-linux-androideabi") == 0
+		);
+		
+		if (status) {
+			return "14";
+		}
+	#endif
+	
+	return NULL;
+	
+}
+
 static int known_clang(const char* const cc) {
 	
 	const int status = (
@@ -2523,7 +2562,12 @@ int main(int argc, char* argv[]) {
 				continue;
 			}
 			
-			override_triplet = malloc(size + strlen(VENDOR_UNKNOWN) + 1);
+			override_triplet = malloc(
+				size +
+				strlen(VENDOR_UNKNOWN) +
+				2 +
+				1
+			);
 			
 			if (override_triplet == NULL) {
 				err = ERR_MEM_ALLOC_FAILURE;
@@ -2547,6 +2591,17 @@ int main(int argc, char* argv[]) {
 			/* System */
 			ptr = strstr(ptr, "linux-android");
 			strcat(override_triplet, ptr);
+			
+			ptr = strchr(override_triplet, '\0');
+			
+			a = *(ptr - 2);
+			b = *(ptr - 1);
+			
+			/* Clang accepts unversioned triplets, and so should we. */
+			if (!(isdigit(a) && isdigit(b))) {
+				ptr = get_min_libc_version(override_triplet);
+				strcat(override_triplet, ptr);
+			}
 			
 			continue;
 		} else if (strncmp(cur, GCC_OPT_SYSROOT, strlen(GCC_OPT_SYSROOT)) == 0) {
