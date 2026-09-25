@@ -2751,9 +2751,11 @@ int main(int argc, char* argv[]) {
 		wants_libgcc = 1;
 	}
 	
+	/*
 	if (stack_protector) {
 		wants_libssp = 1;
 	}
+	*/
 	
 	app_filename = get_app_filename();
 	
