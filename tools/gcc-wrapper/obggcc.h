@@ -5,8 +5,6 @@
 	#define WRAPPER_FLAVOR_NAME "OBGGCC"
 #elif defined(PINO)
 	#define WRAPPER_FLAVOR_NAME "PINO"
-#elif defined(ATAR)
-	#define WRAPPER_FLAVOR_NAME "ATAR"
 #elif defined(RAIDEN)
 	#define WRAPPER_FLAVOR_NAME "RAIDEN"
 #elif defined(MINGW)
@@ -19,17 +17,11 @@
 	#error "-DWCLANG and -DPINO are not supported together"
 #endif
 
-#if defined(ATAR)
-	#define UNVERSIONED_CROSS_COMPILER
-#endif
-
 static const char DEFAULT_TARGET[] = 
 #if defined(OBGGCC)
 	 "x86_64-unknown-linux-gnu2.3";
 #elif defined(PINO)
 	"x86_64-unknown-linux-android21";
-#elif defined(ATAR)
-	"x86_64-unknown-openbsd";
 #elif defined(RAIDEN)
 	 "x86_64-unknown-linux-musl1.2";
 #elif defined(MINGW)

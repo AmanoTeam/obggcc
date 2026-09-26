@@ -165,54 +165,40 @@ static const char* binfmt_get_triplet(const struct binfmt* const fmt) {
 				return GNU_AMD64;
 			#elif defined(PINO)
 				return ANDROID_AMD64;
-			#elif defined(ATAR)
-				return OPENBSD_AMD64;
 			#endif
 		case BINFMT_i386:
 			#if defined(OBGGCC)
 				return GNU_I386;
 			#elif defined(PINO)
 				return ANDROID_I686;
-			#elif defined(ATAR)
-				return OPENBSD_I386;
 			#endif
 		case BINFMT_MIPS64EL:
 			#if defined(OBGGCC)
 				return GNU_MIPS64EL;
 			#elif defined(PINO)
 				return ANDROID_MIPS64EL;
-			#elif defined(ATAR)
-				return OPENBSD_MIPS64EL;
 			#endif
 		case BINFMT_MIPSEL:
 			#if defined(OBGGCC)
 				return GNU_MIPSEL;
 			#elif defined(PINO)
 				return ANDROID_MIPSEL;
-			#elif defined(ATAR)
-				return NULL;
 			#endif
 		case BINFMT_RISCV64:
 			#if defined(PINO)
 				return ANDROID_RISCV64;
-			#elif defined(ATAR)
-				return OPENBSD_RISCV64;
 			#endif
 		case BINFMT_AARCH64:
 			#if defined(OBGGCC)
 				return GNU_AARCH64;
 			#elif defined(PINO)
 				return ANDROID_AARCH64;
-			#elif defined(ATAR)
-				return OPENBSD_AARCH64;
 			#endif
 		case BINFMT_ARM:
 			#if defined(OBGGCC)
 				return GNU_ARMHF;
 			#elif defined(PINO)
 				return ANDROID_ARMV7;
-			#elif defined(ATAR)
-				return OPENBSD_ARM;
 			#endif
 	}
 	
