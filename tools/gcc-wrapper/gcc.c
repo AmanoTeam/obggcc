@@ -216,10 +216,8 @@ static const char LD_OPT_UNRESOLVED_SYMBOLS[] = "--unresolved-symbols=ignore-in-
 static const char LD_OPT_NO_ROSEGMENT[] = "--no-rosegment";
 static const char LD_OPT_Z[] = "-z";
 static const char LD_OPT_ORIGIN[] = "origin";
-static const char LD_OPT_PACK_RELATIVE_RELOCS[] = "pack-relative-relocs";
 
 static const char LLD_OPT_USE_ANDROID_RELR_TAGS[] = "--use-android-relr-tags";
-static const char LLD_OPT_PACK_DYN_RELOCS[] = "--pack-dyn-relocs=relr";
 
 static const char M_ANDROID_API[] = "__ANDROID_API__=";
 static const char M_ANDROID_MIN_SDK_VERSION[] = "__ANDROID_MIN_SDK_VERSION__=";
@@ -264,6 +262,14 @@ static const char* const OPTIMIZATION_LEVELS[] = {
 	"-Os",
 	"-Oz",
 	"-Ofast"
+};
+
+static const char* const LINKERS[] = {
+	"-fuse-ld=gold",
+	"-fuse-ld=bfd",
+	"-fuse-ld=lld",
+	"-fuse-ld=mold",
+	"-fuse-ld=wild"
 };
 
 static const char NDK_CXX_STL_DIRECTORY[] = PATHSEP_M "sources" PATHSEP_M "cxx-stl";
@@ -1164,31 +1170,6 @@ static int target_supports_neon(const char* const name) {
 		}
 	#elif defined(MINGW)
 		/* nothing to do here */
-	#else
-		#error "I don't know how to handle this"
-	#endif
-	
-	return 0;
-	
-}
-
-static int target_supports_relr(const char* const name, const char* const linker, const int version) {
-	
-	#if defined(OBGGCC)
-		/* The GNU C Library has supported DT_RELR since the 2.36 release. */
-		if (version < LIBC_VERSION(2, 36)) {
-			return 0;
-		}
-		
-		return 1;
-	#elif defined(PINO) || defined(MINGW)
-		/* nothing to do here */
-	#elif defined(ATAR)
-		/* OpenBSD has supported DT_RELR since the 7.1 release. */
-		return 1;
-	#elif defined(RAIDEN)
-		/* musl has supported DT_RELR since the 1.2.4 release. */
-		return 1;
 	#else
 		#error "I don't know how to handle this"
 	#endif
@@ -2137,6 +2118,31 @@ static const char* get_opt_level(const char* const value) {
 	
 }
 
+static const char* get_linker(const char* const value) {
+	
+	size_t index = 0;
+	const size_t size = strlen(GCC_OPT_F_USE_LD);
+	
+	const char* flag = NULL;
+	
+	if (value == NULL) {
+		return NULL;
+	}
+	
+	for (index = 0; index < sizeof(LINKERS) / sizeof(*LINKERS); index++) {
+		flag = LINKERS[index];
+		
+		if (strcmp(flag + size, value) != 0) {
+			continue;
+		}
+		
+		return flag;
+	}
+	
+	return NULL;
+	
+}
+
 int main(int argc, char* argv[]) {
 	
 	int status = 0;
@@ -2202,8 +2208,6 @@ int main(int argc, char* argv[]) {
 	#if defined(OBGGCC)
 		int require_atomic_library = 0;
 	#endif
-	
-	const char* override_linker = NULL;
 	
 	int build_system_init = 0;
 	
@@ -2366,6 +2370,9 @@ int main(int argc, char* argv[]) {
 	opt = query_get_string(&query, ENV_OPT_LEVEL);
 	opt_level = get_opt_level(opt);
 	
+	opt = query_get_string(&query, ENV_LINKER);
+	linker = get_linker(opt);
+	
 	host = get_host_triplet();
 	host_version = get_host_version();
 	
@@ -2450,6 +2457,8 @@ int main(int argc, char* argv[]) {
 		#endif
 		
 		if (opt_level != NULL && strncmp(cur, GCC_OPT_OPT_LEVEL, strlen(GCC_OPT_OPT_LEVEL)) == 0) {
+			continue;
+		} else if (linker != NULL && strncmp(cur, GCC_OPT_F_USE_LD, strlen(GCC_OPT_F_USE_LD)) == 0) {
 			continue;
 		} else if (strncmp(cur, GCC_OPT_ISYSTEM, strlen(GCC_OPT_ISYSTEM)) == 0 || strncmp(cur, GCC_OPT_LIBDIR, strlen(GCC_OPT_LIBDIR)) == 0 || strncmp(cur, GCC_OPT_I, strlen(GCC_OPT_I)) == 0) {
 			pattern = NULL;
@@ -2553,8 +2562,6 @@ int main(int argc, char* argv[]) {
 			linking_shared = 1;
 		} else if (strncmp(cur, GCC_OPT_FSANITIZE, strlen(GCC_OPT_FSANITIZE)) == 0) {
 			address_sanitizer = 1;
-		} else if (strncmp(cur, GCC_OPT_F_USE_LD, strlen(GCC_OPT_F_USE_LD)) == 0) {
-			override_linker = cur + strlen(GCC_OPT_F_USE_LD);
 		} else if (strncmp(cur, GCC_OPT_F_STACK_PROTECTOR, strlen(GCC_OPT_F_STACK_PROTECTOR)) == 0) {
 			stack_protector = 1;
 		} else if (strcmp(cur, GCC_OPT_VERSION) == 0) {
@@ -3303,59 +3310,6 @@ int main(int argc, char* argv[]) {
 		}
 	#endif
 	
-	/*
-	Enable DT_RELR relocations on supported targets.
-	
-	- bfd
-	As of binutils 2.45, this is supported for the following architectures: AArch64, x86, and x86_64.
-	
-	- gold
-	Not supported at all.
-	
-	- LLD
-	LLD always accepts the flag regardless of the target architecture and never outputs an error message.
-	It's unclear whether it truly supports all architectures or if LLD is simply ignoring the flag when it's not supported.
-	
-	- mold
-	Assumed to follow the same behavior as LLD.
-	*/
-	if (linking && target_supports_relr(triplet, override_linker, target_version)) {
-		if (override_linker == NULL || strcmp(override_linker, "bfd") == 0) {
-			kargv_append(&xargv, GCC_OPT_XLINKER);
-			kargv_append(&xargv, LD_OPT_Z);
-			kargv_append(&xargv, GCC_OPT_XLINKER);
-			kargv_append(&xargv, LD_OPT_PACK_RELATIVE_RELOCS);
-		} else if (strcmp(override_linker, "mold") == 0 || strcmp(override_linker, "lld") == 0) {
-			#if defined(OBGGCC)
-				/*
-				DT_RELR on glibc requires a dependency on GLIBC_ABI_DT_RELR to be present,
-				but --pack-dyn-relocs does not add that dependency by default, which leads to this error at runtime:
-				
-				$ gcc -fuse-ld=lld -Xlinker --pack-dyn-relocs <...>
-				$ ./main
-				./main: error while loading shared libraries: ./main: DT_RELR without GLIBC_ABI_DT_RELR dependency
-				
-				To work around this, we use -z pack-relative-relocs instead, but this comes with the downside of not being
-				supported on older versions of lld and mold:
-				
-				$ gcc -fuse-ld=lld -Xlinker -z -Xlinker pack-relative-relocs <...>
-				ld.lld: error: unknown -z value: pack-relative-relocs
-				collect2: error: ld returned 1 exit status
-				*/
-				kargv_append(&xargv, GCC_OPT_XLINKER);
-				kargv_append(&xargv, LD_OPT_Z);
-				kargv_append(&xargv, GCC_OPT_XLINKER);
-				kargv_append(&xargv, LD_OPT_PACK_RELATIVE_RELOCS);
-			#else
-				/*
-				Everything else should work with --pack-dyn-relocs.
-				*/
-				kargv_append(&xargv, GCC_OPT_XLINKER);
-				kargv_append(&xargv, LLD_OPT_PACK_DYN_RELOCS);
-			#endif
-		}
-	}
-	
 	if (!build_system_init && wants_lto != LTO_NONE) {
 		#if defined(WCLANG)
 			kargv_append(&xargv, ((wants_lto == LTO_FULL) ? CLANG_OPT_F_LTO_FULL : CLANG_OPT_F_LTO_THIN));
@@ -3651,7 +3605,7 @@ int main(int argc, char* argv[]) {
 		kargv_append(&yargv, (CLANG_OPT_TARGET + 1));
 		kargv_append(&yargv, triplet);
 		
-		if (linking) {
+		if (linking && linker == NULL) {
 			if (wants_lto == LTO_NONE || (file_name = find_exe(LD_LLD)) == NULL) {
 				get_parent_path(app_filename, parent_directory, 1);
 				
@@ -4099,6 +4053,10 @@ int main(int argc, char* argv[]) {
 	
 	if (opt_level != NULL) {
 		kargv_append(&yargv, opt_level);
+	}
+	
+	if (linker != NULL) {
+		kargv_append(&yargv, linker);
 	}
 	
 	kargv_append(&xargv, NULL);
