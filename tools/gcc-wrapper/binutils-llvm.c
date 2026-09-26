@@ -15,6 +15,7 @@
 #include "errors.h"
 #include "obggcc.h"
 #include "query.h"
+#include "triplet.h"
 
 extern char** environ;
 
@@ -161,57 +162,57 @@ static const char* binfmt_get_triplet(const struct binfmt* const fmt) {
 	switch (fmt->type) {
 		case BINFMT_X86_64:
 			#if defined(OBGGCC)
-				return "x86_64-unknown-linux-gnu";
+				return GNU_AMD64;
 			#elif defined(PINO)
-				return "x86_64-unknown-linux-android";
+				return ANDROID_AMD64;
 			#elif defined(ATAR)
-				return "x86_64-unknown-openbsd";
+				return OPENBSD_AMD64;
 			#endif
 		case BINFMT_i386:
 			#if defined(OBGGCC)
-				return "i386-unknown-linux-gnu";
+				return GNU_I386;
 			#elif defined(PINO)
-				return "i686-unknown-linux-android";
+				return ANDROID_I686;
 			#elif defined(ATAR)
-				return "i386-unknown-openbsd";
+				return OPENBSD_I386;
 			#endif
 		case BINFMT_MIPS64EL:
 			#if defined(OBGGCC)
-				return "mips64el-unknown-linux-gnuabi64";
+				return GNU_MIPS64EL;
 			#elif defined(PINO)
-				return "mips64el-unknown-linux-android";
+				return ANDROID_MIPS64EL;
 			#elif defined(ATAR)
-				return "mips64el-unknown-openbsd";
+				return OPENBSD_MIPS64EL;
 			#endif
 		case BINFMT_MIPSEL:
 			#if defined(OBGGCC)
-				return "mipsel-unknown-linux-gnu";
+				return GNU_MIPSEL;
 			#elif defined(PINO)
-				return "mipsel-unknown-linux-android";
+				return ANDROID_MIPSEL;
 			#elif defined(ATAR)
 				return NULL;
 			#endif
 		case BINFMT_RISCV64:
 			#if defined(PINO)
-				return "riscv64-unknown-linux-android";
+				return ANDROID_RISCV64;
 			#elif defined(ATAR)
-				return "riscv64-unknown-openbsd";
+				return OPENBSD_RISCV64;
 			#endif
 		case BINFMT_AARCH64:
 			#if defined(OBGGCC)
-				return "aarch64-unknown-linux-gnu";
+				return GNU_AARCH64;
 			#elif defined(PINO)
-				return "aarch64-unknown-linux-android";
+				return ANDROID_AARCH64;
 			#elif defined(ATAR)
-				return "aarch64-unknown-openbsd";
+				return OPENBSD_AARCH64;
 			#endif
 		case BINFMT_ARM:
 			#if defined(OBGGCC)
-				return "arm-unknown-linux-gnueabihf";
+				return GNU_ARMHF;
 			#elif defined(PINO)
-				return "armv7-unknown-linux-androideabi";
+				return ANDROID_ARMV7;
 			#elif defined(ATAR)
-				return "arm-unknown-openbsd";
+				return OPENBSD_ARM;
 			#endif
 	}
 	

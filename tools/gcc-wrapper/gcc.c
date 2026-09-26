@@ -41,6 +41,7 @@
 #include "strsplit.h"
 #include "kargv.h"
 #include "gcc-version.h"
+#include "triplet.h"
 #include "program_help.h"
 
 static const char GCC_MAJOR_VERSION[] = "16";
@@ -808,10 +809,10 @@ static int get_bitness(const char* const triplet) {
 	
 	#if defined(PINO)
 		status = (
-			strcmp(triplet, "riscv64-unknown-linux-android") == 0 ||
-			strcmp(triplet, "aarch64-unknown-linux-android") == 0 ||
-			strcmp(triplet, "x86_64-unknown-linux-android") == 0 ||
-			strcmp(triplet, "mips64el-unknown-linux-android") == 0
+			strcmp(triplet, ANDROID_RISCV64) == 0 ||
+			strcmp(triplet, ANDROID_AARCH64) == 0 ||
+			strcmp(triplet, ANDROID_AMD64) == 0 ||
+			strcmp(triplet, ANDROID_MIPS64EL) == 0
 		);
 		
 		if (status) {
@@ -819,10 +820,10 @@ static int get_bitness(const char* const triplet) {
 		}
 		
 		status = (
-			strcmp(triplet, "mipsel-unknown-linux-android") == 0 ||
-			strcmp(triplet, "i686-unknown-linux-android") == 0 ||
-			strcmp(triplet, "armv7-unknown-linux-androideabi") == 0 ||
-			strcmp(triplet, "armv5-unknown-linux-androideabi") == 0
+			strcmp(triplet, ANDROID_MIPSEL) == 0 ||
+			strcmp(triplet, ANDROID_I686) == 0 ||
+			strcmp(triplet, ANDROID_ARMV7) == 0 ||
+			strcmp(triplet, ANDROID_ARMV5) == 0
 		);
 		
 		if (status) {
@@ -830,8 +831,8 @@ static int get_bitness(const char* const triplet) {
 		}
 	#elif defined(OBGGCC)
 		status = (
-			strcmp(triplet, "x86_64-unknown-linux-gnu") == 0 ||
-			strcmp(triplet, "aarch64-unknown-linux-gnu") == 0
+			strcmp(triplet, GNU_AMD64) == 0 ||
+			strcmp(triplet, GNU_AARCH64) == 0
 		);
 		
 		if (status) {
@@ -839,10 +840,10 @@ static int get_bitness(const char* const triplet) {
 		}
 		
 		status = (
-			strcmp(triplet, "armv6-unknown-linux-gnueabi") == 0 ||
-			strcmp(triplet, "arm-unknown-linux-gnueabi") == 0 ||
-			strcmp(triplet, "arm-unknown-linux-gnueabihf") == 0 ||
-			strcmp(triplet, "i386-unknown-linux-gnu") == 0
+			strcmp(triplet, GNU_ARMV6) == 0 ||
+			strcmp(triplet, GNU_ARM) == 0 ||
+			strcmp(triplet, GNU_ARMHF) == 0 ||
+			strcmp(triplet, GNU_I386) == 0
 		);
 		
 		if (status) {
@@ -850,14 +851,14 @@ static int get_bitness(const char* const triplet) {
 		}
 	#elif defined(ATAR)
 		status = (
-			strcmp(triplet, "aarch64-unknown-openbsd") == 0 ||
-			strcmp(triplet, "alpha-unknown-openbsd") == 0 ||
-			strcmp(triplet, "mips64-unknown-openbsd") == 0 ||
-			strcmp(triplet, "mips64el-unknown-openbsd") == 0 ||
-			strcmp(triplet, "powerpc64-unknown-openbsd") == 0 ||
-			strcmp(triplet, "riscv64-unknown-openbsd") == 0 ||
-			strcmp(triplet, "sparc64-unknown-openbsd") == 0 ||
-			strcmp(triplet, "x86_64-unknown-openbsd") == 0
+			strcmp(triplet, OPENBSD_AARCH64) == 0 ||
+			strcmp(triplet, OPENBSD_ALPHA) == 0 ||
+			strcmp(triplet, OPENBSD_MIPS64) == 0 ||
+			strcmp(triplet, OPENBSD_MIPS64EL) == 0 ||
+			strcmp(triplet, OPENBSD_POWERPC64) == 0 ||
+			strcmp(triplet, OPENBSD_RISCV64) == 0 ||
+			strcmp(triplet, OPENBSD_SPARC64) == 0 ||
+			strcmp(triplet, OPENBSD_AMD64) == 0
 		);
 		
 		if (status) {
@@ -865,10 +866,10 @@ static int get_bitness(const char* const triplet) {
 		}
 		
 		status = (
-			strcmp(triplet, "powerpc-unknown-openbsd") == 0 ||
-			strcmp(triplet, "arm-unknown-openbsd") == 0 ||
-			strcmp(triplet, "hppa-unknown-openbsd") == 0 ||
-			strcmp(triplet, "i386-unknown-openbsd") == 0
+			strcmp(triplet, OPENBSD_POWERPC) == 0 ||
+			strcmp(triplet, OPENBSD_ARM) == 0 ||
+			strcmp(triplet, OPENBSD_HPPA) == 0 ||
+			strcmp(triplet, OPENBSD_I386) == 0
 		);
 		
 		if (status) {
@@ -876,13 +877,13 @@ static int get_bitness(const char* const triplet) {
 		}
 	#elif defined(RAIDEN)
 		status = (
-			strcmp(triplet, "x86_64-unknown-linux-musl") == 0 ||
-			strcmp(triplet, "aarch64-unknown-linux-musl") == 0 ||
-			strcmp(triplet, "loongarch64-unknown-linux-musl") == 0 ||
-			strcmp(triplet, "powerpc64le-unknown-linux-musl") == 0 ||
-			strcmp(triplet, "s390x-unknown-linux-musl") == 0 ||
-			strcmp(triplet, "mips64-unknown-linux-musl") == 0 ||
-			strcmp(triplet, "riscv64-unknown-linux-musl") == 0
+			strcmp(triplet, MUSL_AMD64) == 0 ||
+			strcmp(triplet, MUSL_AARCH64) == 0 ||
+			strcmp(triplet, MUSL_LOONGARCH64) == 0 ||
+			strcmp(triplet, MUSL_POWERPC64LE) == 0 ||
+			strcmp(triplet, MUSL_S390X) == 0 ||
+			strcmp(triplet, MUSL_MIPS64) == 0 ||
+			strcmp(triplet, MUSL_RISCV64) == 0
 		);
 		
 		if (status) {
@@ -890,9 +891,9 @@ static int get_bitness(const char* const triplet) {
 		}
 		
 		status = (
-			strcmp(triplet, "i386-unknown-linux-musl") == 0 ||
-			strcmp(triplet, "armv6-unknown-linux-musleabihf") == 0 ||
-			strcmp(triplet, "armv7-unknown-linux-musleabihf") == 0
+			strcmp(triplet, MUSL_I386) == 0 ||
+			strcmp(triplet, MUSL_ARMV6) == 0 ||
+			strcmp(triplet, MUSL_ARMV7) == 0
 		);
 		
 		if (status) {
@@ -900,8 +901,8 @@ static int get_bitness(const char* const triplet) {
 		}
 	#elif defined(MINGW)
 		status = (
-			strcmp(triplet, "x86_64-w64-mingw32") == 0 ||
-			strcmp(triplet, "aarch64-w64-mingw32") == 0
+			strcmp(triplet, MINGW_AMD64) == 0 ||
+			strcmp(triplet, MINGW_AARCH64) == 0
 		);
 		
 		if (status) {
@@ -909,7 +910,7 @@ static int get_bitness(const char* const triplet) {
 		}
 		
 		status = (
-			strcmp(triplet, "i686-w64-mingw32") == 0
+			strcmp(triplet, MINGW_I686) == 0
 		);
 		
 		if (status) {
@@ -928,15 +929,15 @@ static int get_arch(const char* const triplet) {
 	int status = 0;
 	
 	#if defined(PINO)
-		status = (strcmp(triplet, "riscv64-unknown-linux-android") == 0);
+		status = (strcmp(triplet, ANDROID_RISCV64) == 0);
 		
 		if (status) {
 			return ARCH_SPEC_RISCV;
 		}
 		
 		status = (
-			strcmp(triplet, "x86_64-unknown-linux-android") == 0 ||
-			strcmp(triplet, "i686-unknown-linux-android") == 0
+			strcmp(triplet, ANDROID_AMD64) == 0 ||
+			strcmp(triplet, ANDROID_I686) == 0
 		);
 		
 		if (status) {
@@ -944,9 +945,9 @@ static int get_arch(const char* const triplet) {
 		}
 		
 		status = (
-			strcmp(triplet, "aarch64-unknown-linux-android") == 0 ||
-			strcmp(triplet, "armv7-unknown-linux-androideabi") == 0 ||
-			strcmp(triplet, "armv5-unknown-linux-androideabi") == 0
+			strcmp(triplet, ANDROID_AARCH64) == 0 ||
+			strcmp(triplet, ANDROID_ARMV7) == 0 ||
+			strcmp(triplet, ANDROID_ARMV5) == 0
 		);
 		
 		if (status) {
@@ -954,8 +955,8 @@ static int get_arch(const char* const triplet) {
 		}
 		
 		status = (
-			strcmp(triplet, "mipsel-unknown-linux-android") == 0 ||
-			strcmp(triplet, "mips64el-unknown-linux-android") == 0
+			strcmp(triplet, ANDROID_MIPSEL) == 0 ||
+			strcmp(triplet, ANDROID_MIPS64EL) == 0
 		);
 		
 		if (status) {
@@ -963,8 +964,8 @@ static int get_arch(const char* const triplet) {
 		}
 	#elif defined(OBGGCC)
 		status = (
-			strcmp(triplet, "x86_64-unknown-linux-gnu") == 0 ||
-			strcmp(triplet, "i386-unknown-linux-gnu") == 0
+			strcmp(triplet, GNU_AMD64) == 0 ||
+			strcmp(triplet, GNU_I386) == 0
 		);
 		
 		if (status) {
@@ -972,10 +973,10 @@ static int get_arch(const char* const triplet) {
 		}
 		
 		status = (
-			strcmp(triplet, "aarch64-unknown-linux-gnu") == 0 ||
-			strcmp(triplet, "armv6-unknown-linux-gnueabi") == 0 ||
-			strcmp(triplet, "arm-unknown-linux-gnueabi") == 0 ||
-			strcmp(triplet, "arm-unknown-linux-gnueabihf") == 0
+			strcmp(triplet, GNU_AARCH64) == 0 ||
+			strcmp(triplet, GNU_ARMV6) == 0 ||
+			strcmp(triplet, GNU_ARM) == 0 ||
+			strcmp(triplet, GNU_ARMHF) == 0
 		);
 		
 		if (status) {
@@ -983,9 +984,9 @@ static int get_arch(const char* const triplet) {
 		}
 		
 		status = (
-			strcmp(triplet, "mips-unknown-linux-gnu") == 0 ||
-			strcmp(triplet, "mips64el-unknown-linux-gnuabi64") == 0 ||
-			strcmp(triplet, "mipsel-unknown-linux-gnu") == 0
+			strcmp(triplet, GNU_MIPS) == 0 ||
+			strcmp(triplet, GNU_MIPS64EL) == 0 ||
+			strcmp(triplet, GNU_MIPSEL) == 0
 		);
 		
 		if (status) {
@@ -993,8 +994,8 @@ static int get_arch(const char* const triplet) {
 		}
 	#elif defined(ATAR)
 		status = (
-			strcmp(triplet, "i386-unknown-openbsd") == 0 ||
-			strcmp(triplet, "x86_64-unknown-openbsd") == 0
+			strcmp(triplet, OPENBSD_I386) == 0 ||
+			strcmp(triplet, OPENBSD_AMD64) == 0
 		);
 		
 		if (status) {
@@ -1002,8 +1003,8 @@ static int get_arch(const char* const triplet) {
 		}
 		
 		status = (
-			strcmp(triplet, "aarch64-unknown-openbsd") == 0 ||
-			strcmp(triplet, "arm-unknown-openbsd") == 0
+			strcmp(triplet, OPENBSD_AARCH64) == 0 ||
+			strcmp(triplet, OPENBSD_ARM) == 0
 		);
 		
 		if (status) {
@@ -1011,8 +1012,8 @@ static int get_arch(const char* const triplet) {
 		}
 		
 		status = (
-			strcmp(triplet, "mips64-unknown-openbsd") == 0 ||
-			strcmp(triplet, "mips64el-unknown-openbsd") == 0
+			strcmp(triplet, OPENBSD_MIPS64) == 0 ||
+			strcmp(triplet, OPENBSD_MIPS64EL) == 0
 		);
 		
 		if (status) {
@@ -1020,8 +1021,8 @@ static int get_arch(const char* const triplet) {
 		}
 		
 		status = (
-			strcmp(triplet, "powerpc-unknown-openbsd") == 0 ||
-			strcmp(triplet, "powerpc64-unknown-openbsd") == 0
+			strcmp(triplet, OPENBSD_POWERPC) == 0 ||
+			strcmp(triplet, OPENBSD_POWERPC64) == 0
 		);
 		
 		if (status) {
@@ -1029,7 +1030,7 @@ static int get_arch(const char* const triplet) {
 		}
 		
 		status = (
-			strcmp(triplet, "riscv64-unknown-openbsd") == 0
+			strcmp(triplet, OPENBSD_RISCV64) == 0
 		);
 		
 		if (status) {
@@ -1037,7 +1038,7 @@ static int get_arch(const char* const triplet) {
 		}
 		
 		status = (
-			strcmp(triplet, "sparc64-unknown-openbsd") == 0
+			strcmp(triplet, OPENBSD_SPARC64) == 0
 		);
 		
 		if (status) {
@@ -1045,7 +1046,7 @@ static int get_arch(const char* const triplet) {
 		}
 		
 		status = (
-			strcmp(triplet, "hppa-unknown-openbsd") == 0
+			strcmp(triplet, OPENBSD_HPPA) == 0
 		);
 		
 		if (status) {
@@ -1053,7 +1054,7 @@ static int get_arch(const char* const triplet) {
 		}
 		
 		status = (
-			strcmp(triplet, "alpha-unknown-openbsd") == 0
+			strcmp(triplet, OPENBSD_ALPHA) == 0
 		);
 		
 		if (status) {
@@ -1061,8 +1062,8 @@ static int get_arch(const char* const triplet) {
 		}
 	#elif defined(RAIDEN)
 		status = (
-			strcmp(triplet, "i386-unknown-linux-musl") == 0 ||
-			strcmp(triplet, "x86_64-unknown-linux-musl") == 0
+			strcmp(triplet, MUSL_I386) == 0 ||
+			strcmp(triplet, MUSL_AMD64) == 0
 		);
 		
 		if (status) {
@@ -1070,9 +1071,9 @@ static int get_arch(const char* const triplet) {
 		}
 		
 		status = (
-			strcmp(triplet, "aarch64-unknown-linux-musl") == 0 ||
-			strcmp(triplet, "arm-unknown-linux-musl") == 0 ||
-			strcmp(triplet, "armv7-unknown-linux-musleabihf") == 0
+			strcmp(triplet, MUSL_AARCH64) == 0 ||
+			strcmp(triplet, MUSL_ARM) == 0 ||
+			strcmp(triplet, MUSL_ARMV7) == 0
 		);
 		
 		if (status) {
@@ -1080,7 +1081,7 @@ static int get_arch(const char* const triplet) {
 		}
 		
 		status = (
-			strcmp(triplet, "mips64-unknown-linux-musl") == 0
+			strcmp(triplet, MUSL_MIPS64) == 0
 		);
 		
 		if (status) {
@@ -1088,7 +1089,7 @@ static int get_arch(const char* const triplet) {
 		}
 		
 		status = (
-			strcmp(triplet, "powerpc64le-unknown-linux-musl") == 0
+			strcmp(triplet, MUSL_POWERPC64LE) == 0
 		);
 		
 		if (status) {
@@ -1096,7 +1097,7 @@ static int get_arch(const char* const triplet) {
 		}
 		
 		status = (
-			strcmp(triplet, "riscv64-unknown-linux-musl") == 0
+			strcmp(triplet, MUSL_RISCV64) == 0
 		);
 		
 		if (status) {
@@ -1104,7 +1105,7 @@ static int get_arch(const char* const triplet) {
 		}
 		
 		status = (
-			strcmp(triplet, "s390x-unknown-linux-musl") == 0
+			strcmp(triplet, MUSL_S390X) == 0
 		);
 		
 		if (status) {
@@ -1112,7 +1113,7 @@ static int get_arch(const char* const triplet) {
 		}
 		
 		status = (
-			strcmp(triplet, "loongarch64-unknown-linux-musl") == 0
+			strcmp(triplet, MUSL_LOONGARCH64) == 0
 		);
 		
 		if (status) {
@@ -1120,8 +1121,8 @@ static int get_arch(const char* const triplet) {
 		}
 	#elif defined(MINGW)
 		status = (
-			strcmp(triplet, "i686-w64-mingw32") == 0 ||
-			strcmp(triplet, "x86_64-w64-mingw32") == 0
+			strcmp(triplet, MINGW_I686) == 0 ||
+			strcmp(triplet, MINGW_AMD64) == 0
 		);
 		
 		if (status) {
@@ -1129,7 +1130,7 @@ static int get_arch(const char* const triplet) {
 		}
 		
 		status = (
-			strcmp(triplet, "aarch64-w64-mingw32") == 0
+			strcmp(triplet, MINGW_AARCH64) == 0
 		);
 		
 		if (status) {
@@ -1146,19 +1147,19 @@ static int get_arch(const char* const triplet) {
 static int target_supports_neon(const char* const name) {
 	
 	#if defined(PINO)
-		if (strcmp(name, "armv7-unknown-linux-androideabi") == 0) {
+		if (strcmp(name, ANDROID_ARMV7) == 0) {
 			return 1;
 		}
 	#elif defined(OBGGCC)
-		if (strcmp(name, "arm-unknown-linux-gnueabihf") == 0) {
+		if (strcmp(name, GNU_ARMHF) == 0) {
 			return 1;
 		}
 	#elif defined(ATAR)
-		if (strcmp(name, "arm-unknown-openbsd") == 0) {
+		if (strcmp(name, OPENBSD_ARM) == 0) {
 			return 1;
 		}
 	#elif defined(RAIDEN)
-		if (strcmp(name, "armv7-unknown-linux-musleabihf") == 0) {
+		if (strcmp(name, MUSL_ARMV7) == 0) {
 			return 1;
 		}
 	#elif defined(MINGW)
@@ -1199,91 +1200,91 @@ static int target_supports_relr(const char* const name, const char* const linker
 static const char* get_loader(const char* const triplet) {
 	
 	#if defined(OBGGCC)
-		if (strcmp(triplet, "aarch64-unknown-linux-gnu") == 0) {
+		if (strcmp(triplet, GNU_AARCH64) == 0) {
 			return "ld-linux-aarch64.so.1";
 		}
 		
-		if (strcmp(triplet, "alpha-unknown-linux-gnu") == 0) {
+		if (strcmp(triplet, GNU_ALPHA) == 0) {
 			return "ld-linux.so.2";
 		}
 		
-		if (strcmp(triplet, "armv6-unknown-linux-gnueabi") == 0) {
+		if (strcmp(triplet, GNU_ARMV6) == 0) {
 			return "ld-linux.so.3";
 		}
 		
-		if (strcmp(triplet, "arm-unknown-linux-gnueabi") == 0) {
+		if (strcmp(triplet, GNU_ARM) == 0) {
 			return "ld-linux.so.3";
 		}
 		
-		if (strcmp(triplet, "arm-unknown-linux-gnueabihf") == 0) {
+		if (strcmp(triplet, GNU_ARMHF) == 0) {
 			return "ld-linux-armhf.so.3";
 		}
 		
-		if (strcmp(triplet, "hppa-unknown-linux-gnu") == 0) {
+		if (strcmp(triplet, GNU_HPPA) == 0) {
 			return "ld.so.1";
 		}
 		
-		if (strcmp(triplet, "i386-unknown-linux-gnu") == 0) {
+		if (strcmp(triplet, GNU_I386) == 0) {
 			return "ld-linux.so.2";
 		}
 		
-		if (strcmp(triplet, "ia64-unknown-linux-gnu") == 0) {
+		if (strcmp(triplet, GNU_IA64) == 0) {
 			return "ld-linux-ia64.so.2";
 		}
 		
-		if (strcmp(triplet, "mips64el-unknown-linux-gnuabi64") == 0) {
+		if (strcmp(triplet, GNU_MIPS64EL) == 0) {
 			return "ld.so.1";
 		}
 		
-		if (strcmp(triplet, "mipsel-unknown-linux-gnu") == 0) {
+		if (strcmp(triplet, GNU_MIPSEL) == 0) {
 			return "ld.so.1";
 		}
 		
-		if (strcmp(triplet, "mips-unknown-linux-gnu") == 0) {
+		if (strcmp(triplet, GNU_MIPS) == 0) {
 			return "ld.so.1";
 		}
 		
-		if (strcmp(triplet, "powerpc64le-unknown-linux-gnu") == 0) {
+		if (strcmp(triplet, GNU_POWERPC64LE) == 0) {
 			return "ld64.so.2";
 		}
 		
-		if (strcmp(triplet, "powerpc-unknown-linux-gnu") == 0) {
+		if (strcmp(triplet, GNU_POWERPC) == 0) {
 			return "ld.so.1";
 		}
 		
-		if (strcmp(triplet, "s390-unknown-linux-gnu") == 0) {
+		if (strcmp(triplet, GNU_S390) == 0) {
 			return "ld.so.1";
 		}
 		
-		if (strcmp(triplet, "s390x-unknown-linux-gnu") == 0) {
+		if (strcmp(triplet, GNU_S390X) == 0) {
 			return "ld64.so.1";
 		}
 		
-		if (strcmp(triplet, "sparc-unknown-linux-gnu") == 0) {
+		if (strcmp(triplet, GNU_SPARC) == 0) {
 			return "ld-linux.so.2";
 		}
 		
-		if (strcmp(triplet, "x86_64-unknown-linux-gnu") == 0) {
+		if (strcmp(triplet, GNU_AMD64) == 0) {
 			return "ld-linux-x86-64.so.2";
 		}
 	#elif defined(RAIDEN)
-		if (strcmp(triplet, "aarch64-unknown-linux-musl") == 0) {
+		if (strcmp(triplet, MUSL_AARCH64) == 0) {
 			return "ld-musl-aarch64.so.1";
 		}
 		
-		if (strcmp(triplet, "armv6-unknown-linux-musleabihf") == 0) {
+		if (strcmp(triplet, MUSL_ARMV6) == 0) {
 			return "ld-musl-armhf.so.1";
 		}
 		
-		if (strcmp(triplet, "armv7-unknown-linux-musleabihf") == 0) {
+		if (strcmp(triplet, MUSL_ARMV7) == 0) {
 			return "ld-musl-armhf.so.1";
 		}
 		
-		if (strcmp(triplet, "i386-unknown-linux-musl") == 0) {
+		if (strcmp(triplet, MUSL_I386) == 0) {
 			return "ld-musl-i386.so.1";
 		}
 		
-		if (strcmp(triplet, "x86_64-unknown-linux-musl") == 0) {
+		if (strcmp(triplet, MUSL_AMD64) == 0) {
 			return "ld-musl-x86_64.so.1";
 		}
 	#elif defined(MINGW)
@@ -1384,92 +1385,192 @@ static const char* get_host_triplet(void) {
 	
 	#if defined(__ANDROID__)
 		#if defined(__x86_64__)
-			return "x86_64-unknown-linux-android";
+			return ANDROID_AMD64;
 		#elif defined(__i386__)
-			return "i686-unknown-linux-android";
+			return ANDROID_I686;
 		#elif defined(__ARM_ARCH_5TE__)
-			return "armv5-unknown-linux-androideabi";
+			return ANDROID_ARMV5;
 		#elif defined(__ARM_ARCH_7A__)
-			return "armv7-unknown-linux-androideabi";
+			return ANDROID_ARMV7;
 		#elif defined(__aarch64__)
-			return "aarch64-unknown-linux-android";
+			return ANDROID_AARCH64;
 		#elif defined(__riscv)
-			return "riscv64-unknown-linux-android";
+			return ANDROID_RISCV64;
 		#elif defined(__mips64)
-			return "mips64el-unknown-linux-android";
+			return ANDROID_MIPS64EL;
 		#elif defined(__mips__)
-			return "mipsel-unknown-linux-android";
+			return ANDROID_MIPSEL;
 		#endif
 	#elif defined(__GLIBC__)
 		#if defined(__x86_64__)
-			return "x86_64-unknown-linux-gnu";
+			return GNU_AMD64;
 		#elif defined(__i386__)
-			return "i386-unknown-linux-gnu";
+			return GNU_I386;
 		#elif defined(__ARM_ARCH_7A__)
-			return "arm-unknown-linux-gnueabihf";
+			return GNU_ARMHF;
 		#elif defined(__ARM_ARCH_6__)
-			return "armv6-unknown-linux-gnueabi";
+			return GNU_ARMV6;
 		#elif defined(__ARM_ARCH_4T__)
-			return "arm-unknown-linux-gnueabi";
+			return GNU_ARM;
 		#elif defined(__aarch64__)
-			return "aarch64-unknown-linux-gnu";
+			return GNU_AARCH64;
 		#endif
 	#elif defined(__OpenBSD__)
 		#if defined(__x86_64__)
-			return "x86_64-unknown-openbsd";
+			return OPENBSD_AMD64;
 		#elif defined(__i386__)
-			return "i386-unknown-openbsd";
+			return OPENBSD_I386;
 		#elif defined(__ARM_ARCH_7A__)
-			return "arm-unknown-openbsd";
+			return OPENBSD_ARM;
 		#elif defined(__aarch64__)
-			return "aarch64-unknown-openbsd";
+			return OPENBSD_AARCH64;
 		#elif defined(__riscv)
-			return "riscv64-unknown-openbsd";
+			return OPENBSD_RISCV64;
 		#elif defined(__MIPSEL__)
-			return "mips64el-unknown-openbsd";
+			return OPENBSD_MIPS64EL;
 		#elif defined(__MIPSEB__)
-			return "mips64-unknown-openbsd";
+			return OPENBSD_MIPS64;
 		#elif defined(__powerpc64__)
-			return "powerpc64-unknown-openbsd";
+			return OPENBSD_POWERPC64;
 		#elif defined(__powerpc)
-			return "powerpc-unknown-openbsd";
+			return OPENBSD_POWERPC;
 		#elif defined(__sparc64__)
-			return "sparc64-unknown-openbsd";
+			return OPENBSD_SPARC64;
 		#elif defined(__hppa__)
-			return "hppa-unknown-openbsd";
+			return OPENBSD_HPPA;
 		#elif defined(__alpha__)
-			return "alpha-unknown-openbsd";
+			return OPENBSD_ALPHA;
 		#endif
 	#elif defined(_WIN32)
 		#if defined(__x86_64__)
-			return "x86_64-w64-mingw32";
+			return MINGW_AMD64;
 		#elif defined(__i386__)
-			return "i686-w64-mingw32";
+			return MINGW_I686;
 		#elif defined(__aarch64__)
-			return "aarch64-w64-mingw32";
+			return MINGW_AARCH64;
 		#endif
 	#elif defined(__musl__)
 		#if defined(__x86_64__)
-			return "x86_64-unknown-linux-musl";
+			return MUSL_AMD64;
 		#elif defined(__i386__)
-			return "i386-unknown-linux-musl";
+			return MUSL_I386;
 		#elif defined(__ARM_ARCH_7A__)
-			return "armv7-unknown-linux-musleabihf";
+			return MUSL_ARMV7;
 		#elif defined(__ARM_ARCH_6__)
-			return "armv6-unknown-linux-musleabihf";
+			return MUSL_ARMV6;
 		#elif defined(__aarch64__)
-			return "aarch64-unknown-linux-musl";
+			return MUSL_AARCH64;
 		#elif defined(__riscv)
-			return "riscv64-unknown-linux-musl";
+			return MUSL_RISCV64;
 		#elif defined(__mips64)
-			return "mips64-unknown-linux-musl";
+			return MUSL_MIPS64;
 		#elif defined(__powerpc64__)
-			return "powerpc64le-unknown-linux-musl";
+			return MUSL_POWERPC64LE;
 		#elif defined(__s390x__)
-			return "s390x-unknown-linux-musl";
+			return MUSL_S390X;
 		#elif defined(__loongarch64)
-			return "loongarch64-unknown-linux-musl";
+			return MUSL_LOONGARCH64;
 		#endif
+	#endif
+	
+	return NULL;
+	
+}
+
+static const char* get_secondary_triplet(const char* const triplet) {
+	
+	#if defined(PINO)
+		if (strcmp(triplet, ANDROID_AARCH64) == 0) {
+			return ANDROID_ARMV7;
+		}
+		
+		if (strcmp(triplet, ANDROID_ARMV5) == 0 || strcmp(triplet, ANDROID_ARMV7) == 0) {
+			return ANDROID_AARCH64;
+		}
+		
+		if (strcmp(triplet, ANDROID_AMD64) == 0) {
+			return ANDROID_I686;
+		}
+		
+		if (strcmp(triplet, ANDROID_I686) == 0) {
+			return ANDROID_AMD64;
+		}
+		
+		if (strcmp(triplet, ANDROID_MIPS64EL) == 0) {
+			return ANDROID_MIPSEL;
+		}
+		
+		if (strcmp(triplet, ANDROID_MIPSEL) == 0) {
+			return ANDROID_MIPS64EL;
+		}
+	#elif defined(OBGGCC)
+		if (strcmp(triplet, GNU_AARCH64) == 0) {
+			return GNU_ARMHF;
+		}
+		
+		if (strcmp(triplet, GNU_ARM) == 0 || strcmp(triplet, GNU_ARMV6) == 0 || strcmp(triplet, GNU_ARMHF) == 0) {
+			return GNU_AARCH64;
+		}
+		
+		if (strcmp(triplet, GNU_AMD64) == 0) {
+			return GNU_I386;
+		}
+		
+		if (strcmp(triplet, GNU_I386) == 0) {
+			return GNU_AMD64;
+		}
+	#elif defined(ATAR)
+		if (strcmp(triplet, OPENBSD_AMD64) == 0) {
+			return OPENBSD_I386;
+		}
+		
+		if (strcmp(triplet, OPENBSD_I386) == 0) {
+			return OPENBSD_AMD64;
+		}
+		
+		if (strcmp(triplet, OPENBSD_AARCH64) == 0) {
+			return OPENBSD_ARM;
+		}
+		
+		if (strcmp(triplet, OPENBSD_ARM) == 0) {
+			return OPENBSD_AARCH64;
+		}
+		
+		if (strcmp(triplet, OPENBSD_POWERPC64) == 0) {
+			return OPENBSD_POWERPC;
+		}
+		
+		if (strcmp(triplet, OPENBSD_POWERPC) == 0) {
+			return OPENBSD_POWERPC64;
+		}
+	#elif defined(RAIDEN)
+		if (strcmp(triplet, MUSL_AMD64) == 0) {
+			return MUSL_I386;
+		}
+		
+		if (strcmp(triplet, MUSL_I386) == 0) {
+			return MUSL_AMD64;
+		}
+		
+		if (strcmp(triplet, MUSL_AARCH64) == 0) {
+			return MUSL_ARMV7;
+		}
+		
+		if (strcmp(triplet, MUSL_ARMV7) == 0) {
+			return MUSL_AARCH64;
+		}
+		
+		if (strcmp(triplet, MUSL_ARMV6) == 0) {
+			return MUSL_AARCH64;
+		}
+	#elif defined(MINGW)
+		if (strcmp(triplet, MINGW_AMD64) == 0) {
+			return MINGW_I686;
+		}
+		
+		if (strcmp(triplet, MINGW_I686) == 0) {
+			return MINGW_AMD64;
+		}
 	#endif
 	
 	return NULL;
@@ -1482,11 +1583,11 @@ static const char* get_max_libc_version(const char* const triplet) {
 	
 	#if defined(PINO)
 		status = (
-			strcmp(triplet, "riscv64-unknown-linux-android") == 0 ||
-			strcmp(triplet, "i686-unknown-linux-android") == 0 ||
-			strcmp(triplet, "armv7-unknown-linux-androideabi") == 0 ||
-			strcmp(triplet, "aarch64-unknown-linux-android") == 0 ||
-			strcmp(triplet, "x86_64-unknown-linux-android") == 0
+			strcmp(triplet, ANDROID_RISCV64) == 0 ||
+			strcmp(triplet, ANDROID_I686) == 0 ||
+			strcmp(triplet, ANDROID_ARMV7) == 0 ||
+			strcmp(triplet, ANDROID_AARCH64) == 0 ||
+			strcmp(triplet, ANDROID_AMD64) == 0
 		);
 		
 		if (status) {
@@ -1494,9 +1595,9 @@ static const char* get_max_libc_version(const char* const triplet) {
 		}
 		
 		status = (
-			strcmp(triplet, "mipsel-unknown-linux-android") == 0 ||
-			strcmp(triplet, "mips64el-unknown-linux-android") == 0 ||
-			strcmp(triplet, "armv5-unknown-linux-androideabi") == 0
+			strcmp(triplet, ANDROID_MIPSEL) == 0 ||
+			strcmp(triplet, ANDROID_MIPS64EL) == 0 ||
+			strcmp(triplet, ANDROID_ARMV5) == 0
 		);
 		
 		if (status) {
@@ -1514,7 +1615,7 @@ static const char* get_min_libc_version(const char* const triplet) {
 	
 	#if defined(PINO)
 		status = (
-			strcmp(triplet, "riscv64-unknown-linux-android") == 0
+			strcmp(triplet, ANDROID_RISCV64) == 0
 		);
 		
 		if (status) {
@@ -1522,9 +1623,9 @@ static const char* get_min_libc_version(const char* const triplet) {
 		}
 		
 		status = (
-			strcmp(triplet, "aarch64-unknown-linux-android") == 0 ||
-			strcmp(triplet, "mips64el-unknown-linux-android") == 0 ||
-			strcmp(triplet, "x86_64-unknown-linux-android") == 0
+			strcmp(triplet, ANDROID_AARCH64) == 0 ||
+			strcmp(triplet, ANDROID_MIPS64EL) == 0 ||
+			strcmp(triplet, ANDROID_AMD64) == 0
 		);
 		
 		if (status) {
@@ -1532,10 +1633,10 @@ static const char* get_min_libc_version(const char* const triplet) {
 		}
 		
 		status = (
-			strcmp(triplet, "mipsel-unknown-linux-android") == 0 ||
-			strcmp(triplet, "armv7-unknown-linux-androideabi") == 0 ||
-			strcmp(triplet, "i686-unknown-linux-android") == 0 ||
-			strcmp(triplet, "armv5-unknown-linux-androideabi") == 0
+			strcmp(triplet, ANDROID_MIPSEL) == 0 ||
+			strcmp(triplet, ANDROID_ARMV7) == 0 ||
+			strcmp(triplet, ANDROID_I686) == 0 ||
+			strcmp(triplet, ANDROID_ARMV5) == 0
 		);
 		
 		if (status) {
@@ -2051,6 +2152,7 @@ int main(int argc, char* argv[]) {
 	
 	int arch = 0;
 	int bitness = 0;
+	int multilib = 0;
 	
 	unsigned char a = 0;
 	unsigned char b = 0;
@@ -2173,6 +2275,7 @@ int main(int argc, char* argv[]) {
 	const char* host = NULL;
 	long int host_version = 0;
 	long int target_version = 0;
+	long int value = 0;
 	
 	#if defined(PINO)
 		int android_weak_symbols = 0;
@@ -2460,6 +2563,11 @@ int main(int argc, char* argv[]) {
 			dump_version = 1;
 		} else if (strcmp(cur, "-dumpmachine") == 0) {
 			dump_machine = 1;
+		#if defined(PINO)
+		} else if (strcmp(cur, "-m32") == 0 || strcmp(cur, "-m64") == 0) {
+			multilib = (cur[2] == '3') ? ARCH_ABI_32 : ARCH_ABI_64;
+			continue;
+		#endif
 		} else if (wants_disable_werror && strncmp(cur, GCC_OPT_WERROR, 7) == 0) {
 			continue;
 		} else if (strcmp(cur, GCC_OPT_PRINT_MULTI_OS_DIRECTORY) == 0) {
@@ -2979,6 +3087,29 @@ int main(int argc, char* argv[]) {
 	memcpy(triplet, file_name, size);
 	triplet[size] = '\0';
 	
+	arch = get_arch(triplet);
+	bitness = get_bitness(triplet);
+	
+	if (multilib != 0 && multilib != bitness) {
+		cur = get_secondary_triplet(triplet);
+		
+		if (cur == NULL) {
+			err = ERR_GCC_UNSUPPORTED_MULTILIB;
+			goto end;
+		}
+		
+		free(triplet);
+		triplet = strdup(cur);
+		
+		if (triplet == NULL) {
+			err = ERR_MEM_ALLOC_FAILURE;
+			goto end;
+		}
+		
+		arch = get_arch(triplet);
+		bitness = get_bitness(triplet);
+	}
+	
 	if (wants_system_libraries) {
 		/*
 		* Using system libraries during compilation makes no sense when the target
@@ -2986,9 +3117,6 @@ int main(int argc, char* argv[]) {
 		*/
 		wants_system_libraries -= (host != NULL && strcmp(host, triplet) != 0);
 	}
-	
-	arch = get_arch(triplet);
-	bitness = get_bitness(triplet);
 	
 	if (wants_neon && target_supports_neon(triplet)) {
 		floating_point_unit = malloc(strlen(GCC_OPT_M_FPU) + strlen(GCC_FPU_NEON) + 1);
@@ -3126,16 +3254,32 @@ int main(int argc, char* argv[]) {
 	memcpy(libc_version, start, size);
 	libc_version[size] = '\0';
 	
+	get_libc_version_int(libc_version, version);
+	
+	target_version = LIBC_VERSION(version[0], version[1]);
+	
+	#if defined(PINO)
+		cur = get_min_libc_version(triplet);
+		get_libc_version_int(cur, version);
+		
+		value = LIBC_VERSION(version[0], version[1]);
+		
+		if (target_version < value) {
+			free(libc_version);
+			libc_version = strdup(cur);
+			
+			if (libc_version == NULL) {
+				err = ERR_MEM_ALLOC_FAILURE;
+				goto end;
+			}
+			
+			target_version = value;
+		}
+	#endif
+	
 	#if defined(PINO)
 		android_current_sdk_version = libc_version;
 	#endif
-	
-	get_libc_version_int(libc_version, version);
-	
-	libc_major = version[0];
-	libc_minor = version[1];
-	
-	target_version = LIBC_VERSION(libc_major, libc_minor);
 	
 	#if defined(PINO)
 		/*

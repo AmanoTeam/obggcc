@@ -37,6 +37,8 @@ const char* obggcc_strerror(const int err) {
 			return "No matching runtime libraries found for this GCC version";
 		case ERR_GCC_RUNTIME_TOO_NEW:
 			return "Using a newer GCC runtime with an older GCC compiler is not supported";
+		case ERR_GCC_UNSUPPORTED_MULTILIB:
+			return "Unsupported multilib option";
 		default:
 			return "Unknown error";
 	}
