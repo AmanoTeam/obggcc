@@ -179,6 +179,8 @@ static const char CLANG_OPT_F_COLOR_DIAGNOSTICS[] = "-fcolor-diagnostics";
 static const char CLANG_OPT_F_NO_INTEGRATED_AS[] = "-fno-integrated-as";
 static const char CLANG_OPT_F_INTEGRATED_AS[] = "-fintegrated-as";
 static const char CLANG_OPT_F_SLP_VECTORIZE_AGGRESSIVE[] = "-fslp-vectorize-aggressive";
+static const char CLANG_OPT_F_CONSTEXPR_STEPS[] = "-fconstexpr-steps=";
+static const char GCC_OPT_F_CONSTEXPR_OPS_LIMIT[] = "-fconstexpr-ops-limit=";
 static const char CLANG_OPT_F_ERROR_LIMIT[] = "-ferror-limit";
 static const char CLANG_OPT_F_USE_LD_LLD[] = "-fuse-ld=lld";
 static const char CLANG_OPT_F_LTO_FULL[] = "-flto=full";
@@ -747,8 +749,8 @@ static clang_option_t CLANG_SPECIFIC_REMOVE[] = {
 		.value = 0
 	},
 	{
-		.name = "-fconstexpr-steps",
-		.value = 1
+		.name = "-Wconditional-uninitialized",
+		.value = 0
 	}
 };
 
@@ -1797,6 +1799,8 @@ static int clang_specific_replace(
 	
 	const char* current = cur;
 	
+	char* value = NULL;
+	
 	if (strncmp(current, GCC_OPT_F_LTO, strlen(GCC_OPT_F_LTO)) == 0) {
 		current += strlen(GCC_OPT_F_LTO);
 		
@@ -1833,6 +1837,29 @@ static int clang_specific_replace(
 	} else if (strcmp(current, CLANG_OPT_F_SLP_VECTORIZE_AGGRESSIVE) == 0) {
 		/* Replace -fslp-vectorize-aggressive with -ftree-vectorize. */
 		kargv_append(xargv, GCC_OPT_F_TREE_VECTORIZE);
+		
+		status = 1;
+		goto end;
+	} else if (strncmp(current, CLANG_OPT_F_CONSTEXPR_STEPS, strlen(CLANG_OPT_F_CONSTEXPR_STEPS)) == 0) {
+		/* Replace -fconstexpr-steps=N with -fconstexpr-ops-limit=N. */
+		current += strlen(CLANG_OPT_F_CONSTEXPR_STEPS);
+		
+		if (*current == ZERO) {
+			status = 0;
+			goto end;
+		}
+		
+		value = malloc(strlen(GCC_OPT_F_CONSTEXPR_OPS_LIMIT) + strlen(current) + 1);
+		
+		if (value == NULL) {
+			status = 0;
+			goto end;
+		}
+		
+		strcpy(value, GCC_OPT_F_CONSTEXPR_OPS_LIMIT);
+		strcat(value, current);
+		
+		kargv_append(xargv, value);
 		
 		status = 1;
 		goto end;
