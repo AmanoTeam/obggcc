@@ -51,6 +51,7 @@ static const char ENV_SIMD[] = WRAPPER_FLAVOR_NAME "_SIMD";
 static const char ENV_LTO[] = WRAPPER_FLAVOR_NAME "_LTO";
 static const char ENV_STL_VERSION[] = WRAPPER_FLAVOR_NAME "_STL_VERSION";
 static const char ENV_OPT_LEVEL[] = WRAPPER_FLAVOR_NAME "_OPT_LEVEL";
+static const char ENV_LINKER[] = WRAPPER_FLAVOR_NAME "_LINKER";
 static const char ENV_WERROR[] = WRAPPER_FLAVOR_NAME "_WERROR";
 
 static const char OBGGCC_OPT_HELP[] = "--obggcc-help";
