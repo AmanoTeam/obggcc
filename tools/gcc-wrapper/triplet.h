@@ -28,19 +28,6 @@ static const char GNU_S390[] = "s390-unknown-linux-gnu";
 static const char GNU_S390X[] = "s390x-unknown-linux-gnu";
 static const char GNU_SPARC[] = "sparc-unknown-linux-gnu";
 
-static const char OPENBSD_AMD64[] = "x86_64-unknown-openbsd";
-static const char OPENBSD_I386[] = "i386-unknown-openbsd";
-static const char OPENBSD_AARCH64[] = "aarch64-unknown-openbsd";
-static const char OPENBSD_ARM[] = "arm-unknown-openbsd";
-static const char OPENBSD_RISCV64[] = "riscv64-unknown-openbsd";
-static const char OPENBSD_MIPS64EL[] = "mips64el-unknown-openbsd";
-static const char OPENBSD_MIPS64[] = "mips64-unknown-openbsd";
-static const char OPENBSD_POWERPC64[] = "powerpc64-unknown-openbsd";
-static const char OPENBSD_POWERPC[] = "powerpc-unknown-openbsd";
-static const char OPENBSD_SPARC64[] = "sparc64-unknown-openbsd";
-static const char OPENBSD_HPPA[] = "hppa-unknown-openbsd";
-static const char OPENBSD_ALPHA[] = "alpha-unknown-openbsd";
-
 static const char MUSL_AMD64[] = "x86_64-unknown-linux-musl";
 static const char MUSL_I386[] = "i386-unknown-linux-musl";
 static const char MUSL_AARCH64[] = "aarch64-unknown-linux-musl";

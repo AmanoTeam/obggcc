@@ -14,11 +14,6 @@
 	#include <gnu/libc-version.h>
 #endif
 
-#if defined(__OpenBSD__)
-	#include <sys/types.h>
-	#include <sys/sysctl.h>
-#endif
-
 #if defined(__linux__) && !defined(__ANDROID__) && !defined(__GLIBC__)
 	#define __musl__
 #endif
@@ -855,32 +850,6 @@ static int get_bitness(const char* const triplet) {
 		if (status) {
 			return ARCH_ABI_32;
 		}
-	#elif defined(ATAR)
-		status = (
-			strcmp(triplet, OPENBSD_AARCH64) == 0 ||
-			strcmp(triplet, OPENBSD_ALPHA) == 0 ||
-			strcmp(triplet, OPENBSD_MIPS64) == 0 ||
-			strcmp(triplet, OPENBSD_MIPS64EL) == 0 ||
-			strcmp(triplet, OPENBSD_POWERPC64) == 0 ||
-			strcmp(triplet, OPENBSD_RISCV64) == 0 ||
-			strcmp(triplet, OPENBSD_SPARC64) == 0 ||
-			strcmp(triplet, OPENBSD_AMD64) == 0
-		);
-		
-		if (status) {
-			return ARCH_ABI_64;
-		}
-		
-		status = (
-			strcmp(triplet, OPENBSD_POWERPC) == 0 ||
-			strcmp(triplet, OPENBSD_ARM) == 0 ||
-			strcmp(triplet, OPENBSD_HPPA) == 0 ||
-			strcmp(triplet, OPENBSD_I386) == 0
-		);
-		
-		if (status) {
-			return ARCH_ABI_32;
-		}
 	#elif defined(RAIDEN)
 		status = (
 			strcmp(triplet, MUSL_AMD64) == 0 ||
@@ -998,74 +967,6 @@ static int get_arch(const char* const triplet) {
 		if (status) {
 			return ARCH_SPEC_MIPS;
 		}
-	#elif defined(ATAR)
-		status = (
-			strcmp(triplet, OPENBSD_I386) == 0 ||
-			strcmp(triplet, OPENBSD_AMD64) == 0
-		);
-		
-		if (status) {
-			return ARCH_SPEC_X86;
-		}
-		
-		status = (
-			strcmp(triplet, OPENBSD_AARCH64) == 0 ||
-			strcmp(triplet, OPENBSD_ARM) == 0
-		);
-		
-		if (status) {
-			return ARCH_SPEC_ARM;
-		}
-		
-		status = (
-			strcmp(triplet, OPENBSD_MIPS64) == 0 ||
-			strcmp(triplet, OPENBSD_MIPS64EL) == 0
-		);
-		
-		if (status) {
-			return ARCH_SPEC_MIPS;
-		}
-		
-		status = (
-			strcmp(triplet, OPENBSD_POWERPC) == 0 ||
-			strcmp(triplet, OPENBSD_POWERPC64) == 0
-		);
-		
-		if (status) {
-			return ARCH_SPEC_PPC;
-		}
-		
-		status = (
-			strcmp(triplet, OPENBSD_RISCV64) == 0
-		);
-		
-		if (status) {
-			return ARCH_SPEC_RISCV;
-		}
-		
-		status = (
-			strcmp(triplet, OPENBSD_SPARC64) == 0
-		);
-		
-		if (status) {
-			return ARCH_SPEC_SPARC;
-		}
-		
-		status = (
-			strcmp(triplet, OPENBSD_HPPA) == 0
-		);
-		
-		if (status) {
-			return ARCH_SPEC_HPPA;
-		}
-		
-		status = (
-			strcmp(triplet, OPENBSD_ALPHA) == 0
-		);
-		
-		if (status) {
-			return ARCH_SPEC_HPPA;
-		}
 	#elif defined(RAIDEN)
 		status = (
 			strcmp(triplet, MUSL_I386) == 0 ||
@@ -1158,10 +1059,6 @@ static int target_supports_neon(const char* const name) {
 		}
 	#elif defined(OBGGCC)
 		if (strcmp(name, GNU_ARMHF) == 0) {
-			return 1;
-		}
-	#elif defined(ATAR)
-		if (strcmp(name, OPENBSD_ARM) == 0) {
 			return 1;
 		}
 	#elif defined(RAIDEN)
@@ -1329,15 +1226,6 @@ static int get_host_version(void) {
 		if (string == NULL) {
 			return 0;
 		}
-	#elif defined(__OpenBSD__)
-		int call[] = {CTL_KERN, KERN_OSRELEASE};
-		
-		char string[16];
-		size_t size = sizeof(string);
-		
-		if (sysctl(call, sizeof(call) / sizeof(*call), string, &size, NULL, 0) == -1) {
-			return 0;
-		}
 	#elif defined(__musl__)
 		/*
 		* musl provides no reliable way to detect the C library version,
@@ -1348,7 +1236,7 @@ static int get_host_version(void) {
 		/* nothing to do here */
 	#endif
 	
-	#if defined(__GLIBC__) || defined(__OpenBSD__) || defined(__musl__)
+	#if defined(__GLIBC__) || defined(__musl__)
 		get_libc_version_int(string, version);
 		
 		libc_major = version[0];
@@ -1395,32 +1283,6 @@ static const char* get_host_triplet(void) {
 			return GNU_ARM;
 		#elif defined(__aarch64__)
 			return GNU_AARCH64;
-		#endif
-	#elif defined(__OpenBSD__)
-		#if defined(__x86_64__)
-			return OPENBSD_AMD64;
-		#elif defined(__i386__)
-			return OPENBSD_I386;
-		#elif defined(__ARM_ARCH_7A__)
-			return OPENBSD_ARM;
-		#elif defined(__aarch64__)
-			return OPENBSD_AARCH64;
-		#elif defined(__riscv)
-			return OPENBSD_RISCV64;
-		#elif defined(__MIPSEL__)
-			return OPENBSD_MIPS64EL;
-		#elif defined(__MIPSEB__)
-			return OPENBSD_MIPS64;
-		#elif defined(__powerpc64__)
-			return OPENBSD_POWERPC64;
-		#elif defined(__powerpc)
-			return OPENBSD_POWERPC;
-		#elif defined(__sparc64__)
-			return OPENBSD_SPARC64;
-		#elif defined(__hppa__)
-			return OPENBSD_HPPA;
-		#elif defined(__alpha__)
-			return OPENBSD_ALPHA;
 		#endif
 	#elif defined(_WIN32)
 		#if defined(__x86_64__)
@@ -1499,30 +1361,6 @@ static const char* get_secondary_triplet(const char* const triplet) {
 		
 		if (strcmp(triplet, GNU_I386) == 0) {
 			return GNU_AMD64;
-		}
-	#elif defined(ATAR)
-		if (strcmp(triplet, OPENBSD_AMD64) == 0) {
-			return OPENBSD_I386;
-		}
-		
-		if (strcmp(triplet, OPENBSD_I386) == 0) {
-			return OPENBSD_AMD64;
-		}
-		
-		if (strcmp(triplet, OPENBSD_AARCH64) == 0) {
-			return OPENBSD_ARM;
-		}
-		
-		if (strcmp(triplet, OPENBSD_ARM) == 0) {
-			return OPENBSD_AARCH64;
-		}
-		
-		if (strcmp(triplet, OPENBSD_POWERPC64) == 0) {
-			return OPENBSD_POWERPC;
-		}
-		
-		if (strcmp(triplet, OPENBSD_POWERPC) == 0) {
-			return OPENBSD_POWERPC64;
 		}
 	#elif defined(RAIDEN)
 		if (strcmp(triplet, MUSL_AMD64) == 0) {
@@ -3142,24 +2980,6 @@ int main(int argc, char* argv[]) {
 	if (wants_arm_mode && (arch == ARCH_SPEC_ARM && bitness == ARCH_ABI_32)) {
 		kargv_append(&xargv, GCC_OPT_M_ARM);
 	}
-	
-	#if defined(ATAR) && defined(WCLANG)
-		/* GCC already uses these options by default, but Clang doesn't. */
-		if (linking) {
-			kargv_append(&xargv, GCC_OPT_XLINKER);
-			kargv_append(&xargv, LD_OPT_Z);
-			kargv_append(&xargv, GCC_OPT_XLINKER);
-			kargv_append(&xargv, LD_OPT_ORIGIN);
-		}
-		
-		if (!linking) {
-			kargv_append(&xargv, GCC_OPT_F_PIC);
-		}
-		
-		if (linking && !linking_shared) {
-			kargv_append(&xargv, GCC_OPT_PIE);
-		}
-	#endif
 	
 	non_prefixed_triplet = malloc(strlen(triplet) + 1);
 	

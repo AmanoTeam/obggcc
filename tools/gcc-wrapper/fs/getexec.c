@@ -1,16 +1,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if defined(__OpenBSD__)
-	#include <string.h>
-#endif
-
 #if defined(_WIN32)
 	#include <windows.h>
 	#include <fileapi.h>
 #endif
 
-#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__DragonFly__) || defined(__OpenBSD__)
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__DragonFly__)
 	#include <sys/types.h>
 	#include <sys/sysctl.h>
 #endif
@@ -28,14 +24,7 @@
 	#include <limits.h>
 #endif
 
-#if defined(__OpenBSD__)
-	#include "fs/exists.h"
-	#include "fs/absrel.h"
-	#include "fs/realpath.h"
-	#include "os/find_exe.h"
-#endif
-
-#if defined(__OpenBSD__) || defined(_WIN32)
+#if defined(_WIN32)
 	#include "fs/sep.h"
 #endif
 
@@ -247,47 +236,6 @@ char* get_app_filename(void) {
 			err = -1;
 			goto end;
 		}
-	#elif defined(__OpenBSD__)
-		const pid_t pid = getpid();
-		
-		const int call[] = {
-			CTL_KERN,
-			KERN_PROC_ARGS,
-			pid,
-			KERN_PROC_ARGV
-		};
-		
-		const char* name = NULL;
-		
-		char** argv = NULL;
-		
-		size_t size = 0;
-		
-		if (sysctl(call, sizeof(call) / sizeof(*call), NULL, &size, NULL, 0) == -1) {
-			err = -1;
-			goto end;
-		}
-		
-		argv = malloc(size);
-		
-		if (argv == NULL) {
-			err = -1;
-			goto end;
-		}
-		
-		if (sysctl(call, sizeof(call) / sizeof(*call), argv, &size, NULL, 0) == -1) {
-			err = -1;
-			goto end;
-		}
-		
-		name = argv[0];
-		
-		if (isabsolute(name) || strchr(name, PATHSEP) != NULL) {
-			app_filename = expand_filename(name);
-			goto end;
-		}
-		
-		app_filename = find_exe(name);
 	#elif defined(__APPLE__)
 		uint32_t paths = PATH_MAX;
 		char* path = malloc((size_t) paths);
@@ -354,11 +302,7 @@ char* get_app_filename(void) {
 	#if defined(_WIN32) && defined(_UNICODE)
 		free(wfilename);
 	#endif
-	
-	#if defined(__OpenBSD__)
-		free(argv);
-	#endif
-	
+
 	#if defined(__APPLE__)
 		free(path);
 	#endif
