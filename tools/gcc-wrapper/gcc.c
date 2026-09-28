@@ -2036,6 +2036,21 @@ static char** expand_response_files(int argc, char* argv[]) {
 		const char* const cur = argv[index];
 
 		if (*cur != '@' || index == 0) {
+			if (nargc == capacity) {
+				char** resized = NULL;
+
+				capacity += 16;
+
+				resized = realloc(nargs, ((size_t) capacity) * sizeof(*nargs));
+
+				if (resized == NULL) {
+					free(nargs);
+					return NULL;
+				}
+
+				nargs = resized;
+			}
+
 			nargs[nargc++] = argv[index];
 			continue;
 		}
@@ -2123,6 +2138,21 @@ static char** expand_response_files(int argc, char* argv[]) {
 		}
 
 		fstream_close(stream);
+	}
+
+	if (nargc == capacity) {
+		char** resized = NULL;
+
+		capacity += 1;
+
+		resized = realloc(nargs, ((size_t) capacity) * sizeof(*nargs));
+
+		if (resized == NULL) {
+			free(nargs);
+			return NULL;
+		}
+
+		nargs = resized;
 	}
 
 	nargs[nargc] = NULL;
