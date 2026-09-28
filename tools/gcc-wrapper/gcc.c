@@ -2082,7 +2082,11 @@ static char** expand_response_files(int argc, char* argv[]) {
 						nargs = resized;
 					}
 
-					nargs[nargc++] = token;
+					nargs[nargc] = strdup(token);
+
+					if (nargs[nargc] != NULL) {
+						nargc++;
+					}
 				}
 			}
 
