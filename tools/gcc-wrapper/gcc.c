@@ -24,6 +24,7 @@
 #include "fs/parentpath.h"
 #include "fs/sep.h"
 #include "fs/cp.h"
+#include "fstream.h"
 #include "fs/exists.h"
 #include "fs/basename.h"
 #include "os/find_exe.h"
@@ -2004,10 +2005,116 @@ static const char* get_linker(const char* const value) {
 	
 }
 
+static char** expand_response_files(int argc, char* argv[]) {
+	/*
+	Expand the @file arguments into the arguments they contain, so they
+	go through the same translation as the rest, instead of being handed
+	to the target compiler and bypassing it (build systems like GHC pass
+	Clang-only flags through them).
+	*/
+
+	char** nargs = NULL;
+	char* buffer = NULL;
+
+	int nargc = 0;
+	int capacity = 0;
+
+	size_t index = 0;
+	size_t size = 0;
+
+	fstream_t* stream = NULL;
+
+	nargs = malloc(((size_t) argc + 1) * sizeof(*nargs));
+
+	if (nargs == NULL) {
+		return NULL;
+	}
+
+	capacity = argc;
+
+	for (index = 0; index < (size_t) argc; index++) {
+		const char* const cur = argv[index];
+
+		if (*cur != '@' || index == 0) {
+			nargs[nargc++] = argv[index];
+			continue;
+		}
+
+		stream = fstream_open((cur + 1), FSTREAM_READ);
+
+		if (stream == NULL) {
+			nargs[nargc++] = argv[index];
+			continue;
+		}
+
+		size = (size_t) fsream_size(stream);
+
+		if (size > 0) {
+			buffer = malloc(size + 1);
+
+			if (buffer == NULL) {
+				fstream_close(stream);
+				free(nargs);
+				return NULL;
+			}
+
+			if (fstream_read(stream, buffer, size) == size) {
+				char* token = NULL;
+				char* next = NULL;
+
+				buffer[size] = ZERO;
+
+				for (token = strtok_r(buffer, " \t\r\n", &next); token != NULL; token = strtok_r(NULL, " \t\r\n", &next)) {
+					if (nargc == capacity) {
+						char** resized = NULL;
+
+						capacity += 16;
+
+						resized = realloc(nargs, ((size_t) capacity) * sizeof(*nargs));
+
+						if (resized == NULL) {
+							free(buffer);
+							fstream_close(stream);
+							free(nargs);
+							return NULL;
+						}
+
+						nargs = resized;
+					}
+
+					nargs[nargc++] = token;
+				}
+			}
+
+			free(buffer);
+		}
+
+		fstream_close(stream);
+	}
+
+	nargs[nargc] = NULL;
+
+	return nargs;
+}
+
 int main(int argc, char* argv[]) {
-	
+
 	int status = 0;
 	int err = ERR_SUCCESS;
+
+	{
+		char** expanded = expand_response_files(argc, argv);
+
+		if (expanded != NULL) {
+			argc = 0;
+
+			while (expanded[argc] != NULL) {
+				argc++;
+			}
+
+			argv = expanded;
+		}
+	}
 	
 	size_t size = 0;
 	size_t offset = 0;
