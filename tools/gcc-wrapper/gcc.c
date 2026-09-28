@@ -2060,33 +2060,62 @@ static char** expand_response_files(int argc, char* argv[]) {
 
 			if (fstream_read(stream, buffer, size) == size) {
 				char* token = NULL;
-				char* next = NULL;
+				char* ptr = NULL;
 
 				buffer[size] = ZERO;
 
-				for (token = strtok_r(buffer, " \t\r\n", &next); token != NULL; token = strtok_r(NULL, " \t\r\n", &next)) {
-					if (nargc == capacity) {
-						char** resized = NULL;
+				token = buffer;
 
-						capacity += 16;
+				while (*token != ZERO) {
+					char quote = ZERO;
 
-						resized = realloc(nargs, ((size_t) capacity) * sizeof(*nargs));
+					while (*token == ' ' || *token == '\t' || *token == '\r' || *token == '\n') {
+						token++;
+					}
 
-						if (resized == NULL) {
-							free(buffer);
-							fstream_close(stream);
-							free(nargs);
-							return NULL;
+					if (*token == ZERO) {
+						break;
+					}
+
+					if (*token == '"' || *token == '\'') {
+						quote = *token;
+						token++;
+					}
+
+					ptr = token;
+
+					while (*ptr != ZERO && (quote != ZERO ? (*ptr != quote) : (*ptr != ' ' && *ptr != '\t' && *ptr != '\r' && *ptr != '\n'))) {
+						ptr++;
+					}
+
+					*ptr = ZERO;
+
+					if (ptr > token) {
+						if (nargc == capacity) {
+							char** resized = NULL;
+
+							capacity += 16;
+
+							resized = realloc(nargs, ((size_t) capacity) * sizeof(*nargs));
+
+							if (resized == NULL) {
+								free(buffer);
+								fstream_close(stream);
+								free(nargs);
+								return NULL;
+							}
+
+							nargs = resized;
 						}
 
-						nargs = resized;
+						nargs[nargc] = strdup(token);
+
+						if (nargs[nargc] != NULL) {
+							nargc++;
+						}
 					}
 
-					nargs[nargc] = strdup(token);
-
-					if (nargs[nargc] != NULL) {
-						nargc++;
-					}
+					token = (ptr + 1);
 				}
 			}
 
