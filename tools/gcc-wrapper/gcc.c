@@ -134,6 +134,7 @@ static const char GCC_OPT_F_GNU_TM[] = "-fgnu-tm";
 static const char GCC_OPT_F_OPENMP[] = "-fopenmp";
 static const char GCC_OPT_F_OPENACC[] = "-fopenacc";
 static const char GCC_OPT_F_PIC[] = "-fPIC";
+static const char GCC_OPT_F_PIC_LOWER[] = "-fpic";
 static const char GCC_OPT_NO_PIE[] = "-no-pie";
 static const char GCC_OPT_PIE[] = "-pie";
 static const char GCC_OPT_M_FPU[] = "-mfpu=";
@@ -1798,7 +1799,15 @@ static int clang_specific_replace(
 	
 	char* value = NULL;
 	
-	if (strncmp(current, GCC_OPT_F_LTO, strlen(GCC_OPT_F_LTO)) == 0) {
+	if (strcmp(current, GCC_OPT_F_PIC_LOWER) == 0) {
+		/* Replace -fpic with -fPIC: Clang does not distinguish the two
+		outside x86, while GCC compiles -fpic with a small GOT model that
+		overflows once the binary grows large enough. */
+		kargv_append(xargv, GCC_OPT_F_PIC);
+		
+		status = 1;
+		goto end;
+	} else if (strncmp(current, GCC_OPT_F_LTO, strlen(GCC_OPT_F_LTO)) == 0) {
 		current += strlen(GCC_OPT_F_LTO);
 		
 		if (*current != EQUAL) {
