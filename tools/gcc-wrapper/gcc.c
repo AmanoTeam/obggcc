@@ -535,6 +535,10 @@ static clang_option_t CLANG_SPECIFIC_REMOVE[] = {
 		.value = 0
 	},
 	{
+		.name = "-Wno-c++11-narrowing",
+		.value = 0
+	},
+	{
 		.name = "-Winconsistent-missing-override",
 		.value = 0
 	},
