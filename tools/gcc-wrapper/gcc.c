@@ -2085,6 +2085,7 @@ static char** expand_response_files(int argc, char* argv[]) {
 			if (fstream_read(stream, buffer, size) == size) {
 				char* token = NULL;
 				char* ptr = NULL;
+				char* dst = NULL;
 
 				buffer[size] = ZERO;
 
@@ -2107,14 +2108,29 @@ static char** expand_response_files(int argc, char* argv[]) {
 					}
 
 					ptr = token;
+					dst = token;
 
 					while (*ptr != ZERO && (quote != ZERO ? (*ptr != quote) : (*ptr != ' ' && *ptr != '\t' && *ptr != '\r' && *ptr != '\n'))) {
+						if (*ptr == '\\' && *(ptr + 1) != ZERO) {
+							ptr++;
+
+							*dst = *ptr;
+
+							dst++;
+							ptr++;
+
+							continue;
+						}
+
+						*dst = *ptr;
+
+						dst++;
 						ptr++;
 					}
 
-					*ptr = ZERO;
+					*dst = ZERO;
 
-					if (ptr > token) {
+					if (dst > token) {
 						if (nargc == capacity) {
 							char** resized = NULL;
 
