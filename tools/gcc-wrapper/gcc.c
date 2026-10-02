@@ -2358,11 +2358,14 @@ int main(int argc, char* argv[]) {
 			#endif
 			
 			/*
-			* Push custom "-L" flags to the beginning of the command line so they
-			* can override the sysroot library directories.
+			* Push custom "-L/-isystem" flags to the beginning of the command line so they
+			* can override the sysroot directories.
+			* 
+			* We need this because we use those flags ourselves to override the GCC sysroot,
+			* but it ends up overriding the user's paths too as a side effect.
 			*/
-			if (strcmp(pattern, GCC_OPT_LIBDIR) == 0 && strstr(cur, NZ_SYSROOT) == NULL) {
-				kargv_append(&kargv_libdir, GCC_OPT_LIBDIR);
+			if ((strcmp(pattern, GCC_OPT_LIBDIR) == 0 || strcmp(pattern, GCC_OPT_ISYSTEM) == 0) && strstr(cur, NZ_SYSROOT) == NULL) {
+				kargv_append(&kargv_libdir, pattern);
 				kargv_append(&kargv_libdir, cur);
 				
 				index += offset;
@@ -3507,6 +3510,8 @@ int main(int argc, char* argv[]) {
 		kargv_append(&yargv, GCC_OPT_NOSTDINC);
 	#endif
 	
+	kargv_merge(&yargv, &kargv_libdir);
+	
 	status = strcmp(cc, GPP) == 0 || strcmp(cc, CPP) == 0 || strcmp(cc, CLANGPP) == 0;
 	
 	if (stl_version != NULL) {
@@ -3593,8 +3598,6 @@ int main(int argc, char* argv[]) {
 	}
 	
 	if (linking) {
-		kargv_merge(&yargv, &kargv_libdir);
-		
 		kargv_append(&yargv, GCC_OPT_LIBDIR);
 		kargv_append(&yargv, sysroot_library_directory);
 		
