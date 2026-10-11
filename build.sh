@@ -587,20 +587,10 @@ if ! [ -f "${gcc_tarball}" ]; then
 		sed \
 			--in-place \
 			's/-Xlinker -rpath/-Xlinker -z -Xlinker origin -Xlinker -rpath/g' \
-			"${workdir}/patches/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
-		
-		sed \
-			--in-place \
-			's/-Xlinker -rpath/-Xlinker -z -Xlinker origin -Xlinker -rpath/g' \
 			"${workdir}/patches/gcc-"*"/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
 	fi
 	
 	if [[ "${host}" = *'-darwin'* ]]; then
-		sed \
-			--in-place \
-			's/$$ORIGIN/@loader_path/g' \
-			"${workdir}/patches/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
-		
 		sed \
 			--in-place \
 			's/$$ORIGIN/@loader_path/g' \
@@ -779,38 +769,38 @@ if ! [ -f "${gcc_tarball}" ]; then
 	fi
 	
 	if (( gcc_major >= 14 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Turn-Wimplicit-function-declaration-back-into-an-warning.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-16/0001-Turn-Wimplicit-function-declaration-back-into-an-warning.patch"
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-14/0001-Avoid-emitting-calls-to-__cxa_call_terminate-on-older-runtimes.patch"
 	fi
 	
 	if (( gcc_major >= 13 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0002-Fix-libsanitizer-build-on-older-platforms.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-16/0002-Fix-libsanitizer-build-on-older-platforms.patch"
 	fi
 	
 	if (( gcc_major >= 15 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0003-Change-the-default-language-version-for-C-compilation-from-std-gnu23-to-std-gnu17.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-16/0003-Change-the-default-language-version-for-C-compilation-from-std-gnu23-to-std-gnu17.patch"
 	fi
 	
 	if (( gcc_major >= 16 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0004-Turn-Wimplicit-int-back-into-an-warning.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-16/0004-Turn-Wimplicit-int-back-into-an-warning.patch"
 	elif (( gcc_major >= 14 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0004-Turn-Wimplicit-int-back-into-an-warning.patch"
 	fi
 	
 	if (( gcc_major >= 15 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0005-Turn-Wint-conversion-back-into-an-warning.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-16/0005-Turn-Wint-conversion-back-into-an-warning.patch"
 	elif (( gcc_major >= 14 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0005-Turn-Wint-conversion-back-into-an-warning.patch"
 	fi
 	
 	if (( gcc_major >= 16 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0006-Turn-Wincompatible-pointer-types-back-into-an-warning.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-16/0006-Turn-Wincompatible-pointer-types-back-into-an-warning.patch"
 	elif (( gcc_major >= 14 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0006-Turn-Wincompatible-pointer-types-back-into-an-warning.patch"
 	fi
 	
 	if (( gcc_major >= 15 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-16/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
 	elif (( gcc_major >= 6 && gcc_major <= 7 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-6/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
 	elif (( gcc_major >= 3.1 && gcc_major <= 3.3 )); then
@@ -821,8 +811,10 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
 	fi
 	
-	if (( gcc_major >= 4.8 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
+	if (( gcc_major >= 17 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-17/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
+	elif (( gcc_major >= 4.8 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-16/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
 	elif (( gcc_major >= 4.7 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.7/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
 	elif (( gcc_major >= 4.3 && gcc_major <= 4.6 )); then
@@ -842,7 +834,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 	fi
 	
 	if (( gcc_major >= 16 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0011-Revert-configure-Always-add-pre-installed-header-directories-to-search-path.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-16/0011-Revert-configure-Always-add-pre-installed-header-directories-to-search-path.patch"
 	fi
 	
 	if (( gcc_major >= 13 && gcc_major <= 15 )); then
@@ -852,11 +844,11 @@ if ! [ -f "${gcc_tarball}" ]; then
 	fi
 	
 	if (( gcc_major >= 4.6 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-AArch64-enable-libquadmath.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-16/0001-AArch64-enable-libquadmath.patch"
 	fi
 	
 	if (( gcc_major >= 14 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-16/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
 	elif (( gcc_major >= 5 && gcc_major <= 13 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-5/0001-Prevent-libstdc-from-trying-to-implement-math-stubs.patch"
 	elif (( gcc_major >= 4.4 && gcc_major <= 4.8 )); then
@@ -864,7 +856,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 	fi
 	
 	if (( gcc_major >= 15 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-16/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
 	elif (( gcc_major >= 12 )); then
 		true # patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-12/0001-Ignore-header-files-under-prefix-system-root-include-missing.patch"
 	elif (( gcc_major >= 10 )); then
@@ -876,9 +868,9 @@ if ! [ -f "${gcc_tarball}" ]; then
 	fi
 	
 	if (( gcc_major >= 16 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-c-Accept-__thread-before-static-extern-as-a-pedantic-extension.patch"
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-c-Accept-_Static_assert-as-a-compatibility-extension.patch"
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Ignore-pragma-weak-when-the-declaration-is-private-o.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-16/0001-c-Accept-__thread-before-static-extern-as-a-pedantic-extension.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-16/0001-c-Accept-_Static_assert-as-a-compatibility-extension.patch"
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-16/0001-Ignore-pragma-weak-when-the-declaration-is-private-o.patch"
 	fi
 	
 	ln \
@@ -1065,7 +1057,7 @@ cd "${yasm_directory}/build"
 	--prefix="${toolchain_directory}" \
 	--enable-shared \
 	--disable-static \
-	CFLAGS="${ccflags}" \
+	CFLAGS="-std=gnu17 ${ccflags}" \
 	CXXFLAGS="${ccflags}" \
 	LDFLAGS="${linkflags}"
 
