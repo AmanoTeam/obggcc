@@ -777,7 +777,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-16/0002-Fix-libsanitizer-build-on-older-platforms.patch"
 	fi
 	
-	if (( gcc_major >= 15 )); then
+	if (( gcc_major >= 15 && gcc_major <= 16 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-16/0003-Change-the-default-language-version-for-C-compilation-from-std-gnu23-to-std-gnu17.patch"
 	fi
 	
