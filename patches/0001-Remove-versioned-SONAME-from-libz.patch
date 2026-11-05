@@ -9,20 +9,20 @@ Subject: [PATCH] Remove versioned SONAME from libz
  2 files changed, 8 insertions(+), 13 deletions(-)
 
 diff --git a/Makefile.in b/Makefile.in
-index 7010b25..bf8efd2 100644
+index 55c8fb0..f67e415 100644
 --- a/Makefile.in
 +++ b/Makefile.in
-@@ -282,9 +282,6 @@ gzwrite.lo: $(SRCDIR)gzwrite.c
+@@ -289,9 +289,6 @@
  
- placebo $(SHAREDLIBV): $(PIC_OBJS) libz.a
- 	$(LDSHARED) $(SFLAGS) -o $@ $(PIC_OBJS) $(LDSHAREDLIBC) $(LDFLAGS)
+ placebo $(SHAREDLIBV): $(PIC_OBJS) libz.a $(SRCDIR)zlib.map $(SHAREDEXP)
+ 	$(LDSHARED) $(SFLAGS) $(SHAREDEXPFLAG) -o $@ $(PIC_OBJS) $(LDSHAREDLIBC) $(LDFLAGS)
 -	rm -f $(SHAREDLIB) $(SHAREDLIBM)
 -	ln -s $@ $(SHAREDLIB)
 -	ln -s $@ $(SHAREDLIBM)
  	-@rmdir objs
  
- example$(EXE): example.o $(STATICLIB)
-@@ -321,9 +318,6 @@ install-libs: $(LIBS)
+ libz.exp: $(PIC_OBJS)
+@@ -336,9 +333,6 @@
  	  echo "cp $(SHAREDLIBV) $(DESTDIR)$(sharedlibdir)"; \
  	  chmod 755 $(DESTDIR)$(sharedlibdir)/$(SHAREDLIBV); \
  	  echo "chmod 755 $(DESTDIR)$(sharedlibdir)/$(SHAREDLIBV)"; \
@@ -33,10 +33,10 @@ index 7010b25..bf8efd2 100644
  	fi
  	rm -f $(DESTDIR)$(man3dir)/zlib.3
 diff --git a/configure b/configure
-index 1834659..3c52977 100755
+index 7bc0f6d..eeea15b 100755
 --- a/configure
 +++ b/configure
-@@ -267,9 +267,9 @@ if test "$gcc" -eq 1 && ($cc -c $test.c) >> configure.log 2>&1; then
+@@ -294,9 +294,9 @@
          *sparc*)
              LDFLAGS="${LDFLAGS} -Wl,--no-warn-rwx-segments" ;;
          esac
@@ -48,7 +48,7 @@ index 1834659..3c52977 100755
          LDCONFIG="ldconfig -m" ;;
    CYGWIN* | Cygwin* | cygwin* | *-cygwin* | OS/2*)
          EXE='.exe' ;;
-@@ -298,9 +298,9 @@ if test "$gcc" -eq 1 && ($cc -c $test.c) >> configure.log 2>&1; then
+@@ -327,9 +327,9 @@
    Darwin* | darwin* | *-darwin*)
          shared_ext='.dylib'
          SHAREDLIB=libz$shared_ext
@@ -61,7 +61,7 @@ index 1834659..3c52977 100755
          if "${CROSS_PREFIX}libtool" -V 2>&1 | grep Apple > /dev/null; then
              AR="${CROSS_PREFIX}libtool"
          elif libtool -V 2>&1 | grep Apple > /dev/null; then
-@@ -409,8 +409,8 @@ fi
+@@ -444,8 +444,8 @@
  
  # destination names for shared library if not defined above
  SHAREDLIB=${SHAREDLIB-"libz$shared_ext"}
@@ -72,11 +72,6 @@ index 1834659..3c52977 100755
  
  echo >> configure.log
  
-@@ -964,3 +964,4 @@ s/\@VERSION\@/$VER/g;
- 
- # done
- leave 0
-+
 -- 
 2.25.1
 
