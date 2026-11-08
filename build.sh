@@ -1467,8 +1467,6 @@ for target in "${targets[@]}"; do
 		--enable-cet='auto' \
 		--enable-checking='release' \
 		--enable-clocale='gnu' \
-		--enable-default-pie \
-		--enable-default-ssp \
 		--enable-gnu-indirect-function \
 		--enable-gnu-unique-object \
 		--enable-libstdcxx-backtrace \
