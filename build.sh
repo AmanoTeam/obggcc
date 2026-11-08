@@ -90,7 +90,7 @@ declare -r zlib_tarball="${build_directory}/zlib.tar.gz"
 declare -r zlib_directory="${build_directory}/zlib-develop"
 
 declare -r yasm_tarball='/tmp/yasm.tar.gz'
-declare -r yasm_directory='/tmp/yasm-1.3.0'
+declare -r yasm_directory='/tmp/yasm-master'
 
 declare -r ninja_tarball='/tmp/ninja.tar.gz'
 declare -r ninja_directory='/tmp/ninja-master'
@@ -529,7 +529,7 @@ fi
 
 if ! [ -f "${yasm_tarball}" ]; then
 	curl \
-		--url 'https://deb.debian.org/debian/pool/main/y/yasm/yasm_1.3.0.orig.tar.gz' \
+		--url 'https://github.com/yasm/yasm/archive/master.tar.gz' \
 		--retry '30' \
 		--retry-delay '0' \
 		--retry-all-errors \
