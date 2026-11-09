@@ -1,0 +1,301 @@
+From 1a0d11de801cfc4cbcfbc0fd51d413c5fd88dc5d Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Thu, 5 Nov 2026 21:54:41 +0000
+Subject: [PATCH] GDB fixes
+
+---
+diff --git a/gdb/Makefile.in b/gdb/Makefile.in
+index 41dbb81..cd54337 100644
+--- a/gdb/Makefile.in
++++ b/gdb/Makefile.in
+@@ -1176,6 +1176,7 @@ COMMON_SFILES = \
+ 	progspace.c \
+ 	progspace-and-thread.c \
+ 	prologue-value.c \
++	pthread_once.c \
+ 	record.c \
+ 	record-btrace.c \
+ 	record-full.c \
+diff --git a/gdb/aarch64-linux-tdep.c b/gdb/aarch64-linux-tdep.c
+index 85e6175..24c9375 100644
+--- a/gdb/aarch64-linux-tdep.c
++++ b/gdb/aarch64-linux-tdep.c
+@@ -2728,7 +2728,7 @@ aarch64_linux_report_signal_info (struct gdbarch *gdbarch,
+     return;
+ 
+   CORE_ADDR fault_addr = 0;
+-  long si_code = 0, si_errno = 0, si_pkey = -1;
++  long saved_code = 0, saved_errno = 0, protection_key = -1;
+ 
+   try
+     {
+@@ -2736,10 +2736,10 @@ aarch64_linux_report_signal_info (struct gdbarch *gdbarch,
+       using si_key = gdb::siginfo_type::key;
+       /* Sigcode tells us if the segfault is actually a memory tag
+ 	 violation.  */
+-      si_code = parse_and_eval_long (gdb_si::get (si_key::siginfo_code));
+-      si_errno = parse_and_eval_long (gdb_si::get (si_key::siginfo_errno));
++      saved_code = parse_and_eval_long (gdb_si::get (si_key::siginfo_code));
++      saved_errno = parse_and_eval_long (gdb_si::get (si_key::siginfo_errno));
+       if (tdep->has_poe ())
+-	si_pkey = parse_and_eval_long (gdb_si::get (si_key::siginfo_pkey));
++	protection_key = parse_and_eval_long (gdb_si::get (si_key::siginfo_pkey));
+ 
+       fault_addr
+ 	= parse_and_eval_long (gdb_si::get (si_key::siginfo_addr));
+@@ -2752,11 +2752,11 @@ aarch64_linux_report_signal_info (struct gdbarch *gdbarch,
+ 
+   const char *meaning;
+ 
+-  if (si_code == AARCH64_SEGV_MTEAERR || si_code == AARCH64_SEGV_MTESERR)
++  if (saved_code == AARCH64_SEGV_MTEAERR || saved_code == AARCH64_SEGV_MTESERR)
+     meaning = _("Memory tag violation");
+-  else if (si_code == AARCH64_SEGV_CPERR && si_errno == 0)
++  else if (saved_code == AARCH64_SEGV_CPERR && saved_errno == 0)
+     meaning = _("Guarded Control Stack error");
+-  else if (si_code == AARCH64_SEGV_PKUERR)
++  else if (saved_code == AARCH64_SEGV_PKUERR)
+     meaning = _("Protection Key Violation");
+   else
+     return;
+@@ -2766,7 +2766,7 @@ aarch64_linux_report_signal_info (struct gdbarch *gdbarch,
+   uiout->field_string ("sigcode-meaning", meaning);
+ 
+   /* For synchronous faults, show additional information.  */
+-  if (si_code == AARCH64_SEGV_MTESERR)
++  if (saved_code == AARCH64_SEGV_MTESERR)
+     {
+       uiout->text (_(" while accessing address "));
+       uiout->field_core_addr ("fault-addr", gdbarch, fault_addr);
+@@ -2791,14 +2791,14 @@ aarch64_linux_report_signal_info (struct gdbarch *gdbarch,
+     }
+   /* Additional information for SIGSEGV caused by a permission overlay
+      violation.  */
+-  else if (si_code == AARCH64_SEGV_PKUERR)
++  else if (saved_code == AARCH64_SEGV_PKUERR)
+     {
+       uiout->text (_(" while accessing address "));
+       uiout->field_core_addr ("fault-addr", gdbarch, fault_addr);
+       uiout->text (_(" with Protection Key = "));
+-      uiout->field_signed ("protection-key", si_pkey);
++      uiout->field_signed ("protection-key", protection_key);
+     }
+-  else if (si_code != AARCH64_SEGV_CPERR)
++  else if (saved_code != AARCH64_SEGV_CPERR)
+     {
+       uiout->text ("\n");
+       uiout->text (_("Fault address unavailable"));
+diff --git a/gdb/maint.c b/gdb/maint.c
+index f5711d9..e3547cd 100644
+--- a/gdb/maint.c
++++ b/gdb/maint.c
+@@ -51,6 +51,22 @@
+ #include <sched.h>
+ #endif
+ 
++/* glibc versions before 2.6 do not provide the CPU_COUNT macro.  */
++#if defined (HAVE_SCHED_GETAFFINITY) && !defined (CPU_COUNT)
++static int
++gdb_cpu_count (const cpu_set_t *set)
++{
++  int count = 0;
++
++  for (int i = 0; i < CPU_SETSIZE; ++i)
++    if (CPU_ISSET (i, set))
++      ++count;
++
++  return count;
++}
++#define CPU_COUNT(set) gdb_cpu_count (set)
++#endif
++
+ static void maintenance_do_deprecate (const char *, int);
+ 
+ #ifndef _WIN32
+diff --git a/gdb/nat/gdb_ptrace.h b/gdb/nat/gdb_ptrace.h
+index e060716..fb780e1 100644
+--- a/gdb/nat/gdb_ptrace.h
++++ b/gdb/nat/gdb_ptrace.h
+@@ -121,6 +121,24 @@
+ # endif
+ #endif
+ 
++/* Older glibc versions (before 2.4) do not define NT_X86_XSTATE in
++   <elf.h>, nor the PTRACE_GETREGSET/PTRACE_SETREGSET request numbers
++   in <sys/ptrace.h>.  The values below are the x86 ones; note that
++   ptrace request numbers differ between architectures (e.g. sparc,
++   mips and powerpc use their own numbering), so only provide the
++   fallbacks on targets where they are known to be correct.  */
++#if defined (__i386__) || defined (__x86_64__)
++# ifndef NT_X86_XSTATE
++#  define NT_X86_XSTATE 0x202
++# endif
++# ifndef PTRACE_GETREGSET
++#  define PTRACE_GETREGSET 0x4204
++# endif
++# ifndef PTRACE_SETREGSET
++#  define PTRACE_SETREGSET 0x4205
++# endif
++#endif
++
+ /* Some systems, at least AIX and HP-UX have a ptrace with five
+    arguments.  Since we never use the fifth argument, define a ptrace
+    macro that calls the real ptrace with the last argument set to
+diff --git a/gdb/pthread_once.c b/gdb/pthread_once.c
+new file mode 100644
+index 0000000..53ef7a3
+--- /dev/null
++++ b/gdb/pthread_once.c
+@@ -0,0 +1,105 @@
++/* Conforming pthread_once replacement for old glibc on x86-64.
++
++   Copyright (C) 2026 Free Software Foundation, Inc.
++
++   This file is part of GDB.
++
++   This program is free software; you can redistribute it and/or modify
++   it under the terms of the GNU General Public License as published by
++   the Free Software Foundation; either version 3 of the License, or
++   (at your option) any later version.
++
++   This program is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++   GNU General Public License for more details.
++
++   You should have received a copy of the GNU General Public License
++   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
++
++/* The hand-written x86-64 assembly of pthread_once in glibc 2.3.x
++   invokes the init routine with a stack that is only 8-byte aligned,
++   violating the x86-64 psABI (which requires 16-byte alignment at the
++   call site).  Code built with modern compilers (e.g. libstdc++'s
++   std::call_once and std::packaged_task machinery) emits aligned SSE
++   stores such as "movdqa" on the stack in the init routine and crashes
++   with SIGSEGV.
++
++   This file provides a conforming futex-based pthread_once.  Because
++   it is linked directly into the executable (rather than through a
++   static library), its strong definition interposes the libpthread
++   implementation for all statically linked callers, including static
++   libstdc++.  The state encoding matches glibc's: 0 = not run,
++   1 = running, 2 = done.
++
++   The workaround is only enabled on Linux, where the futex interface
++   is available; other platforms keep using the system pthread_once.  */
++
++#ifdef __linux__
++
++#include <pthread.h>
++#include <unistd.h>
++#include <sys/syscall.h>
++#include <linux/futex.h>
++#include <limits.h>
++
++#ifndef SYS_futex
++# include <asm/unistd.h>
++# define SYS_futex __NR_futex
++#endif
++
++/* Reset the once flag if the init routine threw a C++ exception, so
++   that other threads may retry it (matching glibc's behavior).  */
++
++static void
++pthread_once_reset (pthread_once_t **oncep)
++{
++  pthread_once_t *once = *oncep;
++
++  if (__atomic_load_n (once, __ATOMIC_ACQUIRE) != 2)
++    {
++      __atomic_store_n (once, 0, __ATOMIC_RELEASE);
++      syscall (SYS_futex, once, FUTEX_WAKE, INT_MAX, 0, 0, 0);
++    }
++}
++
++extern "C" int
++pthread_once (pthread_once_t *once, void (*init_routine) (void))
++{
++  for (;;)
++    {
++      int state = __atomic_load_n (once, __ATOMIC_ACQUIRE);
++
++      if (state == 2)
++	return 0;
++
++      if (state == 0)
++	{
++	  int expected = 0;
++
++	  if (__atomic_compare_exchange_n (once, &expected, 1, 0,
++					   __ATOMIC_ACQ_REL,
++					   __ATOMIC_ACQUIRE))
++	    {
++	      /* The cleanup attribute makes this run both on normal
++		 scope exit and while unwinding a C++ exception thrown
++		 by init_routine.  */
++	      pthread_once_t *guard
++		__attribute__ ((cleanup (pthread_once_reset))) = once;
++
++	      init_routine ();
++
++	      __atomic_store_n (once, 2, __ATOMIC_RELEASE);
++	      syscall (SYS_futex, once, FUTEX_WAKE, INT_MAX, 0, 0, 0);
++	      return 0;
++	    }
++
++	  continue;
++	}
++
++      /* Another thread is running the init routine; wait for it.  */
++      syscall (SYS_futex, once, FUTEX_WAIT, 1, 0, 0, 0);
++    }
++}
++
++#endif /* __linux__ */
+diff --git a/gdbserver/Makefile.in b/gdbserver/Makefile.in
+index aac8742..b0a214c 100644
+--- a/gdbserver/Makefile.in
++++ b/gdbserver/Makefile.in
+@@ -187,6 +187,7 @@ SFILES = \
+ 	$(srcdir)/hostio.cc \
+ 	$(srcdir)/i387-fp.cc \
+ 	$(srcdir)/inferiors.cc \
++	$(srcdir)/../gdb/pthread_once.c \
+ 	$(srcdir)/linux-aarch64-low.cc \
+ 	$(srcdir)/linux-arc-low.cc \
+ 	$(srcdir)/linux-arm-low.cc \
+@@ -261,6 +262,7 @@ OBS = \
+ 	inferiors.o \
+ 	mem-break.o \
+ 	notif.o \
++	pthread_once.o \
+ 	regcache.o \
+ 	remote-utils.o \
+ 	server.o \
+diff --git a/gnulib/configure b/gnulib/configure
+index de2f5c4..56091b5 100755
+--- a/gnulib/configure
++++ b/gnulib/configure
+@@ -26969,6 +26969,7 @@ $as_echo "#define GNULIB_TEST_GETTIMEOFDAY 1" >>confdefs.h
+ 
+   if test $ac_cv_func_glob = no; then
+     HAVE_GLOB=0
++    REPLACE_GLOB=1
+   else
+ 
+     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for GNU glob interface version 1 or 2" >&5
+diff --git a/gnulib/import/m4/glob.m4 b/gnulib/import/m4/glob.m4
+index f59b84f..d6404ad 100644
+--- a/gnulib/import/m4/glob.m4
++++ b/gnulib/import/m4/glob.m4
+@@ -15,6 +15,7 @@ AC_DEFUN([gl_GLOB],
+   AC_CHECK_FUNCS_ONCE([glob glob_pattern_p])
+   if test $ac_cv_func_glob = no; then
+     HAVE_GLOB=0
++    REPLACE_GLOB=1
+   else
+ 
+     AC_CACHE_CHECK([for GNU glob interface version 1 or 2],
+-- 
+2.56.0
+

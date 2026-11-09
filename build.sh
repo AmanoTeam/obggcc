@@ -110,8 +110,6 @@ declare -r linkflags=''
 
 declare -r sysroot_tarball="${build_directory}/sysroot.tar.xz"
 
-declare gdb='1'
-
 declare build_cmake='0'
 declare build_curl='0'
 declare build_nz='1'
@@ -443,6 +441,41 @@ if ! [ -f "${binutils_tarball}" ]; then
 	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-Don-t-warn-about-errors-while-trying-to-create-the-.eh_frame_hdr-section.patch"
 	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-ELF-Accept-.rodata-.tdata-and-.tbss-section-directives-like-LLVM.patch"
 	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/patches/0001-ARM-Accept-unified-syntax-conditional-suffix-form-in-divided-syntax.patch"
+fi
+
+if ! [ -f "${gdb_tarball}" ]; then
+	curl \
+		--url 'https://github.com/AmanoTeam/binutils-snapshots/releases/latest/download/gdb.tar.xz' \
+		--retry '30' \
+		--retry-all-errors \
+		--retry-delay '0' \
+		--retry-max-time '0' \
+		--show-error \
+		--location \
+		--silent \
+		--output "${gdb_tarball}"
+	
+	tar \
+		--directory="$(dirname "${gdb_directory}")" \
+		--extract \
+		--file="${gdb_tarball}"
+	
+	if [[ "${host}" = *'-darwin'* ]]; then
+		sed \
+			--in-place \
+			's/$$ORIGIN/@loader_path/g' \
+			"${workdir}/patches/0001-Add-relative-RPATHs-to-GDB-host-tools.patch"
+	fi
+	
+	if [[ "${host}" = *'bsd'* ]] || [[ "${host}" = *'dragonfly' ]] then
+		sed \
+			--in-place \
+			's/-Xlinker -rpath/-Xlinker -z -Xlinker origin -Xlinker -rpath/g' \
+			"${workdir}/patches/0001-Add-relative-RPATHs-to-GDB-host-tools.patch"
+	fi
+	
+	patch --directory="${gdb_directory}" --strip='1' --input="${workdir}/patches/0001-Add-relative-RPATHs-to-GDB-host-tools.patch"
+	patch --directory="${gdb_directory}" --strip='1' --input="${workdir}/patches/0001-GDB-fixes.patch"
 fi
 
 if ! [ -f "${gold_tarball}" ]; then
@@ -1069,7 +1102,7 @@ cd "${yasm_directory}/build"
 	CXXFLAGS="${ccflags}" \
 	LDFLAGS="${linkflags}"
 
-make all --jobs
+make all --jobs='1'
 make install
 
 [ -d "${zstd_directory}/.build" ] || mkdir "${zstd_directory}/.build"
@@ -1297,6 +1330,7 @@ for target in "${targets[@]}"; do
 	[ -d "${binutils_directory}/build" ] || mkdir "${binutils_directory}/build"
 	
 	cd "${binutils_directory}/build"
+	rm --force --recursive ./*
 	
 	../configure \
 		--build="${build}" \
@@ -1325,6 +1359,41 @@ for target in "${targets[@]}"; do
 		LDFLAGS="-L${toolchain_directory}/lib ${linkflags}"
 	
 	make all --jobs
+	make install
+	
+	[ -d "${gdb_directory}/build" ] || mkdir "${gdb_directory}/build"
+	
+	cd "${gdb_directory}/build"
+	rm --force --recursive ./*
+	
+	declare gdb_ldflags=''
+	
+	if [[ "${host}" = *'-linux-gnu'* ]]; then
+		gdb_ldflags+=' -lrt'
+	fi
+	
+	../configure \
+		--build="${build}" \
+		--host="${host}" \
+		--target="${triplet}" \
+		--prefix="${toolchain_directory}" \
+		--enable-gdb \
+		--program-prefix="${triplet}-" \
+		--disable-gdbserver \
+		--disable-gprofng \
+		--disable-binutils \
+		--disable-sim \
+		--disable-install-libiberty \
+		--disable-werror \
+		--without-static-standard-libraries \
+		--with-sysroot="${toolchain_directory}/${triplet}" \
+		--with-zstd="${toolchain_directory}" \
+		--with-system-zlib \
+		CFLAGS="-I${toolchain_directory}/include ${ccflags}" \
+		CXXFLAGS="-I${toolchain_directory}/include ${ccflags}" \
+		LDFLAGS="-L${toolchain_directory}/lib ${linkflags}${gdb_ldflags}"
+	
+	make all --jobs="${max_jobs}"
 	make install
 	
 	ln \
@@ -1526,7 +1595,7 @@ for target in "${targets[@]}"; do
 		cp "${workdir}/tools/ln.sh" "${build_directory}/ln"
 	fi
 	
-	make install
+	env "${env[@]}" make install
 	
 	if (( gcc_major <= 4.6 )); then
 		unlink "${toolchain_directory}/${triplet}/usr"
@@ -1717,6 +1786,35 @@ for target in "${targets[@]}"; do
 	
 	rename_soname_libraries "${toolchain_directory}/${triplet}"
 	
+	[ -d "${gdb_directory}/build" ] || mkdir "${gdb_directory}/build"
+	
+	cd "${gdb_directory}/build"
+	rm --force --recursive ./*
+	
+	env "${env[@]}" ../configure \
+		--build="${build}" \
+		--host="${triplet}" \
+		--target="${triplet}" \
+		--prefix="${toolchain_directory}" \
+		--bindir="${toolchain_directory}/${triplet}/bin" \
+		--enable-gdbserver \
+		--disable-gdb \
+		--disable-binutils \
+		--disable-sim \
+		--disable-gprofng \
+		--disable-inprocess-agent \
+		--disable-werror \
+		CC="${triplet}-gcc" \
+		CXX="${triplet}-g++" \
+		AR="${triplet}-ar" \
+		RANLIB="${triplet}-ranlib" \
+		CFLAGS="${ccflags}" \
+		CXXFLAGS="${ccflags}" \
+		LDFLAGS="-static-libstdc++ ${linkflags}"
+	
+	env "${env[@]}" make all-gdbserver --jobs="${max_jobs}"
+	env "${env[@]}" make install-gdbserver
+	
 	if [[ "${host}" = *'-mingw32' ]]; then
 		replace_symlinks "${toolchain_directory}/${triplet}" || true
 	fi
@@ -1751,50 +1849,6 @@ while read triplet; do
 	
 	rm --recursive "${libsanitizer_directory}"
 done <<< "$(jq --raw-output --compact-output '.[]' "${workdir}/submodules/libsanitizer/triplets.json")"
-
-declare url="https://github.com/AmanoTeam/GDB-Builds/releases/latest/download/${host/-pc-/-unknown-}.tar.xz"
-
-echo "- Fetching data from '${url}'"
-
-curl \
-	--url "${url}" \
-	--retry '30' \
-	--retry-all-errors \
-	--retry-delay '0' \
-	--retry-max-time '0' \
-	--location \
-	--silent \
-	--output "${gdb_tarball}"
-
-tar \
-	--directory="$(dirname "${gdb_directory}")" \
-	--extract \
-	--file="${gdb_tarball}" 2>/dev/null || gdb='0'
-
-if (( gdb )); then
-	cd "${gdb_directory}/bin"
-	
-	for name in *-{gdb,gdb-add-index,gstack,run,gcore}; do
-		value="${name/-gdb-add-index/}"
-		value="${value/-gstack/}"
-		value="${value/-run/}"
-		value="${value/-gdb/}"
-		value="${value/-gcore/}"
-		
-		if check_target_exists "${gcc_targets}" "${value}"; then
-			continue
-		fi
-		
-		echo "- Removing ${name}"
-		unlink "${name}"
-	done
-	
-	rm --force "${gdb_directory}/bin/"*'android'*
-	rm --force "${gdb_directory}/bin/armv"*
-	
-	cp --recursive "${gdb_directory}/bin" "${toolchain_directory}"
-	rm --recursive "${gdb_directory}"
-fi
 
 # Delete libtool files and other unnecessary files GCC installs
 rm \
@@ -2223,6 +2277,16 @@ while read item; do
 			"${source}" \
 			"${destination}"
 	done
+	
+	if [ -f "${toolchain_directory}/${triplet}/bin/gdbserver" ]; then
+		mkdir --parent "${toolchain_directory}/${triplet}${glibc_version}/bin"
+		
+		ln \
+			--symbolic \
+			--relative \
+			"${toolchain_directory}/${triplet}/bin/gdbserver" \
+			"${toolchain_directory}/${triplet}${glibc_version}/bin/gdbserver"
+	fi
 	
 	if [[ "${host}" = *'-mingw32' ]]; then
 		replace_symlinks "${toolchain_directory}/${triplet}${glibc_version}"

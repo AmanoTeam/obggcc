@@ -1,0 +1,24 @@
+From 23db2eacb8859cafe7936607f2ca0825983b4101 Mon Sep 17 00:00:00 2001
+From: Kartatz <105828205+Kartatz@users.noreply.github.com>
+Date: Wed, 17 Dec 2025 16:17:56 -0300
+Subject: [PATCH] Add relative RPATHs to GDB tools
+
+---
+ gdb/Makefile.in | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/gdb/Makefile.in b/gdb/Makefile.in
+index 8cd12460000..beef893e0b5 100644
+--- a/gdb/Makefile.in
++++ b/gdb/Makefile.in
+@@ -2418,7 +2418,7 @@ libgdb.a: $(LIBGDB_OBS)
+ # Removing the old gdb first works better if it is running, at least on SunOS.
+ gdb$(EXEEXT): gdb.o $(LIBGDB_OBS) $(CDEPS) $(TDEPLIBS)
+ 	$(SILENCE) rm -f gdb$(EXEEXT)
+-	$(ECHO_CXXLD) $(CC_LD) $(INTERNAL_LDFLAGS) $(WIN32LDAPP) \
++	$(ECHO_CXXLD) $(CC_LD) -Xlinker -rpath -Xlinker \$$ORIGIN/../lib $(INTERNAL_LDFLAGS) $(WIN32LDAPP) \
+ 		-o gdb$(EXEEXT) gdb.o $(LIBGDB_OBS) \
+ 		$(TDEPLIBS) $(TUI_LIBRARY) $(CLIBS) $(LOADLIBES)
+ ifneq ($(CODESIGN_CERT),)
+-- 
+2.51.2
