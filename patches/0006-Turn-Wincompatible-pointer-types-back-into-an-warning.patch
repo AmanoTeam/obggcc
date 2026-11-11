@@ -1,20 +1,20 @@
-From c4217f6c0f265f0db345877563f0a6fe522f8f43 Mon Sep 17 00:00:00 2001
+From 5fd50f7646f9a38cabb9806aa3e5ee9bff59704c Mon Sep 17 00:00:00 2001
 From: Kartatz <105828205+Kartatz@users.noreply.github.com>
 Date: Thu, 2 Oct 2025 04:21:09 -0300
-Subject: [PATCH 06/11] Turn -Wincompatible-pointer-types back into an warning
+Subject: [PATCH] Turn -Wincompatible-pointer-types back into an warning
 
 ---
  gcc/c/c-typeck.cc | 26 ++++++++------------------
  1 file changed, 8 insertions(+), 18 deletions(-)
 
 diff --git a/gcc/c/c-typeck.cc b/gcc/c/c-typeck.cc
-index f2a0e3fd5..d1d7cf712 100644
+index 8de8bc9a2..ad45e5591 100644
 --- a/gcc/c/c-typeck.cc
 +++ b/gcc/c/c-typeck.cc
-@@ -6736,17 +6736,7 @@ build_conditional_expr (location_t colon_loc, tree ifexp, bool ifexp_bcp,
+@@ -6974,17 +6974,7 @@ build_conditional_expr (location_t colon_loc, tree ifexp, bool ifexp_bcp,
        else
  	{
- 	  int qual = ENCODE_QUAL_ADDR_SPACE (as_common);
+ 	  qualifier_set qual {TYPE_UNQUALIFIED, as_common};
 -	  enum diagnostics::kind kind = diagnostics::kind::permerror;
 -	  if (!flag_isoc99)
 -	    /* This downgrade to a warning ensures that -std=gnu89
@@ -30,7 +30,7 @@ index f2a0e3fd5..d1d7cf712 100644
  			       "pointer type mismatch "
  			       "in conditional expression"))
  	    {
-@@ -8983,7 +8973,7 @@ convert_for_assignment (location_t location, location_t expr_loc, tree type,
+@@ -9232,7 +9222,7 @@ convert_for_assignment (location_t location, location_t expr_loc, tree type,
  		gcc_rich_location richloc (expr_loc, &rhs_label,
  					   highlight_colors::actual);
  		warned
@@ -39,7 +39,7 @@ index f2a0e3fd5..d1d7cf712 100644
  				   "passing argument %d of %qE from "
  				   "incompatible pointer type",
  				   parmnum, rname);
-@@ -8994,13 +8984,13 @@ convert_for_assignment (location_t location, location_t expr_loc, tree type,
+@@ -9243,13 +9233,13 @@ convert_for_assignment (location_t location, location_t expr_loc, tree type,
  	    case ic_assign:
  	      if (bltin)
  		warned
@@ -55,7 +55,7 @@ index f2a0e3fd5..d1d7cf712 100644
  				   "assignment to %e from incompatible "
  				   "pointer type %e",
  				   &e_type, &e_rhstype);
-@@ -9009,13 +8999,13 @@ convert_for_assignment (location_t location, location_t expr_loc, tree type,
+@@ -9258,13 +9248,13 @@ convert_for_assignment (location_t location, location_t expr_loc, tree type,
  	    case ic_init_const:
  	      if (bltin)
  		warned
@@ -71,7 +71,7 @@ index f2a0e3fd5..d1d7cf712 100644
  				    "initialization of %e from incompatible "
  				    "pointer type %e",
  				    &e_type, &e_rhstype);
-@@ -9023,13 +9013,13 @@ convert_for_assignment (location_t location, location_t expr_loc, tree type,
+@@ -9272,13 +9262,13 @@ convert_for_assignment (location_t location, location_t expr_loc, tree type,
  	    case ic_return:
  	      if (bltin)
  		warned
@@ -88,5 +88,5 @@ index f2a0e3fd5..d1d7cf712 100644
  				   "incompatible return type %e",
  				   &e_rhstype, &e_type);
 -- 
-2.50.1
+2.56.0
 

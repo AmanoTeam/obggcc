@@ -816,12 +816,14 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-14/0001-Avoid-emitting-calls-to-__cxa_call_terminate-on-older-runtimes.patch"
 	fi
 	
-	if (( gcc_major >= 13 )); then
+	if (( gcc_major >= 17 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0002-Fix-libsanitizer-build-on-older-platforms.patch"
+	elif (( gcc_major >= 13 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-16/0002-Fix-libsanitizer-build-on-older-platforms.patch"
 	fi
 	
-	if (( gcc_major >= 15 )); then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0003-Change-the-default-language-version-for-C-compilation-from-std-gnu23-to-std-gnu17.patch"
+	if (( gcc_major >= 15 && gcc_major <= 16 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-16/0003-Change-the-default-language-version-for-C-compilation-from-std-gnu23-to-std-gnu17.patch"
 	fi
 	
 	if (( gcc_major >= 16 )); then
@@ -836,14 +838,18 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0005-Turn-Wint-conversion-back-into-an-warning.patch"
 	fi
 	
-	if (( gcc_major >= 16 )); then
+	if (( gcc_major >= 17 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0006-Turn-Wincompatible-pointer-types-back-into-an-warning.patch"
+	elif (( gcc_major >= 16 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-16/0006-Turn-Wincompatible-pointer-types-back-into-an-warning.patch"
 	elif (( gcc_major >= 14 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0006-Turn-Wincompatible-pointer-types-back-into-an-warning.patch"
 	fi
 	
-	if (( gcc_major >= 15 )); then
+	if (( gcc_major >= 17 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
+	elif (( gcc_major >= 15 && gcc_major <= 16 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-16/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
 	elif (( gcc_major >= 6 && gcc_major <= 7 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-6/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
 	elif (( gcc_major >= 3.1 && gcc_major <= 3.3 )); then
@@ -854,8 +860,10 @@ if ! [ -f "${gcc_tarball}" ]; then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-${gcc_major}/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
 	fi
 	
-	if (( gcc_major >= 4.8 )); then
+	if (( gcc_major >= 17 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
+	elif (( gcc_major >= 4.8 )); then
+		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-16/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
 	elif (( gcc_major >= 4.7 )); then
 		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/gcc-4.7/0010-Prefer-DT_RPATH-over-DT_RUNPATH.patch"
 	elif (( gcc_major >= 4.3 && gcc_major <= 4.6 )); then
