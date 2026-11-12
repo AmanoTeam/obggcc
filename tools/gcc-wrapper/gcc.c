@@ -297,6 +297,29 @@ static const char GFORTRAN[] = "gfortran";
 static const char GCOBC[] = "gcobc";
 static const char GCOBOL[] = "gcobol";
 
+static const char RUSTC[] = "rustc";
+
+static const char RUSTC_NAME_SUFFIX[] = "-rustc";
+static const char GCC_NAME_SUFFIX[] = "-gcc";
+
+static const char RUSTC_BACKEND_FILE[] = "rustc_codegen_gcc.so";
+
+static const char RUST_DIRECTORY[] = PATHSEP_M "rust";
+static const char RUST_BIN_DIRECTORY[] = PATHSEP_M "bin";
+static const char RUST_LIBRARY_DIRECTORY[] = PATHSEP_M "rust" PATHSEP_M "lib";
+
+static const char RUST_ANDROID_ARMV7[] = "armv7-linux-androideabi";
+static const char RUST_ANDROID_AARCH64[] = "aarch64-linux-android";
+static const char RUST_ANDROID_AMD64[] = "x86_64-linux-android";
+static const char RUST_ANDROID_I686[] = "i686-linux-android";
+static const char RUST_ANDROID_RISCV64[] = "riscv64-linux-android";
+
+static const char RUST_OPT_TARGET[] = "--target=";
+static const char RUST_OPT_SYSROOT[] = "--sysroot=";
+static const char RUST_Z_CODEGEN_BACKEND[] = "-Zcodegen-backend=";
+static const char RUST_C_LINKER[] = "-Clinker=";
+static const char RUST_C_NO_DEBUG_INFO[] = "-Cdebuginfo=0";
+
 static const char VENDOR_NONE[] = "-none-";
 static const char VENDOR_UNKNOWN[] = "-unknown-";
 
@@ -2009,6 +2032,302 @@ static const char* get_linker(const char* const value) {
 	
 }
 
+static const char* rust_target_triplet(const char* const triplet) {
+	
+	if (strcmp(triplet, ANDROID_ARMV7) == 0) {
+		return RUST_ANDROID_ARMV7;
+	}
+	
+	if (strcmp(triplet, ANDROID_AARCH64) == 0) {
+		return RUST_ANDROID_AARCH64;
+	}
+	
+	if (strcmp(triplet, ANDROID_AMD64) == 0) {
+		return RUST_ANDROID_AMD64;
+	}
+	
+	if (strcmp(triplet, ANDROID_I686) == 0) {
+		return RUST_ANDROID_I686;
+	}
+	
+	if (strcmp(triplet, ANDROID_RISCV64) == 0) {
+		return RUST_ANDROID_RISCV64;
+	}
+	
+	return NULL;
+	
+}
+
+static int rust_wrapper(char* const file_name) {
+	
+	const size_t length = strlen(file_name);
+	const size_t suffix_length = strlen(RUSTC_NAME_SUFFIX);
+	
+	if (length <= suffix_length) {
+		return 0;
+	}
+	
+	if (strcmp(file_name + length - suffix_length, RUSTC_NAME_SUFFIX) != 0) {
+		return 0;
+	}
+	
+	file_name[length - suffix_length] = '\0';
+	
+	return 1;
+	
+}
+
+static int run_rustc(
+	hquery_t* const query,
+	const char* const app_filename,
+	char* const base,
+	const int argc,
+	char* argv[]
+) {
+	
+	int err = ERR_SUCCESS;
+	int verbose = 0;
+	
+	const char* rust_triplet = NULL;
+	
+	char* toolchain_directory = NULL;
+	char* triplet = NULL;
+	char* rustc = NULL;
+	char* sysroot = NULL;
+	char* backend = NULL;
+	char* linker = NULL;
+	
+	char* target_arg = NULL;
+	char* sysroot_arg = NULL;
+	char* backend_arg = NULL;
+	char* linker_arg = NULL;
+	
+	kargv_t yargv = {0};
+	
+	char** args = NULL;
+	
+	size_t size = 0;
+	size_t length = 0;
+	size_t index = 0;
+	
+	toolchain_directory = malloc(strlen(app_filename) + 1);
+	
+	if (toolchain_directory == NULL) {
+		err = ERR_MEM_ALLOC_FAILURE;
+		goto end;
+	}
+	
+	get_parent_path(app_filename, toolchain_directory, 2);
+	
+	/* The base consists of the triplet plus, optionally, a bionic version suffix. */
+	length = strlen(base);
+	
+	while (length > 0 && isdigit((unsigned char) base[length - 1])) {
+		length--;
+	}
+	
+	triplet = malloc(length + 1);
+	
+	if (triplet == NULL) {
+		err = ERR_MEM_ALLOC_FAILURE;
+		goto end;
+	}
+	
+	memcpy(triplet, base, length);
+	triplet[length] = '\0';
+	
+	rust_triplet = rust_target_triplet(triplet);
+	
+	if (rust_triplet == NULL) {
+		err = ERR_RUSTC_UNSUPPORTED_TARGET;
+		goto end;
+	}
+	
+	size = strlen(toolchain_directory) + strlen(RUST_BIN_DIRECTORY) + strlen(PATHSEP_S) + strlen(RUSTC) + 1;
+	
+	rustc = malloc(size);
+	
+	if (rustc == NULL) {
+		err = ERR_MEM_ALLOC_FAILURE;
+		goto end;
+	}
+	
+	strcpy(rustc, toolchain_directory);
+	strcat(rustc, RUST_BIN_DIRECTORY);
+	strcat(rustc, PATHSEP_S);
+	strcat(rustc, RUSTC);
+	
+	if (file_exists(rustc) != 1) {
+		free(rustc);
+		
+		rustc = find_exe(RUSTC);
+		
+		if (rustc == NULL) {
+			err = ERR_RUSTC_NOT_FOUND;
+			goto end;
+		}
+	}
+	
+	size = strlen(toolchain_directory) + strlen(RUST_DIRECTORY) + strlen(PATHSEP_S) + strlen(rust_triplet) + 1;
+	
+	sysroot = malloc(size);
+	
+	if (sysroot == NULL) {
+		err = ERR_MEM_ALLOC_FAILURE;
+		goto end;
+	}
+	
+	strcpy(sysroot, toolchain_directory);
+	strcat(sysroot, RUST_DIRECTORY);
+	strcat(sysroot, PATHSEP_S);
+	strcat(sysroot, rust_triplet);
+	
+	if (directory_exists(sysroot) != 1) {
+		err = ERR_RUSTC_SYSROOT_NOT_FOUND;
+		goto end;
+	}
+	
+	size = strlen(toolchain_directory) + strlen(RUST_LIBRARY_DIRECTORY) + strlen(PATHSEP_S) + strlen(RUSTC_BACKEND_FILE) + 1;
+	
+	backend = malloc(size);
+	
+	if (backend == NULL) {
+		err = ERR_MEM_ALLOC_FAILURE;
+		goto end;
+	}
+	
+	strcpy(backend, toolchain_directory);
+	strcat(backend, RUST_LIBRARY_DIRECTORY);
+	strcat(backend, PATHSEP_S);
+	strcat(backend, RUSTC_BACKEND_FILE);
+	
+	if (file_exists(backend) != 1) {
+		err = ERR_RUSTC_BACKEND_NOT_FOUND;
+		goto end;
+	}
+	
+	/*
+	The Android API level is honored by delegating the linking step to the GCC wrapper
+	carrying the same triplet and bionic version as our own name.
+	*/
+	size = strlen(toolchain_directory) + strlen(RUST_BIN_DIRECTORY) + strlen(PATHSEP_S) + strlen(base) + strlen(GCC_NAME_SUFFIX) + 1;
+	
+	linker = malloc(size);
+	
+	if (linker == NULL) {
+		err = ERR_MEM_ALLOC_FAILURE;
+		goto end;
+	}
+	
+	strcpy(linker, toolchain_directory);
+	strcat(linker, RUST_BIN_DIRECTORY);
+	strcat(linker, PATHSEP_S);
+	strcat(linker, base);
+	strcat(linker, GCC_NAME_SUFFIX);
+	
+	kargv_append(&yargv, rustc);
+	
+	size = strlen(RUST_OPT_TARGET) + strlen(rust_triplet) + 1;
+	
+	target_arg = malloc(size);
+	
+	if (target_arg == NULL) {
+		err = ERR_MEM_ALLOC_FAILURE;
+		goto end;
+	}
+	
+	strcpy(target_arg, RUST_OPT_TARGET);
+	strcat(target_arg, rust_triplet);
+	
+	kargv_append(&yargv, target_arg);
+	
+	size = strlen(RUST_OPT_SYSROOT) + strlen(sysroot) + 1;
+	
+	sysroot_arg = malloc(size);
+	
+	if (sysroot_arg == NULL) {
+		err = ERR_MEM_ALLOC_FAILURE;
+		goto end;
+	}
+	
+	strcpy(sysroot_arg, RUST_OPT_SYSROOT);
+	strcat(sysroot_arg, sysroot);
+	
+	kargv_append(&yargv, sysroot_arg);
+	
+	size = strlen(RUST_Z_CODEGEN_BACKEND) + strlen(backend) + 1;
+	
+	backend_arg = malloc(size);
+	
+	if (backend_arg == NULL) {
+		err = ERR_MEM_ALLOC_FAILURE;
+		goto end;
+	}
+	
+	strcpy(backend_arg, RUST_Z_CODEGEN_BACKEND);
+	strcat(backend_arg, backend);
+	
+	kargv_append(&yargv, backend_arg);
+	
+	size = strlen(RUST_C_LINKER) + strlen(linker) + 1;
+	
+	linker_arg = malloc(size);
+	
+	if (linker_arg == NULL) {
+		err = ERR_MEM_ALLOC_FAILURE;
+		goto end;
+	}
+	
+	strcpy(linker_arg, RUST_C_LINKER);
+	strcat(linker_arg, linker);
+	
+	kargv_append(&yargv, linker_arg);
+	
+	/*
+	The GCC code generator backend silently drops function definitions
+	when debug info is requested, so we disable it by default.
+	*/
+	kargv_append(&yargv, (char*) RUST_C_NO_DEBUG_INFO);
+	
+	for (index = 1; index < (size_t) argc; index++) {
+		kargv_append(&yargv, argv[index]);
+	}
+	
+	kargv_append(&yargv, NULL);
+	
+	args = kargv_getargs(&yargv);
+	
+	verbose = (query_get_bool(query, ENV_VERBOSE) == 1);
+	
+	if (verbose) {
+		obggcc_print_args(args);
+	}
+	
+	if (execute_command(rustc, args) == -1) {
+		err = ERR_EXECVE_FAILURE;
+		goto end;
+	}
+	
+	end:;
+	
+	kargv_free(&yargv);
+	
+	free(toolchain_directory);
+	free(triplet);
+	free(rustc);
+	free(sysroot);
+	free(backend);
+	free(linker);
+	
+	free(target_arg);
+	free(sysroot_arg);
+	free(backend_arg);
+	free(linker_arg);
+	
+	return err;
+	
+}
+
 int main(int argc, char* argv[]) {
 	
 	int status = 0;
@@ -2261,6 +2580,47 @@ int main(int argc, char* argv[]) {
 	
 	free(file_name);
 	file_name = NULL;
+	
+	/*
+	Intercept the Rust wrapper mode (<prefix>/bin/<triplet><libc_version>-rustc) before
+	any of the C/C++ wrapper logic, as the Rust compiler takes a completely different set
+	of command-line arguments, which must be forwarded to it unmodified.
+	*/
+	app_filename = get_app_filename();
+	
+	if (app_filename == NULL) {
+		err = ERR_GET_APP_FILENAME_FAILURE;
+		goto end;
+	}
+	
+	file_name = basename(app_filename);
+	
+	#if defined(_WIN32)
+		cur = strstr(file_name, EXE);
+		*(char*) cur = '\0';
+	#endif
+	
+	if (rust_wrapper(file_name)) {
+		err = run_rustc(&query, app_filename, file_name, argc, argv);
+		
+		query_free(&query);
+		
+		if (err != ERR_SUCCESS) {
+			cur = strerror(errno);
+			
+			fprintf(stderr, "fatal error: %s", obggcc_strerror(err));
+			
+			if (err == ERR_EXECVE_FAILURE || err == ERR_MEM_ALLOC_FAILURE) {
+				fprintf(stderr, ": %s", cur);
+			}
+			
+			fprintf(stderr, "\n");
+			
+			return EXIT_FAILURE;
+		}
+		
+		return EXIT_SUCCESS;
+	}
 	
 	kargv_t xargv = {0};
 	kargv_t yargv = {0};

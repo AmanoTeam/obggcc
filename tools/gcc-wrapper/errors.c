@@ -39,6 +39,14 @@ const char* obggcc_strerror(const int err) {
 			return "Using a newer GCC runtime with an older GCC compiler is not supported";
 		case ERR_GCC_UNSUPPORTED_MULTILIB:
 			return "Unsupported multilib option";
+		case ERR_RUSTC_NOT_FOUND:
+			return "Rust compiler not found in PATH";
+		case ERR_RUSTC_SYSROOT_NOT_FOUND:
+			return "Rust sysroot not found in the toolchain directory";
+		case ERR_RUSTC_BACKEND_NOT_FOUND:
+			return "Rust code generator backend not found in the toolchain directory";
+		case ERR_RUSTC_UNSUPPORTED_TARGET:
+			return "Target has no Rust support";
 		default:
 			return "Unknown error";
 	}
